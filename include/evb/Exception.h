@@ -14,9 +14,9 @@ XCEPT_DEFINE_EXCEPTION(evb, Configuration)
 XCEPT_DEFINE_EXCEPTION(evb, DOM)
 
 /**
- * Exception raised by the EVM when failing to provide dummy triggers
+ * Exception raised when failing to provide dummy data
  */
-XCEPT_DEFINE_EXCEPTION(evb, DummyTrigger)
+XCEPT_DEFINE_EXCEPTION(evb, DummyData)
 
 /**
  * Exception raised when encountering an out-of-order event

@@ -242,7 +242,7 @@ void evb::ru::BUproxy::sendData
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
   
-  char* payload = (char*)head->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
+  unsigned char* payload = (unsigned char*)head->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
   size_t remainingPayloadSize = blockSize_ - sizeof(msg::SuperFragmentsMsg);
 
   do
@@ -270,7 +270,7 @@ void evb::ru::BUproxy::sendData
         
         // get a new block
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-        payload = (char*)nextBlock->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
+        payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
         remainingPayloadSize = blockSize_ - sizeof(msg::SuperFragmentsMsg);
         fillSuperFragmentHeader(payload,remainingPayloadSize,nbSuperFragments,superFragmentNb,*superFragmentIter);
         tail->setNextReference(nextBlock);
@@ -379,7 +379,7 @@ toolbox::mem::Reference* evb::ru::BUproxy::getNextBlock
 
 void evb::ru::BUproxy::fillSuperFragmentHeader
 (
-  char*& payload,
+  unsigned char*& payload,
   size_t& remainingPayloadSize,
   const uint32_t nbSuperFragments,
   const uint32_t superFragmentNb,

@@ -40,7 +40,7 @@ void evb::ru::FEROLproxy::updateInputCounters(toolbox::mem::Reference* bufRef)
   const uint32_t payload =
     (stdMsg->MessageSize << 2) - sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   
-  char* i2oPayloadPtr = (char*)bufRef->getDataLocation() +
+  unsigned char* i2oPayloadPtr = (unsigned char*)bufRef->getDataLocation() +
     sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const uint64_t h0 = bswap_64(*((uint64_t*)(i2oPayloadPtr)));
   const uint64_t eventNumber = (h0 & 0x0000000000FFFFFF);

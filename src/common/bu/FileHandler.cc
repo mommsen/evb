@@ -201,7 +201,7 @@ void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile
 }
 
 
-void evb::bu::FileHandler::calcAdler32(const char* address, size_t len)
+void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
 {
   #define MOD_ADLER 65521
   

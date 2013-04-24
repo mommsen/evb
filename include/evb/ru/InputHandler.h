@@ -14,7 +14,6 @@
 #include "evb/OneToOneQueue.h"
 #include "evb/SuperFragmentGenerator.h"
 #include "evb/ru/SuperFragmentTable.h"
-#include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
@@ -41,13 +40,7 @@ namespace evb {
        * Callback for I2O message received from frontend
        */
       virtual void I2Ocallback(toolbox::mem::Reference*) = 0;
-      
-      /**
-       * Fill the next complete super fragment into the Reference.
-       * If no super fragment is ready, return false.
-       */
-      virtual bool getData(const EvBid&, toolbox::mem::Reference*&) = 0;
-      
+
       /**
        * Configure
        */
@@ -121,7 +114,6 @@ namespace evb {
       virtual ~FEROLproxy() {};
       
       virtual void I2Ocallback(toolbox::mem::Reference*);
-      virtual bool getData(const EvBid&, toolbox::mem::Reference*&);
       virtual void configure(const Configuration&);
       virtual void clear();
       virtual void printHtml(xgi::Output*);
@@ -141,7 +133,6 @@ namespace evb {
       virtual ~DummyInputData() {};
 
       virtual void I2Ocallback(toolbox::mem::Reference*);
-      virtual bool getData(const EvBid&, toolbox::mem::Reference*&);
       virtual void configure(const Configuration&);
       virtual void printHtml(xgi::Output*);
       

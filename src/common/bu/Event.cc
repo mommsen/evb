@@ -355,7 +355,7 @@ uint16_t evb::bu::Event::updateCRC
       {
         const unsigned char index = (crc >> 8) ^ loc->location[w*8+b];
         crc <<= 8;
-        crc ^= evf::crc_table[index];
+        crc ^= crc_table[index];
       }
     }
   }

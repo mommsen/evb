@@ -144,7 +144,7 @@ namespace evb {
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb);
       void fillSuperFragmentHeader
       (
-        char*& paylaod,
+        unsigned char*& payload,
         size_t& remainingPayloadSize,
         const uint32_t nbSuperFragments,
         const uint32_t superFragmentNb,

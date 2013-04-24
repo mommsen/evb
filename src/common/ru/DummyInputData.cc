@@ -27,26 +27,26 @@ void evb::ru::DummyInputData::I2Ocallback(toolbox::mem::Reference* bufRef)
 }
 
 
-bool evb::ru::DummyInputData::getData
-(
-  const EvBid& evbId,
-  toolbox::mem::Reference*& bufRef
-)
-{
-  if ( superFragmentGenerator_.getData(bufRef,evbId) )
-  {
-    const I2O_MESSAGE_FRAME* stdMsg =
-      (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-    const uint32_t payload =
-      (stdMsg->MessageSize << 2) - sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME);
+// bool evb::ru::DummyInputData::getData
+// (
+//   const EvBid& evbId,
+//   toolbox::mem::Reference*& bufRef
+// )
+// {
+//   if ( superFragmentGenerator_.getData(bufRef,evbId) )
+//   {
+//     const I2O_MESSAGE_FRAME* stdMsg =
+//       (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+//     const uint32_t payload =
+//       (stdMsg->MessageSize << 2) - sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME);
 
-    inputMonitoring_.lastEventNumber = evbId.eventNumber();
-    inputMonitoring_.payload += payload;
-    ++inputMonitoring_.logicalCount;
-    return true;
-  }
-  return false;
-}
+//     inputMonitoring_.lastEventNumber = evbId.eventNumber();
+//     inputMonitoring_.payload += payload;
+//     ++inputMonitoring_.logicalCount;
+//     return true;
+//   }
+//   return false;
+// }
 
 
 void evb::ru::DummyInputData::configure(const Configuration& conf)

@@ -83,7 +83,7 @@ void evb::ru::StateMachine::ruSend(toolbox::mem::Reference* bufRef)
   std::string msg = "Failed to process I2O_RU_SEND";
   try
   {
-    buProxy_->I2Ocallback(bufRef);
+    buProxy_->rqstForFragmentsMsgCallback(bufRef);
   }
   catch( xcept::Exception& e )
   {

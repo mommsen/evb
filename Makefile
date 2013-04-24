@@ -45,12 +45,11 @@ Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
+	FragmentGenerator.cc \
+	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
 	RU.cc \
-	SuperFragmentGenerator.cc \
-	SuperFragmentTracker.cc \
-	TimerManager.cc \
 	ru/BUproxy.cc \
 	ru/DummyInputData.cc \
 	ru/FEROLproxy.cc \
@@ -58,7 +57,14 @@ Sources=\
 	ru/StateMachine.cc \
 	ru/SuperFragment.cc \
 	ru/SuperFragmentTable.cc \
+	SuperFragmentGenerator.cc \
+	SuperFragmentTracker.cc \
+	TimerManager.cc \
 	version.cc
+
+TestSources = \
+	DummyFEROL.cc \
+	dummyFEROL/StateMachine.cc
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \
@@ -83,17 +89,21 @@ IncludeDirs = \
 	$(INTERFACE_EVB_INCLUDE_PREFIX) \
 	$(INTERFACE_SHARED_INCLUDE_PREFIX)
 
+TestIncludeDirs = test/include
+
 UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror 
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-Libraries = boost_thread
-DependentLibraryDirs += /usr/lib
+DependentLibraries = boost_system boost_filesystem boost_thread-mt interfaceshared xdaq2rc
+DependentLibraryDirs += /usr/lib $(INTERFACE_SHARED_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library
 #
 DynamicLibrary=evb
+TestDynamicLibrary=evbtest
+
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules

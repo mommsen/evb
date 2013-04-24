@@ -1,16 +1,10 @@
 #ifndef _evb_CRC16_h_
 #define _evb_CRC16_h_
 
-// One-to-one copy from CMSSW FWCore/Utilities/interface/CRC16.h
-//
-// Calculates the 16bit CRC (applied to 64-bit words) used in the daq hardware
-// Do not modify without contacting Philipp Schieferdecker/Emilio Meschi 
-// It is in FWCore/Utilities to avoid dependencies on xdaq
-//
 #include <cassert>
 #include <cstddef>
 
-namespace evf
+namespace evb
 {
   unsigned short compute_crc(const unsigned char* buffer, size_t bufSize);
   unsigned short compute_crc_8bit(unsigned short crc, const unsigned char data);
@@ -87,7 +81,6 @@ namespace evf
     0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202
   };
   
-  
 }
 
 
@@ -100,30 +93,30 @@ namespace evf
 
 //______________________________________________________________________________
 inline
-unsigned short evf::compute_crc(const unsigned char* buffer, size_t bufSize)
+unsigned short evb::compute_crc(const unsigned char* buffer, size_t bufSize)
 {
   assert(0==bufSize%8);
   unsigned short crc(0xffff);
   bufSize/=8;
-  for (unsigned int i=0;i<bufSize;i++) crc=evf::compute_crc_64bit(crc,&buffer[i*8]);
+  for (unsigned int i=0;i<bufSize;i++) crc=evb::compute_crc_64bit(crc,&buffer[i*8]);
   return crc;
 }
 
 
 //______________________________________________________________________________
 inline
-unsigned short evf::compute_crc_8bit(unsigned short crc, const unsigned char data)
+unsigned short evb::compute_crc_8bit(unsigned short crc, const unsigned char data)
 {
-  return (evf::crc_table[((crc >> 8) ^ data) & 0xFF] ^ (crc << 8));
+  return (evb::crc_table[((crc >> 8) ^ data) & 0xFF] ^ (crc << 8));
 }
 
 
 //______________________________________________________________________________
 inline
-unsigned short evf::compute_crc_64bit(unsigned short crc, const unsigned char *p64)
+unsigned short evb::compute_crc_64bit(unsigned short crc, const unsigned char *p64)
 {
   unsigned short result(crc);
-  for (int i=7;i>=0;i--) result=evf::compute_crc_8bit(result,p64[i]);
+  for (int i=7;i>=0;i--) result=evb::compute_crc_8bit(result,p64[i]);
   return result;
 }
 

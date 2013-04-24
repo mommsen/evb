@@ -429,7 +429,7 @@ void evb::SuperFragmentGenerator::insertFedComponent
       fedHeader->sourceid = component.fedId << FED_SOID_SHIFT;
       fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber;
       
-      fedCRC_ = evf::compute_crc(startAddr,sizeof(fedh_t));
+      fedCRC_ = compute_crc(startAddr,sizeof(fedh_t));
       
       break;
       
@@ -437,7 +437,7 @@ void evb::SuperFragmentGenerator::insertFedComponent
       assert( component.size % 8 == 0 );
       bufSize = component.size / 8;
       for (size_t i=0; i<bufSize; ++i)
-        fedCRC_ = evf::compute_crc_64bit(fedCRC_,&startAddr[i*8]);
+        fedCRC_ = compute_crc_64bit(fedCRC_,&startAddr[i*8]);
       
       break;
       
@@ -453,7 +453,7 @@ void evb::SuperFragmentGenerator::insertFedComponent
       
       bufSize = sizeof(fedt_t) / 8;
       for (size_t i=0; i<bufSize; ++i) 
-        fedCRC_ = evf::compute_crc_64bit(fedCRC_,&startAddr[i*8]);
+        fedCRC_ = compute_crc_64bit(fedCRC_,&startAddr[i*8]);
       
       fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
       
@@ -609,7 +609,7 @@ void evb::SuperFragmentGenerator::updateCRC
   // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
   fedTrailer->conscheck = 0;
   
-  unsigned short crc = evf::compute_crc(fedPtr,fedSize);
+  unsigned short crc = compute_crc(fedPtr,fedSize);
   fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
 }
 

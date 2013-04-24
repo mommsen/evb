@@ -70,7 +70,7 @@ namespace evb {
       
       void writeJSON() const;
       void defineJSON(const boost::filesystem::path&) const;
-      void calcAdler32(const char* address, size_t length);
+      void calcAdler32(const unsigned char* address, size_t length);
       
       boost::shared_ptr<StateMachine> stateMachine_;
       uint32_t buInstance_;
