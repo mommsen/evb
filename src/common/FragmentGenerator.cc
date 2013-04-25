@@ -157,55 +157,61 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
   
   uint32_t usedFrameSize = 0;
   uint32_t remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
-  const size_t ferolBlockSize = 4*1024;  
-
+  const uint32_t ferolBlockSize = 4*1024;
+  
   while ( (usedFrameSize + remainingFedSize + sizeof(ferolh_t)) <= bufRef->getBuffer()->getSize() )
   {
     uint32_t packetNumber = 0;
-    
+
     while ( remainingFedSize > 0 )
     {
       assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
-      uint64_t length;
-
+      uint32_t length;
+      
       ferolh_t* ferolHeader = (ferolh_t*)frame;
       ferolHeader->set_signature();
       ferolHeader->set_packet_number(packetNumber);
-
-      if ( remainingFedSize > ferolBlockSize )
-        length = ferolBlockSize;
-      else
-        length = remainingFedSize;
-        
-      remainingFedSize -= length;
       
       if (packetNumber == 0)
         ferolHeader->set_first_packet();
       
-      if (remainingFedSize == 0)
+      if ( remainingFedSize > ferolBlockSize )
+      {
+        length = ferolBlockSize;
+      }
+      else
+      {
+        length = remainingFedSize;
         ferolHeader->set_last_packet();
-
+      }
+      remainingFedSize -= length;
       frame += sizeof(ferolh_t);
       
       const size_t filledBytes = fragmentTracker_->fillData((unsigned char*)frame, length);
       //const size_t filledBytes = length;
-
+      
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(fedId_);
       ferolHeader->set_event_number(eventNumber_);
       
-      assert( ferolHeader->data_length() == filledBytes );
-
+      // assert( ferolHeader->signature() == FEROL_SIGNATURE );
+      // assert( ferolHeader->packet_number() == packetNumber );
+      // assert( ferolHeader->data_length() == filledBytes );
+      // assert( ferolHeader->data_length() == length );
+      // assert( ferolHeader->fed_id() == fedId_ );
+      // assert( ferolHeader->event_number() == eventNumber_ );
+      
       frame += filledBytes;
       usedFrameSize += filledBytes + sizeof(ferolh_t);
+      
       ++packetNumber;
       assert(packetNumber < 2048);
     }
-
+    
     if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
     remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
   }
-
+  
   bufRef->setDataSize(usedFrameSize);
   
   return true;
