@@ -16,11 +16,11 @@
 
 evb::ru::BUproxy::BUproxy
 (
-  boost::shared_ptr<RU> ru,
-  SuperFragmentTablePtr superFragmentTable
+  RU* ru,
+  boost::shared_ptr<ru::Input> input
 ) :
 ru_(ru),
-superFragmentTable_(superFragmentTable),
+input_(input),
 tid_(0),
 doProcessing_(false),
 processActive_(false),
@@ -154,7 +154,7 @@ bool evb::ru::BUproxy::processSuperFragments(toolbox::task::WorkLoop* wl)
         const EvBid& evbId = request.evbIds.at(i);
         SuperFragmentPtr superFragment;
         
-        while ( doProcessing_ && !superFragmentTable_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
+        while ( doProcessing_ && !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
 
         if ( superFragment->isValid() ) superFragments.push_back(superFragment);
       }
@@ -190,7 +190,7 @@ bool evb::ru::BUproxy::processTriggers(toolbox::task::WorkLoop* wl)
       SuperFragments superFragments;
       SuperFragmentPtr superFragment;
       
-      while ( doProcessing_ && !superFragmentTable_->getNextAvailableSuperFragment(superFragment) ) ::usleep(1000);
+      while ( doProcessing_ && !input_->getNextAvailableSuperFragment(superFragment) ) ::usleep(1000);
       
       if ( superFragment->isValid() )
       {
@@ -200,7 +200,7 @@ bool evb::ru::BUproxy::processTriggers(toolbox::task::WorkLoop* wl)
       
       while ( doProcessing_ && request.evbIds.size() < request.nbRequests && tries < maxTriggerAgeMSec_ )
       {
-        if ( superFragmentTable_->getNextAvailableSuperFragment(superFragment) )
+        if ( input_->getNextAvailableSuperFragment(superFragment) )
         {
            superFragments.push_back(superFragment);
            request.evbIds.push_back( superFragment->getEvBid() );
@@ -440,11 +440,11 @@ void evb::ru::BUproxy::getBuInstances()
       "Failed to get BU application descriptors", e);
   }
 
-  if ( buDescriptors.empty() )
-  {
-    XCEPT_RAISE(exception::Configuration,
-      "There must be at least one BU descriptor");
-  }
+  // if ( buDescriptors.empty() )
+  // {
+  //   XCEPT_RAISE(exception::Configuration,
+  //     "There must be at least one BU descriptor");
+  // }
 
   buInstances_.clear();
   

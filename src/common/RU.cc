@@ -1,11 +1,11 @@
 #include "i2o/Method.h"
+#include "interface/shared/i2ogevb2g.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/RU.h"
 #include "evb/ru/BUproxy.h"
 #include "evb/ru/Input.h"
-#include "evb/ru/SuperFragmentTable.h"
 #include "evb/TimerManager.h"
 #include "evb/version.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -17,10 +17,9 @@ doProcessing_(false),
 processActive_(false),
 timerId_(timerManager_.getTimer())
 {
-  superFragmentTable_.reset( new ru::SuperFragmentTable(shared_from_this()) );
-  ruInput_.reset( new ru::Input(shared_from_this(), superFragmentTable_) );
-  buProxy_.reset( new ru::BUproxy(shared_from_this(), superFragmentTable_) );    
-  stateMachine_.reset( new ru::StateMachine(shared_from_this(), ruInput_, buProxy_) );
+  ruInput_.reset( new ru::Input(this) );
+  buProxy_.reset( new ru::BUproxy(this, ruInput_) );    
+  stateMachine_.reset( new ru::StateMachine(this, ruInput_, buProxy_) );
 
   buProxy_->registerStateMachine(stateMachine_);
   
@@ -41,20 +40,15 @@ void evb::RU::do_appendApplicationInfoSpaceItems
   runNumber_ = 0;
   maxPairAgeMSec_ = 0; // Zero means forever
   
-  i2oEVMRUDataReadyCount_ = 0;
-  i2oBUCacheCount_ = 0;
   nbSuperFragmentsReady_ = 0;
   
   appInfoSpaceParams.add("runNumber", &runNumber_);
   appInfoSpaceParams.add("maxPairAgeMSec", &maxPairAgeMSec_);
-  appInfoSpaceParams.add("i2oEVMRUDataReadyCount", &i2oEVMRUDataReadyCount_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("i2oBUCacheCount", &i2oBUCacheCount_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbSuperFragmentsReady", &nbSuperFragmentsReady_, InfoSpaceItems::retrieve);
 
   buProxy_->appendConfigurationItems(appInfoSpaceParams);
   ruInput_->appendConfigurationItems(appInfoSpaceParams);
   stateMachine_->appendConfigurationItems(appInfoSpaceParams);
-  superFragmentTable_->appendConfigurationItems(appInfoSpaceParams);
 }
 
 
@@ -63,26 +57,25 @@ void evb::RU::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
-  monitoringRunNumber_        = 0;
-  nbSuperFragmentsInRU_       = 0;
+  monitoringRunNumber_ = 0;
+  nbSuperFragmentsInRU_ = 0;
+  nbSuperFragmentsBuilt_ = 0;
+  rate_ = 0;
+  bandwidth_ = 0;
+  fragmentSize_ = 0;  
+  fragmentSizeStdDev_ = 0;  
 
-  deltaT_                     = 0;
-  deltaN_                     = 0;
-  deltaSumOfSquares_          = 0;
-  deltaSumOfSizes_            = 0;
-  
   monitoringParams.add("runNumber", &monitoringRunNumber_);
   monitoringParams.add("nbSuperFragmentsInRU", &nbSuperFragmentsInRU_);
-  
-  monitoringParams.add("deltaT", &deltaT_);
-  monitoringParams.add("deltaN", &deltaN_);
-  monitoringParams.add("deltaSumOfSquares", &deltaSumOfSquares_);
-  monitoringParams.add("deltaSumOfSizes", &deltaSumOfSizes_);
+  monitoringParams.add("nbSuperFragmentsBuilt", &nbSuperFragmentsBuilt_);
+  monitoringParams.add("rate", &rate_);
+  monitoringParams.add("bandwidth", &bandwidth_);
+  monitoringParams.add("fragmentSize", &fragmentSize_);
+  monitoringParams.add("fragmentSizeStdDev", &fragmentSizeStdDev_);
   
   buProxy_->appendMonitoringItems(monitoringParams);
   ruInput_->appendMonitoringItems(monitoringParams);
   stateMachine_->appendMonitoringItems(monitoringParams);
-  superFragmentTable_->appendMonitoringItems(monitoringParams);
 }
 
 
@@ -90,27 +83,20 @@ void evb::RU::do_updateMonitoringInfo()
 {
   monitoringRunNumber_ = runNumber_;
 
-  nbSuperFragmentsInRU_.value_ = std::max(static_cast<uint64_t>(0),
-    ruInput_->fragmentsCount() - buProxy_->i2oBUCacheCount());
+  // nbSuperFragmentsInRU_.value_ = std::max(static_cast<uint64_t>(0),
+  //   ruInput_->fragmentsCount() - buProxy_->i2oBUCacheCount());
   
   buProxy_->updateMonitoringItems();
   ruInput_->updateMonitoringItems();
   stateMachine_->updateMonitoringItems();
-  superFragmentTable_->updateMonitoringItems();
 
-  boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-
-  PerformanceMonitor intervalEnd;
-  getPerformance(intervalEnd);
-
-  delta_ = intervalEnd - intervalStart_;
-  
-  deltaT_.value_ = delta_.seconds;
-  deltaN_.value_ = delta_.N;
-  deltaSumOfSizes_.value_ = delta_.sumOfSizes;
-  deltaSumOfSquares_ = delta_.sumOfSquares;
-
-  intervalStart_ = intervalEnd;
+  boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
+  rate_ = superFragmentMonitoring_.logicalRate();
+  bandwidth_ = superFragmentMonitoring_.bandwidth();
+  fragmentSize_ = superFragmentMonitoring_.size();
+  fragmentSizeStdDev_ = superFragmentMonitoring_.sizeStdDev();
+  nbSuperFragmentsBuilt_.value_ += superFragmentMonitoring_.logicalCount;
+  superFragmentMonitoring_.reset();
 }
 
 
@@ -125,29 +111,7 @@ void evb::RU::do_handleItemChangedEvent(const std::string& item)
 
 void evb::RU::do_handleItemRetrieveEvent(const std::string& item)
 {
-  if (item == "i2oEVMRUDataReadyCount")
-  {
-    try
-    {
-      i2oEVMRUDataReadyCount_.setValue( *(monitoringInfoSpace_->find("i2oEVMRUDataReadyCount")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      i2oEVMRUDataReadyCount_ = 0;
-    }
-  }
-  else if (item == "i2oBUCacheCount")
-  {
-    try
-    {
-      i2oBUCacheCount_.setValue( *(monitoringInfoSpace_->find("i2oBUCacheCount")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      i2oBUCacheCount_ = 0;
-    }
-  }
-  else if (item == "nbSuperFragmentsReady")
+  if (item == "nbSuperFragmentsReady")
   {
     try
     {
@@ -166,8 +130,8 @@ void evb::RU::bindI2oCallbacks()
   i2o::bind
     (
       this,
-      &evb::RU::I2O_EVMRU_DATA_READY_Callback,
-      I2O_EVMRU_DATA_READY,
+      &evb::RU::I2O_DATA_READY_Callback,
+      I2O_DATA_READY,
       XDAQ_ORGANIZATION_ID
     );
   
@@ -181,12 +145,12 @@ void evb::RU::bindI2oCallbacks()
 }
 
 
-void evb::RU::I2O_EVMRU_DATA_READY_Callback
+void evb::RU::I2O_DATA_READY_Callback
 (
   toolbox::mem::Reference *bufRef
 )
 {
-  stateMachine_->processEvent( ru::EvmRuDataReady(bufRef) );
+  ruInput_->dataReadyCallback(bufRef);
 }
 
 
@@ -195,7 +159,7 @@ void evb::RU::I2O_RU_SEND_Callback
   toolbox::mem::Reference *bufRef
 )
 {
-  stateMachine_->processEvent( ru::RuSend(bufRef) );
+  buProxy_->rqstForFragmentsMsgCallback(bufRef);
 }
 
 
@@ -246,64 +210,36 @@ void evb::RU::printHtml(xgi::Output *out)
   *out << "<td># fragments in RU</td>"                            << std::endl;
   *out << "<td>" << nbSuperFragmentsInRU_ << "</td>"              << std::endl;
   *out << "</tr>"                                                 << std::endl;
-
-  {
-    boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># fragments built</td>"                            << std::endl;
-    *out << "<td>" << superFragmentMonitoring_.count << "</td>"     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<td># fragments built</td>"                            << std::endl;
+  *out << "<td>" << nbSuperFragmentsBuilt_ << "</td>"             << std::endl;
+  *out << "</tr>"                                                 << std::endl;
   
   {
-    boost::mutex::scoped_lock sl(performanceMonitorMutex_);
+    boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
     
     const std::_Ios_Fmtflags originalFlags=out->flags();
     const int originalPrecision=out->precision();
-    out->precision(3);
     out->setf(std::ios::fixed);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>deltaT (s)</td>"                                   << std::endl;
-    *out << "<td>" << delta_.seconds << "</td>"                     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
     out->precision(2);
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.sumOfSizes/(double)0x100000/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
+    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.N/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
+    *out << "<td>" << rate_ << "</td>"                              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>fragment size (kB)</td>"                           << std::endl;
-    *out << "<td>";
-    if ( delta_.N>0 )
-    {
-      const double meanOfSquares =  static_cast<double>(delta_.sumOfSquares)/delta_.N;
-      const double mean = static_cast<double>(delta_.sumOfSizes)/delta_.N;
-      const double variance = meanOfSquares - (mean*mean);
-      // Variance maybe negative due to lack of precision
-      const double rms = variance > 0 ? std::sqrt(variance) : 0;
-      *out << mean/0x400 << " +/- " << rms/0x400;
-    }
-    else
-    {
-      *out << "n/a";
-    }
-    *out << "</td>"                                                 << std::endl;
+    *out << "<td>" << fragmentSize_ << " +/- " << fragmentSizeStdDev_ << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
   }
-
+  
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\"><br/>Configuration</th>"             << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -321,29 +257,10 @@ void evb::RU::printHtml(xgi::Output *out)
 }
 
 
-void evb::RU::getPerformance(PerformanceMonitor& performanceMonitor)
-{
-  boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
-
-  performanceMonitor.N = superFragmentMonitoring_.count;
-  performanceMonitor.sumOfSizes = superFragmentMonitoring_.payload;
-  performanceMonitor.sumOfSquares = superFragmentMonitoring_.payloadSquared;
-}
-
-
 void evb::RU::resetMonitoringCounters()
 {
-  {
-    boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-    intervalStart_ = PerformanceMonitor();
-    delta_ = PerformanceMonitor();
-  }
-  {
-    boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
-    superFragmentMonitoring_.count = 0;
-    superFragmentMonitoring_.payload = 0;
-    superFragmentMonitoring_.payloadSquared = 0;
-  }
+  boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
+  superFragmentMonitoring_.reset();
 }
 
 
@@ -355,7 +272,6 @@ void evb::RU::configure()
 
 void evb::RU::clear()
 {
-  superFragmentTable_->clear();
 }
 
 
@@ -466,9 +382,9 @@ void evb::RU::updateSuperFragmentCounters(toolbox::mem::Reference* head)
 
   boost::mutex::scoped_lock sl(superFragmentMonitoringMutex_);
   
-  ++superFragmentMonitoring_.count;
-  superFragmentMonitoring_.payload += payload;
-  superFragmentMonitoring_.payloadSquared += payload*payload;
+  ++superFragmentMonitoring_.logicalCount;
+  superFragmentMonitoring_.sumOfSizes += payload;
+  superFragmentMonitoring_.sumOfSquares += payload*payload;
 }
 
 

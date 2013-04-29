@@ -290,7 +290,6 @@ void evb::bu::Processing::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
 
-  stateMachine.bu()->resetMonitoringCounters();
   stateMachine.fuProxy()->resetMonitoringCounters();
   stateMachine.ruProxy()->resetMonitoringCounters();
   stateMachine.diskWriter()->resetMonitoringCounters();

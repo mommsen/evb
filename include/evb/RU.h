@@ -33,7 +33,7 @@ namespace evb {
    * \ingroup xdaqApps
    * \brief Readout unit (RU)
    */
-  class RU : public EvBApplication<ru::StateMachine>, public boost::enable_shared_from_this<RU>
+  class RU : public EvBApplication<ru::StateMachine>
   {
   public:
     
@@ -72,7 +72,7 @@ namespace evb {
   private:
     
     virtual void bindI2oCallbacks();
-    inline void I2O_EVMRU_DATA_READY_Callback(toolbox::mem::Reference*);
+    inline void I2O_DATA_READY_Callback(toolbox::mem::Reference*);
     inline void I2O_RU_SEND_Callback(toolbox::mem::Reference*);
     
     virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
@@ -89,7 +89,6 @@ namespace evb {
     void startProcessingWorkLoop();
     bool process(toolbox::task::WorkLoop*);
     void updateSuperFragmentCounters(toolbox::mem::Reference*);
-    void getPerformance(PerformanceMonitor&);
     
     boost::shared_ptr<ru::BUproxy> buProxy_;
     boost::shared_ptr<ru::Input> ruInput_;
@@ -104,32 +103,20 @@ namespace evb {
     TimerManager timerManager_;
     const uint8_t timerId_;
     
-    struct SuperFragmentMonitoring
-    {
-      uint64_t count;
-      uint64_t payload;
-      uint64_t payloadSquared;
-    } superFragmentMonitoring_;
+    PerformanceMonitor superFragmentMonitoring_;
     boost::mutex superFragmentMonitoringMutex_;
-    
-    PerformanceMonitor intervalStart_;
-    PerformanceMonitor delta_;
-    boost::mutex performanceMonitorMutex_;
-    
-    xdata::Double deltaT_;
-    xdata::UnsignedInteger32 deltaN_;
-    xdata::UnsignedInteger64 deltaSumOfSquares_;
-    xdata::UnsignedInteger32 deltaSumOfSizes_;
     
     xdata::UnsignedInteger32 runNumber_;
     xdata::UnsignedInteger32 maxPairAgeMSec_;
     
     xdata::UnsignedInteger32 monitoringRunNumber_;
     xdata::UnsignedInteger32 nbSuperFragmentsInRU_;
-    
-    xdata::UnsignedInteger64 i2oEVMRUDataReadyCount_;
-    xdata::UnsignedInteger64 i2oBUCacheCount_;
+    xdata::UnsignedInteger32 nbSuperFragmentsBuilt_;
     xdata::UnsignedInteger32 nbSuperFragmentsReady_;
+    xdata::Double rate_;
+    xdata::Double bandwidth_;
+    xdata::Double fragmentSize_;
+    xdata::Double fragmentSizeStdDev_;
     
   }; // class RU
   

@@ -83,7 +83,7 @@ namespace evb {
       
       StateMachine
       (
-        boost::shared_ptr<RU>,
+        RU*,
         boost::shared_ptr<Input>,
         boost::shared_ptr<BUproxy>
       );
@@ -91,17 +91,13 @@ namespace evb {
       void mismatchEvent(const MismatchDetected&);
       void timedOutEvent(const TimedOut&);
       
-      void ruReadout(toolbox::mem::Reference*);
-      void evmRuDataReady(toolbox::mem::Reference*);
-      void ruSend(toolbox::mem::Reference*);
-      
-      boost::shared_ptr<BUproxy> buProxy() const { return buProxy_; }
-      boost::shared_ptr<RU> ru() const { return ru_; }
+      RU* ru() const { return ru_; }
       boost::shared_ptr<Input> ruInput() const { return ruInput_; }
+      boost::shared_ptr<BUproxy> buProxy() const { return buProxy_; }
       
     private:
       
-      boost::shared_ptr<RU> ru_;
+      RU* ru_;
       boost::shared_ptr<Input> ruInput_;
       boost::shared_ptr<BUproxy> buProxy_;
       

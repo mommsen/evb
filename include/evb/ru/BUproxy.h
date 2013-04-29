@@ -12,8 +12,8 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/ru/Input.h"
 #include "evb/ru/SuperFragment.h"
-#include "evb/ru/SuperFragmentTable.h"
 #include "i2o/i2oDdmLib.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Pool.h"
@@ -48,8 +48,8 @@ namespace evb {
       
       BUproxy
       (
-        boost::shared_ptr<RU>,
-        SuperFragmentTablePtr
+        RU*,
+        boost::shared_ptr<ru::Input>
       );
       
       virtual ~BUproxy() {};
@@ -151,9 +151,9 @@ namespace evb {
         const SuperFragmentPtr
       ) const;
       
-      boost::shared_ptr<RU> ru_;
+      RU* ru_;
+      boost::shared_ptr<ru::Input> input_;
       boost::shared_ptr<StateMachine> stateMachine_;
-      SuperFragmentTablePtr superFragmentTable_;
       uint32_t tid_;
       toolbox::mem::Pool* superFragmentPool_;
       

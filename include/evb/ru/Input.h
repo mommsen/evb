@@ -10,7 +10,7 @@
 #include "evb/EvBid.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/ru/InputHandler.h"
-#include "evb/ru/SuperFragmentTable.h"
+#include "evb/ru/SuperFragment.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/Boolean.h"
@@ -37,7 +37,7 @@ namespace evb {
       
     public:
       
-      Input(boost::shared_ptr<RU>, SuperFragmentTablePtr);
+      Input(RU*);
       
       virtual ~Input() {};
       
@@ -54,10 +54,32 @@ namespace evb {
       void inputSourceChanged();
       
       /**
-       * Callback for I2O message received from frontend
+       * Enable or disable the handling of incoming I2O messages
        */
-      void I2Ocallback(toolbox::mem::Reference*);
+      void acceptI2Omessages(const bool accept)
+      { acceptI2Omessages_ = accept; }
       
+      /**
+       * Callback for I2O_DATA_READY message received from frontend
+       */
+      void dataReadyCallback(toolbox::mem::Reference*);
+      
+      /**
+       * Get the next complete super fragment.
+       * If none is available, the method returns false.
+       * Otherwise, the SuperFragmentPtr holds the
+       * toolbox::mem::Reference chain to the FED fragements.
+       */
+      bool getNextAvailableSuperFragment(SuperFragmentPtr);
+      
+      /**
+       * Get the complete super fragment with EvBid.
+       * If it is not available or complete, the method returns false.
+       * Otherwise, the SuperFragmentPtr holds the
+       * toolbox::mem::Reference chain to the FED fragements.
+       */
+      bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
+            
       /**
        * Append the info space parameters used for the
        * configuration to the InfoSpaceItems
@@ -84,12 +106,6 @@ namespace evb {
       void resetMonitoringCounters();
       
       /**
-       * Return the logical number of I2O_EVMRU_DATA_READY messages
-       * received since the last call to resetMonitoringCounters
-       */
-      uint64_t fragmentsCount() const;
-      
-      /**
        * Configure
        */
       void configure();
@@ -108,14 +124,27 @@ namespace evb {
     private:
       
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
+      void updateInputCounters(toolbox::mem::Reference*);
       
-      boost::shared_ptr<RU> ru_;
-      SuperFragmentTablePtr superFragmentTable_;
+      RU* ru_;
       boost::scoped_ptr<InputHandler> handler_;
+      bool acceptI2Omessages_;
+      
+      struct InputMonitoring
+      {
+        uint32_t lastEventNumber;
+        PerformanceMonitor perf;
+        double rate;
+        double bandwidth;
+      };
+      typedef std::map<uint16_t,InputMonitoring> InputMonitors;
+      InputMonitors inputMonitors_;
+      boost::mutex inputMonitorsMutex_;
       
       InfoSpaceItems inputParams_;
       xdata::String inputSource_;
       xdata::Boolean dumpFragmentsToLogger_;
+      xdata::Boolean dropInputData_;
       xdata::Boolean usePlayback_;
       xdata::String playbackDataFile_;
       xdata::UnsignedInteger32 dummyFedPayloadSize_;

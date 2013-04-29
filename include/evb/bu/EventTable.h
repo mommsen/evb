@@ -18,6 +18,7 @@
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "xdaq/Application.h"
 #include "xdata/Boolean.h"
+#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
 
 
@@ -124,11 +125,6 @@ namespace evb {
       { requestEvents_ = val; }
       
       /**
-       * Return event building performance monitoring struct
-       */
-      void getPerformance(PerformanceMonitor&);
-      
-      /**
        * Print the monitoring information as HTML snipped
        */
       void printMonitoringInformation(xgi::Output*);
@@ -211,11 +207,9 @@ namespace evb {
       struct EventMonitoring
       {
         uint32_t nbEventsUnderConstruction;
-        uint32_t nbEventsBuilt;
         uint32_t nbEventsInBU;
         uint32_t nbEventsDropped;
-        uint64_t payload;
-        uint64_t payloadSquared;
+        PerformanceMonitor perf;
       } eventMonitoring_;
       boost::mutex eventMonitoringMutex_;
       
@@ -223,6 +217,8 @@ namespace evb {
       xdata::UnsignedInteger32 nbEvtsReady_;
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEvtsBuilt_;
+      xdata::Double rate_;
+      xdata::Double bandwidth_;
       
     }; // EventTable
     

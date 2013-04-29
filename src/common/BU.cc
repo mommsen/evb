@@ -36,7 +36,6 @@ processActive_(false)
   
   initialize();
   
-  resetMonitoringCounters();
   startProcessingWorkLoop();
   
   LOG4CPLUS_INFO(logger_, "End of constructor");
@@ -75,16 +74,6 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
-  deltaT_                     = 0;
-  deltaN_                     = 0;
-  deltaSumOfSquares_          = 0;
-  deltaSumOfSizes_            = 0;
-  
-  monitoringParams.add("deltaT", &deltaT_);
-  monitoringParams.add("deltaN", &deltaN_);
-  monitoringParams.add("deltaSumOfSquares", &deltaSumOfSquares_);
-  monitoringParams.add("deltaSumOfSizes", &deltaSumOfSizes_);
-
   ruProxy_->appendMonitoringItems(monitoringParams);
   fuProxy_->appendMonitoringItems(monitoringParams);
   diskWriter_->appendMonitoringItems(monitoringParams);
@@ -99,20 +88,6 @@ void evb::BU::do_updateMonitoringInfo()
   eventTable_->updateMonitoringItems();
   ruProxy_->updateMonitoringItems();
   fuProxy_->updateMonitoringItems();
-  
-  boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-  
-  PerformanceMonitor intervalEnd;
-  eventTable_->getPerformance(intervalEnd);
-  
-  delta_ = intervalEnd - intervalStart_;
-  
-  deltaT_.value_ = delta_.seconds;
-  deltaN_.value_ = delta_.N;
-  deltaSumOfSizes_.value_ = delta_.sumOfSizes;
-  deltaSumOfSquares_ = delta_.sumOfSquares;
-  
-  intervalStart_ = intervalEnd;
 }
 
 
@@ -351,55 +326,6 @@ void evb::BU::printHtml(xgi::Output *out)
   
   eventTable_->printMonitoringInformation(out);
 
-  {
-    boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-
-    const std::_Ios_Fmtflags originalFlags=out->flags();
-    const int originalPrecision=out->precision();
-    out->precision(3);
-    out->setf(std::ios::fixed);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>deltaT (s)</td>"                                   << std::endl;
-    *out << "<td>" << delta_.seconds << "</td>"                     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->precision(2);
-    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.sumOfSizes/(double)0x100000/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->setf(std::ios::scientific);
-    *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.N/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->unsetf(std::ios::scientific);
-    out->precision(1);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>";
-    if ( delta_.N>0 )
-    {
-      const double meanOfSquares =  static_cast<double>(delta_.sumOfSquares)/delta_.N;
-      const double mean = static_cast<double>(delta_.sumOfSizes)/delta_.N;
-      const double variance = meanOfSquares - (mean*mean);
-      // Variance maybe negative due to lack of precision
-      const double rms = variance > 0 ? std::sqrt(variance) : 0;
-      *out << mean/0x400 << " +/- " << rms/0x400;
-    }
-    else
-    {
-      *out << "n/a";
-    }
-    *out << "</td>"                                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->flags(originalFlags);
-    out->precision(originalPrecision);
-  }
-  
   eventTable_->printQueueInformation(out);
   
   eventTable_->printConfiguration(out);
@@ -613,14 +539,6 @@ void evb::BU::blockFIFOWebPage
  
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::resetMonitoringCounters()
-{
-  boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-  intervalStart_ = PerformanceMonitor();
-  delta_ = PerformanceMonitor();
 }
 
 

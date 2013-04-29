@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+use strict;
+die "Usage webPingXDAQ host port nbRetries\n" if @ARGV != 3;
+
+my $host      = $ARGV[0];
+my $port      = $ARGV[1];
+my $nbRetries = $ARGV[2];
+
+sub tryWebPing {
+  my($host,$port) = @_;
+  my $cmd = "wget -o /dev/null -O /dev/null http://${host}:${port}/urn:xdaq-application:lid=3";
+  my $cmdExitStatus = system($cmd);
+
+  $cmdExitStatus;
+}
+
+print "Checking ${host}:${port} is listening";
+
+for(my $i=1; $i<=$nbRetries; $i++) {
+  print " .";
+  my $cmdExitStatus = &tryWebPing($host, $port);
+
+  if($cmdExitStatus == 0)
+  {
+    print "\n${host}:${port} is listening\n";
+    exit 0;
+  }
+
+  sleep 1;
+}
+
+print "\n${host}:${port} is NOT listening\n";
+exit 1;

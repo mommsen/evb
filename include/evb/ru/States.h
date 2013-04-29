@@ -57,31 +57,12 @@ namespace evb { namespace ru {
 
   public:
 
-    typedef boost::mpl::list<
-    boost::statechart::custom_reaction<EvmRuDataReady>,
-    boost::statechart::custom_reaction<RuSend>
-    > reactions;
+    typedef boost::mpl::list<> reactions;
 
     Outermost(my_context c) : my_state("Outermost", c)
     { safeEntryAction(); }
     virtual ~Outermost()
     { safeExitAction(); }
-
-    inline boost::statechart::result react(const EvmRuDataReady& evt)
-    {
-      evt.getDataReadyMsg()->release();
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Discarding an I2O_EVMRU_DATA_READY message.");
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const RuSend& evt)
-    {
-      evt.getSendMsg()->release();
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Discarding an I2O_RU_SEND message.");
-      return discard_event();
-    }
 
   };
 
@@ -95,21 +76,13 @@ namespace evb { namespace ru {
   public:
 
     typedef boost::mpl::list<
-    boost::statechart::transition<Fail,Failed>,
-    boost::statechart::custom_reaction<EvmRuDataReady>
+    boost::statechart::transition<Fail,Failed>
     > reactions;
 
     Failed(my_context c) : my_state("Failed", c)
     { safeEntryAction(); }
     virtual ~Failed()
     { safeExitAction(); }
-    
-    inline boost::statechart::result react(const EvmRuDataReady& evt)
-    {
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Got an I2O_EVMRU_DATA_READY message in Failed state.");
-      return discard_event();
-    }
 
   };
 
@@ -226,9 +199,7 @@ namespace evb { namespace ru {
   public:
 
     typedef boost::mpl::list<
-    boost::statechart::transition<Stop,Configured>,
-    boost::statechart::custom_reaction<EvmRuDataReady>,
-    boost::statechart::custom_reaction<RuSend>
+    boost::statechart::transition<Stop,Configured>
     > reactions;
     
     Processing(my_context c) : my_state("Processing", c)
@@ -237,18 +208,6 @@ namespace evb { namespace ru {
     { safeExitAction(); }
 
     virtual void entryAction();
-
-    inline boost::statechart::result react(const EvmRuDataReady& evt)
-    {
-      outermost_context().evmRuDataReady(evt.getDataReadyMsg());
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const RuSend& evt)
-    {
-      outermost_context().ruSend(evt.getSendMsg());
-      return discard_event();
-    }
 
   };
 

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+for TEST_NAME in `ls ${EVB_TESTER_HOME}/cases/ | grep "^[012]"`; do
+  startTime=`date "+%H:%M:%S"`
+  printf "%-32s: $startTime " $TEST_NAME
+
+  mkdir -p ${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/${TEST_NAME}
+
+  if runTest $TEST_NAME 2>&1 > ${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/${TEST_NAME}/${TEST_NAME}.log
+  then
+    date=`date "+%H:%M:%S"`
+    echo -e "$date \033[1;30;42m Passed \033[30;47;0m"
+  else
+    date=`date "+%H:%M:%S"`
+    echo -e "$date \033[1;30;41m FAILED \033[30;47;0m"
+  fi
+done

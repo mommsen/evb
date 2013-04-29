@@ -43,11 +43,6 @@ namespace evb {
     virtual ~BU() {};
        
     XDAQ_INSTANTIATOR();
-    
-    /**
-     * Reset the monitoring counters
-     */
-    void resetMonitoringCounters();
    
     /**
      * Configure
@@ -111,20 +106,12 @@ namespace evb {
     toolbox::task::WorkLoop* processingWL_;
     toolbox::task::ActionSignature* processingAction_;
     
-    PerformanceMonitor intervalStart_;
-    PerformanceMonitor delta_;
-    boost::mutex performanceMonitorMutex_;
-    
     xdata::UnsignedInteger32 nbEvtsUnderConstruction_;
     xdata::UnsignedInteger32 nbEventsInBU_;
     xdata::UnsignedInteger32 nbEvtsReady_;
     xdata::UnsignedInteger32 nbEvtsBuilt_;
     xdata::UnsignedInteger32 nbEvtsCorrupted_;
     xdata::UnsignedInteger32 nbFilesWritten_;
-    xdata::Double deltaT_;
-    xdata::UnsignedInteger32 deltaN_;
-    xdata::UnsignedInteger64 deltaSumOfSquares_;
-    xdata::UnsignedInteger32 deltaSumOfSizes_;
   };
   
   

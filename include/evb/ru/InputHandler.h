@@ -2,23 +2,18 @@
 #define _evb_ru_InputHandler_h_
 
 #include <boost/thread/mutex.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <stdint.h>
-#include <vector>
+#include <string>
 
-#include "i2o/shared/i2omsg.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
-#include "evb/OneToOneQueue.h"
-#include "evb/SuperFragmentGenerator.h"
-#include "evb/ru/SuperFragmentTable.h"
+#include "evb/ru/SuperFragment.h"
+#include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
-#include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/Vector.h"
-#include "xgi/Output.h"
 
 
 namespace evb {
@@ -31,21 +26,37 @@ namespace evb {
     {
     public:
       
-      InputHandler(boost::shared_ptr<RU> ru, SuperFragmentTablePtr sft) :
-      ru_(ru), superFragmentTable_(sft) {};
+      InputHandler() {};
       
       virtual ~InputHandler() {};
       
       /**
-       * Callback for I2O message received from frontend
+       * Callback for I2O_DATA_READY messages received from frontend
        */
-      virtual void I2Ocallback(toolbox::mem::Reference*) = 0;
+      virtual void dataReadyCallback(toolbox::mem::Reference*) = 0;
 
+      /**
+       * Get the next complete super fragment.
+       * If none is available, the method returns false.
+       * Otherwise, the SuperFragmentPtr holds the
+       * toolbox::mem::Reference chain to the FED fragements.
+       */
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr) = 0;
+      
+      /**
+       * Get the complete super fragment with EvBid.
+       * If it is not available or complete, the method returns false.
+       * Otherwise, the SuperFragmentPtr holds the
+       * toolbox::mem::Reference chain to the FED fragements.
+       */
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr) = 0;
+ 
       /**
        * Configure
        */
       struct Configuration
       {
+        bool dropInputData;
         uint32_t dummyFedPayloadSize;
         uint32_t dummyFedPayloadStdDev;
         xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
@@ -59,68 +70,35 @@ namespace evb {
        */
       virtual void clear() {};
       
-      /**
-       * Print monitoring information as HTML snipped
-       */
-      virtual void printHtml(xgi::Output*) = 0;
+    private:
       
-      /**
-       * Return the last event number seen
-       */
-      inline uint32_t lastEventNumber() const
-      { return inputMonitoring_.lastEventNumber; }
-      
-      /**
-       * Return the number of received event fragments
-       * since the last call to resetMonitoringCounters
-       */
-      inline uint64_t fragmentsCount() const
-      { return inputMonitoring_.logicalCount; }
-      
-      /**
-       * Reset the monitoring counters
-       */
-      inline void resetMonitoringCounters()
-      {
-        boost::mutex::scoped_lock sl(inputMonitoringMutex_);
-        
-        inputMonitoring_.payload = 0;
-        inputMonitoring_.logicalCount = 0;
-        inputMonitoring_.i2oCount = 0;
-        inputMonitoring_.lastEventNumber = 0;
-      }
-      
-    protected:
-      
-      boost::shared_ptr<RU> ru_;
-      SuperFragmentTablePtr superFragmentTable_;
-      
-      struct InputMonitoring
-      {
-        uint64_t logicalCount;
-        uint64_t payload;
-        uint64_t i2oCount;
-        uint32_t lastEventNumber;
-      } inputMonitoring_;
-      boost::mutex inputMonitoringMutex_;
     };
-    
     
     class FEROLproxy : public InputHandler
     {
     public:
       
-      FEROLproxy(boost::shared_ptr<RU>, SuperFragmentTablePtr);
+      FEROLproxy();
       virtual ~FEROLproxy() {};
       
-      virtual void I2Ocallback(toolbox::mem::Reference*);
-      virtual void configure(const Configuration&);
+      virtual void dataReadyCallback(toolbox::mem::Reference*);
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr);
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
       virtual void clear();
-      virtual void printHtml(xgi::Output*);
       
     private:
+
+      void addFragment(toolbox::mem::Reference*);
+      toolbox::mem::Reference* copyDataIntoDataBlock(SuperFragmentPtr);
+      void fillBlockInfo(toolbox::mem::Reference*, const EvBid&, const uint32_t nbBlocks) const;
       
-      void updateInputCounters(toolbox::mem::Reference*);
+      SuperFragment::FEDlist fedList_;
+      typedef std::map<EvBid,SuperFragmentPtr> SuperFragmentMap;
+      SuperFragmentMap superFragmentMap_;
+      toolbox::mem::Pool* superFragmentPool_;
+      
+      typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
+      EvBidFactories evbIdFactories_;
       
     };
     
@@ -129,23 +107,16 @@ namespace evb {
     {
     public:
       
-      DummyInputData(boost::shared_ptr<RU>, SuperFragmentTablePtr);
+      DummyInputData();
       virtual ~DummyInputData() {};
 
-      virtual void I2Ocallback(toolbox::mem::Reference*);
-      virtual void configure(const Configuration&);
-      virtual void printHtml(xgi::Output*);
+      virtual void dataReadyCallback(toolbox::mem::Reference*);
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr);
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
+      virtual void clear();
       
     private:
       
-      toolbox::mem::Reference* generateDummySuperFrag(const uint32_t eventNumber);
-      void setNbBlocksInSuperFragment
-      (
-      toolbox::mem::Reference*,
-      const uint32_t nbBlocks
-      );
-      
-      evb::SuperFragmentGenerator superFragmentGenerator_;
     };
     
   } } //namespace evb::ru

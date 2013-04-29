@@ -31,17 +31,6 @@ Project=daq
 Package=evb
 
 Sources=\
-	BU.cc \
-	bu/DiskUsage.cc \
-	bu/DiskWriter.cc \
-	bu/Event.cc \
-	bu/EventTable.cc \
-	bu/FUproxy.cc \
-	bu/FileHandler.cc \
-	bu/LumiHandler.cc \
-	bu/RUbroadcaster.cc \
-	bu/RUproxy.cc \
-	bu/StateMachine.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
@@ -56,7 +45,17 @@ Sources=\
 	ru/Input.cc \
 	ru/StateMachine.cc \
 	ru/SuperFragment.cc \
-	ru/SuperFragmentTable.cc \
+	BU.cc \
+	bu/DiskUsage.cc \
+	bu/DiskWriter.cc \
+	bu/Event.cc \
+	bu/EventTable.cc \
+	bu/FUproxy.cc \
+	bu/FileHandler.cc \
+	bu/LumiHandler.cc \
+	bu/RUbroadcaster.cc \
+	bu/RUproxy.cc \
+	bu/StateMachine.cc \
 	SuperFragmentGenerator.cc \
 	SuperFragmentTracker.cc \
 	TimerManager.cc \

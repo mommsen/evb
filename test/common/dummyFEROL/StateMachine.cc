@@ -1,25 +1,18 @@
-#include "evb/PerformanceMonitor.h"
-#include "evb/RU.h"
-#include "evb/ru/BUproxy.h"
-#include "evb/ru/Input.h"
-#include "evb/ru/StateMachine.h"
-#include "evb/ru/States.h"
 #include "evb/Exception.h"
+#include "evb/test/DummyFEROL.h"
+#include "evb/test/dummyFEROL/States.h"
+#include "evb/test/dummyFEROL/StateMachine.h"
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
 
-evb::ru::StateMachine::StateMachine
+evb::test::dummyFEROL::StateMachine::StateMachine
 (
-  RU* ru,
-  boost::shared_ptr<Input> ruInput,
-  boost::shared_ptr<BUproxy> buProxy
+  DummyFEROL* dummyFEROL
 ):
-EvBStateMachine(ru),
-ru_(ru),
-ruInput_(ruInput),
-buProxy_(buProxy)
+EvBStateMachine(dummyFEROL),
+dummyFEROL_(dummyFEROL)
 {
   // initiate FSM here to assure that the derived state machine class
   // has been fully constructed.
@@ -27,46 +20,24 @@ buProxy_(buProxy)
 }
 
 
-void evb::ru::StateMachine::mismatchEvent(const MismatchDetected& evt)
-{
-  LOG4CPLUS_ERROR(app_->getApplicationLogger(), evt.getTraceback());
-  
-  rcmsStateNotifier_.stateChanged("MismatchDetectedBackPressuring", evt.getReason());
-
-  app_->notifyQualified("error", evt.getException());
-}
-
-
-void evb::ru::StateMachine::timedOutEvent(const TimedOut& evt)
-{
-  LOG4CPLUS_ERROR(app_->getApplicationLogger(), evt.getTraceback());
-  
-  rcmsStateNotifier_.stateChanged("TimedOutBackPressuring", evt.getReason());
-
-  app_->notifyQualified("error", evt.getException());
-}
-
-
-void evb::ru::Configuring::entryAction()
+void evb::test::dummyFEROL::Configuring::entryAction()
 {
   doConfiguring_ = true;
   configuringThread_.reset(
-    new boost::thread( boost::bind( &evb::ru::Configuring::activity, this) )
+    new boost::thread( boost::bind( &evb::test::dummyFEROL::Configuring::activity, this) )
   );
   configuringThread_->detach();
 }
 
 
-void evb::ru::Configuring::activity()
+void evb::test::dummyFEROL::Configuring::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
 
   std::string msg = "Failed to configure the components";
   try
   {
-    if (doConfiguring_) stateMachine.buProxy()->configure();
-    if (doConfiguring_) stateMachine.ru()->configure();
-    if (doConfiguring_) stateMachine.ruInput()->configure();
+    if (doConfiguring_) stateMachine.dummyFEROL()->configure();
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
   catch( xcept::Exception& e )
@@ -93,33 +64,31 @@ void evb::ru::Configuring::activity()
 }
 
 
-void evb::ru::Configuring::exitAction()
+void evb::test::dummyFEROL::Configuring::exitAction()
 {
   doConfiguring_ = false;
   configuringThread_->join();
 }
 
 
-void evb::ru::Clearing::entryAction()
+void evb::test::dummyFEROL::Clearing::entryAction()
 {
   doClearing_ = true;
   clearingThread_.reset(
-    new boost::thread( boost::bind( &evb::ru::Clearing::activity, this) )
+    new boost::thread( boost::bind( &evb::test::dummyFEROL::Clearing::activity, this) )
   );
   clearingThread_->detach();
 }
 
 
-void evb::ru::Clearing::activity()
+void evb::test::dummyFEROL::Clearing::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
   
   std::string msg = "Failed to clear the components";
   try
   {
-    if (doClearing_) stateMachine.buProxy()->clear();
-    if (doClearing_) stateMachine.ru()->clear();
-    if (doClearing_) stateMachine.ruInput()->clear();
+    if (doClearing_) stateMachine.dummyFEROL()->clear();
     if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
   }
   catch( xcept::Exception& e )
@@ -146,35 +115,31 @@ void evb::ru::Clearing::activity()
 }
 
 
-void evb::ru::Clearing::exitAction()
+void evb::test::dummyFEROL::Clearing::exitAction()
 {
   doClearing_ = false;
   clearingThread_->join();
 }
 
 
-void evb::ru::Processing::entryAction()
+void evb::test::dummyFEROL::Processing::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.buProxy()->resetMonitoringCounters();
-  stateMachine.ru()->resetMonitoringCounters();
-  stateMachine.ruInput()->resetMonitoringCounters();
+  stateMachine.dummyFEROL()->resetMonitoringCounters();
 }
 
 
-void evb::ru::Enabled::entryAction()
+void evb::test::dummyFEROL::Enabled::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.ru()->startProcessing();
-  stateMachine.ruInput()->acceptI2Omessages(true);
+  stateMachine.dummyFEROL()->startProcessing();
 }
 
 
-void evb::ru::Enabled::exitAction()
+void evb::test::dummyFEROL::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.ruInput()->acceptI2Omessages(false);
-  stateMachine.ru()->stopProcessing();
+  stateMachine.dummyFEROL()->stopProcessing();
 }
 
 
