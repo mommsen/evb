@@ -219,6 +219,8 @@ namespace evb {
       xdata::UnsignedInteger32 nbEvtsBuilt_;
       xdata::Double rate_;
       xdata::Double bandwidth_;
+      xdata::Double eventSize_;
+      xdata::Double eventSizeStdDev_;
       
     }; // EventTable
     

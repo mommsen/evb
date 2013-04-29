@@ -222,6 +222,7 @@ void evb::RU::printHtml(xgi::Output *out)
     const int originalPrecision=out->precision();
     out->setf(std::ios::fixed);
     out->precision(2);
+    *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
     *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;

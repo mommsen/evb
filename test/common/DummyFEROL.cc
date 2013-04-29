@@ -44,7 +44,6 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   playbackDataFile_ = "";  
   frameSize_ = 0x40000;
   fragmentFIFOCapacity_ = 32;
-  i2oDataReadyCount_ = 0;
 
   dummyFerolParams_.add("destinationClass", &destinationClass_);
   dummyFerolParams_.add("destinationInstance", &destinationInstance_);
@@ -59,7 +58,6 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   stateMachine_->appendConfigurationItems(dummyFerolParams_);
 
   appInfoSpaceParams.add(dummyFerolParams_);
-  appInfoSpaceParams.add("i2oDataReadyCount", &i2oDataReadyCount_, InfoSpaceItems::retrieve);
 }
 
 
@@ -68,9 +66,17 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
-  i2oDataReadyCount_ = 0;
+  bandwidth_ = 0;
+  frameRate_ = 0;
+  fragmentRate_ = 0;
+  fragmentSize_ = 0;
+  fragmentSizeStdDev_ = 0;
   
-  monitoringParams.add("i2oDataReadyCount", &i2oDataReadyCount_);
+  monitoringParams.add("bandwidth", &bandwidth_);
+  monitoringParams.add("frameRate", &frameRate_);
+  monitoringParams.add("fragmentRate", &fragmentRate_);
+  monitoringParams.add("fragmentSize", &fragmentSize_);
+  monitoringParams.add("fragmentSizeStdDev", &fragmentSizeStdDev_);
   
   stateMachine_->appendMonitoringItems(monitoringParams);
 }
@@ -78,31 +84,14 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
 
 void evb::test::DummyFEROL::do_updateMonitoringInfo()
 {
-  boost::mutex::scoped_lock sl(performanceMonitorMutex_);
-  
-  PerformanceMonitor intervalEnd;
-  getPerformance(intervalEnd);
-  delta_ = intervalEnd - intervalStart_;
-  intervalStart_ = intervalEnd;
-
-  i2oDataReadyCount_ = intervalEnd.N;
+  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  bandwidth_ = dataMonitoring_.bandwidth();
+  frameRate_ = dataMonitoring_.i2oRate();
+  fragmentRate_ = dataMonitoring_.logicalRate();
+  fragmentSize_ = dataMonitoring_.size();
+  fragmentSizeStdDev_ = dataMonitoring_.sizeStdDev();
 }
 
-
-void evb::test::DummyFEROL::do_handleItemRetrieveEvent(const std::string& item)
-{
-  if (item == "i2oDataReadyCount")
-  {
-    try
-    {
-      i2oDataReadyCount_.setValue( *(monitoringInfoSpace_->find("i2oDataReadyCount")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      i2oDataReadyCount_ = 0;
-    }
-  }
-}
 
 void evb::test::DummyFEROL::bindNonDefaultXgiCallbacks()
 {
@@ -131,75 +120,29 @@ void evb::test::DummyFEROL::do_defaultWebPage
 
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last evt number to RU</td>"                        << std::endl;
-    *out << "<td>" << dataMonitoring_.lastEventNumberToRU << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Sent to RU</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (MB)</td>"                                 << std::endl;
-    *out << "<td>" << dataMonitoring_.payload / 0x100000<< "</td>"  << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>message count</td>"                                << std::endl;
-    *out << "<td>" << dataMonitoring_.msgCount << "</td>"           << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
-  
-  *out << "<tr><td>&nbsp;</td><td>&nbsp;</td></tr>"                 << std::endl;
-  
-  {
-    boost::mutex::scoped_lock sl(performanceMonitorMutex_);
     
     const std::_Ios_Fmtflags originalFlags=out->flags();
     const int originalPrecision=out->precision();
-    out->precision(3);
     out->setf(std::ios::fixed);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>deltaT (s)</td>"                                   << std::endl;
-    *out << "<td>" << delta_.seconds << "</td>"                     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
     out->precision(2);
+    *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? static_cast<double>(delta_.sumOfSizes)/0x100000/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
+    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
-    *out << "<td>rate (frame/s)</td>"                              << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.N/delta_.seconds : 0)
-      << "</td>"                                                    << std::endl;
+    *out << "<td>rate (frame/s)</td>"                               << std::endl;
+    *out << "<td>" << frameRate_ << "</td>"                         << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>rate (fragments/s)</td>"                           << std::endl;
-    *out << "<td>" << 
-      (delta_.seconds>0 ? delta_.N/delta_.seconds*(frameSize_/(fedSize_+16)) : 0)
-      << "</td>"                                                    << std::endl;
+    *out << "<td>" << fragmentRate_ << "</td>"                      << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>frame size (kB)</td>"                           << std::endl;
-    *out << "<td>";
-    if ( delta_.N>0 )
-    {
-      const double meanOfSquares =  static_cast<double>(delta_.sumOfSquares)/delta_.N;
-      const double mean = static_cast<double>(delta_.sumOfSizes)/delta_.N;
-      const double variance = meanOfSquares - (mean*mean);
-      // Variance maybe negative due to lack of precision
-      const double rms = variance > 0 ? std::sqrt(variance) : 0;
-      *out << mean/0x400 << " +/- " << rms/0x400;
-    }
-    else
-    {
-      *out << "n/a";
-    }
-    *out << "</td>"                                                 << std::endl;
+    *out << "<td>frame size (kB)</td>"                              << std::endl;
+    *out << "<td>" << fragmentSize_ << " +/- " << fragmentSizeStdDev_ << "</td>" << std::endl;;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -249,24 +192,10 @@ void evb::test::DummyFEROL::fragmentFIFOWebPage
 }
 
 
-void evb::test::DummyFEROL::getPerformance(PerformanceMonitor& performanceMonitor)
-{
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-
-  performanceMonitor.N = dataMonitoring_.msgCount;
-  performanceMonitor.sumOfSizes = dataMonitoring_.payload;
-  performanceMonitor.sumOfSquares = dataMonitoring_.payloadSquared;
-}
-
-
 void evb::test::DummyFEROL::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-  
-  dataMonitoring_.lastEventNumberToRU = 0;
-  dataMonitoring_.msgCount = 0;
-  dataMonitoring_.payload = 0;
-  dataMonitoring_.payloadSquared = 0;
+  dataMonitoring_.reset();
 }
 
 
@@ -461,9 +390,9 @@ inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRe
   
   const uint32_t payload = bufRef->getDataSize();
   
-  ++dataMonitoring_.msgCount;
-  dataMonitoring_.payload += payload;
-  dataMonitoring_.payloadSquared += payload*payload;
+  ++dataMonitoring_.i2oCount;
+  dataMonitoring_.sumOfSizes += payload;
+  dataMonitoring_.sumOfSquares += payload*payload;
 }
 
  

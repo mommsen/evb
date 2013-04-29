@@ -77,9 +77,7 @@ namespace evb {
       virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
       virtual void do_updateMonitoringInfo();
-    
-      virtual void do_handleItemRetrieveEvent(const std::string& item);
-    
+
       virtual void bindNonDefaultXgiCallbacks();
       virtual void do_defaultWebPage(xgi::Output*);
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
@@ -108,19 +106,14 @@ namespace evb {
 
       FragmentGenerator fragmentGenerator_;
       
-      struct DataMonitoring
-      {
-        uint64_t msgCount;
-        uint64_t payload;
-        uint64_t payloadSquared;
-        uint32_t lastEventNumberToRU;
-      } dataMonitoring_;
+      PerformanceMonitor dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
       
-      PerformanceMonitor intervalStart_;
-      PerformanceMonitor delta_;
-      mutable boost::mutex performanceMonitorMutex_;
-      xdata::UnsignedInteger64 i2oDataReadyCount_;
+      xdata::Double bandwidth_;
+      xdata::Double frameRate_;
+      xdata::Double fragmentRate_;
+      xdata::Double fragmentSize_;
+      xdata::Double fragmentSizeStdDev_;
       
       InfoSpaceItems dummyFerolParams_;
       xdata::String destinationClass_;

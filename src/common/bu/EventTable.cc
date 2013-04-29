@@ -357,6 +357,8 @@ void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
   nbEvtsBuilt_ = 0;
   rate_ = 0;
   bandwidth_ = 0;
+  eventSize_ = 0;
+  eventSizeStdDev_ = 0;
   
   items.add("nbEvtsUnderConstruction", &nbEvtsUnderConstruction_);
   items.add("nbEvtsReady", &nbEvtsReady_);
@@ -364,6 +366,8 @@ void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbEvtsBuilt", &nbEvtsBuilt_);
   items.add("rate", &rate_);
   items.add("bandwidth", &bandwidth_);
+  items.add("eventSize", &eventSize_);
+  items.add("eventSizeStdDev", &eventSizeStdDev_);
 }
 
 
@@ -376,6 +380,8 @@ void evb::bu::EventTable::updateMonitoringItems()
   nbEvtsBuilt_ = eventMonitoring_.perf.logicalCount;
   rate_ = eventMonitoring_.perf.logicalRate();
   bandwidth_ = eventMonitoring_.perf.bandwidth();
+  eventSize_ = eventMonitoring_.perf.size();
+  eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
   
   nbEvtsReady_ = completeEventsFIFO_.elements();
 }
@@ -442,28 +448,21 @@ void evb::bu::EventTable::printMonitoringInformation(xgi::Output *out)
   
   const std::_Ios_Fmtflags originalFlags=out->flags();
   const int originalPrecision=out->precision();
-  out->precision(3);
   out->setf(std::ios::fixed);
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>deltaT (s)</td>"                                   << std::endl;
-  *out << "<td>" << eventMonitoring_.perf.deltaT() << "</td>"     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
   out->precision(2);
   *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-  *out << "<td>" << eventMonitoring_.perf.bandwidth() / 0x100000 << "</td>" << std::endl;
+  *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   out->setf(std::ios::scientific);
   *out << "<td>rate (events/s)</td>"                              << std::endl;
-  *out << "<td>" << eventMonitoring_.perf.logicalRate() << "</td>" << std::endl;
+  *out << "<td>" << rate_ << "</td>"                              << std::endl;
   *out << "</tr>"                                                 << std::endl;
   out->unsetf(std::ios::scientific);
   out->precision(1);
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td>fragment size (kB)</td>"                           << std::endl;
-  *out << "<td>" << eventMonitoring_.perf.size() << " +/- " <<
-    eventMonitoring_.perf.sizeStdDev() << "</td>"                 << std::endl;
+  *out << "<td>event size (kB)</td>"                              << std::endl;
+  *out << "<td>" << eventSize_ << " +/- " << eventSizeStdDev_ << "</td>" << std::endl;
   *out << "</tr>"                                                 << std::endl;
   out->flags(originalFlags);
   out->precision(originalPrecision);
