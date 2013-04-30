@@ -112,8 +112,9 @@ void evb::ru::Input::configure()
 {
   InputHandler::Configuration conf;
   conf.dropInputData = dropInputData_.value_;
-  conf.dummyFedPayloadSize = dummyFedPayloadSize_.value_;
-  conf.dummyFedPayloadStdDev = dummyFedPayloadStdDev_.value_;
+  conf.dummyFedSize = dummyFedSize_.value_;
+  conf.dummyFedSizeStdDev = dummyFedSizeStdDev_.value_;
+  conf.fragmentPoolSize = fragmentPoolSize_.value_;
   conf.fedSourceIds = fedSourceIds_;
   conf.usePlayback = usePlayback_.value_;
   conf.playbackDataFile = playbackDataFile_.value_;
@@ -135,8 +136,9 @@ void evb::ru::Input::appendConfigurationItems(InfoSpaceItems& params)
   dropInputData_ = false;
   usePlayback_ = false;
   playbackDataFile_ = "";  
-  dummyFedPayloadSize_ = 2048;
-  dummyFedPayloadStdDev_ = 0;
+  dummyFedSize_ = 2048;
+  dummyFedSizeStdDev_ = 0;
+  fragmentPoolSize_ = 1638400;
   
   // Default is 8 FEDs per super-fragment
   // Trigger has FED source id 0, RU0 has 1 to 8, RU1 has 9 to 16, etc.
@@ -155,8 +157,9 @@ void evb::ru::Input::appendConfigurationItems(InfoSpaceItems& params)
   inputParams_.add("dropInputData", &dropInputData_);
   inputParams_.add("usePlayback", &usePlayback_);
   inputParams_.add("playbackDataFile", &playbackDataFile_);
-  inputParams_.add("dummyFedPayloadSize", &dummyFedPayloadSize_);
-  inputParams_.add("dummyFedPayloadStdDev", &dummyFedPayloadStdDev_);
+  inputParams_.add("dummyFedSize", &dummyFedSize_);
+  inputParams_.add("dummyFedSizeStdDev", &dummyFedSizeStdDev_);
+  inputParams_.add("fragmentPoolSize", &fragmentPoolSize_);
   inputParams_.add("fedSourceIds", &fedSourceIds_);
 
   params.add(inputParams_);
@@ -230,9 +233,9 @@ void evb::ru::Input::printHtml(xgi::Output *out)
   *out << "<table style=\"border-collapse:collapse;padding:0px\">"<< std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>FED id</td>"                                       << std::endl;
-  *out << "<td>Last event id</td>"                                << std::endl;
-  *out << "<td>Frag.rate (kHz)</td>"                              << std::endl;
-  *out << "<td>Bandwidth (MB/s)</td>"                             << std::endl;
+  *out << "<td>Last event</td>"                                   << std::endl;
+  *out << "<td>Rate (kHz)</td>"                                   << std::endl;
+  *out << "<td>B/w (MB/s)</td>"                                   << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
   const std::_Ios_Fmtflags originalFlags=out->flags();

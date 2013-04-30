@@ -56,8 +56,6 @@ Sources=\
 	bu/RUbroadcaster.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
-	SuperFragmentGenerator.cc \
-	SuperFragmentTracker.cc \
 	TimerManager.cc \
 	version.cc
 

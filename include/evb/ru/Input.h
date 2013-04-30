@@ -147,8 +147,9 @@ namespace evb {
       xdata::Boolean dropInputData_;
       xdata::Boolean usePlayback_;
       xdata::String playbackDataFile_;
-      xdata::UnsignedInteger32 dummyFedPayloadSize_;
-      xdata::UnsignedInteger32 dummyFedPayloadStdDev_;
+      xdata::UnsignedInteger32 dummyFedSize_;
+      xdata::UnsignedInteger32 dummyFedSizeStdDev_;
+      xdata::UnsignedInteger32 fragmentPoolSize_;
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds_;
       
       xdata::UnsignedInteger32 lastEventNumberFromRUI_;

@@ -1,0 +1,130 @@
+html, body {
+    margin:0px;
+    padding:4px;
+    color:#000;
+    background:#eee;
+}
+.header {
+    margin: 0px auto 0;
+    background:#fff;
+    border: solid 1px #bbb;
+    position:relative;
+    left:-7px;
+    width:101%;
+    text-align:left;
+}
+.icon
+{
+    width:80px;
+    padding-right:22px;
+    text-align:center;
+}
+.icon p
+{
+    margin-top:-10px;
+    font-size:10px;
+    font-weight:bold;
+    color:#bbb;
+}
+.icon a
+{
+    color:#bbb;
+}
+.app_links
+{
+    width:64px;
+    padding-left:32px;
+    font-size:13px;
+    text-align:center;
+    border-style:none;
+}
+.layout {
+    table-layout:fixed;
+    text-align:center;
+    border-collapse:separate;
+    border-style:none;
+    border-spacing:10px;
+    margin:0px;
+    min-width:72em;
+    width:95%;
+}
+.arrow {
+    width:55px;
+}
+.component {
+    vertical-align:top;
+    background:#f7f8f9;
+    border: thin solid #bbb;
+    border-collapse:separate;
+    padding-bottom:20px;
+    position:relative;
+    overflow:hidden;
+    min-width:22em;
+    z-index:5;
+}
+.component p {
+    width:100%;
+    margin:0px;
+    font-weight:bold;
+    text-align:center;
+    color:#FFF;
+    background-color:#66F;
+}
+.component table {
+    border-style:none;
+    padding:4px;
+    width:100%;
+    white-space:nowrap;
+    table-layout:fixed;
+}
+.component td {
+    text-align:right;
+}
+.component td:first-child {
+    text-align:left;
+}
+.queue {
+    margin:0px;
+    margin-top:7px;
+    vertical-align:middle;
+    border-collapse:separate;
+    padding-bottom:0px;
+}
+.queue table {
+    table-layout:fixed;
+    border-collapse:collapse;
+    padding:0px;
+    text-align:center;
+    empty-cells:show;
+    background:#f7f8f9;
+    border: solid 1px #bbb;
+}
+.queue td {
+    text-align:center;
+    overflow:visible;    
+}
+.queuefloat
+{
+    position:absolute;
+    visibility:hidden;
+    min-width:20em;
+    z-index:10;
+}
+.queuedetail table {
+    background:#f7f8f9;
+    border: thin solid #bbb;
+    border-collapse:separate;
+    padding:4px;
+    text-align:left;
+    table-layout:auto;
+    white-space:normal;
+}
+.queuedetail td
+{
+    border: thin solid #bbb;
+    text-align:left;
+}
+.queuedetail th
+{
+    border: thin solid #bbb;
+}

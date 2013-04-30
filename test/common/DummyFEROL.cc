@@ -1,6 +1,7 @@
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
 #include "interface/evb/i2oEVBMsgs.h"
+#include "interface/shared/ferol_header.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/Exception.h"
 #include "evb/version.h"
@@ -90,6 +91,7 @@ void evb::test::DummyFEROL::do_updateMonitoringInfo()
   fragmentRate_ = dataMonitoring_.logicalRate();
   fragmentSize_ = dataMonitoring_.size();
   fragmentSizeStdDev_ = dataMonitoring_.sizeStdDev();
+  dataMonitoring_.reset();
 }
 
 
@@ -141,8 +143,9 @@ void evb::test::DummyFEROL::do_defaultWebPage
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>frame size (kB)</td>"                              << std::endl;
-    *out << "<td>" << fragmentSize_ << " +/- " << fragmentSizeStdDev_ << "</td>" << std::endl;;
+    *out << "<td>FED size (kB)</td>"                                << std::endl;
+    *out << "<td>" << fragmentSize_ / 0x400 << " +/- "
+      << fragmentSizeStdDev_ / 0x400 << "</td>"                     << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -391,6 +394,7 @@ inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRe
   const uint32_t payload = bufRef->getDataSize();
   
   ++dataMonitoring_.i2oCount;
+  dataMonitoring_.logicalCount += frameSize_/(fedSize_+sizeof(ferolh_t));
   dataMonitoring_.sumOfSizes += payload;
   dataMonitoring_.sumOfSquares += payload*payload;
 }

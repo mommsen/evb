@@ -9,6 +9,7 @@
 
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
+#include "evb/FragmentTracker.h"
 #include "evb/ru/SuperFragment.h"
 #include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
@@ -41,7 +42,7 @@ namespace evb {
        * Otherwise, the SuperFragmentPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr) = 0;
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr&) = 0;
       
       /**
        * Get the complete super fragment with EvBid.
@@ -49,7 +50,7 @@ namespace evb {
        * Otherwise, the SuperFragmentPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr) = 0;
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&) = 0;
  
       /**
        * Configure
@@ -57,8 +58,9 @@ namespace evb {
       struct Configuration
       {
         bool dropInputData;
-        uint32_t dummyFedPayloadSize;
-        uint32_t dummyFedPayloadStdDev;
+        uint32_t dummyFedSize;
+        uint32_t dummyFedSizeStdDev;
+        uint32_t fragmentPoolSize;
         xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
         bool usePlayback;
         std::string playbackDataFile;
@@ -82,8 +84,9 @@ namespace evb {
       virtual ~FEROLproxy() {};
       
       virtual void dataReadyCallback(toolbox::mem::Reference*);
-      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr);
-      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr&);
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&);
+      virtual void configure(const Configuration&);
       virtual void clear();
       
     private:
@@ -95,11 +98,14 @@ namespace evb {
       SuperFragment::FEDlist fedList_;
       typedef std::map<EvBid,SuperFragmentPtr> SuperFragmentMap;
       SuperFragmentMap superFragmentMap_;
-      toolbox::mem::Pool* superFragmentPool_;
+      boost::mutex superFragmentMapMutex_;
       
       typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
       EvBidFactories evbIdFactories_;
       
+      bool dropInputData_;
+
+      uint32_t nbSuperFragmentsReady_;
     };
     
     
@@ -111,11 +117,19 @@ namespace evb {
       virtual ~DummyInputData() {};
 
       virtual void dataReadyCallback(toolbox::mem::Reference*);
-      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr);
-      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
+      virtual bool getNextAvailableSuperFragment(SuperFragmentPtr&);
+      virtual bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&);
+      virtual void configure(const Configuration&);
       virtual void clear();
       
     private:
+
+      SuperFragment::FEDlist fedList_;
+      EvBidFactory evbIdFactory_;
+      typedef std::map<uint16_t,FragmentTracker> FragmentTrackers;
+      FragmentTrackers fragmentTrackers_;
+      toolbox::mem::Pool* fragmentPool_;
+      uint32_t eventNumber_;
       
     };
     

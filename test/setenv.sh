@@ -12,7 +12,7 @@ export XDAQ_PLATFORM=$XDAQ_PLATFORM"_"$checkos
 #export XDAQ_LOCAL=${XDAQ_ROOT}
 export XDAQ_LOCAL=${HOME}/daq/dev/${XDAQ_PLATFORM}
 #export XDAQ_DOCUMENT_ROOT=${XDAQ_ROOT}/htdocs
-export XDAQ_DOCUMENT_ROOT=${HOME}/daq
+export XDAQ_DOCUMENT_ROOT=${HOME}/daq/dev/daq
 export LD_LIBRARY_PATH=${XDAQ_LOCAL}/lib:${XDAQ_ROOT}/lib:${LD_LIBRARY_PATH}
 export PATH=${PATH}:${XDAQ_LOCAL}/bin:${XDAQ_ROOT}/bin
 

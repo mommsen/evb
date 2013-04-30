@@ -34,14 +34,12 @@ bool evb::ru::SuperFragment::append
   else
     head_ = bufRef;
   
-  toolbox::mem::Reference* nextBufRef = bufRef;
-  while (nextBufRef)
-  {
-    tail_ = nextBufRef;
-    size_ += nextBufRef->getDataSize() - sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-    nextBufRef = bufRef->getNextReference();
-  }
-
+  do {
+    tail_ = bufRef;
+    size_ += bufRef->getDataSize() - sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+    bufRef = bufRef->getNextReference();
+  } while (bufRef);
+  
   return true;
 }
 

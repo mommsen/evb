@@ -61,15 +61,15 @@ namespace evb {
     
     double size()
     {
-      return ( logicalCount>0 ? sumOfSizes/logicalCount : 0 );
+      return ( logicalCount>0 ? static_cast<double>(sumOfSizes)/logicalCount : 0 );
     }
     
     double sizeStdDev()
     {
       if ( logicalCount == 0 ) return 0;
 
-      const double meanOfSquares = sumOfSquares/logicalCount;
-      const double mean = sumOfSizes/logicalCount;
+      const double meanOfSquares = static_cast<double>(sumOfSquares)/logicalCount;
+      const double mean = static_cast<double>(sumOfSizes)/logicalCount;
       const double variance = meanOfSquares - (mean*mean);
 
       return ( variance>0 ? sqrt(variance) : 0 );

@@ -67,30 +67,25 @@ void evb::FragmentGenerator::configure
   fedSize_ = fedSize;
   usePlayback_ = usePlayback;
 
+  toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
   {
-    toolbox::net::URN urn("toolbox-mem-pool", "udapl");
-    fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
+    toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
   }
   catch (toolbox::mem::exception::MemoryPoolNotFound)
   {
-    toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
-    try
-    {
-      toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
-    }
-    catch (toolbox::mem::exception::MemoryPoolNotFound)
-    {
-      // don't care
-    }
-    
+    // don't care
+  }
+  
+  try
+  {
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(fragmentPoolSize);
     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
   }
   catch (toolbox::mem::exception::Exception e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for dummy super-fragments.", e);
+      "Failed to create memory pool for dummy fragments.", e);
   }
   
   fragmentTracker_.reset( 
@@ -187,7 +182,7 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
       remainingFedSize -= length;
       frame += sizeof(ferolh_t);
       
-      const size_t filledBytes = fragmentTracker_->fillData((unsigned char*)frame, length);
+      const size_t filledBytes = fragmentTracker_->fillData(frame, length);
       //const size_t filledBytes = length;
       
       ferolHeader->set_data_length(filledBytes);
