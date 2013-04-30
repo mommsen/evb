@@ -416,44 +416,6 @@ void evb::ru::BUproxy::configure()
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);
   }
-  
-  getBuInstances();
-}
-
-
-void evb::ru::BUproxy::getBuInstances()
-{
-  boost::mutex::scoped_lock sl(buInstancesMutex_);
-
-  std::set<xdaq::ApplicationDescriptor*> buDescriptors;
-
-  try
-  {
-    buDescriptors =
-      ru_->getApplicationContext()->
-      getDefaultZone()->
-      getApplicationDescriptors("evb::bu::Application");
-  }
-  catch(xcept::Exception &e)
-  {
-    XCEPT_RETHROW(exception::Configuration,
-      "Failed to get BU application descriptors", e);
-  }
-
-  // if ( buDescriptors.empty() )
-  // {
-  //   XCEPT_RAISE(exception::Configuration,
-  //     "There must be at least one BU descriptor");
-  // }
-
-  buInstances_.clear();
-  
-  for (std::set<xdaq::ApplicationDescriptor*>::const_iterator
-         it=buDescriptors.begin(), itEnd =buDescriptors.end();
-       it != itEnd; ++it)
-  {
-    buInstances_.insert((*it)->getInstance());
-  }
 }
 
 
@@ -524,30 +486,21 @@ void evb::ru::BUproxy::updateMonitoringItems()
 
 void evb::ru::BUproxy::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
-  boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
 
-  requestMonitoring_.payload = 0;
-  requestMonitoring_.logicalCount = 0;
-  requestMonitoring_.i2oCount = 0;
-  requestMonitoring_.logicalCountPerBU.clear();
-  
-  dataMonitoring_.lastEventNumberToBUs = 0;
-  dataMonitoring_.payload = 0;
-  dataMonitoring_.logicalCount = 0;
-  dataMonitoring_.i2oCount = 0;
-  dataMonitoring_.payloadPerBU.clear();
-
-  boost::mutex::scoped_lock sl(buInstancesMutex_);
-    
-  BUInstances::const_iterator it, itEnd;
-  for (it=buInstances_.begin(), itEnd = buInstances_.end();
-       it != itEnd; ++it)
   {
-    const uint32_t buInstance = *it;
-
-    requestMonitoring_.logicalCountPerBU[buInstance] = 0;
-    dataMonitoring_.payloadPerBU[buInstance] = 0;
+    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    requestMonitoring_.payload = 0;
+    requestMonitoring_.logicalCount = 0;
+    requestMonitoring_.i2oCount = 0;
+    requestMonitoring_.logicalCountPerBU.clear();
+  }
+  {
+    boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+    dataMonitoring_.lastEventNumberToBUs = 0;
+    dataMonitoring_.payload = 0;
+    dataMonitoring_.logicalCount = 0;
+    dataMonitoring_.i2oCount = 0;
+    dataMonitoring_.payloadPerBU.clear();
   }
 }
 
@@ -627,14 +580,12 @@ void evb::ru::BUproxy::printHtml(xgi::Output *out)
   *out << "<td>Nb requests</td>"                                  << std::endl;
   *out << "<td>Data payload (MB)</td>"                            << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
-  boost::mutex::scoped_lock sl(buInstancesMutex_);
     
-  BUInstances::const_iterator it, itEnd;
-  for (it=buInstances_.begin(), itEnd = buInstances_.end();
+  CountsPerBU::const_iterator it, itEnd;
+  for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
        it != itEnd; ++it)
   {
-    const uint32_t buInstance = *it;
+    const uint32_t buInstance = it->first;
 
     *out << "<tr>"                                                << std::endl;
     *out << "<td>BU_" << buInstance << "</td>"                    << std::endl;

@@ -136,7 +136,6 @@ namespace evb {
       typedef std::vector<SuperFragmentPtr> SuperFragments;
       
       void startProcessingWorkLoop();
-      void getBuInstances();
       void updateRequestCounters(const msg::RqstForFragmentsMsg*);
       bool processSuperFragments(toolbox::task::WorkLoop*);
       bool processTriggers(toolbox::task::WorkLoop*);
@@ -165,10 +164,6 @@ namespace evb {
 
       typedef OneToOneQueue<Request> RequestFIFO;
       RequestFIFO requestFIFO_;
-      
-      typedef std::set<uint32_t> BUInstances;
-      BUInstances buInstances_;
-      boost::mutex buInstancesMutex_;
       
       InfoSpaceItems buParams_;
       typedef std::map<uint32_t,uint64_t> CountsPerBU;
