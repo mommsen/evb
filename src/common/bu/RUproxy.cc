@@ -18,7 +18,7 @@ evb::bu::RUproxy::RUproxy
   toolbox::mem::Pool* fastCtrlMsgPool
 ) :
 RUbroadcaster(app,fastCtrlMsgPool),
-blockFIFO_("blockFIFO")
+fragmentFIFO_("fragmentFIFO")
 {
   resetMonitoringCounters();
 }
@@ -28,16 +28,16 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
   while (bufRef)
   {
-    updateBlockCounters(bufRef);
-    while ( ! blockFIFO_.enq(bufRef) ) { ::usleep(1000); }
+    updateFragmentCounters(bufRef);
+    while ( ! fragmentFIFO_.enq(bufRef) ) { ::usleep(1000); }
     bufRef = bufRef->getNextReference();
   }
 }
 
 
-void evb::bu::RUproxy::updateBlockCounters(toolbox::mem::Reference* bufRef)
+void evb::bu::RUproxy::updateFragmentCounters(toolbox::mem::Reference* bufRef)
 {
-  boost::mutex::scoped_lock sl(blockMonitoringMutex_);
+  boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
   
   const I2O_MESSAGE_FRAME* stdMsg =
     (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -47,14 +47,13 @@ void evb::bu::RUproxy::updateBlockCounters(toolbox::mem::Reference* bufRef)
     (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
   const uint32_t ruTid = stdMsg->InitiatorAddress;
 
-  //blockMonitoring_.lastEventNumberFromRUs = superFragment->evbId.eventNumber();
-  blockMonitoring_.payload += payload;
-  blockMonitoring_.payloadPerRU[ruTid] += payload;
-  ++blockMonitoring_.i2oCount;
+  fragmentMonitoring_.payload += payload;
+  fragmentMonitoring_.payloadPerRU[ruTid] += payload;
+  ++fragmentMonitoring_.i2oCount;
   if ( superFragmentMsg->blockNb == superFragmentMsg->nbBlocks )
   {
-    ++blockMonitoring_.logicalCount;
-    ++blockMonitoring_.logicalCountPerRU[ruTid];
+    ++fragmentMonitoring_.logicalCount;
+    ++fragmentMonitoring_.logicalCountPerRU[ruTid];
   }
 }
 
@@ -64,7 +63,7 @@ bool evb::bu::RUproxy::getData
   toolbox::mem::Reference*& bufRef
 )
 {
-  return blockFIFO_.deq(bufRef);
+  return fragmentFIFO_.deq(bufRef);
 }
 
 
@@ -153,10 +152,10 @@ void evb::bu::RUproxy::requestFragments
 
 void evb::bu::RUproxy::appendConfigurationItems(InfoSpaceItems& params)
 {
-  blockFIFOCapacity_ = 16384;
+  fragmentFIFOCapacity_ = 16384;
   
   ruParams_.clear();
-  ruParams_.add("blockFIFOCapacity", &blockFIFOCapacity_);
+  ruParams_.add("fragmentFIFOCapacity", &fragmentFIFOCapacity_);
   
   initRuInstances(ruParams_);
   
@@ -166,11 +165,9 @@ void evb::bu::RUproxy::appendConfigurationItems(InfoSpaceItems& params)
 
 void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 {
-  lastEventNumberFromRUs_ = 0;
   i2oBUCacheCount_ = 0;
   i2oRUSendCount_ = 0;
 
-  items.add("lastEventNumberFromRUs", &lastEventNumberFromRUs_);
   items.add("i2oBUCacheCount", &i2oBUCacheCount_);
   items.add("i2oRUSendCount", &i2oRUSendCount_);
 }
@@ -183,9 +180,8 @@ void evb::bu::RUproxy::updateMonitoringItems()
     i2oRUSendCount_ = fragmentRequestMonitoring_.logicalCount;
   }
   {
-    boost::mutex::scoped_lock sl(blockMonitoringMutex_);
-    lastEventNumberFromRUs_ = blockMonitoring_.lastEventNumberFromRUs;
-    i2oBUCacheCount_ = blockMonitoring_.logicalCount;
+    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    i2oBUCacheCount_ = fragmentMonitoring_.logicalCount;
   }
 }
 
@@ -205,13 +201,12 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     fragmentRequestMonitoring_.i2oCount = 0;
   }
   {
-    boost::mutex::scoped_lock sl(blockMonitoringMutex_);
-    blockMonitoring_.payload = 0;
-    blockMonitoring_.logicalCount = 0;
-    blockMonitoring_.i2oCount = 0;
-    blockMonitoring_.lastEventNumberFromRUs = 0;
-    blockMonitoring_.logicalCountPerRU.clear();
-    blockMonitoring_.payloadPerRU.clear();
+    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    fragmentMonitoring_.payload = 0;
+    fragmentMonitoring_.logicalCount = 0;
+    fragmentMonitoring_.i2oCount = 0;
+    fragmentMonitoring_.logicalCountPerRU.clear();
+    fragmentMonitoring_.payloadPerRU.clear();
   }
 }
 
@@ -220,14 +215,14 @@ void evb::bu::RUproxy::configure()
 {
   clear();
 
-  blockFIFO_.resize(blockFIFOCapacity_);
+  fragmentFIFO_.resize(fragmentFIFOCapacity_);
 }
 
 
 void evb::bu::RUproxy::clear()
 {
   toolbox::mem::Reference* bufRef;
-  while ( blockFIFO_.deq(bufRef) ) { bufRef->release(); }
+  while ( fragmentFIFO_.deq(bufRef) ) { bufRef->release(); }
 }
 
 
@@ -239,13 +234,6 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  {
-    boost::mutex::scoped_lock sl(blockMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last evt number from RUs</td>"                     << std::endl;
-    *out << "<td>" << blockMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
   {
     boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
@@ -283,34 +271,34 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
   }
   {
-    boost::mutex::scoped_lock sl(blockMonitoringMutex_);
+    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td colspan=\"2\" style=\"text-align:center\">Event data</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (MB)</td>"                                 << std::endl;
-    *out << "<td>" << blockMonitoring_.payload / 0x100000 << "</td>"<< std::endl;
+    *out << "<td>" << fragmentMonitoring_.payload / 0x100000 << "</td>"<< std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << blockMonitoring_.logicalCount << "</td>"      << std::endl;
+    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"      << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << blockMonitoring_.i2oCount << "</td>"          << std::endl;
+    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"          << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  blockFIFO_.printHtml(out, app_->getApplicationDescriptor()->getURN());
+  fragmentFIFO_.printHtml(out, app_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
   ruParams_.printHtml("Configuration", out);
 
   {
-    boost::mutex::scoped_lock sl(blockMonitoringMutex_);
+    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per RU</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
@@ -324,14 +312,14 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
 
     CountsPerRU::const_iterator it, itEnd;
-    for (it=blockMonitoring_.logicalCountPerRU.begin(),
-           itEnd = blockMonitoring_.logicalCountPerRU.end();
+    for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
+           itEnd = fragmentMonitoring_.logicalCountPerRU.end();
          it != itEnd; ++it)
     {
       *out << "<tr>"                                                << std::endl;
       *out << "<td>RU_" << it->first << "</td>"                     << std::endl;
       *out << "<td>" << it->second << "</td>"                       << std::endl;
-      *out << "<td>" << blockMonitoring_.payloadPerRU[it->first] / 0x100000 << "</td>" << std::endl;
+      *out << "<td>" << fragmentMonitoring_.payloadPerRU[it->first] / 0x100000 << "</td>" << std::endl;
       *out << "</tr>"                                               << std::endl;
     }
     *out << "</table>"                                              << std::endl;

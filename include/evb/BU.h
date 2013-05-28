@@ -70,6 +70,7 @@ namespace evb {
     virtual void do_defaultWebPage(xgi::Output*);
     void printHtml(xgi::Output*);
     
+    void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockFIFOWebPage(xgi::Input*, xgi::Output*);
     void eventFIFOWebPage(xgi::Input*, xgi::Output*);
     void eolsFIFOWebPage(xgi::Input*, xgi::Output*);

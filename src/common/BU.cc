@@ -177,6 +177,13 @@ void evb::BU::bindNonDefaultXgiCallbacks()
   xgi::bind
     (
       this,
+      &evb::BU::fragmentFIFOWebPage,
+      "fragmentFIFO"
+    );
+  
+  xgi::bind
+    (
+      this,
       &evb::BU::blockFIFOWebPage,
       "blockFIFO"
     );
@@ -237,7 +244,7 @@ void evb::BU::printHtml(xgi::Output *out)
   
   eventTable_->printMonitoringInformation(out);
 
-  eventTable_->printQueueInformation(out);
+  eventTable_->printBlockFIFO(out);
   
   eventTable_->printConfiguration(out);
   *out << "<tr>"                                                  << std::endl;
@@ -308,6 +315,35 @@ void evb::BU::eolsFIFOWebPage
 }
 
 
+void evb::BU::fragmentFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "fragmentFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  ruProxy_->printFragmentFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+ 
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
 void evb::BU::blockFIFOWebPage
 (
   xgi::Input  *in,
@@ -326,7 +362,7 @@ void evb::BU::blockFIFOWebPage
   
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
-  ruProxy_->printBlockFIFO(out);
+  eventTable_->printBlockFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   

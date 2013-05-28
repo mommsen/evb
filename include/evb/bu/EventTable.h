@@ -126,9 +126,10 @@ namespace evb {
       void printMonitoringInformation(xgi::Output*);
       
       /**
-       * Print the queue summary as HTML snipped
+       * Print the block FIFO as HTML snipped
        */
-      void printQueueInformation(xgi::Output*);
+      inline void printBlockFIFO(xgi::Output* out)
+      { blockFIFO_.printVerticalHtml(out); }
       
       /**
        * Print the configuration information as HTML snipped

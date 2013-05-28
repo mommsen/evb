@@ -337,16 +337,6 @@ void evb::bu::EventTable::printMonitoringInformation(xgi::Output *out)
 }
 
 
-void evb::bu::EventTable::printQueueInformation(xgi::Output *out)
-{
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  blockFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-}
-
-
 /// emacs configuration
 /// Local Variables: -
 /// mode: c++ -

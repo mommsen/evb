@@ -44,7 +44,7 @@ namespace evb { namespace bu { // namespace evb::bu
     void superFragmentCallback(toolbox::mem::Reference*);
     
     /**
-     * Fill the next available data block
+     * Fill the next available data fragment
      * into the passed buffer reference.
      * Return false if no data is available
      */
@@ -102,30 +102,29 @@ namespace evb { namespace bu { // namespace evb::bu
     void printHtml(xgi::Output*);
 
     /**
-     * Print the content of the data block FIFO as HTML snipped
+     * Print the content of the fragment FIFO as HTML snipped
      */
-    inline void printBlockFIFO(xgi::Output* out)
-    { blockFIFO_.printVerticalHtml(out); }
+    inline void printFragmentFIFO(xgi::Output* out)
+    { fragmentFIFO_.printVerticalHtml(out); }
     
     
   private:
     
-    void updateBlockCounters(toolbox::mem::Reference*);
+    void updateFragmentCounters(toolbox::mem::Reference*);
 
-    typedef OneToOneQueue<toolbox::mem::Reference*> BlockFIFO;
-    BlockFIFO blockFIFO_;
+    typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
+    FragmentFIFO fragmentFIFO_;
     
     typedef std::map<uint32_t,uint64_t> CountsPerRU;
-    struct BlockMonitoring
+    struct FragmentMonitoring
     {
       uint64_t logicalCount;
       uint64_t payload;
       uint64_t i2oCount;
-      uint32_t lastEventNumberFromRUs;
       CountsPerRU logicalCountPerRU;
       CountsPerRU payloadPerRU;
-    } blockMonitoring_;
-    boost::mutex blockMonitoringMutex_;
+    } fragmentMonitoring_;
+    boost::mutex fragmentMonitoringMutex_;
 
     struct TriggerRequestMonitoring
     {
@@ -144,9 +143,8 @@ namespace evb { namespace bu { // namespace evb::bu
     boost::mutex fragmentRequestMonitoringMutex_;
     
     InfoSpaceItems ruParams_;
-    xdata::UnsignedInteger32 blockFIFOCapacity_;
+    xdata::UnsignedInteger32 fragmentFIFOCapacity_;
 
-    xdata::UnsignedInteger32 lastEventNumberFromRUs_;
     xdata::UnsignedInteger64 i2oBUCacheCount_;
     xdata::UnsignedInteger64 i2oRUSendCount_;
   };
