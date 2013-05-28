@@ -50,20 +50,6 @@ namespace evb {
       );
       
       /**
-       * Start construction of a new event.
-       * The first event fragment must be the trigger block
-       * received from the EVM. The ruCount specifies
-       * the number of RUs supposed to send a super fragment
-       * to make a complete event.
-       */
-      void startConstruction(const uint32_t ruCount, toolbox::mem::Reference*);
-      
-      /**
-       * Appand a super fragment to an event under construction
-       */
-      void appendSuperFragment(toolbox::mem::Reference*);
-      
-      /**
        * Append the info space parameters used for the
        * configuration to the InfoSpaceItems
        */
@@ -121,21 +107,15 @@ namespace evb {
       { requestEvents_ = val; }
       
       /**
-       * Print the monitoring information as HTML snipped
+       * Print monitoring/configuration as HTML snipped
        */
-      void printMonitoringInformation(xgi::Output*);
-      
+      void printHtml(xgi::Output*);
+
       /**
        * Print the block FIFO as HTML snipped
        */
       inline void printBlockFIFO(xgi::Output* out)
       { blockFIFO_.printVerticalHtml(out); }
-      
-      /**
-       * Print the configuration information as HTML snipped
-       */
-      inline void printConfiguration(xgi::Output* out)
-      { tableParams_.printHtml("Configuration", out); }
       
       
     private:

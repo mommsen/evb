@@ -217,7 +217,7 @@ void evb::BU::do_defaultWebPage
   *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
   *out << "</td>"                                               << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;
-  printHtml(out);
+  eventTable_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "<td>"                                                << std::endl;
   *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
@@ -226,34 +226,6 @@ void evb::BU::do_defaultWebPage
   diskWriter_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-}
-
-
-void evb::BU::printHtml(xgi::Output *out)
-{
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>BU</p>"                                             << std::endl;
-  *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  // *out << "<tr>"                                                  << std::endl;
-  // *out << "<td>run number</td>"                                   << std::endl;
-  // *out << "<td>" << runNumber_ << "</td>"                         << std::endl;
-  // *out << "</tr>"                                                 << std::endl;
-  
-  eventTable_->printMonitoringInformation(out);
-
-  eventTable_->printBlockFIFO(out);
-  
-  eventTable_->printConfiguration(out);
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>maxEvtsUnderConstruction</td>"                     << std::endl;
-  *out << "<td>" << stateMachine_->maxEvtsUnderConstruction() << "</td>" << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
 }
 
 

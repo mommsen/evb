@@ -293,47 +293,70 @@ void evb::bu::EventTable::clear()
 }
 
 
-void evb::bu::EventTable::printMonitoringInformation(xgi::Output *out)
+void evb::bu::EventTable::printHtml(xgi::Output *out)
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  *out << "<div>"                                                 << std::endl;
+  *out << "<p>Event Table</p>"                                    << std::endl;
+  *out << "<table>"                                               << std::endl;
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
+  *out << "</tr>"                                                 << std::endl;
+  {
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># events built</td>"                               << std::endl;
+    *out << "<td>" << eventMonitoring_.perf.logicalCount << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># events under construction</td>"                  << std::endl;
+    *out << "<td>" << eventMonitoring_.nbEventsUnderConstruction << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># complete events in BU</td>"                      << std::endl;
+    *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># events dropped</td>"                             << std::endl;
+    *out << "<td>" << eventMonitoring_.nbEventsDropped << "</td>"   << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    
+    const std::_Ios_Fmtflags originalFlags=out->flags();
+    const int originalPrecision=out->precision();
+    out->setf(std::ios::fixed);
+    out->precision(2);
+    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
+    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    out->setf(std::ios::scientific);
+    *out << "<td>rate (events/s)</td>"                              << std::endl;
+    *out << "<td>" << rate_ << "</td>"                              << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    out->unsetf(std::ios::scientific);
+    out->precision(1);
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>event size (kB)</td>"                              << std::endl;
+    *out << "<td>" << eventSize_ << " +/- " << eventSizeStdDev_ << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    out->flags(originalFlags);
+    out->precision(originalPrecision);
+  }
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td># events built</td>"                               << std::endl;
-  *out << "<td>" << eventMonitoring_.perf.logicalCount << "</td>" << std::endl;
+  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  blockFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
+
+  tableParams_.printHtml("Configuration", out);
+
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td># events under construction</td>"                  << std::endl;
-  *out << "<td>" << eventMonitoring_.nbEventsUnderConstruction << "</td>" << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td># complete events in BU</td>"                      << std::endl;
-  *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td># events dropped</td>"                             << std::endl;
-  *out << "<td>" << eventMonitoring_.nbEventsDropped << "</td>"   << std::endl;
+  *out << "<td>maxEvtsUnderConstruction</td>"                     << std::endl;
+  *out << "<td>" << stateMachine_->maxEvtsUnderConstruction() << "</td>" << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
-  out->setf(std::ios::fixed);
-  out->precision(2);
-  *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-  *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  out->setf(std::ios::scientific);
-  *out << "<td>rate (events/s)</td>"                              << std::endl;
-  *out << "<td>" << rate_ << "</td>"                              << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  out->unsetf(std::ios::scientific);
-  out->precision(1);
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>event size (kB)</td>"                              << std::endl;
-  *out << "<td>" << eventSize_ << " +/- " << eventSizeStdDev_ << "</td>" << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  out->flags(originalFlags);
-  out->precision(originalPrecision);
+  *out << "</table>"                                              << std::endl;
+  *out << "</div>"                                                << std::endl;
 }
 
 
