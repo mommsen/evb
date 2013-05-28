@@ -152,7 +152,7 @@ bool evb::ru::BUproxy::processSuperFragments(toolbox::task::WorkLoop* wl)
       for (uint32_t i=0; i < request.nbRequests; ++i)
       {
         const EvBid& evbId = request.evbIds.at(i);
-        SuperFragmentPtr superFragment;
+        FragmentChainPtr superFragment;
         
         while ( doProcessing_ && !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
 
@@ -188,7 +188,7 @@ bool evb::ru::BUproxy::processTriggers(toolbox::task::WorkLoop* wl)
       
       uint32_t tries = 0;
       SuperFragments superFragments;
-      SuperFragmentPtr superFragment;
+      FragmentChainPtr superFragment;
       
       while ( doProcessing_ && !input_->getNextAvailableSuperFragment(superFragment) ) ::usleep(1000);
       
@@ -242,8 +242,8 @@ void evb::ru::BUproxy::sendData
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
   
-  unsigned char* payload = (unsigned char*)head->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
-  size_t remainingPayloadSize = blockSize_ - sizeof(msg::SuperFragmentsMsg);
+  unsigned char* payload = (unsigned char*)head->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+  size_t remainingPayloadSize = blockSize_ - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
 
   do
   {
@@ -270,8 +270,8 @@ void evb::ru::BUproxy::sendData
         
         // get a new block
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-        payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::SuperFragmentsMsg);
-        remainingPayloadSize = blockSize_ - sizeof(msg::SuperFragmentsMsg);
+        payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+        remainingPayloadSize = blockSize_ - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
         fillSuperFragmentHeader(payload,remainingPayloadSize,nbSuperFragments,superFragmentNb,*superFragmentIter);
         tail->setNextReference(nextBlock);
         tail = nextBlock;
@@ -298,16 +298,16 @@ void evb::ru::BUproxy::sendData
   {
     I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-    msg::SuperFragmentsMsg* superFragmentsMsg = (msg::SuperFragmentsMsg*)stdMsg;
+    msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
 
-    stdMsg->InitiatorAddress = tid_;
-    stdMsg->TargetAddress    = request.buTid;
-    pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
-    pvtMsg->XFunctionCode    = I2O_BU_CACHE;
-    superFragmentsMsg->buResourceId = request.buResourceId;
-    superFragmentsMsg->nbBlocks = blockNb;
+    stdMsg->InitiatorAddress   = tid_;
+    stdMsg->TargetAddress      = request.buTid;
+    pvtMsg->OrganizationID     = XDAQ_ORGANIZATION_ID;
+    pvtMsg->XFunctionCode      = I2O_BU_CACHE;
+    dataBlockMsg->buResourceId = request.buResourceId;
+    dataBlockMsg->nbBlocks     = blockNb;
 
-    payloadSize += (stdMsg->MessageSize << 2) - sizeof(msg::SuperFragmentsMsg);
+    payloadSize += (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
     ++i2oCount;
 
     bufRef = bufRef->getNextReference();
@@ -370,8 +370,8 @@ toolbox::mem::Reference* evb::ru::BUproxy::getNextBlock
     toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,blockSize_);
   bufRef->setDataSize(blockSize_);
   
-  msg::SuperFragmentsMsg* superFragmentsMsg = (msg::SuperFragmentsMsg*)bufRef->getDataLocation();
-  superFragmentsMsg->blockNb = blockNb;
+  msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+  dataBlockMsg->blockNb = blockNb;
   
   return bufRef;
 }
@@ -383,7 +383,7 @@ void evb::ru::BUproxy::fillSuperFragmentHeader
   size_t& remainingPayloadSize,
   const uint32_t nbSuperFragments,
   const uint32_t superFragmentNb,
-  const SuperFragmentPtr superFragment
+  const FragmentChainPtr superFragment
 ) const
 {
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;

@@ -96,13 +96,13 @@ void evb::ru::Input::dumpFragmentToLogger(toolbox::mem::Reference* bufRef) const
 }
 
 
-bool evb::ru::Input::getNextAvailableSuperFragment(SuperFragmentPtr superFragment)
+bool evb::ru::Input::getNextAvailableSuperFragment(FragmentChainPtr superFragment)
 {
   return handler_->getNextAvailableSuperFragment(superFragment);
 }
 
 
-bool evb::ru::Input::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr superFragment)
+bool evb::ru::Input::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr superFragment)
 {
   return handler_->getSuperFragmentWithEvBid(evbId,superFragment);
 }

@@ -136,20 +136,20 @@ void evb::bu::FileHandler::close()
   }
   catch(xcept::Exception &e)
   {
-    stateMachine_->post_event( Fail(e) );
+    stateMachine_->fail(e);
   }
   catch( std::exception& e )
   {
     msg += ": ";
     msg += e.what();
     XCEPT_DECLARE(exception::DiskWriting, sentinelException, msg);
-    stateMachine_->post_event( Fail(sentinelException) );
+    stateMachine_->fail(sentinelException);
   }
   catch(...)
   {
     msg += ": unknown exception";
     XCEPT_DECLARE(exception::DiskWriting, sentinelException, msg);
-    stateMachine_->post_event( Fail(sentinelException) );
+    stateMachine_->fail(sentinelException);
   }
 }
 

@@ -25,54 +25,6 @@ namespace evb {
     class Outermost;
     
     ///////////////////////
-    // Transition events //
-    ///////////////////////
-    
-    class BuCache : public boost::statechart::event<BuCache> 
-    {
-    public:
-      BuCache(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getCacheMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
-    class BuAllocate : public boost::statechart::event<BuAllocate> 
-    {
-    public:
-      BuAllocate(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getAllocateMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
-    class BuDiscard : public boost::statechart::event<BuDiscard> 
-    {
-    public:
-      BuDiscard(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getDiscardMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
-    class EvmLumisection : public boost::statechart::event<EvmLumisection> 
-    {
-    public:
-      EvmLumisection(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getLumisectionMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
-    ///////////////////////
     // The state machine //
     ///////////////////////
     
@@ -84,20 +36,15 @@ namespace evb {
       
       StateMachine
       (
-        boost::shared_ptr<BU>,
-        boost::shared_ptr<FUproxy>,
+        BU*,
         boost::shared_ptr<RUproxy>,
         boost::shared_ptr<DiskWriter>,
         EventTablePtr
       );
       
-      void buAllocate(toolbox::mem::Reference*);
       void buCache(toolbox::mem::Reference*);
-      void buDiscard(toolbox::mem::Reference*);
-      void evmLumisection(toolbox::mem::Reference*);
       
-      boost::shared_ptr<BU> bu() const { return bu_; }
-      boost::shared_ptr<FUproxy> fuProxy() const { return fuProxy_; }
+      BU* bu() const { return bu_; }
       boost::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }
       boost::shared_ptr<DiskWriter> diskWriter() const { return diskWriter_; }
       EventTablePtr eventTable() const { return eventTable_; }
@@ -110,8 +57,7 @@ namespace evb {
       virtual void do_appendConfigurationItems(InfoSpaceItems&);
       virtual void do_appendMonitoringItems(InfoSpaceItems&);
       
-      boost::shared_ptr<BU> bu_;
-      boost::shared_ptr<FUproxy> fuProxy_;
+      BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
       EventTablePtr eventTable_;

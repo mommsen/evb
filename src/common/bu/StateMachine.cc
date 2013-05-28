@@ -1,7 +1,6 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/FileHandler.h"
-#include "evb/bu/FUproxy.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/EventTable.h"
 #include "evb/bu/StateMachine.h"
@@ -15,15 +14,13 @@
 
 evb::bu::StateMachine::StateMachine
 (
-  boost::shared_ptr<BU> bu,
-  boost::shared_ptr<FUproxy> fuProxy,
+  BU* bu,
   boost::shared_ptr<RUproxy> ruProxy,
   boost::shared_ptr<DiskWriter> diskWriter,
   EventTablePtr eventTable
 ):
-EvBStateMachine(bu.get()),
+EvBStateMachine(bu),
 bu_(bu),
-fuProxy_(fuProxy),
 ruProxy_(ruProxy),
 diskWriter_(diskWriter),
 eventTable_(eventTable)
@@ -50,99 +47,6 @@ void evb::bu::StateMachine::do_appendMonitoringItems(InfoSpaceItems& items)
 }
 
 
-void evb::bu::StateMachine::buCache(toolbox::mem::Reference* bufRef)
-{
-  std::string msg = "Failed to process I2O_BU_CACHE";
-  try
-  {
-    ruProxy_->superFragmentCallback(bufRef);
-  }
-  catch( xcept::Exception& e )
-  {
-    XCEPT_DECLARE_NESTED(exception::I2O,
-      sentinelException, msg, e );
-    process_event( Fail(sentinelException) );
-  }
-  catch( std::exception& e )
-  {
-    msg += ": ";
-    msg += e.what();
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    msg += ": unknown exception";
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-}
-
-
-void evb::bu::StateMachine::buAllocate(toolbox::mem::Reference* bufRef)
-{
-  std::string msg = "Failed to process I2O_BU_ALLOCATE";
-  try
-  {
-    fuProxy_->allocateI2Ocallback(bufRef);
-  }
-  catch( xcept::Exception& e )
-  {
-    XCEPT_DECLARE_NESTED(exception::I2O,
-      sentinelException, msg, e );
-    process_event( Fail(sentinelException) );
-  }
-  catch( std::exception& e )
-  {
-    msg += ": ";
-    msg += e.what();
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    msg += ": unknown exception";
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-}
-
-
-void evb::bu::StateMachine::buDiscard(toolbox::mem::Reference* bufRef)
-{
-  std::string msg = "Failed to process I2O_BU_DISCARD";
-  try
-  {
-    fuProxy_->discardI2Ocallback(bufRef);
-  }
-  catch( xcept::Exception& e )
-  {
-    XCEPT_DECLARE_NESTED(exception::I2O,
-      sentinelException, msg, e );
-    process_event( Fail(sentinelException) );
-  }
-  catch( std::exception& e )
-  {
-    msg += ": ";
-    msg += e.what();
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    msg += ": unknown exception";
-    XCEPT_DECLARE(exception::I2O,
-      sentinelException, msg );
-    process_event( Fail(sentinelException) );
-  }
-}
-
-
 void evb::bu::Configuring::entryAction()
 {
   doConfiguring_ = true;
@@ -160,7 +64,6 @@ void evb::bu::Configuring::activity()
   std::string msg = "Failed to get descriptors of peer applications";
   try
   {
-    if (doConfiguring_) stateMachine.fuProxy()->getApplicationDescriptors();
     if (doConfiguring_) stateMachine.ruProxy()->getApplicationDescriptors();
   }
   catch( xcept::Exception& e )
@@ -193,7 +96,6 @@ void evb::bu::Configuring::activity()
     
     if (doConfiguring_) stateMachine.bu()->configure();
     if (doConfiguring_) stateMachine.ruProxy()->configure();
-    if (doConfiguring_) stateMachine.fuProxy()->configure();
     if (doConfiguring_) stateMachine.diskWriter()->configure(maxEvtsUnderConstruction);
     if (doConfiguring_) stateMachine.eventTable()->configure(maxEvtsUnderConstruction);
     
@@ -249,7 +151,6 @@ void evb::bu::Clearing::activity()
   {
     if (doClearing_) stateMachine.bu()->clear();
     if (doClearing_) stateMachine.ruProxy()->clear();
-    if (doClearing_) stateMachine.fuProxy()->clear();
     if (doClearing_) stateMachine.diskWriter()->clear();
     if (doClearing_) stateMachine.eventTable()->clear();
     
@@ -290,7 +191,6 @@ void evb::bu::Processing::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
 
-  stateMachine.fuProxy()->resetMonitoringCounters();
   stateMachine.ruProxy()->resetMonitoringCounters();
   stateMachine.diskWriter()->resetMonitoringCounters();
   stateMachine.eventTable()->resetMonitoringCounters();
@@ -304,7 +204,6 @@ void evb::bu::Enabled::entryAction()
   const uint32_t runNumber = stateMachine.runNumber();
 
   stateMachine.diskWriter()->startProcessing(runNumber);
-  stateMachine.bu()->startProcessing(runNumber);
   stateMachine.eventTable()->startProcessing();
 }
 
@@ -312,7 +211,6 @@ void evb::bu::Enabled::entryAction()
 void evb::bu::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.bu()->stopProcessing();
   stateMachine.eventTable()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }

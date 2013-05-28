@@ -69,6 +69,7 @@ namespace evb {
     void processSoapEvent(const std::string& event, std::string& newStateName);
     std::string processFSMEvent(const boost::statechart::event_base&);
     void processEvent(const boost::statechart::event_base&);
+    void fail(xcept::Exception&);
     
     void appendConfigurationItems(InfoSpaceItems&);
     void appendMonitoringItems(InfoSpaceItems&);
@@ -298,6 +299,16 @@ void evb::EvBStateMachine<MostDerived,InitialState>::processEvent
 {
   boost::shared_lock<boost::shared_mutex> eventSharedLock(eventMutex_);
   this->process_event(event);
+}
+
+
+template <class MostDerived,class InitialState>
+void evb::EvBStateMachine<MostDerived,InitialState>::fail
+(
+  xcept::Exception& sentinelException
+)
+{
+  this->post_event( Fail(sentinelException) );
 }
 
 

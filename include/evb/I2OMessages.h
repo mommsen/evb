@@ -51,7 +51,7 @@ namespace evb {
       uint32_t blockNb;                          // Index of the this block
       uint32_t padding;
       
-    } SuperFragmentsMsg;
+    } I2O_DATA_BLOCK_MESSAGE_FRAME;
 
     
   } } // namespace evb::msg
@@ -81,7 +81,7 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::SuperFragmentsMsg*
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
 );
 
 

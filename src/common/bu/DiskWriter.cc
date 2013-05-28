@@ -13,10 +13,7 @@
 #include "toolbox/task/WorkLoopFactory.h"
 
 
-evb::bu::DiskWriter::DiskWriter
-(
-  boost::shared_ptr<BU> bu
-) :
+evb::bu::DiskWriter::DiskWriter(BU* bu) :
 bu_(bu),
 buInstance_( bu_->getApplicationDescriptor()->getInstance() ),
 eventFIFO_("eventFIFO"),
@@ -303,7 +300,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
         }
 
         fileHandlerAndEvent->event->writeToDisk(fileHandlerAndEvent->fileHandler);
-        eventTable_->discardEvent( fileHandlerAndEvent->event->buResourceId() );
+        //eventTable_->discardEvent( fileHandlerAndEvent->event->buResourceId() );
 
         boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
         ++diskWriterMonitoring_.nbEventsWritten;

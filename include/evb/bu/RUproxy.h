@@ -46,9 +46,9 @@ namespace evb { namespace bu { // namespace evb::bu
     /**
      * Fill the next available data block
      * into the passed buffer reference.
-     * Return false if no trigger block is available
+     * Return false if no data is available
      */
-    bool getDataBlock(toolbox::mem::Reference*&);
+    bool getData(toolbox::mem::Reference*&);
 
     /**
      * Send request for N trigger data fragments to the RUs

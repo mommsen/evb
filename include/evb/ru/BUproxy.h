@@ -9,11 +9,11 @@
 #include <vector>
 
 #include "evb/EvBid.h"
+#include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/ru/Input.h"
-#include "evb/ru/SuperFragment.h"
 #include "i2o/i2oDdmLib.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Pool.h"
@@ -133,7 +133,7 @@ namespace evb {
       
     private:
       
-      typedef std::vector<SuperFragmentPtr> SuperFragments;
+      typedef std::vector<FragmentChainPtr> SuperFragments;
       
       void startProcessingWorkLoop();
       void updateRequestCounters(const msg::RqstForFragmentsMsg*);
@@ -147,7 +147,7 @@ namespace evb {
         size_t& remainingPayloadSize,
         const uint32_t nbSuperFragments,
         const uint32_t superFragmentNb,
-        const SuperFragmentPtr
+        const FragmentChainPtr
       ) const;
       
       RU* ru_;

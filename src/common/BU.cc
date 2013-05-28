@@ -3,7 +3,6 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/EventTable.h"
-#include "evb/bu/FUproxy.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/EventTable.h"
 #include "evb/bu/StateMachine.h"
@@ -15,28 +14,21 @@
 
 
 evb::BU::BU(xdaq::ApplicationStub *s) :
-EvBApplication<bu::StateMachine>(s,evb::version,"/evb/images/bu64x64.gif"),
-runNumber_(0),
-doProcessing_(false),
-processActive_(false)
+EvBApplication<bu::StateMachine>(s,evb::version,"/evb/images/bu64x64.gif")
 {
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
-  diskWriter_.reset( new bu::DiskWriter(shared_from_this()) );
+  diskWriter_.reset( new bu::DiskWriter(this) );
   ruProxy_.reset( new bu::RUproxy(this, fastCtrlMsgPool) );
-  fuProxy_.reset( new bu::FUproxy(this, fastCtrlMsgPool) );
-  eventTable_.reset( new bu::EventTable(shared_from_this(), diskWriter_, fuProxy_) );
-  stateMachine_.reset( new bu::StateMachine(shared_from_this(),
-      fuProxy_, ruProxy_, diskWriter_, eventTable_) );
+  eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_) );
+  stateMachine_.reset( new bu::StateMachine(this,
+      ruProxy_, diskWriter_, eventTable_) );
 
-  fuProxy_->registerEventTable(eventTable_);
   diskWriter_->registerEventTable(eventTable_);
   diskWriter_->registerStateMachine(stateMachine_);
   eventTable_->registerStateMachine(stateMachine_);
   
   initialize();
-  
-  startProcessingWorkLoop();
   
   LOG4CPLUS_INFO(logger_, "End of constructor");
 }
@@ -62,7 +54,6 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
 
   ruProxy_->appendConfigurationItems(appInfoSpaceParams);
-  fuProxy_->appendConfigurationItems(appInfoSpaceParams);
   diskWriter_->appendConfigurationItems(appInfoSpaceParams);
   eventTable_->appendConfigurationItems(appInfoSpaceParams); 
   stateMachine_->appendConfigurationItems(appInfoSpaceParams);
@@ -75,7 +66,6 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
 )
 {
   ruProxy_->appendMonitoringItems(monitoringParams);
-  fuProxy_->appendMonitoringItems(monitoringParams);
   diskWriter_->appendMonitoringItems(monitoringParams);
   eventTable_->appendMonitoringItems(monitoringParams); 
   stateMachine_->appendMonitoringItems(monitoringParams);
@@ -87,7 +77,6 @@ void evb::BU::do_updateMonitoringInfo()
   diskWriter_->updateMonitoringItems();
   eventTable_->updateMonitoringItems();
   ruProxy_->updateMonitoringItems();
-  fuProxy_->updateMonitoringItems();
 }
 
 
@@ -171,23 +160,6 @@ void evb::BU::bindI2oCallbacks()
       I2O_BU_CACHE,
       XDAQ_ORGANIZATION_ID
     );
-
-  i2o::bind
-    (
-      this,
-      &evb::BU::I2O_BU_ALLOCATE_Callback,
-      I2O_BU_ALLOCATE,
-      XDAQ_ORGANIZATION_ID
-    );
-
-  i2o::bind
-    (
-      this,
-      &evb::BU::I2O_BU_DISCARD_Callback,
-      I2O_BU_DISCARD,
-      XDAQ_ORGANIZATION_ID
-    );
-
 }
 
 
@@ -196,58 +168,12 @@ void evb::BU::I2O_BU_CACHE_Callback
   toolbox::mem::Reference * bufRef
 )
 {
-  stateMachine_->processEvent( bu::BuCache(bufRef) );
-}
-
-
-void evb::BU::I2O_BU_ALLOCATE_Callback
-(
-  toolbox::mem::Reference * bufRef
-)
-{
-  stateMachine_->processEvent( bu::BuAllocate(bufRef) );
-}
-
-
-void evb::BU::I2O_BU_DISCARD_Callback
-(
-  toolbox::mem::Reference * bufRef
-)
-{
-  stateMachine_->processEvent( bu::BuDiscard(bufRef) );
+  ruProxy_->superFragmentCallback(bufRef);
 }
 
 
 void evb::BU::bindNonDefaultXgiCallbacks()
 {
-  xgi::bind
-    (
-      this,
-      &evb::BU::completeEventsFIFOWebPage,
-      "completeEventsFIFO"
-    );
-  
-  xgi::bind
-    (
-      this,
-      &evb::BU::discardFIFOWebPage,
-      "discardFIFO"
-    );
-  
-  xgi::bind
-    (
-      this,
-      &evb::BU::freeResourceIdFIFOWebPage,
-      "freeResourceIdFIFO"
-    );
-  
-  xgi::bind
-    (
-      this,
-      &evb::BU::requestFIFOWebPage,
-      "requestFIFO"
-    );
-  
   xgi::bind
     (
       this,
@@ -277,34 +203,19 @@ void evb::BU::do_defaultWebPage
 )
 {
   *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/rubuilder/images/arrow_e.gif\" alt=\"\"/>"<< std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td rowspan=\"3\" class=\"component\">"              << std::endl;
-  printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td rowspan=\"2\">"                                  << std::endl;
-  *out << "<img src=\"/rubuilder/images/arrow_ew.gif\" alt=\"\"/>"<< std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td rowspan=\"2\" class=\"component\">"              << std::endl;
-  fuProxy_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td rowspan=\"3\" class=\"component\">"              << std::endl;
+  *out << "<td class=\"component\">"                            << std::endl;
   ruProxy_->printHtml(out);
   *out << "</td>"                                               << std::endl;
-  *out << "<td rowspan=\"2\">"                                  << std::endl;
-  *out << "<img src=\"/rubuilder/images/arrow_e.gif\" alt=\"\"/>"<< std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/rubuilder/images/arrow_ew.gif\" alt=\"\"/>"<< std::endl;
+  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
   *out << "</td>"                                               << std::endl;
-  *out << "<td rowspan=\"2\" class=\"component\">"              << std::endl;
+  *out << "<td class=\"component\">"                            << std::endl;
+  printHtml(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "<td>"                                                << std::endl;
+  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
+  *out << "</td>"                                               << std::endl;
+  *out << "<td class=\"component\">"                            << std::endl;
   diskWriter_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
@@ -319,10 +230,10 @@ void evb::BU::printHtml(xgi::Output *out)
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>run number</td>"                                   << std::endl;
-  *out << "<td>" << runNumber_ << "</td>"                         << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  // *out << "<tr>"                                                  << std::endl;
+  // *out << "<td>run number</td>"                                   << std::endl;
+  // *out << "<td>" << runNumber_ << "</td>"                         << std::endl;
+  // *out << "</tr>"                                                 << std::endl;
   
   eventTable_->printMonitoringInformation(out);
 
@@ -336,93 +247,6 @@ void evb::BU::printHtml(xgi::Output *out)
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
-}
-
-
-void evb::BU::completeEventsFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "completeEventsFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  eventTable_->printCompleteEventsFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::discardFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "discardFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  eventTable_->printDiscardFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::freeResourceIdFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "freeResourceIdFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  eventTable_->printFreeResourceIdFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
 }
 
 
@@ -484,35 +308,6 @@ void evb::BU::eolsFIFOWebPage
 }
 
 
-void evb::BU::requestFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "requestFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  fuProxy_->printRequestFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
 void evb::BU::blockFIFOWebPage
 (
   xgi::Input  *in,
@@ -548,98 +343,6 @@ void evb::BU::configure()
 
 void evb::BU::clear()
 {}
-
-
-void evb::BU::startProcessing(const uint32_t runNumber)
-{
-  runNumber_ = runNumber;
-  doProcessing_ = true;
-  processingWL_->submit(processingAction_);
-}
-
-
-void evb::BU::stopProcessing()
-{
-  doProcessing_ = false;
-  while (processActive_) ::usleep(1000);
-}
-
-
-void evb::BU::startProcessingWorkLoop()
-{
-  try
-  {
-    const std::string identifier = getIdentifier();
-    
-    processingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( getIdentifier("Processing"), "waiting" );
-    
-    if ( ! processingWL_->isActive() )
-    {
-      processingAction_ =
-        toolbox::task::bind(this, &evb::BU::process,
-          getIdentifier("process") );
-      
-      processingWL_->activate();
-    }
-  }
-  catch (xcept::Exception& e)
-  {
-    std::string msg = "Failed to start workloop 'Processing'.";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
-  }
-}
-
-
-bool evb::BU::process(toolbox::task::WorkLoop *wl)
-{
-  ::usleep(1000);
-
-  processActive_ = true;
-  
-  try
-  {
-    while ( doProcessing_ && doWork() ) {};
-  }
-  catch(xcept::Exception &e)
-  {
-    processActive_ = false;
-    stateMachine_->processFSMEvent( Fail(e) );
-  }        
-  
-  processActive_ = false;
-  
-  return doProcessing_;
-}
-
-
-bool evb::BU::doWork()
-{
-  bool anotherRound = false;
-  //  toolbox::mem::Reference* bufRef;
-  
-  // // If there is an allocated event id
-  // if( evmProxy_->getTriggerBlock(bufRef) )
-  // {
-  //   const uint32_t ruCount = ruProxy_->getRuCount();
-  //   eventTable_->startConstruction(ruCount, bufRef);
-    
-  //   if ( ruCount > 0 )
-  //     ruProxy_->requestDataForTrigger(bufRef);
-    
-  //   anotherRound = true;
-  // }
-  
-  // // If there is an event data block
-  // if( ruProxy_->getDataBlock(bufRef) )
-  // {
-  //   eventTable_->appendSuperFragment(bufRef);
-    
-  //   anotherRound = true;
-  // }
-  
-  return anotherRound;
-}
 
 
 /**

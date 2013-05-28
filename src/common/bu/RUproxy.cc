@@ -26,49 +26,45 @@ blockFIFO_("blockFIFO")
 
 void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
-  // Break the chain (if there is one) into separate blocks and push those
-  // blocks onto the back of the blockFIFO
-  while (bufRef != 0)
+  while (bufRef)
   {
-    toolbox::mem::Reference* nextBufRef = bufRef->getNextReference();
-    bufRef->setNextReference(0);
-    
     updateBlockCounters(bufRef);
-    
-    while ( ! blockFIFO_.enq(bufRef) ) ::usleep(1000);
-    
-    bufRef = nextBufRef;
+    while ( ! blockFIFO_.enq(bufRef) ) { ::usleep(1000); }
+    bufRef = bufRef->getNextReference();
   }
-}
-
-
-bool evb::bu::RUproxy::getDataBlock(toolbox::mem::Reference*& bufRef)
-{
-  return ( blockFIFO_.deq(bufRef) );
 }
 
 
 void evb::bu::RUproxy::updateBlockCounters(toolbox::mem::Reference* bufRef)
 {
   boost::mutex::scoped_lock sl(blockMonitoringMutex_);
-
+  
   const I2O_MESSAGE_FRAME* stdMsg =
     (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-  // const msg::SuperFragmentsMsg* superFragment =
-  //   (msg::SuperFragmentsMsg*)stdMsg;
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* superFragmentMsg =
+    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
   const size_t payload =
-    (stdMsg->MessageSize << 2) - sizeof(msg::SuperFragmentsMsg);
+    (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
   const uint32_t ruTid = stdMsg->InitiatorAddress;
 
   //blockMonitoring_.lastEventNumberFromRUs = superFragment->evbId.eventNumber();
   blockMonitoring_.payload += payload;
   blockMonitoring_.payloadPerRU[ruTid] += payload;
   ++blockMonitoring_.i2oCount;
-  // if ( superFragment->blockNb == superFragment->nbBlocksInSuperFragment )
-  // {
-  //   ++blockMonitoring_.logicalCount;
-  //   ++blockMonitoring_.logicalCountPerRU[ruTid];
-  // }
+  if ( superFragmentMsg->blockNb == superFragmentMsg->nbBlocks )
+  {
+    ++blockMonitoring_.logicalCount;
+    ++blockMonitoring_.logicalCountPerRU[ruTid];
+  }
+}
+
+
+bool evb::bu::RUproxy::getData
+(
+  toolbox::mem::Reference*& bufRef
+)
+{
+  return blockFIFO_.deq(bufRef);
 }
 
 

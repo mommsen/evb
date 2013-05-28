@@ -9,8 +9,6 @@
 #include "interface/shared/frl_header.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
-#include "evb/bu/FUproxy.h"
-#include "evb/bu/FuRqstForResource.h"
 #include "evb/CRC16.h"
 #include "evb/DumpUtility.h"
 #include "evb/Exception.h"
@@ -147,35 +145,6 @@ void evb::bu::Event::parseAndCheckData()
       
       XCEPT_RETHROW(exception::SuperFragment, oss.str(), e);
     }
-  }
-}
-
-
-void evb::bu::Event::sendToFU
-(
-  boost::shared_ptr<FUproxy> fuProxy,
-  const FuRqstForResource& rqst
-) const
-{
-  if ( ! isComplete() )
-  {
-    XCEPT_RAISE(exception::EventOrder, "Cannot send an incomplete event to a FU.");
-  }
-
-  uint32_t superFragmentNb = 0;
-
-  for (
-    Data::const_iterator it = data_.begin(), itEnd = data_.end();
-    it != itEnd; ++it
-  )
-  {
-    // Send a duplicate of the reference so memory is freed on FU discard
-    fuProxy->sendSuperFragment(
-      rqst, superFragmentNb, nbCompleteSuperFragments_,
-      it->second->duplicate()
-    );
-    
-    ++superFragmentNb;
   }
 }
 

@@ -52,7 +52,9 @@ evb::bu::FileHandlerPtr evb::bu::LumiHandler::getFileHandler(boost::shared_ptr<S
   fileHandler->incrementAllocatedEventCount();
   ++eventsPerLS_;
   
-  nextFileHandler_ = ++nextFileHandler_ % numberOfWriters_;
+  ++nextFileHandler_;
+  if ( nextFileHandler_ == numberOfWriters_ )
+    nextFileHandler_ = 0;
 
   return fileHandler;
 }

@@ -42,10 +42,7 @@ namespace evb {
     {
     public:
       
-      DiskWriter
-      (
-        boost::shared_ptr<BU>
-      );
+      DiskWriter(BU*);
       
       ~DiskWriter();
     
@@ -154,7 +151,7 @@ namespace evb {
       void defineJSON(const boost::filesystem::path&) const;
       void createWritingWorkLoops();
       
-      boost::shared_ptr<BU> bu_;
+      BU* bu_;
       EventTablePtr eventTable_;
       boost::shared_ptr<StateMachine> stateMachine_;
       

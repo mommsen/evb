@@ -54,40 +54,12 @@ namespace evb { namespace bu {
 
   public:
 
-    typedef boost::mpl::list<
-    boost::statechart::custom_reaction<BuAllocate>,
-    boost::statechart::custom_reaction<BuCache>,
-    boost::statechart::custom_reaction<BuDiscard>
-    > reactions;
+    typedef boost::mpl::list<> reactions;
 
     Outermost(my_context c) : my_state("Outermost", c)
     { safeEntryAction(); }
     virtual ~Outermost()
     { safeExitAction(); }
-
-    inline boost::statechart::result react(const BuAllocate& evt)
-    {
-      evt.getAllocateMsg()->release();
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Discarding an I2O_BU_ALLOCATE message.");
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const BuCache& evt)
-    {
-      evt.getCacheMsg()->release();
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Discarding an I2O_BU_COLLECT message.");
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const BuDiscard& evt)
-    {
-      evt.getDiscardMsg()->release();
-      LOG4CPLUS_WARN(outermost_context().getLogger(),
-        "Discarding an I2O_BU_DISCARD message.");
-      return discard_event();
-    }
 
   };
 
@@ -224,10 +196,7 @@ namespace evb { namespace bu {
   public:
 
     typedef boost::mpl::list<
-    boost::statechart::transition<Stop,Configured>,
-    boost::statechart::custom_reaction<BuAllocate>,
-    boost::statechart::custom_reaction<BuCache>,
-    boost::statechart::custom_reaction<BuDiscard>
+    boost::statechart::transition<Stop,Configured>
     > reactions;
     
     Processing(my_context c) : my_state("Processing", c)
@@ -236,24 +205,6 @@ namespace evb { namespace bu {
     { safeExitAction(); }
 
     virtual void entryAction();
-
-    inline boost::statechart::result react(const BuAllocate& evt)
-    {
-      outermost_context().buAllocate(evt.getAllocateMsg());
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const BuCache& evt)
-    {
-      outermost_context().buCache(evt.getCacheMsg());
-      return discard_event();
-    }
-
-    inline boost::statechart::result react(const BuDiscard& evt)
-    {
-      outermost_context().buDiscard(evt.getDiscardMsg());
-      return discard_event();
-    }
 
   };
 

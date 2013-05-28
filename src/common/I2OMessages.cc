@@ -76,15 +76,15 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::SuperFragmentsMsg* superFragmentsMsg
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
 )
 {
   str << "SuperFragmentsMsg:" << std::endl;
   
-  str << superFragmentsMsg->PvtMessageFrame << std::endl;
+  str << dataBlockMsg->PvtMessageFrame << std::endl;
   
-  str << "nbBlocks=" << superFragmentsMsg->nbBlocks << std::endl;
-  str << "blockNb="  << superFragmentsMsg->blockNb << std::endl;
+  str << "nbBlocks=" << dataBlockMsg->nbBlocks << std::endl;
+  str << "blockNb="  << dataBlockMsg->blockNb << std::endl;
   
   return str;
 }

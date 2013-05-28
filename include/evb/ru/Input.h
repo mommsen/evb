@@ -8,9 +8,9 @@
 #include "log4cplus/logger.h"
 
 #include "evb/EvBid.h"
+#include "evb/FragmentChain.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/ru/InputHandler.h"
-#include "evb/ru/SuperFragment.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/Boolean.h"
@@ -67,18 +67,18 @@ namespace evb {
       /**
        * Get the next complete super fragment.
        * If none is available, the method returns false.
-       * Otherwise, the SuperFragmentPtr holds the
+       * Otherwise, the FragmentChainPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      bool getNextAvailableSuperFragment(SuperFragmentPtr);
+      bool getNextAvailableSuperFragment(FragmentChainPtr);
       
       /**
        * Get the complete super fragment with EvBid.
        * If it is not available or complete, the method returns false.
-       * Otherwise, the SuperFragmentPtr holds the
+       * Otherwise, the FragmentChainPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr);
+      bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr);
             
       /**
        * Append the info space parameters used for the

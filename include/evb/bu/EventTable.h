@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "evb/bu/Event.h"
+#include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
@@ -29,7 +30,7 @@ namespace evb {
   namespace bu {
     
     class DiskWriter;
-    class FUproxy;
+    class RUproxy;
     class StateMachine;
     
     /**
@@ -43,9 +44,9 @@ namespace evb {
       
       EventTable
       (
-        boost::shared_ptr<BU>,
-        boost::shared_ptr<DiskWriter>,
-        boost::shared_ptr<FUproxy>
+        BU*,
+        boost::shared_ptr<RUproxy>,
+        boost::shared_ptr<DiskWriter>
       );
       
       /**
@@ -61,11 +62,6 @@ namespace evb {
        * Appand a super fragment to an event under construction
        */
       void appendSuperFragment(toolbox::mem::Reference*);
-      
-      /**
-       * Discard the event with the given resource Id
-       */
-      void discardEvent(const uint32_t buResourceId);
       
       /**
        * Append the info space parameters used for the
@@ -135,24 +131,6 @@ namespace evb {
       void printQueueInformation(xgi::Output*);
       
       /**
-       * Print the content of the complete events FIFO as HTML snipped
-       */
-      inline void printCompleteEventsFIFO(xgi::Output* out)
-      { completeEventsFIFO_.printVerticalHtml(out); }
-      
-      /**
-       * Print the content of the discard FIFO as HTML snipped
-       */
-      inline void printDiscardFIFO(xgi::Output* out)
-      { discardFIFO_.printVerticalHtml(out); }
-      
-      /**
-       * Print the content of the free resource id FIFO as HTML snipped
-       */
-      inline void printFreeResourceIdFIFO(xgi::Output* out)
-      { freeResourceIdFIFO_.printVerticalHtml(out); }
-      
-      /**
        * Print the configuration information as HTML snipped
        */
       inline void printConfiguration(xgi::Output* out)
@@ -165,34 +143,34 @@ namespace evb {
       void updateEventCounters(EventPtr);
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
-      bool handleNextCompleteEvent();
-      bool writeNextCompleteEvent();
-      bool sendNextCompleteEventToFU();
-      bool sendEvtIdRqsts();
-      bool handleDiscards();
-      // void freeEventAndGetReleaseMsg
-      // (
-      //   const uint32_t buResourceId,
-      //   msg::EvtIdRqstAndOrRelease&
-      // );
+      bool assembleDataBlockMessages();
+      bool buildEvents();
+      bool handleCompleteEvents();
       
-      // Lookup table of events, indexed by event id
-      typedef std::map<uint32_t,EventPtr > Data;
-      Data data_;
-      boost::mutex dataMutex_;
-      
-      boost::shared_ptr<BU> bu_;
+      BU* bu_;
+      boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
-      boost::shared_ptr<FUproxy> fuProxy_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
-      typedef OneToOneQueue<EventPtr > CompleteEventsFIFO;
-      CompleteEventsFIFO completeEventsFIFO_;
-      typedef OneToOneQueue<uint32_t> DiscardFIFO;
-      DiscardFIFO discardFIFO_;
-      boost::mutex discardFIFOmutex_;
-      typedef OneToOneQueue<uint32_t> FreeResourceIdFIFO;
-      FreeResourceIdFIFO freeResourceIdFIFO_;
+      // Lookup table of data blocks, indexed by RU tid and BU resource id
+      struct Index
+      {
+        uint32_t ruTid;
+        uint32_t resourceId;
+        
+        inline bool operator< (const Index& other) const
+        { return ruTid == other.ruTid ? resourceId < other.resourceId : ruTid < other.ruTid; }
+      };
+      typedef std::map<Index,FragmentChainPtr> DataBlockMap;
+      DataBlockMap dataBlockMap_;
+
+      // Lookup table of events, indexed by evb id
+      typedef std::map<EvBid,EventPtr> EventMap;
+      EventMap eventMap_;
+      FragmentChain::ResourceList ruTids_;
+      
+      typedef OneToOneQueue<toolbox::mem::Reference*> BlockFIFO;
+      BlockFIFO blockFIFO_;
       
       toolbox::task::WorkLoop* processingWL_;
       toolbox::task::ActionSignature* processingAction_;

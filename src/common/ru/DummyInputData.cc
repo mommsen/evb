@@ -69,7 +69,7 @@ void evb::ru::DummyInputData::dataReadyCallback(toolbox::mem::Reference* bufRef)
 }
 
 
-bool evb::ru::DummyInputData::getNextAvailableSuperFragment(SuperFragmentPtr& superFragment)
+bool evb::ru::DummyInputData::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
   if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
   const EvBid evbId = evbIdFactory_.getEvBid(eventNumber_);
@@ -78,9 +78,9 @@ bool evb::ru::DummyInputData::getNextAvailableSuperFragment(SuperFragmentPtr& su
 }
 
 
-bool evb::ru::DummyInputData::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
+bool evb::ru::DummyInputData::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
-  superFragment.reset( new SuperFragment(evbId, fedList_) );
+  superFragment.reset( new FragmentChain(evbId, fedList_) );
   
   toolbox::mem::Reference* bufRef = 0;
   const uint32_t ferolBlockSize = 4*1024;

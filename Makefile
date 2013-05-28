@@ -34,6 +34,7 @@ Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
+	FragmentChain.cc \
 	FragmentGenerator.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
@@ -44,13 +45,11 @@ Sources=\
 	ru/FEROLproxy.cc \
 	ru/Input.cc \
 	ru/StateMachine.cc \
-	ru/SuperFragment.cc \
 	BU.cc \
 	bu/DiskUsage.cc \
 	bu/DiskWriter.cc \
 	bu/Event.cc \
 	bu/EventTable.cc \
-	bu/FUproxy.cc \
 	bu/FileHandler.cc \
 	bu/LumiHandler.cc \
 	bu/RUbroadcaster.cc \
@@ -62,6 +61,12 @@ Sources=\
 TestSources = \
 	DummyFEROL.cc \
 	dummyFEROL/StateMachine.cc
+
+TestExecutables = \
+	Pipe.cxx \
+	Pipe2.cxx \
+	Memcpy.cxx \
+	Memcpy2.cxx
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \
@@ -88,12 +93,65 @@ IncludeDirs = \
 
 TestIncludeDirs = test/include
 
-UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror 
+TestLibraries = \
+	b2innub \
+	boost_system \
+	boost_thread \
+	cgicc \
+	config \
+	evb \
+	executive \
+	i2o \
+	i2outils \
+	log4cplus \
+	logudpappender \
+	logxmlappender \
+	mimetic \
+	numa \
+	peer \
+	pttcp \
+	toolbox \
+	asyncresolv \
+	uuid \
+	xcept \
+	xdaq \
+	xdata \
+	xerces-c \
+	xgi \
+	xoap \
+	jemalloc
+
+TestLibraryDirs = \
+        $(ASYNCRESOLV_LIB_PREFIX) \
+        $(B2IN_NUB_LIB_PREFIX) \
+        $(CGICC_LIB_PREFIX) \
+        $(CONFIG_LIB_PREFIX) \
+        $(EVB_LIB_PREFIX)  \
+        $(EXECUTIVE_LIB_PREFIX)  \
+        $(I2O_LIB_PREFIX)  \
+        $(I2O_UTILS_LIB_PREFIX)  \
+        $(LOG4CPLUS_LIB_PREFIX)  \
+        $(LOGUDPAPPENDER_LIB_PREFIX)  \
+        $(LOGXMLAPPENDER_LIB_PREFIX)  \
+        $(MIMETIC_LIB_PREFIX) \
+        $(PEER_LIB_PREFIX) \
+        $(PT_LIB_PREFIX) \
+        $(TOOLBOX_LIB_PREFIX) \
+        $(UUID_LIB_PREFIX) \
+        $(XCEPT_LIB_PREFIX) \
+        $(XDAQ_LIB_PREFIX) \
+        $(XDATA_LIB_PREFIX) \
+        $(XERCES_LIB_PREFIX) \
+        $(XGI_LIB_PREFIX) \
+        $(XOAP_LIB_PREFIX) \
+	/usr/local/lib
+
+UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror -I /usr/local/include
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = boost_system boost_filesystem boost_thread-mt interfaceshared xdaq2rc
-DependentLibraryDirs += /usr/lib $(INTERFACE_SHARED_LIB_PREFIX)
+DependentLibraries = boost_system boost_filesystem boost_thread interfaceshared xdaq2rc
+DependentLibraryDirs += /usr/lib /usr/local/lib $(INTERFACE_SHARED_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library
@@ -101,6 +159,7 @@ DependentLibraryDirs += /usr/lib $(INTERFACE_SHARED_LIB_PREFIX)
 DynamicLibrary=evb
 TestDynamicLibrary=evbtest
 
+all: _installall
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules

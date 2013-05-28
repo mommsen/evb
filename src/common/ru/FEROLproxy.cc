@@ -72,7 +72,7 @@ void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
   if ( fragmentPos == superFragmentMap_.end() || (superFragmentMap_.key_comp()(evbId,fragmentPos->first)) )
   {
     // new super-fragment
-    SuperFragmentPtr superFragment( new SuperFragment(evbId,fedList_) );
+    FragmentChainPtr superFragment( new FragmentChain(evbId,fedList_) );
     fragmentPos = superFragmentMap_.insert(fragmentPos, SuperFragmentMap::value_type(evbId,superFragment));
   }
   
@@ -94,7 +94,7 @@ void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
 }
 
 
-bool evb::ru::FEROLproxy::getNextAvailableSuperFragment(SuperFragmentPtr& superFragment)
+bool evb::ru::FEROLproxy::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   
@@ -115,7 +115,7 @@ bool evb::ru::FEROLproxy::getNextAvailableSuperFragment(SuperFragmentPtr& superF
 }
 
 
-bool evb::ru::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
+bool evb::ru::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   

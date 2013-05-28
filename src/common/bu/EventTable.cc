@@ -3,8 +3,7 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/EventTable.h"
-#include "evb/bu/FUproxy.h"
-#include "evb/bu/FuRqstForResource.h"
+#include "evb/bu/RUproxy.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -13,160 +12,24 @@
 
 evb::bu::EventTable::EventTable
 (
-  boost::shared_ptr<BU> bu,
-  boost::shared_ptr<DiskWriter> diskWriter,
-  boost::shared_ptr<FUproxy> fuProxy
+  BU* bu,
+  boost::shared_ptr<RUproxy> ruProxy,
+  boost::shared_ptr<DiskWriter> diskWriter
 ) :
 bu_(bu),
+ruProxy_(ruProxy),
 diskWriter_(diskWriter),
-fuProxy_(fuProxy),
-completeEventsFIFO_("completeEventsFIFO"),
-discardFIFO_("discardFIFO"),
-freeResourceIdFIFO_("freeResourceIdFIFO"),
+blockFIFO_("blockFIFO"),
 doProcessing_(false),
-processActive_(false),
-requestEvents_(false)
+processActive_(false)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
 }
 
 
-void evb::bu::EventTable::startConstruction
-(
-  const uint32_t ruCount,
-  toolbox::mem::Reference* bufRef
-)
-{
-  boost::mutex::scoped_lock sl(dataMutex_);
-  
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-  if (block->superFragmentNb != 0)
-  {
-    std::ostringstream oss;
-    
-    oss << "Event data block is not that of the trigger data."; 
-    oss << " eventNumber: " << block->eventNumber;
-    oss << " resyncCount: " << block->resyncCount;
-    oss << " buResourceId: " << block->buResourceId;
-    oss << " superFragmentNb: " << block->superFragmentNb;
-   
-    XCEPT_RAISE(exception::EventOrder, oss.str());
-  }
-
-  // Check that the slot in the event table is free
-  Data::iterator pos = data_.lower_bound(block->buResourceId);
-  if ( pos != data_.end() && !(data_.key_comp()(block->buResourceId,pos->first)) )
-  {
-    std::ostringstream oss;
-    
-    oss << "A super-fragment is already in the lookup table.";
-    oss << " eventNumber: " << block->eventNumber;
-    oss << " resyncCount: " << block->resyncCount;
-    oss << " buResourceId: " << block->buResourceId;
-    oss << " superFragmentNb: " << block->superFragmentNb;
-    
-    XCEPT_RAISE(exception::EventOrder, oss.str());
-  }
-
-  ++eventMonitoring_.nbEventsUnderConstruction;
-
-  EventPtr event( new Event(ruCount, bufRef) );
-  data_.insert(pos, Data::value_type(block->buResourceId,event));
-
-  checkForCompleteEvent(event);
-}
-
-
-void evb::bu::EventTable::appendSuperFragment
-(
-  toolbox::mem::Reference* bufRef
-)
-{
-  boost::mutex::scoped_lock sl(dataMutex_);
-  
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-  if (block->superFragmentNb == 0)
-  {
-    std::ostringstream oss;
-    
-    oss << "Cannot append a block from the EVM.";
-    oss << " eventNumber: " << block->eventNumber;
-    oss << " resyncCount: " << block->resyncCount;
-    oss << " buResourceId: " << block->buResourceId;
-    oss << " superFragmentNb: " << block->superFragmentNb;
-   
-    XCEPT_RAISE(exception::EventOrder, oss.str());
-  }
-
-  Data::iterator pos = data_.find(block->buResourceId);
-  if ( pos == data_.end() )
-  {
-    std::ostringstream oss;
-    
-    oss << "Cannot append a super fragment from RU to an event which is not under construction.";
-    oss << " eventNumber: " << block->eventNumber;
-    oss << " resyncCount: " << block->resyncCount;
-    oss << " buResourceId: " << block->buResourceId;
-    oss << " superFragmentNb: " << block->superFragmentNb;
-   
-    XCEPT_RAISE(exception::EventOrder, oss.str());
-  } 
-  
-  pos->second->appendSuperFragment(bufRef);
-
-  checkForCompleteEvent(pos->second);
-}
-
-
-void evb::bu::EventTable::checkForCompleteEvent(EventPtr event)
-{
-  if ( ! event->isComplete() ) return;
-  
-  updateEventCounters(event);
-
-  if ( dropEventData_ )
-  {
-    discardEvent( event->buResourceId() );
-  }
-  else
-  {
-    while ( ! completeEventsFIFO_.enq(event) ) ::usleep(1000);
-  }
-}
-
-
-void evb::bu::EventTable::updateEventCounters(EventPtr event)
-{
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-  
-  --eventMonitoring_.nbEventsUnderConstruction;
-  ++eventMonitoring_.nbEventsInBU;
-  
-  const size_t payload = event->payload();
-  eventMonitoring_.perf.sumOfSizes += payload;
-  eventMonitoring_.perf.sumOfSquares += payload*payload;
-  ++eventMonitoring_.perf.logicalCount;
-  
-  if ( dropEventData_ )
-    ++eventMonitoring_.nbEventsDropped;
-}
-
-
-void evb::bu::EventTable::discardEvent(const uint32_t buResourceId)
-{
-  boost::mutex::scoped_lock sl(discardFIFOmutex_);
-  while ( ! discardFIFO_.enq(buResourceId) ) ::usleep(1000);
-}
-
-
 void evb::bu::EventTable::startProcessing()
 {
-  for (uint32_t buResourceId = 0; buResourceId < freeResourceIdFIFO_.size(); ++buResourceId)
-    freeResourceIdFIFO_.enq(buResourceId);
-
   doProcessing_ = true;
   processingWL_->submit(processingAction_);
 }
@@ -211,13 +74,11 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
   
   try
   {
-    while (
-      doProcessing_ && (
-        sendEvtIdRqsts() ||
-        handleDiscards() ||
-        handleNextCompleteEvent()
-      )
-    ) {};
+    while ( doProcessing_ && (
+        assembleDataBlockMessages() ||
+        buildEvents() ||
+        handleCompleteEvents()
+      ) ) {};
   }
   catch(xcept::Exception &e)
   {
@@ -231,113 +92,127 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
 }
 
 
-bool evb::bu::EventTable::handleNextCompleteEvent()
+bool evb::bu::EventTable::assembleDataBlockMessages()
 {
-  if ( diskWriter_->enabled() )
-    return writeNextCompleteEvent();
-  else
-    return sendNextCompleteEventToFU();
+  toolbox::mem::Reference* bufRef = 0;
+  
+  if ( ! ruProxy_->getData(bufRef) ) return false;
+  
+  const I2O_MESSAGE_FRAME* stdMsg =
+    (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+  
+  Index index;
+  index.ruTid = stdMsg->InitiatorAddress;
+  index.resourceId = dataBlockMsg->buResourceId;
+  
+  DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
+  if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
+  {
+    // new data block
+    FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
+    dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
+  }
+  
+  dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef);
+  
+  if ( dataBlockPos->second->isComplete() )
+  {
+    while ( ! blockFIFO_.enq(dataBlockPos->second->head()) ) { ::usleep(1000); }
+    dataBlockMap_.erase(dataBlockPos);
+  }
+  
+  return true;
+}
+//   do
+//   {
+//     while ( doProcessing_ && !) { ::usleep(1000); }
+    
+//     if ( bufRef == 0 ) return false;
+    
+//     const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+//       (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+//     assert( dataBlockMsg->blockNb == ++nextBlockNb );
+    
+//     if ( head == 0 )
+//     {
+//       head = bufRef;
+//       tail = bufRef;
+//     }
+//     else
+//     {
+//       tail->setNextReference(bufRef);
+//       tail = bufRef;
+//     }
 
+//   } while ( dataBlockMsg->blockNb != dataBlockMsg->nbBlocks );
+// }
+
+
+bool evb::bu::EventTable::buildEvents()
+{
+  toolbox::mem::Reference* head = 0;
+  
+  if ( ! blockFIFO_.deq(head) ) return false;
+  
+  toolbox::mem::Reference* bufRef = head;
+  
+  while ( bufRef )
+  {
+    // const I2O_MESSAGE_FRAME* stdMsg =
+    //   (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+    //    const uint32_t ruTid = stdMsg->InitiatorAddress;
+    size_t offset = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+    
+    while ( offset < bufRef->getBuffer()->getSize() )
+    { 
+      const unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + offset;
+      const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
+      const EvBid evbId = superFragmentMsg->evbId;
+      
+      EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
+      if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
+      {
+        // new event
+        // EventPtr event( new Event(evbId,ruTids_) );
+        // eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+      }
+      
+      // eventPos->second->appendFragment(ruTid,bufRef->duplicate(),
+      //   payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
+      
+      offset += superFragmentMsg->partSize;
+    }
+    
+    bufRef = bufRef->getNextReference();  
+  }
+  
+  head->release(); // The bufRef's holding event fragments are now owned by the events
+  
   return false;
 }
 
 
-bool evb::bu::EventTable::writeNextCompleteEvent()
+bool evb::bu::EventTable::handleCompleteEvents()
 {
-  EventPtr event;
-  if ( ! completeEventsFIFO_.deq(event) ) return false;
+  bool foundCompleteEvents = false;
   
-  diskWriter_->writeEvent(event);
-  
-  return true;
+  EventMap::iterator eventPos = eventMap_.begin();
+  while ( eventPos != eventMap_.end() )
+  {
+    if ( eventPos->second->isComplete() )
+    {
+      if ( ! dropEventData_ )
+        diskWriter_->writeEvent(eventPos->second);
+      
+      eventMap_.erase(eventPos++);
+      foundCompleteEvents = true;
+    }
+  }
+  return foundCompleteEvents;
 }
-
-
-bool evb::bu::EventTable::sendNextCompleteEventToFU()
-{
-  FuRqstForResource rqst;
-  if ( completeEventsFIFO_.empty() ) return false;
-  if ( ! fuProxy_->getNextRequest(rqst) ) return false;
-  
-  EventPtr event;
-  completeEventsFIFO_.deq(event);
-  event->sendToFU(fuProxy_, rqst);
-  
-  return true;
-}
-
-
-bool evb::bu::EventTable::handleDiscards()
-{
-  uint32_t buResourceId;
-  if ( ! discardFIFO_.deq(buResourceId) ) return false;
-
-  // msg::EvtIdRqstAndOrRelease rqstAndOrRelease;
-  // freeEventAndGetReleaseMsg(buResourceId, rqstAndOrRelease);
-  
-  // evmProxy_->sendEvtIdRqstAndOrRelease(rqstAndOrRelease);
-  
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-  --eventMonitoring_.nbEventsInBU;
-  
-  return true;
-}
-
-
-// void evb::bu::EventTable::freeEventAndGetReleaseMsg
-// (
-//   const uint32_t buResourceId,
-//   msg::EvtIdRqstAndOrRelease& rqstAndOrRelease
-// )
-// {
-//   boost::mutex::scoped_lock sl(dataMutex_);
-  
-//   Data::iterator pos = data_.find(buResourceId);
-//   if ( pos == data_.end() )
-//   {
-//     std::ostringstream oss;
-    
-//     oss << "Cannot discard a non-existing event with the BU resource id "
-//       << buResourceId;
-   
-//     XCEPT_RAISE(exception::EventOrder, oss.str());
-//   }
-  
-//   // Prepare a resource request to release an event id
-//   rqstAndOrRelease.requestType = msg::EvtIdRqstAndOrRelease::RELEASE;
-//   rqstAndOrRelease.evbId       = pos->second->evbId();
-//   rqstAndOrRelease.resourceId  = buResourceId;
-  
-//   // Request another event if we want one
-//   if ( requestEvents_ )
-//     rqstAndOrRelease.requestType |= msg::EvtIdRqstAndOrRelease::REQUEST;
-//   else
-//     while ( ! freeResourceIdFIFO_.enq(buResourceId) ) { ::usleep(1000); }
-  
-//   // Free the resource
-//   data_.erase(pos);
-// }
-
-
-// bool evb::bu::EventTable::sendEvtIdRqsts()
-// {
-//   msg::EvtIdRqstAndOrRelease rqstAndOrRelease;
-//   uint32_t buResourceId;
-  
-//   if ( requestEvents_ && freeResourceIdFIFO_.deq(buResourceId) )
-//   {
-//     // Prepare an event id request
-//     rqstAndOrRelease.requestType = msg::EvtIdRqstAndOrRelease::REQUEST;
-//     rqstAndOrRelease.resourceId  = buResourceId;
-    
-//     // evmProxy_->sendEvtIdRqstAndOrRelease(rqstAndOrRelease);
-
-//     return true;
-//   }
-  
-//   return false;
-// }
-
+ 
 
 void evb::bu::EventTable::appendConfigurationItems(InfoSpaceItems& params)
 {
@@ -383,7 +258,7 @@ void evb::bu::EventTable::updateMonitoringItems()
   eventSize_ = eventMonitoring_.perf.size();
   eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
   
-  nbEvtsReady_ = completeEventsFIFO_.elements();
+  //nbEvtsReady_ = completeEventsFIFO_.elements();
 }
 
 
@@ -402,26 +277,19 @@ void evb::bu::EventTable::configure(const uint32_t maxEvtsUnderConstruction)
 {
   clear();
   
-  completeEventsFIFO_.resize(maxEvtsUnderConstruction);
-  discardFIFO_.resize(maxEvtsUnderConstruction);
-  freeResourceIdFIFO_.resize(maxEvtsUnderConstruction);
-
+  blockFIFO_.resize(maxEvtsUnderConstruction);
+  
   requestEvents_ = true;
 }
 
 
 void evb::bu::EventTable::clear()
 {
-  boost::mutex::scoped_lock sl(dataMutex_);
-  
-  EventPtr event;
-  while ( completeEventsFIFO_.deq(event) ) { event.reset(); }
+  toolbox::mem::Reference* bufRef;
+  while ( blockFIFO_.deq(bufRef) ) { bufRef->release(); }
 
-  uint32_t buResourceId;
-  while ( discardFIFO_.deq(buResourceId) ) {};
-  while ( freeResourceIdFIFO_.deq(buResourceId) ) {};
-
-  data_.clear();
+  dataBlockMap_.clear();
+  eventMap_.clear();
 }
 
 
@@ -473,19 +341,7 @@ void evb::bu::EventTable::printQueueInformation(xgi::Output *out)
 {
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  completeEventsFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  discardFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  freeResourceIdFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  blockFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 }

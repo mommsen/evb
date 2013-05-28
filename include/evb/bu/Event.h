@@ -58,15 +58,6 @@ namespace evb {
       void writeToDisk(FileHandlerPtr);
       
       /**
-       * Send the event to the FU specified in the request.
-       */
-      void sendToFU
-      (
-        boost::shared_ptr<FUproxy> fuProxy,
-        const FuRqstForResource& rqst
-      ) const;
-      
-      /**
        * Return the buResourceId
        */
       uint32_t buResourceId() const
