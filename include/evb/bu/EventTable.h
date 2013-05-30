@@ -137,10 +137,10 @@ namespace evb {
       struct Index
       {
         uint32_t ruTid;
-        uint32_t resourceId;
+        uint32_t buResourceId;
         
         inline bool operator< (const Index& other) const
-        { return ruTid == other.ruTid ? resourceId < other.resourceId : ruTid < other.ruTid; }
+        { return ruTid == other.ruTid ? buResourceId < other.buResourceId : ruTid < other.ruTid; }
       };
       typedef std::map<Index,FragmentChainPtr> DataBlockMap;
       DataBlockMap dataBlockMap_;

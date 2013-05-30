@@ -106,7 +106,7 @@ bool evb::bu::EventTable::assembleDataBlockMessages()
   
   Index index;
   index.ruTid = stdMsg->InitiatorAddress;
-  index.resourceId = dataBlockMsg->buResourceId;
+  index.buResourceId = dataBlockMsg->buResourceId;
   
   DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
   if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
@@ -139,7 +139,7 @@ bool evb::bu::EventTable::buildEvents()
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
     (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
   const I2O_TID ruTid = stdMsg->InitiatorAddress;
-  const uint32_t resourceId = dataBlockMsg->buResourceId;
+  const uint32_t buResourceId = dataBlockMsg->buResourceId;
   
   toolbox::mem::Reference* bufRef = head;
   
@@ -157,7 +157,7 @@ bool evb::bu::EventTable::buildEvents()
       if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
       {
         // new event
-        EventPtr event( new Event(runNumber_, evbId.eventNumber(), resourceId, ruProxy_->getRuTids()) );
+        EventPtr event( new Event(runNumber_, evbId.eventNumber(), buResourceId, ruProxy_->getRuTids()) );
         eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
 
         ++eventMonitoring_.nbEventsInBU;

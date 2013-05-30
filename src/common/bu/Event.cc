@@ -20,10 +20,10 @@ evb::bu::Event::Event
 (
   const uint32_t runNumber,
   const uint32_t eventNumber,
-  const uint32_t resourceId,
+  const uint32_t buResourceId,
   const std::vector<I2O_TID>& ruTids
 ) :
-resourceId_(resourceId),
+buResourceId_(buResourceId),
 ruTids_(ruTids)
 {  
   eventInfo_ = new EventInfo(runNumber, eventNumber);

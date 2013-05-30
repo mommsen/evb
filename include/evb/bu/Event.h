@@ -34,7 +34,7 @@ namespace evb {
       (
         const uint32_t runNumber,
         const uint32_t eventNumber,
-        const uint32_t resourceId,
+        const uint32_t buResourceId,
         const std::vector<I2O_TID>& ruTids
       );
       
@@ -76,8 +76,8 @@ namespace evb {
       /**
        * Return the resource id
        */
-      uint32_t resourceId() const
-      { return resourceId_; }
+      uint32_t buResourceId() const
+      { return buResourceId_; }
       
       /**
        * Return the lumiSection
@@ -156,7 +156,7 @@ namespace evb {
       ) const;
       
       const EvBid evbId_;
-      const uint32_t resourceId_;
+      const uint32_t buResourceId_;
       typedef std::vector<I2O_TID> RUtids;
       RUtids ruTids_;
       
