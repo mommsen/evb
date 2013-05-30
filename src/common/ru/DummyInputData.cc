@@ -147,10 +147,10 @@ bool evb::ru::DummyInputData::getSuperFragmentWithEvBid(const EvBid& evbId, Frag
 }
 
 
-void evb::ru::DummyInputData::clear()
+void evb::ru::DummyInputData::startProcessing(const uint32_t runNumber)
 {
   eventNumber_ = 0;
-  evbIdFactory_.reset();
+  evbIdFactory_.reset(runNumber);
 }
 
 

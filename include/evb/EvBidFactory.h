@@ -16,15 +16,16 @@ namespace evb {
     /**
      * Return EvBid for given eventNumber
      */
-    EvBid getEvBid(const uint32_t eventNumber);
+    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lsNumber=0);
 
     /**
-     * Reset the counters;
+     * Reset the counters for a new run
      */
-    void reset();
+    void reset(const uint32_t runNumber);
     
   private:
     
+    uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
     

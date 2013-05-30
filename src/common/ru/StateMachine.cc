@@ -27,6 +27,20 @@ buProxy_(buProxy)
 }
 
 
+void evb::ru::StateMachine::do_appendConfigurationItems(InfoSpaceItems& params)
+{
+  runNumber_ = 0;
+  
+  params.add("runNumber", &runNumber_);
+}
+
+
+void evb::ru::StateMachine::do_appendMonitoringItems(InfoSpaceItems& items)
+{
+  items.add("runNumber", &runNumber_);
+}
+
+
 void evb::ru::StateMachine::mismatchEvent(const MismatchDetected& evt)
 {
   LOG4CPLUS_ERROR(app_->getApplicationLogger(), evt.getTraceback());
@@ -165,16 +179,17 @@ void evb::ru::Processing::entryAction()
 void evb::ru::Enabled::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.ru()->startProcessing();
-  stateMachine.ruInput()->acceptI2Omessages(true);
+  
+  const uint32_t runNumber = stateMachine.runNumber();
+  
+  stateMachine.ruInput()->startProcessing(runNumber);
 }
 
 
 void evb::ru::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.ruInput()->acceptI2Omessages(false);
-  stateMachine.ru()->stopProcessing();
+  stateMachine.ruInput()->stopProcessing();
 }
 
 

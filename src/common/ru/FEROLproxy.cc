@@ -130,16 +130,20 @@ bool evb::ru::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, Fragment
 }
 
 
+void evb::ru::FEROLproxy::startProcessing(const uint32_t runNumber)
+{
+  for ( EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
+        it != itEnd; ++it)
+    it->second.reset(runNumber);
+}
+
+
 void evb::ru::FEROLproxy::clear()
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   
   superFragmentMap_.clear();
   nbSuperFragmentsReady_ = 0;
-  
-  for ( EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
-        it != itEnd; ++it)
-    it->second.reset();
 }
 
 

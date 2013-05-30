@@ -54,10 +54,14 @@ namespace evb {
       void inputSourceChanged();
       
       /**
-       * Enable or disable the handling of incoming I2O messages
+       * Start processing messages
        */
-      void acceptI2Omessages(const bool accept)
-      { acceptI2Omessages_ = accept; }
+      void startProcessing(const uint32_t runNumber);
+      
+      /**
+       * Stop processing messages
+       */
+      void stopProcessing();
       
       /**
        * Callback for I2O_DATA_READY message received from frontend

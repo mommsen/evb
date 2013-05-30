@@ -49,28 +49,6 @@ namespace evb {
       mutable xcept::Exception exception_;
     };
     
-    class EvmRuDataReady : public boost::statechart::event<EvmRuDataReady> 
-    {
-    public:
-      EvmRuDataReady(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getDataReadyMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
-    class RuSend : public boost::statechart::event<RuSend> 
-    {
-    public:
-      RuSend(toolbox::mem::Reference* bufRef) : bufRef_(bufRef) {};
-      
-      toolbox::mem::Reference* getSendMsg() const { return bufRef_; };
-      
-    private:
-      toolbox::mem::Reference* bufRef_;
-    };
-    
     ///////////////////////
     // The state machine //
     ///////////////////////
@@ -95,11 +73,18 @@ namespace evb {
       boost::shared_ptr<Input> ruInput() const { return ruInput_; }
       boost::shared_ptr<BUproxy> buProxy() const { return buProxy_; }
       
+      uint32_t runNumber() const { return runNumber_.value_; }
+      
     private:
+      
+      virtual void do_appendConfigurationItems(InfoSpaceItems&);
+      virtual void do_appendMonitoringItems(InfoSpaceItems&);
       
       RU* ru_;
       boost::shared_ptr<Input> ruInput_;
       boost::shared_ptr<BUproxy> buProxy_;
+
+      xdata::UnsignedInteger32 runNumber_;
       
     };
     

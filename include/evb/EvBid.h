@@ -18,10 +18,10 @@ namespace evb {
   public:
     
     EvBid()
-    : resyncCount_(0), eventNumber_(0) {};
+    : resyncCount_(0), eventNumber_(0), lsNumber_(0), runNumber_(0) {};
     
-    EvBid(uint32_t resyncCount, uint32_t eventNumber)
-    : resyncCount_(resyncCount), eventNumber_(eventNumber) {};
+    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t lsNumber, uint32_t runNumber)
+    : resyncCount_(resyncCount), eventNumber_(eventNumber), lsNumber_(lsNumber), runNumber_(runNumber) {};
 
     /**
      * Return the resync count
@@ -36,51 +36,60 @@ namespace evb {
     { return eventNumber_; }
 
     /**
+     * Return the lumi-section number
+     */
+    uint32_t lsNumber() const
+    { return lsNumber_; }
+
+    /**
+     * Return the run number
+     */
+    uint32_t runNumber() const
+    { return runNumber_; }
+
+    /**
      * Return true if the EvB id is valid
      */
     bool isValid() const
-    { return !( resyncCount_ == 0 && eventNumber_ == 0 ); }
+    { return ( *this != EvBid() ); }
 
     /**
-     * operator< induces a strict weak ordering, so that EvBid can
-     * be used as a key in std::map.
+     * comparison operators
      */
     bool operator< (const EvBid& other) const;
-    
-    /**
-     * operator== returns true if both the resyncCount and eventNumber are equal.
-     */
     bool operator== (const EvBid& other) const;
-    
-    /**
-     * operator!= is the negation of operator==.
-     */
     bool operator!= (const EvBid& other) const;
-    
+     
     
   private:
 
     uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
     uint32_t eventNumber_; // The L1 trigger number, aka event number
+    uint32_t lsNumber_;    // The lumi-section number. This number is optional
+    uint32_t runNumber_;   // The run number
 
   };
 
 
   inline bool EvBid::operator< (const EvBid& other) const
   {
-    return resyncCount_ == other.resyncCount_
-      ? eventNumber_ < other.eventNumber_
-      : resyncCount_ < other.resyncCount_;
+    if ( runNumber_ != other.runNumber_ ) return ( runNumber_ < other.runNumber_ );
+    if ( resyncCount_ != other.resyncCount_ ) return ( resyncCount_ < other.resyncCount_ );
+    return ( eventNumber_ < other.eventNumber_ );
   }
 
   inline bool EvBid::operator== (const EvBid& other) const
   {
-    return resyncCount_ == other.resyncCount_ && eventNumber_ == other.eventNumber_;
+    return (
+      runNumber_ == other.runNumber_ &&
+      resyncCount_ == other.resyncCount_ &&
+      eventNumber_ == other.eventNumber_
+    );
   }
 
   inline bool EvBid::operator!= (const EvBid& other) const
   {
-    return resyncCount_ != other.resyncCount_ || eventNumber_ != other.eventNumber_;
+    return !( *this == other );
   }
 
 } // namespace evb
@@ -92,6 +101,8 @@ inline std::ostream& operator<<
   const evb::EvBid& evbId
 )
 {
+  s << "runNumber=" << evbId.runNumber() << " ";
+  s << "lsNumber=" << evbId.lsNumber() << " ";
   s << "resyncCount=" << evbId.resyncCount() << " ";
   s << "eventNumber=" << evbId.eventNumber();
   

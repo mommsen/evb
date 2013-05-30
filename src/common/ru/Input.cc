@@ -108,6 +108,19 @@ bool evb::ru::Input::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChain
 }
 
 
+void evb::ru::Input::startProcessing(const uint32_t runNumber)
+{
+  handler_->startProcessing(runNumber);
+  acceptI2Omessages_ = true;
+}
+
+
+void evb::ru::Input::stopProcessing()
+{
+  acceptI2Omessages_ = false;
+}
+
+
 void evb::ru::Input::configure()
 {
   InputHandler::Configuration conf;

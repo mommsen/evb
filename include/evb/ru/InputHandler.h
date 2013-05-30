@@ -68,11 +68,14 @@ namespace evb {
       virtual void configure(const Configuration&) {};
       
       /**
+       * Start processing messages
+       */
+      virtual void startProcessing(const uint32_t runNumber) {};
+
+      /**
        * Remove all data
        */
       virtual void clear() {};
-      
-    private:
       
     };
     
@@ -87,6 +90,7 @@ namespace evb {
       virtual bool getNextAvailableSuperFragment(FragmentChainPtr&);
       virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
       virtual void configure(const Configuration&);
+      virtual void startProcessing(const uint32_t runNumber);
       virtual void clear();
       
     private:
@@ -120,7 +124,7 @@ namespace evb {
       virtual bool getNextAvailableSuperFragment(FragmentChainPtr&);
       virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
       virtual void configure(const Configuration&);
-      virtual void clear();
+      virtual void startProcessing(const uint32_t runNumber);
       
     private:
 

@@ -12,9 +12,7 @@
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
-#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
-#include "xdata/UnsignedInteger64.h"
 #include "xgi/Output.h"
 
 
@@ -84,39 +82,12 @@ namespace evb {
     
     virtual void bindNonDefaultXgiCallbacks();
     virtual void do_defaultWebPage(xgi::Output*);
-    void printHtml(xgi::Output*);
-    
-    void startProcessingWorkLoop();
-    bool process(toolbox::task::WorkLoop*);
-    void updateSuperFragmentCounters(toolbox::mem::Reference*);
     
     boost::shared_ptr<ru::BUproxy> buProxy_;
     boost::shared_ptr<ru::Input> ruInput_;
     boost::shared_ptr<ru::SuperFragmentTable> superFragmentTable_;
     
-    volatile bool doProcessing_;
-    volatile bool processActive_;
-    
-    toolbox::task::WorkLoop* processingWL_;
-    toolbox::task::ActionSignature* processingAction_;
-    
-    TimerManager timerManager_;
-    const uint8_t timerId_;
-    
-    PerformanceMonitor superFragmentMonitoring_;
-    boost::mutex superFragmentMonitoringMutex_;
-    
-    xdata::UnsignedInteger32 runNumber_;
-    xdata::UnsignedInteger32 maxPairAgeMSec_;
-    
-    xdata::UnsignedInteger32 monitoringRunNumber_;
-    xdata::UnsignedInteger32 nbSuperFragmentsInRU_;
-    xdata::UnsignedInteger32 nbSuperFragmentsBuilt_;
     xdata::UnsignedInteger32 nbSuperFragmentsReady_;
-    xdata::Double rate_;
-    xdata::Double bandwidth_;
-    xdata::Double fragmentSize_;
-    xdata::Double fragmentSizeStdDev_;
     
   }; // class RU
   
