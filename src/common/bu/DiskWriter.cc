@@ -281,7 +281,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
       {
         try
         {
-          fileHandlerAndEvent->event->parseAndCheckData();
+          fileHandlerAndEvent->event->checkEvent();
         }
         catch(exception::SuperFragment &e)
         {
@@ -304,7 +304,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
 
         boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
         ++diskWriterMonitoring_.nbEventsWritten;
-        const uint32_t eventNumber = fileHandlerAndEvent->event->evbId().eventNumber();
+        const uint32_t eventNumber = fileHandlerAndEvent->event->getEvBid().eventNumber();
         if ( eventNumber > diskWriterMonitoring_.lastEventNumberWritten )
           diskWriterMonitoring_.lastEventNumberWritten = eventNumber;
       }

@@ -28,8 +28,9 @@ processActive_(false)
 }
 
 
-void evb::bu::EventTable::startProcessing()
+void evb::bu::EventTable::startProcessing(const uint32_t runNumber)
 {
+  runNumber_ = runNumber;
   doProcessing_ = true;
   processingWL_->submit(processingAction_);
 }
@@ -125,29 +126,6 @@ bool evb::bu::EventTable::assembleDataBlockMessages()
   
   return true;
 }
-//   do
-//   {
-//     while ( doProcessing_ && !) { ::usleep(1000); }
-    
-//     if ( bufRef == 0 ) return false;
-    
-//     const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-//       (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-//     assert( dataBlockMsg->blockNb == ++nextBlockNb );
-    
-//     if ( head == 0 )
-//     {
-//       head = bufRef;
-//       tail = bufRef;
-//     }
-//     else
-//     {
-//       tail->setNextReference(bufRef);
-//       tail = bufRef;
-//     }
-
-//   } while ( dataBlockMsg->blockNb != dataBlockMsg->nbBlocks );
-// }
 
 
 bool evb::bu::EventTable::buildEvents()
@@ -155,19 +133,23 @@ bool evb::bu::EventTable::buildEvents()
   toolbox::mem::Reference* head = 0;
   
   if ( ! blockFIFO_.deq(head) ) return false;
+
+  const I2O_MESSAGE_FRAME* stdMsg =
+    (I2O_MESSAGE_FRAME*)head->getDataLocation();
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+  const I2O_TID ruTid = stdMsg->InitiatorAddress;
+  const uint32_t resourceId = dataBlockMsg->buResourceId;
   
   toolbox::mem::Reference* bufRef = head;
   
   while ( bufRef )
   {
-    // const I2O_MESSAGE_FRAME* stdMsg =
-    //   (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-    //    const uint32_t ruTid = stdMsg->InitiatorAddress;
     size_t offset = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
     
     while ( offset < bufRef->getBuffer()->getSize() )
     { 
-      const unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + offset;
+      unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + offset;
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
       const EvBid evbId = superFragmentMsg->evbId;
       
@@ -175,12 +157,14 @@ bool evb::bu::EventTable::buildEvents()
       if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
       {
         // new event
-        // EventPtr event( new Event(evbId,ruTids_) );
-        // eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+        EventPtr event( new Event(runNumber_, evbId.eventNumber(), resourceId, ruProxy_->getRuTids()) );
+        eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+
+        ++eventMonitoring_.nbEventsInBU;
       }
       
-      // eventPos->second->appendFragment(ruTid,bufRef->duplicate(),
-      //   payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
+      eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
+        payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
       
       offset += superFragmentMsg->partSize;
     }
@@ -203,10 +187,15 @@ bool evb::bu::EventTable::handleCompleteEvents()
   {
     if ( eventPos->second->isComplete() )
     {
+      --eventMonitoring_.nbEventsInBU;
+      
       if ( ! dropEventData_ )
         diskWriter_->writeEvent(eventPos->second);
+      else
+        ++eventMonitoring_.nbEventsDropped;
       
       eventMap_.erase(eventPos++);
+      
       foundCompleteEvents = true;
     }
   }
@@ -227,7 +216,6 @@ void evb::bu::EventTable::appendConfigurationItems(InfoSpaceItems& params)
 void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbEvtsUnderConstruction_ = 0;
-  nbEvtsReady_ = 0;
   nbEventsInBU_ = 0;
   nbEvtsBuilt_ = 0;
   rate_ = 0;
@@ -236,7 +224,6 @@ void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
   eventSizeStdDev_ = 0;
   
   items.add("nbEvtsUnderConstruction", &nbEvtsUnderConstruction_);
-  items.add("nbEvtsReady", &nbEvtsReady_);
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEvtsBuilt", &nbEvtsBuilt_);
   items.add("rate", &rate_);
@@ -250,15 +237,12 @@ void evb::bu::EventTable::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
   
-  nbEvtsUnderConstruction_ =  eventMonitoring_.nbEventsUnderConstruction;
   nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
   nbEvtsBuilt_ = eventMonitoring_.perf.logicalCount;
   rate_ = eventMonitoring_.perf.logicalRate();
   bandwidth_ = eventMonitoring_.perf.bandwidth();
   eventSize_ = eventMonitoring_.perf.size();
   eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
-  
-  //nbEvtsReady_ = completeEventsFIFO_.elements();
 }
 
 
@@ -266,7 +250,6 @@ void evb::bu::EventTable::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-  eventMonitoring_.nbEventsUnderConstruction = 0;
   eventMonitoring_.nbEventsInBU = 0;
   eventMonitoring_.nbEventsDropped = 0;
   eventMonitoring_.perf.reset();
@@ -308,11 +291,7 @@ void evb::bu::EventTable::printHtml(xgi::Output *out)
     *out << "<td>" << eventMonitoring_.perf.logicalCount << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events under construction</td>"                  << std::endl;
-    *out << "<td>" << eventMonitoring_.nbEventsUnderConstruction << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># complete events in BU</td>"                      << std::endl;
+    *out << "<td># events in BU</td>"                               << std::endl;
     *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;

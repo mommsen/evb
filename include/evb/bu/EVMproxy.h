@@ -141,7 +141,7 @@ namespace evb { namespace bu { // namespace evb::bu
     xdaq::Application* app_;
     toolbox::mem::Pool* fastCtrlMsgPool_;
     log4cplus::Logger& logger_;
-    uint32_t tid_;
+    I2O_TID tid_;
     uint32_t index_;
     ApplicationDescriptorAndTid evm_;
 

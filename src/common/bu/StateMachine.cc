@@ -204,7 +204,7 @@ void evb::bu::Enabled::entryAction()
   const uint32_t runNumber = stateMachine.runNumber();
 
   stateMachine.diskWriter()->startProcessing(runNumber);
-  stateMachine.eventTable()->startProcessing();
+  stateMachine.eventTable()->startProcessing(runNumber);
 }
 
 

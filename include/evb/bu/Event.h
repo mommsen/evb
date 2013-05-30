@@ -11,6 +11,7 @@
 #include "evb/bu/SuperFragmentDescriptor.h"
 #include "evb/EvBid.h"
 #include "evb/EventUtils.h"
+#include "i2o/i2oDdmLib.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -31,8 +32,10 @@ namespace evb {
       
       Event
       (
-        const uint32_t ruCount,
-        toolbox::mem::Reference*
+        const uint32_t runNumber,
+        const uint32_t eventNumber,
+        const uint32_t resourceId,
+        const std::vector<I2O_TID>& ruTids
       );
       
       ~Event();
@@ -40,17 +43,24 @@ namespace evb {
       /**
        * Append a super fragment to the event
        */
-      void appendSuperFragment(toolbox::mem::Reference*);
+      void appendSuperFragment
+      (
+        const I2O_TID ruTid,
+        toolbox::mem::Reference*,
+        unsigned char* fragmentPos,
+        uint32_t length
+      );
       
       /**
        * Return true if all super fragments have been received
        */
-      bool isComplete() const;
+      bool isComplete() const
+      { return ruTids_.empty(); }
       
       /**
        * Check the complete event for integrity of the data
        */
-      void parseAndCheckData();
+      void checkEvent();
       
       /**
        * Write the event to disk using the handler passed
@@ -58,16 +68,16 @@ namespace evb {
       void writeToDisk(FileHandlerPtr);
       
       /**
-       * Return the buResourceId
+       * Return the event-builder id of the event
        */
-      uint32_t buResourceId() const
-      { return buResourceId_; }
+      EvBid getEvBid() const
+      { return evbId_; }
       
       /**
-       * Return the evb id
+       * Return the resource id
        */
-      EvBid evbId() const
-      { return evbId_; }
+      uint32_t resourceId() const
+      { return resourceId_; }
       
       /**
        * Return the lumiSection
@@ -81,26 +91,15 @@ namespace evb {
       uint32_t runNumber() const
       { return eventInfo_->runNumber; }
       
-      /**
-       * Return the payload in Bytes
-       */
-      size_t payload() const
-      { return payload_; }
-      
       
     private:
-      
-      // Map to hold super fragments index by RU instance
-      typedef std::map<uint32_t,SuperFragmentDescriptorPtr> Data;
-      Data data_;
-      boost::mutex mutex_;
       
       struct EventInfo
       {
         const uint32_t version;
         const uint32_t runNumber;
-        const uint32_t lumiSection;
         const uint32_t eventNumber;
+        uint32_t lumiSection;
         uint32_t eventSize;
         uint32_t paddingSize;
         uint32_t fedSizes[FED_COUNT];
@@ -109,7 +108,6 @@ namespace evb {
         
         EventInfo(
           const uint32_t runNumber,
-          const uint32_t lumiSection,
           const uint32_t eventNumber
         );
         
@@ -120,35 +118,47 @@ namespace evb {
       };
       EventInfo* eventInfo_;
       
-      size_t offset_;
-      struct FedLocation
+      struct DataLocation
       {
-        const unsigned char* location;
-        const uint32_t length;
-        const size_t offset;
+        unsigned char* location;
+        uint32_t length;
         
-        FedLocation(const unsigned char* loc, const uint32_t len, const size_t offset) :
-        location(loc),length(len),offset(offset) {};
+        DataLocation(unsigned char* loc, uint32_t len) :
+        location(loc),length(len) {};
       };
-      typedef boost::shared_ptr<FedLocation> FedLocationPtr;
-      typedef std::vector<FedLocationPtr> FedLocations;
-      FedLocations fedLocations_;
+      //typedef boost::shared_ptr<DataLocation> DataLocationPtr;
+      typedef std::vector<DataLocation> DataLocations;
+      DataLocations dataLocations_;
+      typedef std::vector<toolbox::mem::Reference*> BufferReferences;
+      BufferReferences myBufRefs_;
       
-      void checkTriggerFragment(toolbox::mem::Reference*);
-      void checkSuperFragment(toolbox::mem::Reference*);
+      void checkFedHeader
+      (
+        const unsigned char* pos,
+        const uint32_t offset,
+        FedInfo&
+      ) const;
+      void checkFedTrailer
+      (
+        const unsigned char* pos,
+        const uint32_t offset,
+        FedInfo&
+      ) const;
+      void checkCRC
+      (
+        FedInfo&,
+        const uint32_t eventNumber
+      ) const;
       uint16_t updateCRC
       (
         const size_t& first,
         const size_t& last
-      );
+      ) const;
       
-      const uint32_t nbExpectedSuperFragments_;
-      uint32_t nbCompleteSuperFragments_;
-      
-      uint32_t buResourceId_;
-      EvBid evbId_;
-      uint32_t eventNumber_;
-      size_t payload_;
+      const EvBid evbId_;
+      const uint32_t resourceId_;
+      typedef std::vector<I2O_TID> RUtids;
+      RUtids ruTids_;
       
     }; // Event
     

@@ -18,142 +18,63 @@
 
 evb::bu::Event::Event
 (
-  const uint32_t ruCount,
-  toolbox::mem::Reference* bufRef
+  const uint32_t runNumber,
+  const uint32_t eventNumber,
+  const uint32_t resourceId,
+  const std::vector<I2O_TID>& ruTids
 ) :
-offset_(0),
-nbExpectedSuperFragments_(ruCount+1), // RUs + 1 EVM
-nbCompleteSuperFragments_(1)
+resourceId_(resourceId),
+ruTids_(ruTids)
 {  
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-  buResourceId_ = block->buResourceId;
-  evbId_ = EvBid(block->resyncCount, block->eventNumber);
-  eventInfo_ = new EventInfo(block->runNumber, block->lumiSection, block->eventNumber);
-  
-  payload_ = (((I2O_MESSAGE_FRAME*)block)->MessageSize << 2) -
-    sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME);
-  
-  SuperFragmentDescriptorPtr superFragment(
-    new SuperFragmentDescriptor(bufRef)
-  );
-  data_.insert(Data::value_type(0, superFragment));
+  eventInfo_ = new EventInfo(runNumber, eventNumber);
 }
 
 
 evb::bu::Event::~Event()
 {
   delete eventInfo_;
-  data_.clear();
-  fedLocations_.clear();
+  dataLocations_.clear();
+  for (BufferReferences::iterator it = myBufRefs_.begin(), itEnd = myBufRefs_.end();
+       it != itEnd; ++it)
+  {
+    (*it)->release();
+  }
+  myBufRefs_.clear();
 }
 
 
 void evb::bu::Event::appendSuperFragment
 (
-  toolbox::mem::Reference* bufRef
+  const I2O_TID ruTid,
+  toolbox::mem::Reference* bufRef,
+  unsigned char* fragmentPos,
+  uint32_t length
 )
 {
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-  payload_ += (((I2O_MESSAGE_FRAME*)block)->MessageSize << 2) -
-    sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME);
-
-  // Only keep non-empty super fragments
-  if ( bufRef->getDataSize() > sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) )
+  const RUtids::iterator pos =
+    std::find(ruTids_.begin(),ruTids_.end(),ruTid);
+  if ( pos == ruTids_.end() )
   {
-    Data::iterator pos = data_.lower_bound(block->superFragmentNb);
-    if ( pos == data_.end() || (data_.key_comp()(block->superFragmentNb, pos->first)) )
-    {
-      // Use pos as hint to insert new super fragment
-      SuperFragmentDescriptorPtr superFragment(
-        new SuperFragmentDescriptor(bufRef)
-      );
-      data_.insert(pos, Data::value_type(block->superFragmentNb, superFragment));
-    }
-    else
-    {
-      pos->second->append(bufRef);
-    }
-  }
-  
-  // If the event data block is the last of its super-fragment
-  if ( block->blockNb == (block->nbBlocksInSuperFragment-1) )
-  {
-    // Increment the count of completed super-fragments
-    ++nbCompleteSuperFragments_;
-  }
-}
-
-
-bool evb::bu::Event::isComplete() const
-{
-  return ( nbExpectedSuperFragments_ == nbCompleteSuperFragments_ );
-}
-
-void evb::bu::Event::parseAndCheckData()
-{
-  if ( ! isComplete() )
-  {
-    XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity.");
-  }
-
-  Data::const_iterator it = data_.begin();
-  const Data::const_iterator itEnd = data_.end();
-  toolbox::mem::Reference* bufRef = it->second->get();
-  
-  try
-  {
-    checkTriggerFragment(bufRef);
-  }
-  catch(exception::SuperFragment &e)
-  {
-    const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-        (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
     std::ostringstream oss;
-    
-    oss << "Received a bad trigger fragment.";
-    oss << " eventNumber: " << block->eventNumber;
-    oss << " resyncCount: " << block->resyncCount;
-    oss << " buResourceId: " << block->buResourceId;
-    oss << " superFragmentNb: " << block->superFragmentNb;
-    DumpUtility::dump(oss, bufRef);
-    
-    XCEPT_RETHROW(exception::SuperFragment, oss.str(), e);
+    oss << "Received a duplicated or unexpected super fragment from RU TID " << ruTid;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
   
-  while ( ++it != itEnd )
-  {
-    bufRef = it->second->get();
+  myBufRefs_.push_back(bufRef);
+  DataLocation dataLocation(fragmentPos,length);
+  dataLocations_.push_back(dataLocation);
   
-    try
-    {
-      checkSuperFragment(bufRef);
-    }
-    catch(exception::SuperFragment &e)
-    {
-      const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-        (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-      std::ostringstream oss;
-      
-      oss << "Received a bad super fragment.";
-      oss << " eventNumber: " << block->eventNumber;
-      oss << " resyncCount: " << block->resyncCount;
-      oss << " buResourceId: " << block->buResourceId;
-      oss << " superFragmentNb: " << block->superFragmentNb;
-      DumpUtility::dump(oss, bufRef);
-      
-      XCEPT_RETHROW(exception::SuperFragment, oss.str(), e);
-    }
-  }
+  // erase at the very end. Otherwise the event might be considered complete
+  // before the last chunk has been fully treated
+  ruTids_.erase(pos);
 }
 
 
 void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
 {
-  if ( fedLocations_.empty() )
+  if ( dataLocations_.empty() )
   {
-    XCEPT_RAISE(exception::EventOrder, "Cannot find any FED data. Has the event been parsed?");
+    XCEPT_RAISE(exception::EventOrder, "Cannot find any FED data.");
   }
   
   // Get the memory mapped file chunk
@@ -164,13 +85,13 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
   memcpy(map, eventInfo_, eventInfo_->headerSize);
 
   // Write event
-  const size_t locations = fedLocations_.size();
   char* filepos = map+eventInfo_->headerSize;
-
-  for (size_t i=locations; i > 0 ; --i)
+  
+  for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
+       it != itEnd; ++it)
   {
-    const FedLocationPtr loc = fedLocations_[i-1];
-    memcpy(filepos+loc->offset, loc->location, loc->length);
+    memcpy(filepos, it->location, it->length);
+    filepos += it->length;
   }
 
   if ( munmap(map, bufferSize) == -1 )
@@ -185,120 +106,58 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
 }
 
 
-void evb::bu::Event::checkTriggerFragment(toolbox::mem::Reference* bufRef)
+void evb::bu::Event::checkEvent()
 {
-  const size_t bufSize = bufRef->getDataSize();
-  const size_t minimumBufSize =
-    sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) +
-    sizeof(frlh_t) + sizeof(fedh_t) + sizeof(fedt_t);
-  
-  if (bufSize < minimumBufSize)
+  if ( ! isComplete() )
   {
-    std::stringstream oss;
-    
-    oss << "Trigger message is too small.";
-    oss << " Minimum size: " << minimumBufSize;
-    oss << " Received: "     << bufSize;
-    
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity.");
   }
   
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+  DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
+  const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
 
-  if (block->blockNb != 0)
-  {
-    std::stringstream oss;
-    
-    oss << "Trigger block number is not 0.";
-    oss << " Received: " << block->blockNb;
-    
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
-  }
-  
-  checkSuperFragment(bufRef);
-}
-
-
-void evb::bu::Event::checkSuperFragment(toolbox::mem::Reference* head)
-{
-  typedef std::vector<toolbox::mem::Reference*> Chain;
-  Chain chain;
-
-  toolbox::mem::Reference* bufRef = head;
-  while (bufRef)
-  {
-    chain.push_back(bufRef);
-    bufRef = bufRef->getNextReference();
-  }
-
-  Chain::const_reverse_iterator rit = chain.rbegin();
-  const Chain::const_reverse_iterator ritEnd = chain.rend();
-
-  uint32_t segSize = 0;
+  uint32_t remainingLength = rit->length;
   
   do {
-    if (segSize == 0) segSize = checkFrlHeader(*rit);
     FedInfo fedInfo;
-    checkFedTrailer(*rit,segSize,fedInfo);
-    //const size_t lastFragment = fedLocations_.size() - 1;
+    checkFedTrailer(rit->location, remainingLength, fedInfo);
 
     uint32_t remainingFedSize = fedInfo.fedSize();
-    offset_ += remainingFedSize;
-    size_t fedOffset = offset_;
 
     // now start the odyssee to the fragment header
-    // advance to the block where we expect the header
-    while ( remainingFedSize > segSize ) 
+    // advance to the data section where we expect the header
+    while ( remainingFedSize > rit->length )
     {
-      fedOffset -= segSize;
-      FedLocationPtr fedLocation = FedLocationPtr( new FedLocation(
-        (unsigned char*)((toolbox::mem::Reference*)(*rit)->getDataLocation()) +
-        sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) +
-        sizeof(frlh_t),
-        segSize, fedOffset));
-      fedLocations_.push_back(fedLocation);
-
       // advance to the next block
-      remainingFedSize -= segSize;
+      remainingFedSize -= rit->length;
       ++rit;
-      if ( rit == chain.rend() ) 
+      if ( rit == ritEnd )
       {
-        XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of block chain encountered.");
+        XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered.");
       }
-      
-      segSize = checkFrlHeader(*rit);
+      remainingLength = rit->length;
     }
     
-    // segSize now points to the end of the previous fragment or is 0
-    segSize -= remainingFedSize;
-    fedOffset -= remainingFedSize;
-    FedLocationPtr fedLocation = FedLocationPtr( new FedLocation(
-      (unsigned char*)((toolbox::mem::Reference*)(*rit)->getDataLocation()) +
-      sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) +
-      sizeof(frlh_t) +
-      segSize,
-      remainingFedSize, fedOffset));
-    fedLocations_.push_back(fedLocation);
-
+    remainingLength -= remainingFedSize;
     //fedInfo.crc = updateCRC(fedLocations_.size()-1, lastFragment);
 
-    // the header must be in the current block
-    checkFedHeader(*rit, segSize, fedInfo);
+    checkFedHeader(rit->location, remainingLength, fedInfo);
     if ( !eventInfo_->addFedSize(fedInfo) )
     {
-      const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-        (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)
-        ((toolbox::mem::Reference*)(*rit))->getDataLocation();
       std::stringstream oss;
       
       oss << "Duplicated FED id " << fedInfo.fedId;
-      oss << " found in event " << block->eventNumber;
+      oss << " found in event " << eventInfo_->eventNumber;
       
       XCEPT_RAISE(exception::SuperFragment, oss.str());
     }
     
-    if ( segSize == 0 ) ++rit; // the next trailer is in a new block
+    if ( fedInfo.fedId == 512 /* TRIGGER_FED_ID */ )
+    {
+      // extract L1 information
+    }
+
+    if ( remainingLength == 0 ) ++rit; // the next trailer is in the next data chunk
     
   } while ( rit != ritEnd );
 }
@@ -308,28 +167,124 @@ uint16_t evb::bu::Event::updateCRC
 (
   const size_t& first,
   const size_t& last
-)
+) const
 {
   //boost::crc_optimal<16, 0x8005, 0xFFFF, 0, false, false> crc;
   uint16_t crc(0xFFFF);
 
-  for (size_t i = first; i != last; --i)
-  {
-    const FedLocationPtr loc = fedLocations_[i];
-    const size_t wordCount = loc->length/8;
-    for (size_t w=0; w<wordCount; ++w)
-    {
-      //crc.process_block(&loc->location[w*8+7],&loc->location[w*8]);
-      for (int b=7; b >= 0; --b)
-      {
-        const unsigned char index = (crc >> 8) ^ loc->location[w*8+b];
-        crc <<= 8;
-        crc ^= crc_table[index];
-      }
-    }
-  }
+  // for (size_t i = first; i != last; --i)
+  // {
+  //   const FedLocationPtr loc = fedLocations_[i];
+  //   const size_t wordCount = loc->length/8;
+  //   for (size_t w=0; w<wordCount; ++w)
+  //   {
+  //     //crc.process_block(&loc->location[w*8+7],&loc->location[w*8]);
+  //     for (int b=7; b >= 0; --b)
+  //     {
+  //       const unsigned char index = (crc >> 8) ^ loc->location[w*8+b];
+  //       crc <<= 8;
+  //       crc ^= crc_table[index];
+  //     }
+  //   }
+  // }
   
   return crc; //.checksum();
+}
+
+void evb::bu::Event::checkFedHeader
+(
+  const unsigned char* pos,
+  const uint32_t offset,
+  FedInfo& fedInfo
+) const
+{
+  const fedh_t* fedHeader = (fedh_t*)(pos + offset);
+  
+  if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
+  {
+    std::stringstream oss;
+    
+    oss << "Expected FED header of event " << eventInfo_->eventNumber;
+    oss << " but got event id 0x" << std::hex << fedHeader->eventid;
+    oss << " and source id 0x" << std::hex << fedHeader->sourceid;
+    
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+  
+  const uint32_t eventid = FED_LVL1_EXTRACT(fedHeader->eventid);
+  fedInfo.fedId = FED_SOID_EXTRACT(fedHeader->sourceid);
+
+  if (eventid != eventInfo_->eventNumber)
+  {
+    std::stringstream oss;
+    
+    oss << "FED header \"eventid\" " << eventid << " does not match";
+    oss << " expected eventNumber " << eventInfo_->eventNumber;
+    
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+  
+  if ( fedInfo.fedId >= FED_COUNT )
+  {
+    std::stringstream oss;
+    
+    oss << "The FED id " << fedInfo.fedId << " is larger than the maximum " << FED_COUNT;
+    oss << " in event " << eventid;
+    
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+  
+  checkCRC(fedInfo, eventid);
+}
+
+
+void evb::bu::Event::checkFedTrailer
+(
+  const unsigned char* pos,
+  const uint32_t offset,
+  FedInfo& fedInfo
+) const
+{
+  fedInfo.trailer = (fedt_t*)(pos + offset - sizeof(fedt_t));
+  
+  if ( FED_TCTRLID_EXTRACT(fedInfo.trailer->eventsize) != FED_SLINK_END_MARKER )
+  {
+    std::stringstream oss;
+    
+    oss << "Expected FED trailer for event " << eventInfo_->eventNumber;
+    oss << " but got event size 0x" << std::hex << fedInfo.trailer->eventsize;
+    oss << " and conscheck 0x" << std::hex << fedInfo.trailer->conscheck;
+    
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+
+  // Force CRC field to zero before re-computing the CRC.
+  // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
+  fedInfo.conscheck = fedInfo.trailer->conscheck;
+  fedInfo.trailer->conscheck = 0;
+}  
+
+
+void evb::bu::Event::checkCRC
+(
+  FedInfo& fedInfo,
+  const uint32_t eventNumber
+) const
+{
+  const uint16_t trailerCRC = FED_CRCS_EXTRACT(fedInfo.conscheck);
+  fedInfo.trailer->conscheck = fedInfo.conscheck;
+
+  if ( fedInfo.crc != 0xffff && trailerCRC != fedInfo.crc )
+  {
+    std::stringstream oss;
+    
+    oss << "Wrong CRC checksum in FED trailer of event " << eventNumber;
+    oss << " for FED " << fedInfo.fedId;
+    oss << ": found 0x" << std::hex << trailerCRC;
+    oss << ", but calculated 0x" << std::hex << fedInfo.crc;
+    
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
 }
 
 
@@ -337,13 +292,12 @@ inline
 evb::bu::Event::EventInfo::EventInfo
 (
   const uint32_t run,
-  const uint32_t lumi,
   const uint32_t event
 ) :
 version(3),
 runNumber(run),
-lumiSection(lumi),
 eventNumber(event),
+lumiSection(0),
 eventSize(0)
 {
   for (uint16_t i=0; i<FED_COUNT; ++i)

@@ -69,10 +69,10 @@ namespace evb { namespace bu { // namespace evb::bu
     );
     
     /**
-     * Return the number of RUs participating in the event building
+     * Return the tids of RUs participating in the event building
      */
-    size_t getRuCount() const
-    { return ruCount_; }
+    std::vector<I2O_TID>& getRuTids()
+    { return ruTids_; }
 
     
   protected:
@@ -80,7 +80,7 @@ namespace evb { namespace bu { // namespace evb::bu
     xdaq::Application* app_;
     toolbox::mem::Pool* fastCtrlMsgPool_;
     log4cplus::Logger& logger_;
-    uint32_t tid_;
+    I2O_TID tid_;
     
     typedef std::set<ApplicationDescriptorAndTid>
     RUDescriptorsAndTids;
@@ -92,10 +92,11 @@ namespace evb { namespace bu { // namespace evb::bu
     void fillParticipatingRUsUsingRuInstances();
     void fillRUInstance(xdata::UnsignedInteger32);
 
+    std::vector<I2O_TID> ruTids_;
     typedef xdata::Vector<xdata::UnsignedInteger32> RUInstances;
     RUInstances ruInstances_;
     boost::mutex ruInstancesMutex_;
-    size_t ruCount_;
+    
   };
   
   

@@ -153,7 +153,7 @@ namespace evb {
       RU* ru_;
       boost::shared_ptr<ru::Input> input_;
       boost::shared_ptr<StateMachine> stateMachine_;
-      uint32_t tid_;
+      I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
       
       toolbox::task::WorkLoop* processingWL_;

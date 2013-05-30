@@ -35,7 +35,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 }
 
 
-void evb::bu::RUproxy::updateFragmentCounters(toolbox::mem::Reference* bufRef)
+Index evb::bu::RUproxy::updateFragmentCounters(toolbox::mem::Reference* bufRef)
 {
   boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
   
@@ -46,7 +46,11 @@ void evb::bu::RUproxy::updateFragmentCounters(toolbox::mem::Reference* bufRef)
   const size_t payload =
     (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
   const uint32_t ruTid = stdMsg->InitiatorAddress;
-
+  
+  Index index;
+  index.ruTid = stdMsg->InitiatorAddress;
+  index.resourceId = dataBlockMsg->buResourceId;
+  
   fragmentMonitoring_.payload += payload;
   fragmentMonitoring_.payloadPerRU[ruTid] += payload;
   ++fragmentMonitoring_.i2oCount;
@@ -69,7 +73,7 @@ bool evb::bu::RUproxy::getData
 
 void evb::bu::RUproxy::requestTriggerData
 (
-  const uint32_t buResourceId,
+  const uint32_t resourceId,
   const uint32_t count
 )
 {

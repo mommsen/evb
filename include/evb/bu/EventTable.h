@@ -93,7 +93,7 @@ namespace evb {
       /**
        * Start processing messages
        */
-      void startProcessing();
+      void startProcessing(const uint32_t runNumber);
 
       /**
        * Stop processing messages
@@ -149,6 +149,7 @@ namespace evb {
       typedef std::map<EvBid,EventPtr> EventMap;
       EventMap eventMap_;
       FragmentChain::ResourceList ruTids_;
+      uint32_t runNumber_;
       
       typedef OneToOneQueue<toolbox::mem::Reference*> BlockFIFO;
       BlockFIFO blockFIFO_;
@@ -165,7 +166,6 @@ namespace evb {
       
       struct EventMonitoring
       {
-        uint32_t nbEventsUnderConstruction;
         uint32_t nbEventsInBU;
         uint32_t nbEventsDropped;
         PerformanceMonitor perf;
@@ -173,7 +173,6 @@ namespace evb {
       boost::mutex eventMonitoringMutex_;
       
       xdata::UnsignedInteger32 nbEvtsUnderConstruction_;
-      xdata::UnsignedInteger32 nbEvtsReady_;
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEvtsBuilt_;
       xdata::Double rate_;

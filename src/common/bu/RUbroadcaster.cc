@@ -20,8 +20,7 @@ evb::bu::RUbroadcaster::RUbroadcaster
 app_(app),
 fastCtrlMsgPool_(fastCtrlMsgPool),
 logger_(app->getApplicationLogger()),
-tid_(0),
-ruCount_(0)
+tid_(0)
 {}
 
 
@@ -105,6 +104,7 @@ void evb::bu::RUbroadcaster::fillParticipatingRUsUsingRuInstances()
 
   // Clear list of participating RUs
   participatingRUs_.clear();
+  ruTids_.clear();
 
   // Fill list of participating RUs
   for (RUInstances::iterator it = ruInstances_.begin(),
@@ -113,7 +113,6 @@ void evb::bu::RUbroadcaster::fillParticipatingRUsUsingRuInstances()
   {
     fillRUInstance(*it);
   }
-  ruCount_ = participatingRUs_.size();
 }
 
 
@@ -161,6 +160,8 @@ void evb::bu::RUbroadcaster::fillRUInstance(xdata::UnsignedInteger32 instance)
     
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
+  
+  ruTids_.push_back(ru.tid);
 }
 
 void evb::bu::RUbroadcaster::sendToAllRUs
