@@ -5,6 +5,7 @@
 
 #include "interface/shared/fed_header.h"
 #include "interface/shared/ferol_header.h"
+#include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "evb/ru/InputHandler.h"
 #include "evb/Constants.h"
@@ -156,7 +157,38 @@ void evb::ru::FEROLproxy::clear()
 
 uint32_t evb::ru::FEROLproxy::extractTriggerInformation(const unsigned char* payload) const
 {
-  return 0;
+  using namespace evtn;
+  
+  //set the evm board sense
+  if (! set_evm_board_sense(payload) )
+  {
+    XCEPT_RAISE(exception::L1Trigger, "Cannot decode EVM board sense");
+  }
+  
+  //check that we've got the TCS chip
+  if (! has_evm_tcs(payload) )
+  {
+    XCEPT_RAISE(exception::L1Trigger, "No TCS chip found");
+  }
+  
+  //check that we've got the FDL chip
+  if (! has_evm_fdl(payload) )
+  {
+    XCEPT_RAISE(exception::L1Trigger, "No FDL chip found");
+  }
+  
+  //check that we got the right bunch crossing
+  if ( getfdlbxevt(payload) != 0 )
+  {
+    std::ostringstream msg;
+    msg << "Wrong bunch crossing in event (expect 0): "
+      << getfdlbxevt(payload);
+    XCEPT_RAISE(exception::L1Trigger, msg.str());
+  }
+  
+  //extract lumi section number
+  //use offline numbering scheme where LS starts with 1
+  return getlbn(payload) + 1;
 }
 
 
