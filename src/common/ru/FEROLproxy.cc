@@ -25,6 +25,7 @@ void evb::ru::FEROLproxy::configure(const Configuration& conf)
   clear();
   
   dropInputData_ = conf.dropInputData;
+  triggerFedId_ = conf.triggerFedId;
   
   evbIdFactories_.clear();
   fedList_.clear();
@@ -58,13 +59,19 @@ void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
   
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  char* payload = (char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   ferolh_t* ferolHeader = (ferolh_t*)payload;
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
-  const uint64_t fedId = ferolHeader->fed_id();
-  const uint64_t eventNumber = ferolHeader->event_number();
+  const uint16_t fedId = ferolHeader->fed_id();
+  const uint32_t eventNumber = ferolHeader->event_number();
   
-  const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber);
+  uint32_t lsNumber = 0;
+  if ( fedId == triggerFedId_ )
+  {
+    lsNumber = extractTriggerInformation(payload);
+  }
+
+  const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
   //bufRef->release(); return;
   
@@ -144,6 +151,12 @@ void evb::ru::FEROLproxy::clear()
   
   superFragmentMap_.clear();
   nbSuperFragmentsReady_ = 0;
+}
+
+
+uint32_t evb::ru::FEROLproxy::extractTriggerInformation(const unsigned char* payload) const
+{
+  return 0;
 }
 
 

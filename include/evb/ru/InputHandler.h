@@ -62,6 +62,7 @@ namespace evb {
         uint32_t dummyFedSizeStdDev;
         uint32_t fragmentPoolSize;
         xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
+        uint16_t triggerFedId;
         bool usePlayback;
         std::string playbackDataFile;
       };
@@ -92,12 +93,16 @@ namespace evb {
       virtual void configure(const Configuration&);
       virtual void startProcessing(const uint32_t runNumber);
       virtual void clear();
+      uint32_t extractTriggerInformation(const unsigned char* payload) const;
       
     private:
 
       void addFragment(toolbox::mem::Reference*);
       toolbox::mem::Reference* copyDataIntoDataBlock(FragmentChainPtr);
       void fillBlockInfo(toolbox::mem::Reference*, const EvBid&, const uint32_t nbBlocks) const;
+      
+      bool dropInputData_;
+      uint16_t triggerFedId_;
       
       FragmentChain::ResourceList fedList_;
       typedef std::map<EvBid,FragmentChainPtr> SuperFragmentMap;
@@ -106,8 +111,6 @@ namespace evb {
       
       typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
       EvBidFactories evbIdFactories_;
-      
-      bool dropInputData_;
 
       uint32_t nbSuperFragmentsReady_;
     };

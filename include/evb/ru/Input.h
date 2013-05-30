@@ -155,6 +155,7 @@ namespace evb {
       xdata::UnsignedInteger32 dummyFedSizeStdDev_;
       xdata::UnsignedInteger32 fragmentPoolSize_;
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds_;
+      xdata::UnsignedInteger32 triggerFedId_;
       
       xdata::UnsignedInteger32 lastEventNumberFromRUI_;
       xdata::UnsignedInteger64 i2oEVMRUDataReadyCount_;

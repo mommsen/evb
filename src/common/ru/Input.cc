@@ -129,6 +129,7 @@ void evb::ru::Input::configure()
   conf.dummyFedSizeStdDev = dummyFedSizeStdDev_.value_;
   conf.fragmentPoolSize = fragmentPoolSize_.value_;
   conf.fedSourceIds = fedSourceIds_;
+  conf.triggerFedId = triggerFedId_;
   conf.usePlayback = usePlayback_.value_;
   conf.playbackDataFile = playbackDataFile_.value_;
   handler_->configure(conf);
@@ -152,6 +153,7 @@ void evb::ru::Input::appendConfigurationItems(InfoSpaceItems& params)
   dummyFedSize_ = 2048;
   dummyFedSizeStdDev_ = 0;
   fragmentPoolSize_ = 1638400;
+  triggerFedId_ = 512;
   
   // Default is 8 FEDs per super-fragment
   // Trigger has FED source id 0, RU0 has 1 to 8, RU1 has 9 to 16, etc.
@@ -174,6 +176,7 @@ void evb::ru::Input::appendConfigurationItems(InfoSpaceItems& params)
   inputParams_.add("dummyFedSizeStdDev", &dummyFedSizeStdDev_);
   inputParams_.add("fragmentPoolSize", &fragmentPoolSize_);
   inputParams_.add("fedSourceIds", &fedSourceIds_);
+  inputParams_.add("triggerFedId", &triggerFedId_);
 
   params.add(inputParams_);
 }
