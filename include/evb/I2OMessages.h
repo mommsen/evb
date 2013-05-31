@@ -31,11 +31,10 @@ namespace evb {
      */
     typedef struct
     {
-      EvBid evbId;                               // The EvBid of the event
-      uint32_t nbSuperFragments;                 // Total number of super fragments
       uint32_t superFragmentNb;                  // Index of the super fragment
       uint32_t totalSize;                        // Total size of the super fragment
       uint32_t partSize;                         // Partial size of the super-fragment contained in this message
+      uint32_t padding;
       
     } SuperFragment;
     
@@ -49,7 +48,8 @@ namespace evb {
       uint32_t buResourceId;                     // Index of BU resource used to built the event
       uint32_t nbBlocks;                         // Total number of I2O blocks
       uint32_t blockNb;                          // Index of the this block
-      uint32_t padding;
+      uint32_t nbSuperFragments;                 // Total number of super fragments
+      EvBid evbIds[1];                           // The EvBids of the super fragments
       
     } I2O_DATA_BLOCK_MESSAGE_FRAME;
 

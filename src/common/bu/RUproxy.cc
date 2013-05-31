@@ -1,6 +1,8 @@
 #include "i2o/Method.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "interface/shared/i2oXFunctionCodes.h"
+#include "evb/BU.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/Constants.h"
 #include "evb/EvBid.h"
@@ -14,10 +16,13 @@
 
 evb::bu::RUproxy::RUproxy
 (
-  xdaq::Application* app,
-  toolbox::mem::Pool* fastCtrlMsgPool
+  BU* bu,
+  toolbox::mem::Pool* fastCtrlMsgPool,
+  boost::shared_ptr<ResourceManager> resourceManager
 ) :
-RUbroadcaster(app,fastCtrlMsgPool),
+RUbroadcaster(bu,fastCtrlMsgPool),
+bu_(bu),
+resourceManager_(resourceManager),
 fragmentFIFO_("fragmentFIFO")
 {
   resetMonitoringCounters();
@@ -28,32 +33,61 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
   while (bufRef)
   {
-    updateFragmentCounters(bufRef);
-    while ( ! fragmentFIFO_.enq(bufRef) ) { ::usleep(1000); }
+    const I2O_MESSAGE_FRAME* stdMsg =
+      (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+    const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+      (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+    const size_t payload =
+      (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+
+    Index index;
+    index.ruTid = stdMsg->InitiatorAddress;
+    index.buResourceId = dataBlockMsg->buResourceId;
+    
+    {
+      boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+      
+      fragmentMonitoring_.lastEventNumberFromRUs = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
+      fragmentMonitoring_.payload += payload;
+      fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
+      ++fragmentMonitoring_.i2oCount;
+      if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
+      {
+        ++fragmentMonitoring_.logicalCount;
+        ++fragmentMonitoring_.logicalCountPerRU[index.ruTid];
+      }
+    }
+    
+    DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
+    if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
+    {
+      // new data block
+      if ( dataBlockMsg->blockNb != 1 )
+      {
+        std::stringstream oss;
+        
+        oss << "Received a first super-fragment block from RU tid " << index.ruTid;
+        oss << " for BU resource id " << index.buResourceId;
+        oss << " which is already block " <<  dataBlockMsg->blockNb;
+        oss << " of " << dataBlockMsg->nbBlocks;
+        
+        XCEPT_RAISE(exception::EventOrder, oss.str());
+      }
+      
+      FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
+      dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
+    }
+    
+    dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef);
+    resourceManager_->underConstruction(dataBlockMsg);
+  
+    if ( dataBlockPos->second->isComplete() )
+    {
+      while ( ! fragmentFIFO_.enq(dataBlockPos->second->head()) ) { ::usleep(1000); }
+      dataBlockMap_.erase(dataBlockPos);
+    }
+    
     bufRef = bufRef->getNextReference();
-  }
-}
-
-
-void evb::bu::RUproxy::updateFragmentCounters(toolbox::mem::Reference* bufRef)
-{
-  boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-  
-  const I2O_MESSAGE_FRAME* stdMsg =
-    (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* superFragmentMsg =
-    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-  const size_t payload =
-    (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-  const uint32_t ruTid = stdMsg->InitiatorAddress;
-  
-  fragmentMonitoring_.payload += payload;
-  fragmentMonitoring_.payloadPerRU[ruTid] += payload;
-  ++fragmentMonitoring_.i2oCount;
-  if ( superFragmentMsg->blockNb == superFragmentMsg->nbBlocks )
-  {
-    ++fragmentMonitoring_.logicalCount;
-    ++fragmentMonitoring_.logicalCountPerRU[ruTid];
   }
 }
 
@@ -223,6 +257,8 @@ void evb::bu::RUproxy::clear()
 {
   toolbox::mem::Reference* bufRef;
   while ( fragmentFIFO_.deq(bufRef) ) { bufRef->release(); }
+  
+  dataBlockMap_.clear();
 }
 
 

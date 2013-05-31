@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "evb/bu/Event.h"
-#include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
@@ -124,7 +123,6 @@ namespace evb {
       void updateEventCounters(EventPtr);
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
-      bool assembleDataBlockMessages();
       bool buildEvents();
       bool handleCompleteEvents();
       
@@ -133,22 +131,9 @@ namespace evb {
       boost::shared_ptr<DiskWriter> diskWriter_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
-      // Lookup table of data blocks, indexed by RU tid and BU resource id
-      struct Index
-      {
-        uint32_t ruTid;
-        uint32_t buResourceId;
-        
-        inline bool operator< (const Index& other) const
-        { return ruTid == other.ruTid ? buResourceId < other.buResourceId : ruTid < other.ruTid; }
-      };
-      typedef std::map<Index,FragmentChainPtr> DataBlockMap;
-      DataBlockMap dataBlockMap_;
-
       // Lookup table of events, indexed by evb id
       typedef std::map<EvBid,EventPtr> EventMap;
       EventMap eventMap_;
-      FragmentChain::ResourceList ruTids_;
       uint32_t runNumber_;
       
       typedef OneToOneQueue<toolbox::mem::Reference*> BlockFIFO;
@@ -172,7 +157,6 @@ namespace evb {
       } eventMonitoring_;
       boost::mutex eventMonitoringMutex_;
       
-      xdata::UnsignedInteger32 nbEvtsUnderConstruction_;
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEvtsBuilt_;
       xdata::Double rate_;

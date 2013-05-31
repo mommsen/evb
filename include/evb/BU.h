@@ -24,8 +24,9 @@ namespace evb {
   class TimerManager;
   
   namespace bu {
-    class RUproxy;
     class EventTable;
+    class ResourceManager;
+    class RUproxy;
   }
 
   /**
@@ -75,6 +76,7 @@ namespace evb {
     void eolsFIFOWebPage(xgi::Input*, xgi::Output*);
     
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
+    boost::shared_ptr<bu::ResourceManager> resourceManager_;
     boost::shared_ptr<bu::EventTable> eventTable_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
     

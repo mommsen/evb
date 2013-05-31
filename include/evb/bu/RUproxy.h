@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "evb/EvBid.h"
+#include "evb/FragmentChain.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/bu/RUbroadcaster.h"
@@ -18,139 +19,166 @@
 #include "xgi/Output.h"
 
 
-namespace evb { namespace bu { // namespace evb::bu
+namespace evb {
 
-  /**
-   * \ingroup xdaqApps
-   * \brief Proxy for EVM-BU communication
-   */
+  class BU;
   
-  class RUproxy : public RUbroadcaster
-  {
+  namespace bu { // namespace evb::bu
     
-  public:
-
-    RUproxy
-    (
-      xdaq::Application*,
-      toolbox::mem::Pool*
-    );
-
-    virtual ~RUproxy() {};
-    
-    /**
-     * Callback for I2O message containing a super fragment
-     */
-    void superFragmentCallback(toolbox::mem::Reference*);
-    
-    /**
-     * Fill the next available data fragment
-     * into the passed buffer reference.
-     * Return false if no data is available
-     */
-    bool getData(toolbox::mem::Reference*&);
+    class ResourceManager;
 
     /**
-     * Send request for N trigger data fragments to the RUs
+     * \ingroup xdaqApps
+     * \brief Proxy for EVM-BU communication
      */
-    void requestTriggerData(const uint32_t buResourceId, const uint32_t count);
-
-    /**
-     * Send request for event fragments for the given
-     * event-builder ids to the RUS
-     */
-    void requestFragments(const uint32_t buResourceId, const std::vector<EvBid>&);
-
-    /**
-     * Append the info space parameters used for the
-     * configuration to the InfoSpaceItems
-     */
-    void appendConfigurationItems(InfoSpaceItems&);
     
-    /**
-     * Append the info space items to be published in the 
-     * monitoring info space to the InfoSpaceItems
-     */
-    void appendMonitoringItems(InfoSpaceItems&);
-    
-    /**
-     * Update all values of the items put into the monitoring
-     * info space. The caller has to make sure that the info
-     * space where the items reside is locked and properly unlocked
-     * after the call.
-     */
-    void updateMonitoringItems();
-    
-    /**
-     * Reset the monitoring counters
-     */
-    void resetMonitoringCounters();
-   
-    /**
-     * Configure
-     */
-    void configure();
-
-    /**
-     * Remove all data
-     */
-    void clear();
-  
-    /**
-     * Print monitoring/configuration as HTML snipped
-     */
-    void printHtml(xgi::Output*);
-
-    /**
-     * Print the content of the fragment FIFO as HTML snipped
-     */
-    inline void printFragmentFIFO(xgi::Output* out)
-    { fragmentFIFO_.printVerticalHtml(out); }
-    
-    
-  private:
-    
-    void updateFragmentCounters(toolbox::mem::Reference*);
-
-    typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
-    FragmentFIFO fragmentFIFO_;
-    
-    typedef std::map<uint32_t,uint64_t> CountsPerRU;
-    struct FragmentMonitoring
+    class RUproxy : public RUbroadcaster
     {
-      uint64_t logicalCount;
-      uint64_t payload;
-      uint64_t i2oCount;
-      CountsPerRU logicalCountPerRU;
-      CountsPerRU payloadPerRU;
-    } fragmentMonitoring_;
-    boost::mutex fragmentMonitoringMutex_;
-
-    struct TriggerRequestMonitoring
-    {
-      uint64_t logicalCount;
-      uint64_t payload;
-      uint64_t i2oCount;
-    } triggerRequestMonitoring_;
-    boost::mutex triggerRequestMonitoringMutex_;
-
-    struct FragmentRequestMonitoring
-    {
-      uint64_t logicalCount;
-      uint64_t payload;
-      uint64_t i2oCount;
-    } fragmentRequestMonitoring_;
-    boost::mutex fragmentRequestMonitoringMutex_;
+      
+    public:
+      
+      RUproxy
+      (
+        BU*,
+        toolbox::mem::Pool*,
+        boost::shared_ptr<ResourceManager>
+      );
+      
+      virtual ~RUproxy() {};
+      
+      /**
+       * Callback for I2O message containing a super fragment
+       */
+      void superFragmentCallback(toolbox::mem::Reference*);
+      
+      /**
+       * Fill the next available data fragment
+       * into the passed buffer reference.
+       * Return false if no data is available
+       */
+      bool getData(toolbox::mem::Reference*&);
+      
+      /**
+       * Send request for N trigger data fragments to the RUs
+       */
+      void requestTriggerData(const uint32_t buResourceId, const uint32_t count);
+      
+      /**
+       * Send request for event fragments for the given
+       * event-builder ids to the RUS
+       */
+      void requestFragments(const uint32_t buResourceId, const std::vector<EvBid>&);
+      
+      /**
+       * Append the info space parameters used for the
+       * configuration to the InfoSpaceItems
+       */
+      void appendConfigurationItems(InfoSpaceItems&);
+      
+      /**
+       * Append the info space items to be published in the
+       * monitoring info space to the InfoSpaceItems
+       */
+      void appendMonitoringItems(InfoSpaceItems&);
+      
+      /**
+       * Update all values of the items put into the monitoring
+       * info space. The caller has to make sure that the info
+       * space where the items reside is locked and properly unlocked
+       * after the call.
+       */
+      void updateMonitoringItems();
+      
+      /**
+       * Reset the monitoring counters
+       */
+      void resetMonitoringCounters();
+      
+      /**
+       * Configure
+       */
+      void configure();
+      
+      /**
+       * Remove all data
+       */
+      void clear();
+      
+      /**
+       * Print monitoring/configuration as HTML snipped
+       */
+      void printHtml(xgi::Output*);
+      
+      /**
+       * Print the content of the fragment FIFO as HTML snipped
+       */
+      inline void printFragmentFIFO(xgi::Output* out)
+      { fragmentFIFO_.printVerticalHtml(out); }
+      
+      
+    private:
+      
+      void startProcessing();
+      void stopProcessing();
+      void startProcessingWorkLoop();
+      bool process(toolbox::task::WorkLoop*);
+      void updateFragmentCounters(toolbox::mem::Reference*);
+      
+      BU* bu_;
+      boost::shared_ptr<ResourceManager> resourceManager_;
+      
+      typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
+      FragmentFIFO fragmentFIFO_;
+      
+      // Lookup table of data blocks, indexed by RU tid and BU resource id
+      struct Index
+      {
+        uint32_t ruTid;
+        uint32_t buResourceId;
+        
+        inline bool operator< (const Index& other) const
+        { return ruTid == other.ruTid ? buResourceId < other.buResourceId : ruTid < other.ruTid; }
+      };
+      typedef std::map<Index,FragmentChainPtr> DataBlockMap;
+      DataBlockMap dataBlockMap_;
+      
+      typedef std::map<uint32_t,uint64_t> CountsPerRU;
+      struct FragmentMonitoring
+      {
+        uint32_t lastEventNumberFromRUs;
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t i2oCount;
+        CountsPerRU logicalCountPerRU;
+        CountsPerRU payloadPerRU;
+      } fragmentMonitoring_;
+      boost::mutex fragmentMonitoringMutex_;
+      
+      struct TriggerRequestMonitoring
+      {
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t i2oCount;
+      } triggerRequestMonitoring_;
+      boost::mutex triggerRequestMonitoringMutex_;
+      
+      struct FragmentRequestMonitoring
+      {
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t i2oCount;
+      } fragmentRequestMonitoring_;
+      boost::mutex fragmentRequestMonitoringMutex_;
+      
+      InfoSpaceItems ruParams_;
+      xdata::UnsignedInteger32 fragmentFIFOCapacity_;
+      
+      xdata::UnsignedInteger64 i2oBUCacheCount_;
+      xdata::UnsignedInteger64 i2oRUSendCount_;
+    };
     
-    InfoSpaceItems ruParams_;
-    xdata::UnsignedInteger32 fragmentFIFOCapacity_;
-
-    xdata::UnsignedInteger64 i2oBUCacheCount_;
-    xdata::UnsignedInteger64 i2oRUSendCount_;
-  };
-  
-  
-} } //namespace evb::bu
+    
+  } } //namespace evb::bu
 
 #endif // _evb_bu_RUproxy_h_
 

@@ -3,8 +3,8 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/EventTable.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
-#include "evb/bu/EventTable.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/version.h"
@@ -18,15 +18,17 @@ EvBApplication<bu::StateMachine>(s,evb::version,"/evb/images/bu64x64.gif")
 {
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
+  resourceManager_.reset( new bu::ResourceManager(this) );
   diskWriter_.reset( new bu::DiskWriter(this) );
-  ruProxy_.reset( new bu::RUproxy(this, fastCtrlMsgPool) );
+  ruProxy_.reset( new bu::RUproxy(this, fastCtrlMsgPool, resourceManager_) );
   eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_) );
   stateMachine_.reset( new bu::StateMachine(this,
-      ruProxy_, diskWriter_, eventTable_) );
+      ruProxy_, diskWriter_, eventTable_, resourceManager_) );
 
   diskWriter_->registerEventTable(eventTable_);
   diskWriter_->registerStateMachine(stateMachine_);
   eventTable_->registerStateMachine(stateMachine_);
+  resourceManager_->registerStateMachine(stateMachine_);
   
   initialize();
   
@@ -53,9 +55,10 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbEvtsCorrupted", &nbEvtsCorrupted_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
 
-  ruProxy_->appendConfigurationItems(appInfoSpaceParams);
   diskWriter_->appendConfigurationItems(appInfoSpaceParams);
   eventTable_->appendConfigurationItems(appInfoSpaceParams); 
+  resourceManager_->appendConfigurationItems(appInfoSpaceParams);
+  ruProxy_->appendConfigurationItems(appInfoSpaceParams);
   stateMachine_->appendConfigurationItems(appInfoSpaceParams);
 }
 
@@ -65,9 +68,10 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
-  ruProxy_->appendMonitoringItems(monitoringParams);
   diskWriter_->appendMonitoringItems(monitoringParams);
   eventTable_->appendMonitoringItems(monitoringParams); 
+  resourceManager_->appendMonitoringItems(monitoringParams);
+  ruProxy_->appendMonitoringItems(monitoringParams);
   stateMachine_->appendMonitoringItems(monitoringParams);
 }
 
@@ -76,7 +80,9 @@ void evb::BU::do_updateMonitoringInfo()
 {
   diskWriter_->updateMonitoringItems();
   eventTable_->updateMonitoringItems();
+  resourceManager_->updateMonitoringItems();
   ruProxy_->updateMonitoringItems();
+  stateMachine_->updateMonitoringItems();
 }
 
 
@@ -218,6 +224,12 @@ void evb::BU::do_defaultWebPage
   *out << "</td>"                                               << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;
   eventTable_->printHtml(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "<td>"                                                << std::endl;
+  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
+  *out << "</td>"                                               << std::endl;
+  *out << "<td class=\"component\">"                            << std::endl;
+  resourceManager_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "<td>"                                                << std::endl;
   *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;

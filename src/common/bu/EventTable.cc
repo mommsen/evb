@@ -76,7 +76,6 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
   try
   {
     while ( doProcessing_ && (
-        assembleDataBlockMessages() ||
         buildEvents() ||
         handleCompleteEvents()
       ) ) {};
@@ -93,53 +92,18 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
 }
 
 
-bool evb::bu::EventTable::assembleDataBlockMessages()
-{
-  toolbox::mem::Reference* bufRef = 0;
-  
-  if ( ! ruProxy_->getData(bufRef) ) return false;
-  
-  const I2O_MESSAGE_FRAME* stdMsg =
-    (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-  
-  Index index;
-  index.ruTid = stdMsg->InitiatorAddress;
-  index.buResourceId = dataBlockMsg->buResourceId;
-  
-  DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
-  if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
-  {
-    // new data block
-    FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
-    dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
-  }
-  
-  dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef);
-  
-  if ( dataBlockPos->second->isComplete() )
-  {
-    while ( ! blockFIFO_.enq(dataBlockPos->second->head()) ) { ::usleep(1000); }
-    dataBlockMap_.erase(dataBlockPos);
-  }
-  
-  return true;
-}
-
-
 bool evb::bu::EventTable::buildEvents()
 {
   toolbox::mem::Reference* head = 0;
   
-  if ( ! blockFIFO_.deq(head) ) return false;
+  if ( ! ruProxy_->getData(head) ) return false;
 
-  const I2O_MESSAGE_FRAME* stdMsg =
-    (I2O_MESSAGE_FRAME*)head->getDataLocation();
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-  const I2O_TID ruTid = stdMsg->InitiatorAddress;
-  const uint32_t buResourceId = dataBlockMsg->buResourceId;
+  // const I2O_MESSAGE_FRAME* stdMsg =
+  //   (I2O_MESSAGE_FRAME*)head->getDataLocation();
+  // const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+  //   (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+  // const I2O_TID ruTid = stdMsg->InitiatorAddress;
+  // const uint32_t buResourceId = dataBlockMsg->buResourceId;
   
   toolbox::mem::Reference* bufRef = head;
   
@@ -151,20 +115,20 @@ bool evb::bu::EventTable::buildEvents()
     { 
       unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + offset;
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-      const EvBid evbId = superFragmentMsg->evbId;
+      // const EvBid evbId = superFragmentMsg->evbId;
       
-      EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
-      if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
-      {
-        // new event
-        EventPtr event( new Event(runNumber_, evbId.eventNumber(), buResourceId, ruProxy_->getRuTids()) );
-        eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+      // EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
+      // if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
+      // {
+      //   // new event
+      //   EventPtr event( new Event(runNumber_, evbId.eventNumber(), buResourceId, ruProxy_->getRuTids()) );
+      //   eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
 
-        ++eventMonitoring_.nbEventsInBU;
-      }
+      //   ++eventMonitoring_.nbEventsInBU;
+      // }
       
-      eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
-        payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
+      // eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
+      //   payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
       
       offset += superFragmentMsg->partSize;
     }
@@ -215,7 +179,6 @@ void evb::bu::EventTable::appendConfigurationItems(InfoSpaceItems& params)
 
 void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
 {
-  nbEvtsUnderConstruction_ = 0;
   nbEventsInBU_ = 0;
   nbEvtsBuilt_ = 0;
   rate_ = 0;
@@ -223,7 +186,6 @@ void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
   
-  items.add("nbEvtsUnderConstruction", &nbEvtsUnderConstruction_);
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEvtsBuilt", &nbEvtsBuilt_);
   items.add("rate", &rate_);
@@ -271,7 +233,6 @@ void evb::bu::EventTable::clear()
   toolbox::mem::Reference* bufRef;
   while ( blockFIFO_.deq(bufRef) ) { bufRef->release(); }
 
-  dataBlockMap_.clear();
   eventMap_.clear();
 }
 

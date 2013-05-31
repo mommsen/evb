@@ -4,7 +4,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 
-#include "evb/bu/EventTable.h"
 #include "evb/Exception.h"
 #include "evb/EvBStateMachine.h"
 #include "toolbox/mem/Reference.h"
@@ -21,6 +20,8 @@ namespace evb {
     class FUproxy;
     class RUproxy;
     class DiskWriter;
+    class EventTable;
+    class ResourceManager;
     class StateMachine;
     class Outermost;
     
@@ -39,7 +40,8 @@ namespace evb {
         BU*,
         boost::shared_ptr<RUproxy>,
         boost::shared_ptr<DiskWriter>,
-        EventTablePtr
+        boost::shared_ptr<EventTable>,
+        boost::shared_ptr<ResourceManager>
       );
       
       void buCache(toolbox::mem::Reference*);
@@ -47,7 +49,8 @@ namespace evb {
       BU* bu() const { return bu_; }
       boost::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }
       boost::shared_ptr<DiskWriter> diskWriter() const { return diskWriter_; }
-      EventTablePtr eventTable() const { return eventTable_; }
+      boost::shared_ptr<EventTable> eventTable() const { return eventTable_; }
+      boost::shared_ptr<ResourceManager> resourceManager() const { return resourceManager_; }
       
       uint32_t runNumber() const { return runNumber_.value_; }
       uint32_t maxEvtsUnderConstruction() const { return maxEvtsUnderConstruction_.value_; }
@@ -60,7 +63,8 @@ namespace evb {
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
-      EventTablePtr eventTable_;
+      boost::shared_ptr<EventTable> eventTable_;
+      boost::shared_ptr<ResourceManager> resourceManager_;
       
       xdata::UnsignedInteger32 runNumber_;
       xdata::UnsignedInteger32 maxEvtsUnderConstruction_;

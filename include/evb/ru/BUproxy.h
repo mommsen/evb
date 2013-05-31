@@ -145,9 +145,8 @@ namespace evb {
       (
         unsigned char*& payload,
         size_t& remainingPayloadSize,
-        const uint32_t nbSuperFragments,
         const uint32_t superFragmentNb,
-        const FragmentChainPtr
+        const uint32_t superFragmentSize
       ) const;
       
       RU* ru_;

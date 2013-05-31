@@ -242,13 +242,17 @@ void evb::ru::BUproxy::sendData
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
   
-  unsigned char* payload = (unsigned char*)head->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-  size_t remainingPayloadSize = blockSize_ - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+  const size_t headerSize =
+    sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
+    + (nbSuperFragments-1) * sizeof(EvBid);
+  assert( headerSize < blockSize_ );
+  unsigned char* payload = (unsigned char*)head->getDataLocation() + headerSize;
+  size_t remainingPayloadSize = blockSize_ - headerSize;
 
   do
   {
     if ( remainingPayloadSize > sizeof(msg::SuperFragment) )
-      fillSuperFragmentHeader(payload,remainingPayloadSize,nbSuperFragments,superFragmentNb,*superFragmentIter);
+      fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,(*superFragmentIter)->getSize());
     else
       remainingPayloadSize = 0;
     
@@ -270,9 +274,9 @@ void evb::ru::BUproxy::sendData
         
         // get a new block
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-        payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-        remainingPayloadSize = blockSize_ - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-        fillSuperFragmentHeader(payload,remainingPayloadSize,nbSuperFragments,superFragmentNb,*superFragmentIter);
+        payload = (unsigned char*)nextBlock->getDataLocation() + headerSize;
+        remainingPayloadSize = blockSize_ - headerSize;
+        fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,(*superFragmentIter)->getSize());
         tail->setNextReference(nextBlock);
         tail = nextBlock;
       }
@@ -300,14 +304,17 @@ void evb::ru::BUproxy::sendData
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
 
-    stdMsg->InitiatorAddress   = tid_;
-    stdMsg->TargetAddress      = request.buTid;
-    pvtMsg->OrganizationID     = XDAQ_ORGANIZATION_ID;
-    pvtMsg->XFunctionCode      = I2O_BU_CACHE;
-    dataBlockMsg->buResourceId = request.buResourceId;
-    dataBlockMsg->nbBlocks     = blockNb;
+    stdMsg->InitiatorAddress       = tid_;
+    stdMsg->TargetAddress          = request.buTid;
+    pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
+    pvtMsg->XFunctionCode          = I2O_BU_CACHE;
+    dataBlockMsg->buResourceId     = request.buResourceId;
+    dataBlockMsg->nbBlocks         = blockNb;
+    dataBlockMsg->nbSuperFragments = request.evbIds.size();
+    for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
+      dataBlockMsg->evbIds[i] = request.evbIds[i];
 
-    payloadSize += (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+    payloadSize += (stdMsg->MessageSize << 2) - headerSize;
     ++i2oCount;
 
     bufRef = bufRef->getNextReference();
@@ -381,17 +388,13 @@ void evb::ru::BUproxy::fillSuperFragmentHeader
 (
   unsigned char*& payload,
   size_t& remainingPayloadSize,
-  const uint32_t nbSuperFragments,
   const uint32_t superFragmentNb,
-  const FragmentChainPtr superFragment
+  const uint32_t superFragmentSize
 ) const
 {
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-  const size_t superFragmentSize = superFragment->getSize();
   
-  superFragmentMsg->nbSuperFragments = nbSuperFragments;
   superFragmentMsg->superFragmentNb = superFragmentNb;
-  superFragmentMsg->evbId = superFragment->getEvBid();
   superFragmentMsg->totalSize = superFragmentSize;
   superFragmentMsg->partSize = superFragmentSize > remainingPayloadSize ? remainingPayloadSize : superFragmentSize;
   

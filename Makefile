@@ -52,6 +52,7 @@ Sources=\
 	bu/EventTable.cc \
 	bu/FileHandler.cc \
 	bu/LumiHandler.cc \
+	bu/ResourceManager.cc \
 	bu/RUbroadcaster.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \

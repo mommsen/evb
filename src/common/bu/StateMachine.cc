@@ -3,6 +3,7 @@
 #include "evb/bu/FileHandler.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/EventTable.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/bu/States.h"
 #include "evb/Constants.h"
@@ -17,13 +18,15 @@ evb::bu::StateMachine::StateMachine
   BU* bu,
   boost::shared_ptr<RUproxy> ruProxy,
   boost::shared_ptr<DiskWriter> diskWriter,
-  EventTablePtr eventTable
+  EventTablePtr eventTable,
+  boost::shared_ptr<ResourceManager> resourceManager
 ):
 EvBStateMachine(bu),
 bu_(bu),
 ruProxy_(ruProxy),
 diskWriter_(diskWriter),
-eventTable_(eventTable)
+eventTable_(eventTable),
+resourceManager_(resourceManager)
 {
   // initiate FSM here to assure that the derived state machine class
   // has been fully constructed.
@@ -194,6 +197,7 @@ void evb::bu::Processing::entryAction()
   stateMachine.ruProxy()->resetMonitoringCounters();
   stateMachine.diskWriter()->resetMonitoringCounters();
   stateMachine.eventTable()->resetMonitoringCounters();
+  stateMachine.resourceManager()->resetMonitoringCounters();
 }
 
 
@@ -205,6 +209,7 @@ void evb::bu::Enabled::entryAction()
 
   stateMachine.diskWriter()->startProcessing(runNumber);
   stateMachine.eventTable()->startProcessing(runNumber);
+  stateMachine.resourceManager()->startProcessing();
 }
 
 
@@ -212,6 +217,7 @@ void evb::bu::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
   stateMachine.eventTable()->stopProcessing();
+  stateMachine.resourceManager()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }
 
