@@ -32,8 +32,7 @@ namespace evb {
       
       Event
       (
-        const uint32_t runNumber,
-        const uint32_t eventNumber,
+        const EvBid& evbId,
         const uint32_t buResourceId,
         const std::vector<I2O_TID>& ruTids
       );
@@ -41,9 +40,10 @@ namespace evb {
       ~Event();
       
       /**
-       * Append a super fragment to the event
+       * Append a super fragment to the event.
+       * Return true if this completes the event.
        */
-      void appendSuperFragment
+      bool appendSuperFragment
       (
         const I2O_TID ruTid,
         toolbox::mem::Reference*,
@@ -91,6 +91,12 @@ namespace evb {
       uint32_t runNumber() const
       { return eventInfo_->runNumber; }
       
+      /**
+       * Return the event size
+       */
+      uint32_t eventSize() const
+      { return eventInfo_->eventSize; }
+      
       
     private:
       
@@ -99,7 +105,7 @@ namespace evb {
         const uint32_t version;
         const uint32_t runNumber;
         const uint32_t eventNumber;
-        uint32_t lumiSection;
+        const uint32_t lumiSection;
         uint32_t eventSize;
         uint32_t paddingSize;
         uint32_t fedSizes[FED_COUNT];
@@ -108,7 +114,8 @@ namespace evb {
         
         EventInfo(
           const uint32_t runNumber,
-          const uint32_t eventNumber
+          const uint32_t eventNumber,
+          const uint32_t lumiSection
         );
         
         bool addFedSize(const FedInfo&);

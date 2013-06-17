@@ -19,16 +19,15 @@ EvBApplication<bu::StateMachine>(s,evb::version,"/evb/images/bu64x64.gif")
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
   resourceManager_.reset( new bu::ResourceManager(this) );
-  diskWriter_.reset( new bu::DiskWriter(this) );
+  diskWriter_.reset( new bu::DiskWriter(this, resourceManager_) );
   ruProxy_.reset( new bu::RUproxy(this, fastCtrlMsgPool, resourceManager_) );
-  eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_) );
+  eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_, resourceManager_) );
   stateMachine_.reset( new bu::StateMachine(this,
       ruProxy_, diskWriter_, eventTable_, resourceManager_) );
 
-  diskWriter_->registerEventTable(eventTable_);
   diskWriter_->registerStateMachine(stateMachine_);
   eventTable_->registerStateMachine(stateMachine_);
-  resourceManager_->registerStateMachine(stateMachine_);
+  ruProxy_->registerStateMachine(stateMachine_);
   
   initialize();
   
@@ -56,7 +55,6 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
 
   diskWriter_->appendConfigurationItems(appInfoSpaceParams);
-  eventTable_->appendConfigurationItems(appInfoSpaceParams); 
   resourceManager_->appendConfigurationItems(appInfoSpaceParams);
   ruProxy_->appendConfigurationItems(appInfoSpaceParams);
   stateMachine_->appendConfigurationItems(appInfoSpaceParams);
@@ -69,7 +67,6 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
 )
 {
   diskWriter_->appendMonitoringItems(monitoringParams);
-  eventTable_->appendMonitoringItems(monitoringParams); 
   resourceManager_->appendMonitoringItems(monitoringParams);
   ruProxy_->appendMonitoringItems(monitoringParams);
   stateMachine_->appendMonitoringItems(monitoringParams);
@@ -79,7 +76,6 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
 void evb::BU::do_updateMonitoringInfo()
 {
   diskWriter_->updateMonitoringItems();
-  eventTable_->updateMonitoringItems();
   resourceManager_->updateMonitoringItems();
   ruProxy_->updateMonitoringItems();
   stateMachine_->updateMonitoringItems();
@@ -190,8 +186,22 @@ void evb::BU::bindNonDefaultXgiCallbacks()
   xgi::bind
     (
       this,
-      &evb::BU::blockFIFOWebPage,
-      "blockFIFO"
+      &evb::BU::requestFIFOWebPage,
+      "requestFIFO"
+    );
+  
+  xgi::bind
+    (
+      this,
+      &evb::BU::freeResourceFIFOWebPage,
+      "freeResouceFIFO"
+    );
+  
+  xgi::bind
+    (
+      this,
+      &evb::BU::blockedResourceFIFOWebPage,
+      "blockedResourceFIFO"
     );
   
   xgi::bind
@@ -218,12 +228,6 @@ void evb::BU::do_defaultWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;
   ruProxy_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  eventTable_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "<td>"                                                << std::endl;
   *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
@@ -260,6 +264,93 @@ void evb::BU::eventFIFOWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   diskWriter_->printEventFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+  
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
+void evb::BU::requestFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "requestFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  resourceManager_->printRequestFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+  
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
+void evb::BU::freeResourceFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "freeResourceFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  resourceManager_->printFreeResourceFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+  
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
+void evb::BU::blockedResourceFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "blockedResourceFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  resourceManager_->printBlockedResourceFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   
@@ -318,35 +409,6 @@ void evb::BU::fragmentFIFOWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   ruProxy_->printFragmentFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
- 
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::blockFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "blockFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  eventTable_->printBlockFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   

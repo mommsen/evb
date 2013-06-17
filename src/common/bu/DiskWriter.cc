@@ -5,16 +5,21 @@
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/Event.h"
-#include "evb/bu/EventTable.h"
 #include "evb/bu/FileHandler.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/bu/LumiHandler.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"
 
 
-evb::bu::DiskWriter::DiskWriter(BU* bu) :
+evb::bu::DiskWriter::DiskWriter
+(
+  BU* bu,
+  boost::shared_ptr<ResourceManager> resourceManager
+) :
 bu_(bu),
+resourceManager_(resourceManager),
 buInstance_( bu_->getApplicationDescriptor()->getInstance() ),
 eventFIFO_("eventFIFO"),
 eolsFIFO_("eolsFIFO"),
@@ -35,15 +40,20 @@ evb::bu::DiskWriter::~DiskWriter()
 
 void evb::bu::DiskWriter::writeEvent(const EventPtr event)
 {
-  if ( ! writeEventsToDisk_ ) return;
-  
-  while ( ! eventFIFO_.enq(event) ) { ::usleep(1000); }
+  if ( dropEventData_ )
+  {
+    resourceManager_->discardEvent(event);
+  }
+  else
+  {
+    while ( ! eventFIFO_.enq(event) ) { ::usleep(1000); }
+  }
 }
 
 
 void evb::bu::DiskWriter::closeLS(const uint32_t lumiSection)
 {
-  if ( ! writeEventsToDisk_ ) return;
+  if ( dropEventData_ ) return;
 
   while ( ! eolsFIFO_.enq(lumiSection) ) { ::usleep(1000); }
 }
@@ -91,7 +101,7 @@ void evb::bu::DiskWriter::startProcessingWorkLoop()
 
 void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
-  if ( ! writeEventsToDisk_ ) return;
+  if ( dropEventData_ ) return;
 
   runNumber_ = runNumber;
   
@@ -128,7 +138,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
 void evb::bu::DiskWriter::stopProcessing()
 {
-  if ( ! writeEventsToDisk_ ) return;
+  if ( dropEventData_ ) return;
   
   doProcessing_ = false;
 
@@ -300,7 +310,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
         }
 
         fileHandlerAndEvent->event->writeToDisk(fileHandlerAndEvent->fileHandler);
-        //eventTable_->discardEvent( fileHandlerAndEvent->event->buResourceId() );
+        resourceManager_->discardEvent(fileHandlerAndEvent->event);
 
         boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
         ++diskWriterMonitoring_.nbEventsWritten;
@@ -330,7 +340,7 @@ bool evb::bu::DiskWriter::resourceMonitoring(toolbox::task::WorkLoop*)
   allOkay &= checkDiskSize(rawDataDiskUsage_);
   allOkay &= checkDiskSize(metaDataDiskUsage_);
 
-  eventTable_->requestEvents(allOkay);
+  //eventTable_->requestEvents(allOkay);
   
   ::sleep(5);
   
@@ -401,7 +411,7 @@ void evb::bu::DiskWriter::defineJSON(const boost::filesystem::path& jsonDefFile)
 
 void evb::bu::DiskWriter::appendConfigurationItems(InfoSpaceItems& params)
 {
-  writeEventsToDisk_ = false;
+  dropEventData_ = false;
   numberOfWriters_ = 8;
   rawDataDir_ = "/tmp/raw";
   metaDataDir_ = "/tmp/meta";
@@ -413,7 +423,7 @@ void evb::bu::DiskWriter::appendConfigurationItems(InfoSpaceItems& params)
   eolsFIFOCapacity_ = 1028;
   tolerateCorruptedEvents_ = false;
   
-  diskWriterParams_.add("writeEventsToDisk", &writeEventsToDisk_);
+  diskWriterParams_.add("dropEventData", &dropEventData_);
   diskWriterParams_.add("numberOfWriters", &numberOfWriters_);
   diskWriterParams_.add("rawDataDir", &rawDataDir_);
   diskWriterParams_.add("metaDataDir", &metaDataDir_);
@@ -473,7 +483,7 @@ void evb::bu::DiskWriter::configure(const uint32_t maxEvtsUnderConstruction)
   eolsFIFO_.resize(eolsFIFOCapacity_);
   fileHandlerAndEventFIFO_.resize(maxEvtsUnderConstruction);
 
-  if ( writeEventsToDisk_ )
+  if ( ! dropEventData_ )
   {
     std::ostringstream buDir;
     buDir << "BU-" << std::setfill('0') << std::setw(3) << buInstance_;

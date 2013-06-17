@@ -60,28 +60,28 @@ namespace evb {
 std::ostream& operator<<
 (
   std::ostream& s,
-  const I2O_PRIVATE_MESSAGE_FRAME&
+  const I2O_PRIVATE_MESSAGE_FRAME
 );
 
 
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::RqstForFragmentsMsg*
+  const evb::msg::RqstForFragmentsMsg
 );
 
 
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::SuperFragment*
+  const evb::msg::SuperFragment
 );
 
 
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME
 );
 
 

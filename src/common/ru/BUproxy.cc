@@ -109,32 +109,46 @@ void evb::ru::BUproxy::rqstForFragmentsMsgCallback(toolbox::mem::Reference* bufR
   msg::RqstForFragmentsMsg* rqstMsg =
     (msg::RqstForFragmentsMsg*)bufRef->getDataLocation();
   
-  updateRequestCounters(rqstMsg);
-
   Request request;
   request.buTid = ((I2O_MESSAGE_FRAME*)rqstMsg)->InitiatorAddress;
   request.buResourceId = rqstMsg->buResourceId;
-  request.nbRequests = abs(rqstMsg->nbRequests);
-  for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
-    request.evbIds.push_back( rqstMsg->evbIds[i] );
+  
+  // Only react on request if we have the trigger FED and the nbRequests is negative,
+  // or if we don't have the trigger FED and specific evbIds are requested
+  if ( hasTriggerFED_ )
+  {
+    if ( rqstMsg->nbRequests < 0 )
+    {
+      request.nbRequests = abs(rqstMsg->nbRequests);
+      updateRequestCounters(request);
+      
+      while( ! requestFIFO_.enq(request) ) ::usleep(1000);
+    }
+  }
+  else if ( rqstMsg->nbRequests > 0 )
+  {
+    request.nbRequests = rqstMsg->nbRequests;
+    for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
+      request.evbIds.push_back( rqstMsg->evbIds[i] );
+    updateRequestCounters(request);
 
-  while( ! requestFIFO_.enq(request) ) ::usleep(1000);
+    while( ! requestFIFO_.enq(request) ) ::usleep(1000);
+  }
 
   bufRef->release();
 }
 
 
-void evb::ru::BUproxy::updateRequestCounters(const msg::RqstForFragmentsMsg* msg)
+void evb::ru::BUproxy::updateRequestCounters(const Request& request)
 {
   boost::mutex::scoped_lock sl(requestMonitoringMutex_);
   
-  const uint32_t nbRequests = msg->nbRequests;
   requestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
-  if ( msg->nbRequests > 0 )
-    requestMonitoring_.payload += (msg->nbRequests-1) * sizeof(EvBid);
-  requestMonitoring_.logicalCount += nbRequests;
+  if ( !hasTriggerFED_ )
+    requestMonitoring_.payload += (request.nbRequests-1) * sizeof(EvBid);
+  requestMonitoring_.logicalCount += request.nbRequests;
   ++requestMonitoring_.i2oCount;
-  requestMonitoring_.logicalCountPerBU[((I2O_MESSAGE_FRAME*)msg)->InitiatorAddress] += nbRequests;
+  requestMonitoring_.logicalCountPerBU[request.buTid] += request.nbRequests;
 }
 
 
@@ -296,6 +310,7 @@ void evb::ru::BUproxy::sendData
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
   uint32_t i2oCount = 0;
+  uint32_t lastEventNumberToBUs = 0;
 
   // Prepare each event data block for the BU
   while (bufRef)
@@ -304,16 +319,24 @@ void evb::ru::BUproxy::sendData
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
 
+    stdMsg->VersionOffset          = 0;
+    stdMsg->MsgFlags               = 0;
+    stdMsg->MessageSize            = bufRef->getDataSize() >> 2;
     stdMsg->InitiatorAddress       = tid_;
     stdMsg->TargetAddress          = request.buTid;
+    stdMsg->Function               = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
     dataBlockMsg->buResourceId     = request.buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = request.evbIds.size();
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
+    {
       dataBlockMsg->evbIds[i] = request.evbIds[i];
-
+      if ( lastEventNumberToBUs < request.evbIds[i].eventNumber() )
+        lastEventNumberToBUs = request.evbIds[i].eventNumber();
+    }
+    
     payloadSize += (stdMsg->MessageSize << 2) - headerSize;
     ++i2oCount;
 
@@ -323,7 +346,8 @@ void evb::ru::BUproxy::sendData
   {
      boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
-     dataMonitoring_.lastEventNumberToBUs = request.evbIds.end()->eventNumber();
+     if ( dataMonitoring_.lastEventNumberToBUs < lastEventNumberToBUs )
+       dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
      dataMonitoring_.i2oCount += i2oCount;
      dataMonitoring_.payload += payloadSize;
      ++dataMonitoring_.logicalCount;
@@ -609,7 +633,7 @@ void evb::ru::BUproxy::printHtml(xgi::Output *out)
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::ru::BUproxy::Request& request
+  const evb::ru::BUproxy::Request request
 )
 {
   str << "Request:" << std::endl;
@@ -617,9 +641,12 @@ std::ostream& operator<<
   str << "buTid=" << request.buTid << std::endl;
   str << "buResourceId=" << request.buResourceId << std::endl;
   str << "nbRequests=" << request.nbRequests << std::endl;
-  str << "evbIds:" << std::endl;
-  for (uint32_t i=0; i < request.nbRequests; ++i)
-    str << "   [" << i << "]: " << request.evbIds[i] << std::endl;
+  if ( !request.evbIds.empty() )
+  {
+    str << "evbIds:" << std::endl;
+    for (uint32_t i=0; i < request.nbRequests; ++i)
+      str << "   [" << i << "]: " << request.evbIds[i] << std::endl;
+  }
   
   return str;
 }

@@ -1,5 +1,6 @@
 #include "interface/shared/i2ogevb2g.h"
 #include "evb/FragmentChain.h"
+#include "evb/I2OMessages.h"
 
 
 evb::FragmentChain::FragmentChain() :
@@ -28,6 +29,13 @@ head_(0),tail_(0)
 evb::FragmentChain::~FragmentChain()
 {
   if (head_) head_->release();
+  
+  for (Caches::iterator it = caches_.begin(), itEnd = caches_.end();
+       it != itEnd; ++it)
+  {
+    it->second->grantFrame(it->first);
+  }
+  caches_.clear();
 }
 
 
@@ -43,7 +51,7 @@ bool evb::FragmentChain::append
     tail_->setNextReference(bufRef);
   else
     head_ = bufRef;
-  
+
   do {
     tail_ = bufRef;
     size_ += bufRef->getDataSize();
@@ -51,6 +59,23 @@ bool evb::FragmentChain::append
   } while (bufRef);
   
   return true;
+}
+  
+
+bool evb::FragmentChain::append
+(
+  const uint32_t resourceId,
+  toolbox::mem::Reference* bufRef,
+  pt::utcp::frl::MemoryCache* cache
+)
+{
+  if ( append(resourceId, bufRef->duplicate()) )
+  {
+    caches_.insert(Caches::value_type(bufRef,cache));
+    return true;
+  }
+  
+  return false;
 }
 
 

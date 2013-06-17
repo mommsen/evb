@@ -11,6 +11,7 @@
 #include "evb/EvBidFactory.h"
 #include "evb/FragmentChain.h"
 #include "evb/FragmentTracker.h"
+#include "pt/utcp/frl/MemoryCache.h"
 #include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
 #include "xdata/UnsignedInteger32.h"
@@ -34,7 +35,7 @@ namespace evb {
       /**
        * Callback for I2O_DATA_READY messages received from frontend
        */
-      virtual void dataReadyCallback(toolbox::mem::Reference*) = 0;
+      virtual void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*) = 0;
 
       /**
        * Get the next complete super fragment.
@@ -87,7 +88,7 @@ namespace evb {
       FEROLproxy();
       virtual ~FEROLproxy() {};
       
-      virtual void dataReadyCallback(toolbox::mem::Reference*);
+      virtual void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
       virtual bool getNextAvailableSuperFragment(FragmentChainPtr&);
       virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
       virtual void configure(const Configuration&);
@@ -123,7 +124,7 @@ namespace evb {
       DummyInputData();
       virtual ~DummyInputData() {};
 
-      virtual void dataReadyCallback(toolbox::mem::Reference*);
+      virtual void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
       virtual bool getNextAvailableSuperFragment(FragmentChainPtr&);
       virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
       virtual void configure(const Configuration&);

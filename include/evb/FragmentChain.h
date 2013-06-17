@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "evb/EvBid.h"
+#include "pt/utcp/frl/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -34,12 +35,19 @@ namespace evb {
      * Return false if the resource id is not expected.
      */
     bool append(uint32_t resourceId, toolbox::mem::Reference*);
+    bool append(uint32_t resourceId, toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
     
     /**
      * Return the head of the toolbox::mem::Reference chain
      */
     toolbox::mem::Reference* head() const
     { return head_; }
+    
+    /**
+     * Return a duplicate of the toolbox::mem::Reference chain
+     */
+    toolbox::mem::Reference* duplicate() const
+    { return head_->duplicate(); }
     
     /**
      * Return the size of the super fragment
@@ -75,6 +83,9 @@ namespace evb {
     size_t size_;
     toolbox::mem::Reference* head_;
     toolbox::mem::Reference* tail_;
+
+    typedef std::map<toolbox::mem::Reference*,pt::utcp::frl::MemoryCache*> Caches;
+    Caches caches_;
     
   }; // FragmentChain
   

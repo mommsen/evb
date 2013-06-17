@@ -9,6 +9,7 @@
 #include "evb/EvBApplication.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/ru/StateMachine.h"
+#include "pt/utcp/frl/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
@@ -42,11 +43,6 @@ namespace evb {
     XDAQ_INSTANTIATOR();
     
     /**
-     * Reset the monitoring counters
-     */
-    void resetMonitoringCounters();
-    
-    /**
      * Configure
      */
     void configure();
@@ -72,7 +68,8 @@ namespace evb {
     virtual void bindI2oCallbacks();
     inline void I2O_DATA_READY_Callback(toolbox::mem::Reference*);
     inline void I2O_RU_SEND_Callback(toolbox::mem::Reference*);
-    
+    inline void rawDataAvailable(toolbox::mem::Reference*, int originator, pt::utcp::frl::MemoryCache*);
+
     virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
     virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
     virtual void do_updateMonitoringInfo();
@@ -82,6 +79,8 @@ namespace evb {
     
     virtual void bindNonDefaultXgiCallbacks();
     virtual void do_defaultWebPage(xgi::Output*);
+    
+    void requestFIFOWebPage(xgi::Input*, xgi::Output*);
     
     boost::shared_ptr<ru::BUproxy> buProxy_;
     boost::shared_ptr<ru::Input> ruInput_;

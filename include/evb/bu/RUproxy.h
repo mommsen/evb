@@ -11,8 +11,11 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/bu/RUbroadcaster.h"
+#include "toolbox/lang/Class.h"
 #include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
+#include "toolbox/task/Action.h"
+#include "toolbox/task/WaitingWorkLoop.h"
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
@@ -26,13 +29,14 @@ namespace evb {
   namespace bu { // namespace evb::bu
     
     class ResourceManager;
+    class StateMachine;
 
     /**
      * \ingroup xdaqApps
      * \brief Proxy for EVM-BU communication
      */
     
-    class RUproxy : public RUbroadcaster
+    class RUproxy : public RUbroadcaster, public toolbox::lang::Class
     {
       
     public:
@@ -67,7 +71,7 @@ namespace evb {
        * Send request for event fragments for the given
        * event-builder ids to the RUS
        */
-      void requestFragments(const uint32_t buResourceId, const std::vector<EvBid>&);
+      void requestFragments(const uint32_t buResourceId, const EvBids&);
       
       /**
        * Append the info space parameters used for the
@@ -105,6 +109,22 @@ namespace evb {
       void clear();
       
       /**
+       * Register the state machine
+       */
+      void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
+      { stateMachine_ = stateMachine; }
+      
+      /**
+       * Start processing messages
+       */
+      void startProcessing();
+
+      /**
+       * Stop processing messages
+       */
+      void stopProcessing();
+      
+      /**
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);
@@ -118,15 +138,23 @@ namespace evb {
       
     private:
       
-      void startProcessing();
-      void stopProcessing();
-      void startProcessingWorkLoop();
-      bool process(toolbox::task::WorkLoop*);
-      void updateFragmentCounters(toolbox::mem::Reference*);
+      void startProcessingWorkLoops();
+      bool requestTriggers(toolbox::task::WorkLoop*);
+      bool requestFragments(toolbox::task::WorkLoop*);
       
       BU* bu_;
       boost::shared_ptr<ResourceManager> resourceManager_;
+      boost::shared_ptr<StateMachine> stateMachine_;
       
+      bool doProcessing_;
+      bool requestTriggersActive_;
+      bool requestFragmentsActive_;
+      
+      toolbox::task::WorkLoop* requestTriggersWL_;
+      toolbox::task::ActionSignature* requestTriggersAction_;
+      toolbox::task::WorkLoop* requestFragmentsWL_;
+      toolbox::task::ActionSignature* requestFragmentsAction_;
+
       typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
       
@@ -170,7 +198,8 @@ namespace evb {
       } fragmentRequestMonitoring_;
       boost::mutex fragmentRequestMonitoringMutex_;
       
-      InfoSpaceItems ruParams_;
+      InfoSpaceItems ruProxyParams_;
+      xdata::UnsignedInteger32 eventsPerRequest_;
       xdata::UnsignedInteger32 fragmentFIFOCapacity_;
       
       xdata::UnsignedInteger64 i2oBUCacheCount_;
@@ -178,7 +207,20 @@ namespace evb {
     };
     
     
-  } } //namespace evb::bu
+  } //namespace evb::bu
+
+  template <>
+  inline void OneToOneQueue<toolbox::mem::Reference*>::formatter(toolbox::mem::Reference* bufRef, std::ostringstream* out)
+  {
+    const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* msg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+    if ( msg )
+      *out << *msg;
+    else
+      *out << "n/a";
+  }
+
+
+} //namespace evb
 
 #endif // _evb_bu_RUproxy_h_
 

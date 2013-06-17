@@ -23,6 +23,8 @@ namespace evb {
       const uint32_t fedSizeStdDev
     );
     
+    ~FragmentTracker();
+
     /**
      * Starts a new FED fragment with the specified event number.
      * Return the size of the FED data.
@@ -54,8 +56,7 @@ namespace evb {
     
     const uint32_t fedId_;
     const uint32_t fedSize_;
-    const bool useLogNormal_;
-    toolbox::math::LogNormalGen logNormalGen_;
+    toolbox::math::LogNormalGen* logNormalGen_;
     uint16_t fedCRC_;
     FedComponent typeOfNextComponent_;
     uint32_t currentFedSize_;

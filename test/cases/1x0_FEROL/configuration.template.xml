@@ -1,21 +1,23 @@
 <xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   
   <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
-    <i2o:target class="evb::RU" instance="0" tid="25"/>
+    <i2o:target class="evb::RU" instance="0" tid="15"/>
   </i2o:protocol>
   
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
     
-    <xc:Endpoint protocol="atcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="fdr" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:W:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1000000" smode="poll"/>
+    <xc:Endpoint protocol="atcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="fdr" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:W:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
     
-    <xc:Application class="pt::utcp::Application" id="11" instance="0" network="fdr">
+    <xc:Application class="pt::utcp::Application" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
+        <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">1</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">262144</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
+        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application>
     
@@ -24,11 +26,14 @@
       <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
-        <fedId xsi:type="xsd:unsignedInt">512</fedId>
+        <fedId xsi:type="xsd:unsignedInt">1</fedId>
       </properties>
     </xc:Application>
     
-    <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
+    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
+    
+    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_LOCAL/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevbtest.so</xc:Module>
@@ -37,23 +42,29 @@
 
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
     
-    <xc:Endpoint protocol="atcp" service="frl" hostname="RU0_FRL_HOST_NAME" port="RU0_FRL_PORT" network="fdr" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:P:2,SND:W:*,DSR:P:6,DSS:W:*" singleThread="false" pollingCycle="1" rmode="select"  nonblock="true" datagramSize="131072"/>
+    <xc:Endpoint protocol="atcp" service="frl" hostname="RU0_FRL_HOST_NAME" port="RU0_FRL_PORT" network="fdr" sndTimeout="2000" rcvTimeout="0" targetId="13" affinity="RCV:P:2,SND:W:*,DSR:P:6,DSS:W:*" singleThread="false" pollingCycle="1" rmode="select" nonblock="true" datagramSize="131072"/>
     
-    <xc:Application class="pt::utcp::Application" id="12" instance="2" network="fdr">
+    <xc:Application class="pt::utcp::Application" id="12" instance="2" network="local">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
+        <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
+        <maxReceiveBuffers xsi:type="xsd:unsignedInt">8</maxReceiveBuffers>
         <ioQueueSize xsi:type="xsd:unsignedInt">64</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">64</eventQueueSize>
-        <maxReceiveBuffers xsi:type="xsd:unsignedInt">8</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">131072</maxBlockSize>
-        <frlMaxBlockSize xsi:type="xsd:unsignedInt">262144</frlMaxBlockSize>
-        <frli2oBlockSize xsi:type="xsd:unsignedInt">4096</frli2oBlockSize>
-        <frlStreamPoolSize xsi:type="xsd:double">5000000</frlStreamPoolSize>
-        <committedPoolSize xsi:type="xsd:double">20000000</committedPoolSize>
+        <frlStreamPoolSize xsi:type="xsd:double">1400000</frlStreamPoolSize>
+        <fragmentPoolSize xsi:type="xsd:unsignedInt">700000</fragmentPoolSize>
+        <frlMaxBlockSize xsi:type="xsd:unsignedInt">131072</frlMaxBlockSize>
+        <frli2oBlockSize xsi:type="xsd:unsignedInt">32074</frli2oBlockSize>
+        <frlCopyWorkersNo xsi:type="xsd:unsignedInt">1</frlCopyWorkersNo>
+        <committedPoolSize xsi:type="xsd:double">1000000</committedPoolSize>
+        <memCacheFrames xsi:type="xsd:unsignedInt">16</memCacheFrames>
+        <!--copyWorkerQueueSize xsi:type="xsd:unsignedInt">32</copyWorkerQueueSize-->
+        <!--memCacheFrameSize xsi:type="xsd:unsignedInt">32074</memCacheFrameSize-->
         <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[1]">
           <item xsi:type="soapenc:Struct" soapenc:position="[0]">
-            <fedid xsi:type="xsd:string">0</fedid>
+            <fedid xsi:type="xsd:string">1</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">0</instance>
           </item>
@@ -67,12 +78,15 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">true</dropInputData>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
-          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
+          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">1</item>
         </fedSourceIds>
       </properties>
     </xc:Application>
     
-    <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
+    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
+    
+    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_LOCAL/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
     

@@ -8,6 +8,7 @@
 #include "evb/ru/Input.h"
 #include "evb/TimerManager.h"
 #include "evb/version.h"
+#include "pt/utcp/frl/Method.h"
 #include "toolbox/task/WorkLoopFactory.h"
 
 
@@ -22,8 +23,6 @@ EvBApplication<ru::StateMachine>(s,evb::version,"/evb/images/ru64x64.gif")
   
   initialize();
   
-  resetMonitoringCounters();
-
   LOG4CPLUS_INFO(logger_, "End of constructor");
 }
 
@@ -101,8 +100,14 @@ void evb::RU::bindI2oCallbacks()
     (
       this,
       &evb::RU::I2O_RU_SEND_Callback,
-      I2O_RU_SEND,
+      I2O_SHIP_FRAGMENTS,
       XDAQ_ORGANIZATION_ID
+    );
+  
+  pt::utcp::frl::bind
+    (
+      this,
+      &evb::RU::rawDataAvailable
     );
 }
 
@@ -112,7 +117,7 @@ void evb::RU::I2O_DATA_READY_Callback
   toolbox::mem::Reference *bufRef
 )
 {
-  ruInput_->dataReadyCallback(bufRef);
+  //ruInput_->dataReadyCallback(bufRef);
 }
 
 
@@ -125,8 +130,25 @@ void evb::RU::I2O_RU_SEND_Callback
 }
 
 
+void evb::RU::rawDataAvailable
+(
+  toolbox::mem::Reference* bufRef,
+  int originator,
+  pt::utcp::frl::MemoryCache* cache
+)
+{
+  ruInput_->dataReadyCallback(bufRef,cache);
+}
+
+
 void evb::RU::bindNonDefaultXgiCallbacks()
 {
+  xgi::bind
+    (
+      this,
+      &evb::RU::requestFIFOWebPage,
+      "requestFIFO"
+    );
 }
 
 
@@ -146,6 +168,35 @@ void evb::RU::do_defaultWebPage
   buProxy_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
+}
+
+
+void evb::RU::requestFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "requestFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  buProxy_->printRequestFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+  
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
 }
 
 

@@ -62,7 +62,7 @@ void evb::ru::DummyInputData::configure(const Configuration& conf)
 }
 
 
-void evb::ru::DummyInputData::dataReadyCallback(toolbox::mem::Reference* bufRef)
+void evb::ru::DummyInputData::dataReadyCallback(toolbox::mem::Reference* bufRef, pt::utcp::frl::MemoryCache* cache)
 {
   XCEPT_RAISE(exception::Configuration,
     "Received an event fragment while generating dummy data");

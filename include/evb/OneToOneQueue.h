@@ -88,6 +88,11 @@ namespace evb {
 
   private:
     
+    /**
+     * Format passed element information into the ostringstream.
+     */    
+    void formatter(T, std::ostringstream*);
+    
     const std::string name_;
     volatile uint32_t readPointer_;
     volatile uint32_t writePointer_;
@@ -275,7 +280,7 @@ namespace evb {
         *out << "  <td style=\"background:#51ef9e\">";
         try
         {
-          *out << container_.at(pos);
+          formatter( container_.at(pos), out );
         }
         catch (std::out_of_range&)
         {
@@ -349,7 +354,7 @@ namespace evb {
         *out << "  <td style=\"background-color:#51ef9e\">";
         try
         {
-          *out << container_.at(pos);
+          formatter( container_.at(pos), out );
         }
         catch (std::out_of_range&)
         {
@@ -367,6 +372,13 @@ namespace evb {
     
     *out << "</table>" << std::endl;
     *out << "</div>" << std::endl;
+  }
+  
+  
+  template <class T>
+  inline void OneToOneQueue<T>::formatter(T element, std::ostringstream* out)
+  {
+    *out << element;
   }
   
   

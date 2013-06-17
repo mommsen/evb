@@ -31,6 +31,7 @@ namespace evb {
   
   namespace bu { // namespace evb::bu
     
+    class ResourceManager;
     class StateMachine;
     
     /**
@@ -42,7 +43,11 @@ namespace evb {
     {
     public:
       
-      DiskWriter(BU*);
+      DiskWriter
+      (
+        BU*,
+        boost::shared_ptr<ResourceManager>
+      );
       
       ~DiskWriter();
     
@@ -87,12 +92,6 @@ namespace evb {
       void configure(const uint32_t maxEvtsUnderConstruction);
       
       /**
-       * Return true if events are written to disk
-       */
-      bool enabled() const
-      { return writeEventsToDisk_.value_; }
-      
-      /**
        * Remove all data
        */
       void clear();
@@ -102,12 +101,6 @@ namespace evb {
        */
       void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
-      
-      /**
-       * Register the event table
-       */
-      void registerEventTable(EventTablePtr eventTable)
-      { eventTable_ = eventTable; }
       
       /**
        * Start processing messages
@@ -152,7 +145,7 @@ namespace evb {
       void createWritingWorkLoops();
       
       BU* bu_;
-      EventTablePtr eventTable_;
+      boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
       const uint32_t buInstance_;
@@ -201,7 +194,7 @@ namespace evb {
       volatile bool processActive_;
       
       InfoSpaceItems diskWriterParams_;
-      xdata::Boolean writeEventsToDisk_;
+      xdata::Boolean dropEventData_;
       xdata::UnsignedInteger32 numberOfWriters_;
       xdata::String rawDataDir_;
       xdata::String metaDataDir_;

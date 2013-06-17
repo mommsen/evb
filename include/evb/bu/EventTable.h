@@ -30,6 +30,7 @@ namespace evb {
     
     class DiskWriter;
     class RUproxy;
+    class ResourceManager;
     class StateMachine;
     
     /**
@@ -45,38 +46,14 @@ namespace evb {
       (
         BU*,
         boost::shared_ptr<RUproxy>,
-        boost::shared_ptr<DiskWriter>
+        boost::shared_ptr<DiskWriter>,
+        boost::shared_ptr<ResourceManager>
       );
-      
-      /**
-       * Append the info space parameters used for the
-       * configuration to the InfoSpaceItems
-       */
-      void appendConfigurationItems(InfoSpaceItems&);
-      
-      /**
-       * Append the info space items to be published in the 
-       * monitoring info space to the InfoSpaceItems
-       */
-      void appendMonitoringItems(InfoSpaceItems&);
-      
-      /**
-       * Update all values of the items put into the monitoring
-       * info space. The caller has to make sure that the info
-       * space where the items reside is locked and properly unlocked
-       * after the call.
-       */
-      void updateMonitoringItems();
-      
-      /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
       
       /**
        * Configure
        */
-      void configure(const uint32_t maxEvtsUnderConstruction);
+      void configure();
       
       /**
        * Remove all data
@@ -99,36 +76,17 @@ namespace evb {
        */
       void stopProcessing();
       
-      /**
-       * Allow or disallow requests for new events
-       */
-      void requestEvents(bool val)
-      { requestEvents_ = val; }
-      
-      /**
-       * Print monitoring/configuration as HTML snipped
-       */
-      void printHtml(xgi::Output*);
-
-      /**
-       * Print the block FIFO as HTML snipped
-       */
-      inline void printBlockFIFO(xgi::Output* out)
-      { blockFIFO_.printVerticalHtml(out); }
-      
       
     private:
       
-      void checkForCompleteEvent(EventPtr);
-      void updateEventCounters(EventPtr);
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
       bool buildEvents();
-      bool handleCompleteEvents();
       
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
+      boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
       // Lookup table of events, indexed by evb id
@@ -136,33 +94,11 @@ namespace evb {
       EventMap eventMap_;
       uint32_t runNumber_;
       
-      typedef OneToOneQueue<toolbox::mem::Reference*> BlockFIFO;
-      BlockFIFO blockFIFO_;
-      
       toolbox::task::WorkLoop* processingWL_;
       toolbox::task::ActionSignature* processingAction_;
       
       volatile bool doProcessing_;
       volatile bool processActive_;
-      volatile bool requestEvents_;
-      
-      InfoSpaceItems tableParams_;
-      xdata::Boolean dropEventData_;
-      
-      struct EventMonitoring
-      {
-        uint32_t nbEventsInBU;
-        uint32_t nbEventsDropped;
-        PerformanceMonitor perf;
-      } eventMonitoring_;
-      boost::mutex eventMonitoringMutex_;
-      
-      xdata::UnsignedInteger32 nbEventsInBU_;
-      xdata::UnsignedInteger32 nbEvtsBuilt_;
-      xdata::Double rate_;
-      xdata::Double bandwidth_;
-      xdata::Double eventSize_;
-      xdata::Double eventSizeStdDev_;
       
     }; // EventTable
     

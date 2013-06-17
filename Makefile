@@ -34,6 +34,7 @@ Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
+	EVM.cc \
 	FragmentChain.cc \
 	FragmentGenerator.cc \
 	FragmentTracker.cc \
@@ -97,7 +98,7 @@ TestIncludeDirs = test/include
 TestLibraries = \
 	b2innub \
 	boost_system \
-	boost_thread \
+	boost_thread-mt \
 	cgicc \
 	config \
 	evb \
@@ -111,6 +112,7 @@ TestLibraries = \
 	numa \
 	peer \
 	pttcp \
+	ptutcp \
 	toolbox \
 	asyncresolv \
 	uuid \
@@ -119,8 +121,7 @@ TestLibraries = \
 	xdata \
 	xerces-c \
 	xgi \
-	xoap \
-	jemalloc
+	xoap
 
 TestLibraryDirs = \
         $(ASYNCRESOLV_LIB_PREFIX) \
@@ -144,15 +145,14 @@ TestLibraryDirs = \
         $(XDATA_LIB_PREFIX) \
         $(XERCES_LIB_PREFIX) \
         $(XGI_LIB_PREFIX) \
-        $(XOAP_LIB_PREFIX) \
-	/usr/local/lib
+        $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror -I /usr/local/include
+UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = boost_system boost_filesystem boost_thread interfaceshared xdaq2rc
-DependentLibraryDirs += /usr/lib /usr/local/lib $(INTERFACE_SHARED_LIB_PREFIX)
+DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system
+DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library

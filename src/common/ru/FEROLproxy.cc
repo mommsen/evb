@@ -54,7 +54,7 @@ void evb::ru::FEROLproxy::configure(const Configuration& conf)
 }
 
 
-void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
+void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef, pt::utcp::frl::MemoryCache* cache)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   
@@ -75,6 +75,7 @@ void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
   //bufRef->release(); return;
+  //cache->grantFrame(bufRef); return;
   
   SuperFragmentMap::iterator fragmentPos = superFragmentMap_.lower_bound(evbId);
   if ( fragmentPos == superFragmentMap_.end() || (superFragmentMap_.key_comp()(evbId,fragmentPos->first)) )
@@ -84,7 +85,7 @@ void evb::ru::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef)
     fragmentPos = superFragmentMap_.insert(fragmentPos, SuperFragmentMap::value_type(evbId,superFragment));
   }
   
-  if ( ! fragmentPos->second->append(fedId,bufRef) )
+  if ( ! fragmentPos->second->append(fedId,bufRef,cache) )
   {
     std::ostringstream msg;
     msg << "Received a duplicated FED id " << fedId

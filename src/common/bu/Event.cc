@@ -18,15 +18,15 @@
 
 evb::bu::Event::Event
 (
-  const uint32_t runNumber,
-  const uint32_t eventNumber,
+  const EvBid& evbId,
   const uint32_t buResourceId,
   const std::vector<I2O_TID>& ruTids
 ) :
+evbId_(evbId),
 buResourceId_(buResourceId),
 ruTids_(ruTids)
 {  
-  eventInfo_ = new EventInfo(runNumber, eventNumber);
+  eventInfo_ = new EventInfo(evbId.runNumber(), evbId.eventNumber(), evbId.lumiSection());
 }
 
 
@@ -43,7 +43,7 @@ evb::bu::Event::~Event()
 }
 
 
-void evb::bu::Event::appendSuperFragment
+bool evb::bu::Event::appendSuperFragment
 (
   const I2O_TID ruTid,
   toolbox::mem::Reference* bufRef,
@@ -56,7 +56,10 @@ void evb::bu::Event::appendSuperFragment
   if ( pos == ruTids_.end() )
   {
     std::ostringstream oss;
-    oss << "Received a duplicated or unexpected super fragment from RU TID " << ruTid;
+    oss << "Received a duplicated or unexpected super fragment for event " << eventInfo_->eventNumber;
+    oss << " from RU TID " << ruTid << ".";
+    oss << " Outstanding messages from RU TIDs: ";
+    std::copy(ruTids_.begin(),ruTids_.end(),std::ostream_iterator<I2O_TID>(oss," "));
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
   
@@ -67,6 +70,8 @@ void evb::bu::Event::appendSuperFragment
   // erase at the very end. Otherwise the event might be considered complete
   // before the last chunk has been fully treated
   ruTids_.erase(pos);
+
+  return ruTids_.empty();
 }
 
 
@@ -292,12 +297,13 @@ inline
 evb::bu::Event::EventInfo::EventInfo
 (
   const uint32_t run,
-  const uint32_t event
+  const uint32_t event,
+  const uint32_t lumi
 ) :
 version(3),
 runNumber(run),
 eventNumber(event),
-lumiSection(0),
+lumiSection(lumi),
 eventSize(0)
 {
   for (uint16_t i=0; i<FED_COUNT; ++i)

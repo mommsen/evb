@@ -11,6 +11,7 @@
 #include "evb/FragmentChain.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/ru/InputHandler.h"
+#include "pt/utcp/frl/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/Boolean.h"
@@ -66,7 +67,7 @@ namespace evb {
       /**
        * Callback for I2O_DATA_READY message received from frontend
        */
-      void dataReadyCallback(toolbox::mem::Reference*);
+      void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
       
       /**
        * Get the next complete super fragment.
@@ -74,7 +75,7 @@ namespace evb {
        * Otherwise, the FragmentChainPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      bool getNextAvailableSuperFragment(FragmentChainPtr);
+      bool getNextAvailableSuperFragment(FragmentChainPtr&);
       
       /**
        * Get the complete super fragment with EvBid.
@@ -82,7 +83,7 @@ namespace evb {
        * Otherwise, the FragmentChainPtr holds the
        * toolbox::mem::Reference chain to the FED fragements.
        */
-      bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr);
+      bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
             
       /**
        * Append the info space parameters used for the

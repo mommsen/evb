@@ -3,6 +3,7 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/EventTable.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
@@ -14,16 +15,16 @@ evb::bu::EventTable::EventTable
 (
   BU* bu,
   boost::shared_ptr<RUproxy> ruProxy,
-  boost::shared_ptr<DiskWriter> diskWriter
+  boost::shared_ptr<DiskWriter> diskWriter,
+  boost::shared_ptr<ResourceManager> resourceManager
 ) :
 bu_(bu),
 ruProxy_(ruProxy),
 diskWriter_(diskWriter),
-blockFIFO_("blockFIFO"),
+resourceManager_(resourceManager),
 doProcessing_(false),
 processActive_(false)
 {
-  resetMonitoringCounters();
   startProcessingWorkLoop();
 }
 
@@ -75,10 +76,7 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
   
   try
   {
-    while ( doProcessing_ && (
-        buildEvents() ||
-        handleCompleteEvents()
-      ) ) {};
+    while ( doProcessing_ && buildEvents() ) {};
   }
   catch(xcept::Exception &e)
   {
@@ -98,12 +96,14 @@ bool evb::bu::EventTable::buildEvents()
   
   if ( ! ruProxy_->getData(head) ) return false;
 
-  // const I2O_MESSAGE_FRAME* stdMsg =
-  //   (I2O_MESSAGE_FRAME*)head->getDataLocation();
-  // const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-  //   (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-  // const I2O_TID ruTid = stdMsg->InitiatorAddress;
-  // const uint32_t buResourceId = dataBlockMsg->buResourceId;
+  const I2O_MESSAGE_FRAME* stdMsg =
+    (I2O_MESSAGE_FRAME*)head->getDataLocation();
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+  const I2O_TID ruTid = stdMsg->InitiatorAddress;
+  const uint32_t buResourceId = dataBlockMsg->buResourceId;
+  const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+  uint32_t superFragmentCount = 0;
   
   toolbox::mem::Reference* bufRef = head;
   
@@ -111,192 +111,57 @@ bool evb::bu::EventTable::buildEvents()
   {
     size_t offset = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
     
-    while ( offset < bufRef->getBuffer()->getSize() )
+    while ( offset < bufRef->getBuffer()->getSize() && nbSuperFragments != superFragmentCount )
     { 
       unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + offset;
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-      // const EvBid evbId = superFragmentMsg->evbId;
+      const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
       
-      // EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
-      // if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
-      // {
-      //   // new event
-      //   EventPtr event( new Event(runNumber_, evbId.eventNumber(), buResourceId, ruProxy_->getRuTids()) );
-      //   eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+      EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
+      if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
+      {
+        // new event
+        EventPtr event( new Event(evbId, buResourceId, ruProxy_->getRuTids()) );
+        eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+      }
+      
+      if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
+          payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize) )
+      {
+        // this completes the event
+        resourceManager_->eventCompleted(eventPos->second);
+        diskWriter_->writeEvent(eventPos->second);
+        eventMap_.erase(eventPos++);
+      }
 
-      //   ++eventMonitoring_.nbEventsInBU;
-      // }
-      
-      // eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
-      //   payload+sizeof(msg::SuperFragment),superFragmentMsg->partSize);
-      
+      ++superFragmentCount;
       offset += superFragmentMsg->partSize;
     }
     
     bufRef = bufRef->getNextReference();  
   }
   
+  if (superFragmentCount != dataBlockMsg->nbSuperFragments)
+  {
+    std::ostringstream oss;
+    oss << "Incomplete I2O_DATA_BLOCK_MESSAGE_FRAME from RU TID " << ruTid;
+    oss << ": expected " << dataBlockMsg->nbSuperFragments << " super fragments, but found " << superFragmentCount;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+  
   head->release(); // The bufRef's holding event fragments are now owned by the events
   
-  return false;
+  return true;
 }
 
 
-bool evb::bu::EventTable::handleCompleteEvents()
-{
-  bool foundCompleteEvents = false;
-  
-  EventMap::iterator eventPos = eventMap_.begin();
-  while ( eventPos != eventMap_.end() )
-  {
-    if ( eventPos->second->isComplete() )
-    {
-      --eventMonitoring_.nbEventsInBU;
-      
-      if ( ! dropEventData_ )
-        diskWriter_->writeEvent(eventPos->second);
-      else
-        ++eventMonitoring_.nbEventsDropped;
-      
-      eventMap_.erase(eventPos++);
-      
-      foundCompleteEvents = true;
-    }
-  }
-  return foundCompleteEvents;
-}
- 
-
-void evb::bu::EventTable::appendConfigurationItems(InfoSpaceItems& params)
-{
-  dropEventData_ = false;
-
-  tableParams_.add("dropEventData", &dropEventData_);
-
-  params.add(tableParams_);
-}
-
-
-void evb::bu::EventTable::appendMonitoringItems(InfoSpaceItems& items)
-{
-  nbEventsInBU_ = 0;
-  nbEvtsBuilt_ = 0;
-  rate_ = 0;
-  bandwidth_ = 0;
-  eventSize_ = 0;
-  eventSizeStdDev_ = 0;
-  
-  items.add("nbEventsInBU", &nbEventsInBU_);
-  items.add("nbEvtsBuilt", &nbEvtsBuilt_);
-  items.add("rate", &rate_);
-  items.add("bandwidth", &bandwidth_);
-  items.add("eventSize", &eventSize_);
-  items.add("eventSizeStdDev", &eventSizeStdDev_);
-}
-
-
-void evb::bu::EventTable::updateMonitoringItems()
-{
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-  
-  nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
-  nbEvtsBuilt_ = eventMonitoring_.perf.logicalCount;
-  rate_ = eventMonitoring_.perf.logicalRate();
-  bandwidth_ = eventMonitoring_.perf.bandwidth();
-  eventSize_ = eventMonitoring_.perf.size();
-  eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
-}
-
-
-void evb::bu::EventTable::resetMonitoringCounters()
-{
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-
-  eventMonitoring_.nbEventsInBU = 0;
-  eventMonitoring_.nbEventsDropped = 0;
-  eventMonitoring_.perf.reset();
-}
-
-
-void evb::bu::EventTable::configure(const uint32_t maxEvtsUnderConstruction)
-{
-  clear();
-  
-  blockFIFO_.resize(maxEvtsUnderConstruction);
-  
-  requestEvents_ = true;
-}
+void evb::bu::EventTable::configure()
+{}
 
 
 void evb::bu::EventTable::clear()
 {
-  toolbox::mem::Reference* bufRef;
-  while ( blockFIFO_.deq(bufRef) ) { bufRef->release(); }
-
   eventMap_.clear();
-}
-
-
-void evb::bu::EventTable::printHtml(xgi::Output *out)
-{
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>Event Table</p>"                                    << std::endl;
-  *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events built</td>"                               << std::endl;
-    *out << "<td>" << eventMonitoring_.perf.logicalCount << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events in BU</td>"                               << std::endl;
-    *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events dropped</td>"                             << std::endl;
-    *out << "<td>" << eventMonitoring_.nbEventsDropped << "</td>"   << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    
-    const std::_Ios_Fmtflags originalFlags=out->flags();
-    const int originalPrecision=out->precision();
-    out->setf(std::ios::fixed);
-    out->precision(2);
-    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->setf(std::ios::scientific);
-    *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << rate_ << "</td>"                              << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->unsetf(std::ios::scientific);
-    out->precision(1);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_ << " +/- " << eventSizeStdDev_ << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->flags(originalFlags);
-    out->precision(originalPrecision);
-  }
-  
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  blockFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  tableParams_.printHtml("Configuration", out);
-
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>maxEvtsUnderConstruction</td>"                     << std::endl;
-  *out << "<td>" << stateMachine_->maxEvtsUnderConstruction() << "</td>" << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
 }
 
 

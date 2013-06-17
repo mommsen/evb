@@ -123,6 +123,11 @@ void evb::test::DummyFEROL::do_defaultWebPage
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
     
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>message count</td>"                                << std::endl;
+    *out << "<td>" << dataMonitoring_.i2oCount << "</td>"           << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
     const std::_Ios_Fmtflags originalFlags=out->flags();
     const int originalPrecision=out->precision();
     out->setf(std::ios::fixed);
@@ -270,13 +275,13 @@ void evb::test::DummyFEROL::startWorkLoops()
   try
   {
     generatingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( getIdentifier("Generating"), "waiting" );
+      getWorkLoop( getIdentifier("generating"), "waiting" );
     
     if ( ! generatingWL_->isActive() )
     {
       generatingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
-          getIdentifier("generating") );
+          getIdentifier("generatingAction") );
       
       generatingWL_->activate();
     }
@@ -291,13 +296,13 @@ void evb::test::DummyFEROL::startWorkLoops()
   try
   {
     sendingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( getIdentifier("Sending"), "waiting" );
+      getWorkLoop( getIdentifier("sending"), "waiting" );
     
     if ( ! sendingWL_->isActive() )
     {
       sendingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
-          getIdentifier("sending") );
+          getIdentifier("sendingAction") );
       
       sendingWL_->activate();
     }

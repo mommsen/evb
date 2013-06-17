@@ -19,11 +19,21 @@ evb::FragmentTracker::FragmentTracker
 ) :
 fedId_(fedId),
 fedSize_(fedSize),
-useLogNormal_(fedSizeStdDev > 0),
-logNormalGen_(toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev)),
+logNormalGen_(0),
 fedCRC_(0),
 typeOfNextComponent_(FED_HEADER)
-{}
+{
+  if (fedSizeStdDev > 0)
+  {
+    logNormalGen_ = new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev);
+  }
+}
+
+
+evb::FragmentTracker::~FragmentTracker()
+{
+  if (logNormalGen_) delete logNormalGen_;
+}
 
 
 uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
@@ -48,8 +58,8 @@ uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
 
 uint32_t evb::FragmentTracker::getFedSize()
 {
-  if ( useLogNormal_ )
-    return std::max(logNormalGen_.getRawRandomSize() & ~0x7,8UL);
+  if ( logNormalGen_ )
+    return std::max(logNormalGen_->getRawRandomSize() & ~0x7,8UL);
   else
     return fedSize_;
 }

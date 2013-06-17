@@ -27,7 +27,8 @@ while(<SYMBOL_MAP_FILE>) {
     my $sshCmd      = "ssh -x -n $host";
     my $launcherCmd = "cd /tmp && rm -f /tmp/core.* && source $testDir/setenv$testEnv.sh && xdaqLauncher $port";
     my $awkCmd      = "awk '{print \"$host:$port \" \$0}'";
-    my $cmd         = "$sshCmd \"sudo -u $user sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
+    #my $cmd         = "$sshCmd \"sudo -u $user sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
+    my $cmd         = "$sshCmd \"sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
 
     print "$cmd\n";
     system $cmd;

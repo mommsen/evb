@@ -171,7 +171,6 @@ void evb::ru::Processing::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
   stateMachine.buProxy()->resetMonitoringCounters();
-  stateMachine.ru()->resetMonitoringCounters();
   stateMachine.ruInput()->resetMonitoringCounters();
 }
 
@@ -183,12 +182,14 @@ void evb::ru::Enabled::entryAction()
   const uint32_t runNumber = stateMachine.runNumber();
   
   stateMachine.ruInput()->startProcessing(runNumber);
+  stateMachine.buProxy()->startProcessing();
 }
 
 
 void evb::ru::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
+  stateMachine.buProxy()->stopProcessing();
   stateMachine.ruInput()->stopProcessing();
 }
 

@@ -100,7 +100,8 @@ void evb::bu::Configuring::activity()
     if (doConfiguring_) stateMachine.bu()->configure();
     if (doConfiguring_) stateMachine.ruProxy()->configure();
     if (doConfiguring_) stateMachine.diskWriter()->configure(maxEvtsUnderConstruction);
-    if (doConfiguring_) stateMachine.eventTable()->configure(maxEvtsUnderConstruction);
+    if (doConfiguring_) stateMachine.eventTable()->configure();
+    if (doConfiguring_) stateMachine.resourceManager()->configure(maxEvtsUnderConstruction);
     
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
@@ -156,6 +157,7 @@ void evb::bu::Clearing::activity()
     if (doClearing_) stateMachine.ruProxy()->clear();
     if (doClearing_) stateMachine.diskWriter()->clear();
     if (doClearing_) stateMachine.eventTable()->clear();
+    if (doClearing_) stateMachine.resourceManager()->clear();
     
     if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
   }
@@ -196,7 +198,6 @@ void evb::bu::Processing::entryAction()
 
   stateMachine.ruProxy()->resetMonitoringCounters();
   stateMachine.diskWriter()->resetMonitoringCounters();
-  stateMachine.eventTable()->resetMonitoringCounters();
   stateMachine.resourceManager()->resetMonitoringCounters();
 }
 
@@ -209,15 +210,15 @@ void evb::bu::Enabled::entryAction()
 
   stateMachine.diskWriter()->startProcessing(runNumber);
   stateMachine.eventTable()->startProcessing(runNumber);
-  stateMachine.resourceManager()->startProcessing();
+  stateMachine.ruProxy()->startProcessing();
 }
 
 
 void evb::bu::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
+  stateMachine.ruProxy()->stopProcessing();
   stateMachine.eventTable()->stopProcessing();
-  stateMachine.resourceManager()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }
 

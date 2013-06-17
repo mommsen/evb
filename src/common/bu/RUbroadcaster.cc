@@ -43,7 +43,7 @@ void evb::bu::RUbroadcaster::getRuInstances()
     ruDescriptors =
       app_->getApplicationContext()->
       getDefaultZone()->
-      getApplicationDescriptors("evb::ru::Application");
+      getApplicationDescriptors("evb::RU");
   }
   catch(xcept::Exception &e)
   {
@@ -125,7 +125,7 @@ void evb::bu::RUbroadcaster::fillRUInstance(xdata::UnsignedInteger32 instance)
     ru.descriptor =
       app_->getApplicationContext()->
       getDefaultZone()->
-      getApplicationDescriptor("evb::ru::Application", instance);
+      getApplicationDescriptor("evb::RU", instance);
   }
   catch(xcept::Exception &e)
   {
@@ -194,7 +194,7 @@ void evb::bu::RUbroadcaster::sendToAllRUs
     );
 
     // Set the size of the copy
-    copyBufRef->setDataSize(bufRef->getDataSize());
+    copyBufRef->setDataSize(bufSize);
 
     // Set the I2O TID target address
     ((I2O_MESSAGE_FRAME*)copyFrame)->TargetAddress = it->tid;

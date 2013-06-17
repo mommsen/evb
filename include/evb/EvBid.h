@@ -2,6 +2,7 @@
 #define _evb_EvBid_h_
 
 #include <iostream>
+#include <list>
 #include <stdint.h>
 
 #include "i2o/i2o.h"
@@ -18,10 +19,10 @@ namespace evb {
   public:
     
     EvBid()
-    : resyncCount_(0), eventNumber_(0), lsNumber_(0), runNumber_(0) {};
+    : resyncCount_(0), eventNumber_(0), lumiSection_(0), runNumber_(0) {};
     
-    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t lsNumber, uint32_t runNumber)
-    : resyncCount_(resyncCount), eventNumber_(eventNumber), lsNumber_(lsNumber), runNumber_(runNumber) {};
+    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t lumiSection, uint32_t runNumber)
+    : resyncCount_(resyncCount), eventNumber_(eventNumber), lumiSection_(lumiSection), runNumber_(runNumber) {};
 
     /**
      * Return the resync count
@@ -38,8 +39,8 @@ namespace evb {
     /**
      * Return the lumi-section number
      */
-    uint32_t lsNumber() const
-    { return lsNumber_; }
+    uint32_t lumiSection() const
+    { return lumiSection_; }
 
     /**
      * Return the run number
@@ -65,7 +66,7 @@ namespace evb {
 
     uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
     uint32_t eventNumber_; // The L1 trigger number, aka event number
-    uint32_t lsNumber_;    // The lumi-section number. This number is optional
+    uint32_t lumiSection_;    // The lumi-section number. This number is optional
     uint32_t runNumber_;   // The run number
 
   };
@@ -91,18 +92,20 @@ namespace evb {
   {
     return !( *this == other );
   }
-
+  
+  typedef std::list<EvBid> EvBids;
+  
 } // namespace evb
 
 
 inline std::ostream& operator<<
 (
   std::ostream& s,
-  const evb::EvBid& evbId
+  const evb::EvBid evbId
 )
 {
   s << "runNumber=" << evbId.runNumber() << " ";
-  s << "lsNumber=" << evbId.lsNumber() << " ";
+  s << "lumiSection=" << evbId.lumiSection() << " ";
   s << "resyncCount=" << evbId.resyncCount() << " ";
   s << "eventNumber=" << evbId.eventNumber();
   

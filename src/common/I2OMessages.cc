@@ -4,7 +4,7 @@
 std::ostream& operator<<
 (
   std::ostream& str,
-  const I2O_PRIVATE_MESSAGE_FRAME& pvtMessageFrame
+  const I2O_PRIVATE_MESSAGE_FRAME pvtMessageFrame
 )
 {
   str << "PvtMessageFrame.StdMessageFrame.VersionOffset=";
@@ -38,18 +38,18 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::RqstForFragmentsMsg* rqstForFragmentsMsg
+  const evb::msg::RqstForFragmentsMsg rqstForFragmentsMsg
 )
 {
   str << "RqstForFragmentsMsg:" << std::endl;
   
-  str << rqstForFragmentsMsg->PvtMessageFrame << std::endl;
+  str << rqstForFragmentsMsg.PvtMessageFrame;
   
-  str << "buResourceId=" << rqstForFragmentsMsg->buResourceId << std::endl;
-  str << "nbRequests=" << rqstForFragmentsMsg->nbRequests << std::endl;
+  str << "buResourceId=" << rqstForFragmentsMsg.buResourceId << std::endl;
+  str << "nbRequests=" << rqstForFragmentsMsg.nbRequests << std::endl;
   str << "evbIds:" << std::endl;
-  for (int32_t i=0; i < rqstForFragmentsMsg->nbRequests; ++i)
-    str << "   [" << i << "]: " << rqstForFragmentsMsg->evbIds[i] << std::endl;
+  for (int32_t i=0; i < rqstForFragmentsMsg.nbRequests; ++i)
+    str << "   [" << i << "]: " << rqstForFragmentsMsg.evbIds[i] << std::endl;
   
   return str;
 }
@@ -58,14 +58,14 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::SuperFragment* superFragment
+  const evb::msg::SuperFragment superFragment
 )
 {
   str << "SuperFragment:" << std::endl;
   
-  str << "superFragmentNb=" << superFragment->superFragmentNb << std::endl;
-  str << "totalSize=" << superFragment->totalSize << std::endl;
-  str << "partSize=" << superFragment->partSize << std::endl;
+  str << "superFragmentNb=" << superFragment.superFragmentNb << std::endl;
+  str << "totalSize=" << superFragment.totalSize << std::endl;
+  str << "partSize=" << superFragment.partSize << std::endl;
   
   return str;
 }
@@ -74,20 +74,20 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME dataBlockMsg
 )
 {
   str << "I2O_DATA_BLOCK_MESSAGE_FRAME:" << std::endl;
   
-  str << dataBlockMsg->PvtMessageFrame << std::endl;
+  str << dataBlockMsg.PvtMessageFrame;
   
-  str << "buResourceId=" << dataBlockMsg->buResourceId << std::endl;
-  str << "nbBlocks=" << dataBlockMsg->nbBlocks << std::endl;
-  str << "blockNb=" << dataBlockMsg->blockNb << std::endl;
-  str << "nbSuperFragments=" << dataBlockMsg->nbSuperFragments << std::endl;
+  str << "buResourceId=" << dataBlockMsg.buResourceId << std::endl;
+  str << "nbBlocks=" << dataBlockMsg.nbBlocks << std::endl;
+  str << "blockNb=" << dataBlockMsg.blockNb << std::endl;
+  str << "nbSuperFragments=" << dataBlockMsg.nbSuperFragments << std::endl;
   str << "evbIds:" << std::endl;
-  for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
-    str << "   [" << i << "]: " << dataBlockMsg->evbIds[i] << std::endl;
+  for (uint32_t i=0; i < dataBlockMsg.nbSuperFragments; ++i)
+    str << "   [" << i << "]: " << dataBlockMsg.evbIds[i] << std::endl;
   
   return str;
 }

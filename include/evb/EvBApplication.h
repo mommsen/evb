@@ -186,7 +186,7 @@ template<class StateMachine>
 std::string evb::EvBApplication<StateMachine>::getIdentifier(const std::string& suffix)
 {
   std::ostringstream identifier;
-  identifier << xmlClass_ << instance_ << suffix;
+  identifier << xmlClass_ << "-" << instance_  << "/" << suffix;
 
   return identifier.str();
 }
@@ -391,7 +391,7 @@ void evb::EvBApplication<StateMachine>::startMonitoring()
 template<class StateMachine>
 void evb::EvBApplication<StateMachine>::startMonitoringWorkloop()
 {
-  const std::string monitoringWorkLoopName( getIdentifier(" monitoring work loop") );
+  const std::string monitoringWorkLoopName( getIdentifier("monitoring") );
 
   toolbox::task::WorkLoop* monitoringWorkLoop = toolbox::task::getWorkLoopFactory()->getWorkLoop
     (
@@ -399,7 +399,7 @@ void evb::EvBApplication<StateMachine>::startMonitoringWorkloop()
       "waiting"
     );
   
-  const std::string monitoringActionName( getIdentifier(" monitoring action") );
+  const std::string monitoringActionName( getIdentifier("monitoringAction") );
   
   toolbox::task::ActionSignature* monitoringActionSignature =
     toolbox::task::bind

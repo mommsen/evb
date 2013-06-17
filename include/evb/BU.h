@@ -71,8 +71,10 @@ namespace evb {
     virtual void do_defaultWebPage(xgi::Output*);
     
     void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
-    void blockFIFOWebPage(xgi::Input*, xgi::Output*);
     void eventFIFOWebPage(xgi::Input*, xgi::Output*);
+    void requestFIFOWebPage(xgi::Input*, xgi::Output*);
+    void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
+    void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void eolsFIFOWebPage(xgi::Input*, xgi::Output*);
     
     boost::shared_ptr<bu::DiskWriter> diskWriter_;

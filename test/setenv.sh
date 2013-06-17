@@ -23,5 +23,5 @@ export TEST_TYPE=""
 
 export PATH=${PATH}:${EVB_TESTER_HOME}/scripts
 
-ulimit -l unlimited
+#ulimit -l unlimited
 

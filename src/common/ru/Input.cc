@@ -42,13 +42,13 @@ void evb::ru::Input::inputSourceChanged()
 }
 
 
-void evb::ru::Input::dataReadyCallback(toolbox::mem::Reference* bufRef)
+void evb::ru::Input::dataReadyCallback(toolbox::mem::Reference* bufRef, pt::utcp::frl::MemoryCache* cache)
 {
   if ( acceptI2Omessages_ )
   {
     updateInputCounters(bufRef);
     dumpFragmentToLogger(bufRef);
-    handler_->dataReadyCallback(bufRef);
+    handler_->dataReadyCallback(bufRef,cache);
   }
 }
 
@@ -96,13 +96,13 @@ void evb::ru::Input::dumpFragmentToLogger(toolbox::mem::Reference* bufRef) const
 }
 
 
-bool evb::ru::Input::getNextAvailableSuperFragment(FragmentChainPtr superFragment)
+bool evb::ru::Input::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
   return handler_->getNextAvailableSuperFragment(superFragment);
 }
 
 
-bool evb::ru::Input::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr superFragment)
+bool evb::ru::Input::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
   return handler_->getSuperFragmentWithEvBid(evbId,superFragment);
 }

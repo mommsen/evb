@@ -121,7 +121,13 @@ namespace evb {
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);
-      
+            
+      /**
+       * Print the content of the request FIFO as HTML snipped
+       */
+      inline void printRequestFIFO(xgi::Output* out)
+      { requestFIFO_.printVerticalHtml(out); }
+
       struct Request
       {
         I2O_TID  buTid;
@@ -136,7 +142,7 @@ namespace evb {
       typedef std::vector<FragmentChainPtr> SuperFragments;
       
       void startProcessingWorkLoop();
-      void updateRequestCounters(const msg::RqstForFragmentsMsg*);
+      void updateRequestCounters(const Request&);
       bool processSuperFragments(toolbox::task::WorkLoop*);
       bool processTriggers(toolbox::task::WorkLoop*);
       void sendData(const Request&, const SuperFragments&);
@@ -201,7 +207,7 @@ namespace evb {
   } } //namespace evb::ru
 
 
-std::ostream& operator<<(std::ostream&, const evb::ru::BUproxy::Request&);
+std::ostream& operator<<(std::ostream&, const evb::ru::BUproxy::Request);
 
 #endif // _evb_ru_BUproxy_h_
 
