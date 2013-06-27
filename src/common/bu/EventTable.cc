@@ -155,10 +155,6 @@ bool evb::bu::EventTable::buildEvents()
 }
 
 
-void evb::bu::EventTable::configure()
-{}
-
-
 void evb::bu::EventTable::clear()
 {
   eventMap_.clear();

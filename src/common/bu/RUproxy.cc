@@ -1,4 +1,5 @@
 #include "i2o/Method.h"
+#include "i2o/utils/AddressMap.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/BU.h"
@@ -18,15 +19,17 @@
 evb::bu::RUproxy::RUproxy
 (
   BU* bu,
-  toolbox::mem::Pool* fastCtrlMsgPool,
-  boost::shared_ptr<ResourceManager> resourceManager
+  boost::shared_ptr<ResourceManager> resourceManager,
+  toolbox::mem::Pool* fastCtrlMsgPool
 ) :
-RUbroadcaster(bu,fastCtrlMsgPool),
 bu_(bu),
 resourceManager_(resourceManager),
+fastCtrlMsgPool_(fastCtrlMsgPool),
+configuration_(bu->getConfiguration()),
 doProcessing_(false),
 requestTriggersActive_(false),
 requestFragmentsActive_(false),
+tid_(0),
 fragmentFIFO_("fragmentFIFO")
 {
   resetMonitoringCounters();
@@ -120,7 +123,9 @@ void evb::bu::RUproxy::startProcessing()
 {
   doProcessing_ = true;
   requestTriggersWL_->submit(requestTriggersAction_);
-  requestFragmentsWL_->submit(requestFragmentsAction_);
+  
+  if ( !participatingRUs_.empty() )
+    requestFragmentsWL_->submit(requestFragmentsAction_);
 }
 
 
@@ -190,7 +195,8 @@ bool evb::bu::RUproxy::requestTriggers(toolbox::task::WorkLoop*)
       toolbox::mem::Reference* rqstBufRef = 
         toolbox::mem::getMemoryPoolFactory()->
         getFrame(fastCtrlMsgPool_, sizeof(msg::RqstForFragmentsMsg));
-      
+      rqstBufRef->setDataSize(sizeof(msg::RqstForFragmentsMsg));
+
       I2O_MESSAGE_FRAME* stdMsg =
         (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
       I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
@@ -200,21 +206,39 @@ bool evb::bu::RUproxy::requestTriggers(toolbox::task::WorkLoop*)
       stdMsg->MsgFlags         = 0;
       stdMsg->MessageSize      = sizeof(msg::RqstForFragmentsMsg) >> 2;
       stdMsg->InitiatorAddress = tid_;
+      stdMsg->TargetAddress    = evm_.tid;
       stdMsg->Function         = I2O_PRIVATE_MESSAGE;
       pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
       pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
       rqstMsg->buResourceId    = buResourceId;
-      rqstMsg->nbRequests      = -1 * eventsPerRequest_; // not specifying any EvbIds
-      
-      sendToAllRUs(rqstBufRef, sizeof(msg::RqstForFragmentsMsg));
-      
-      // Free the requests message (its copies were sent not it)
-      rqstBufRef->release();
+      rqstMsg->nbRequests      = -1 * configuration_->eventsPerRequest; // not specifying any EvbIds
+
+      // Send the request to the EVM      
+      try
+      {
+        bu_->getApplicationContext()->
+          postFrame(
+            rqstBufRef,
+            bu_->getApplicationDescriptor(),
+            evm_.descriptor //,
+            //i2oExceptionHandler_,
+            //it->descriptor
+          );
+      }
+      catch(xcept::Exception &e)
+      {
+        std::stringstream oss;
+        
+        oss << "Failed to send message to EVM TID";
+        oss << evm_.tid;
+        
+        XCEPT_RETHROW(exception::I2O, oss.str(), e);
+      }
       
       boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
       
       triggerRequestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
-      triggerRequestMonitoring_.logicalCount += eventsPerRequest_;
+      triggerRequestMonitoring_.logicalCount += configuration_->eventsPerRequest;
       ++triggerRequestMonitoring_.i2oCount;
     }
   }
@@ -239,7 +263,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   try
   {
     ResourceManager::RequestPtr request;
-    while ( doProcessing_ && resourceManager_->getRequest(request) && participatingRUs_.size()>1 )
+    while ( doProcessing_ && resourceManager_->getRequest(request) )
     {
       const size_t requestsCount = request->evbIds.size();
       const size_t msgSize = sizeof(msg::RqstForFragmentsMsg) +
@@ -294,18 +318,63 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 }
 
 
-void evb::bu::RUproxy::appendConfigurationItems(InfoSpaceItems& params)
+void evb::bu::RUproxy::sendToAllRUs
+(
+  toolbox::mem::Reference* bufRef,
+  const size_t bufSize
+) const
 {
-  eventsPerRequest_ = 5;
-  fragmentFIFOCapacity_ = 16384;
-  
-  ruProxyParams_.clear();
-  ruProxyParams_.add("eventsPerRequest", &eventsPerRequest_);
-  ruProxyParams_.add("fragmentFIFOCapacity", &fragmentFIFOCapacity_);
-  
-  initRuInstances(ruProxyParams_);
-  
-  params.add(ruProxyParams_);
+  ////////////////////////////////////////////////////////////
+  // Make a copy of the pairs message under construction    //
+  // for each RU and send each copy to its corresponding RU //
+  ////////////////////////////////////////////////////////////
+
+  ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin();
+  const ApplicationDescriptorsAndTids::const_iterator itEnd = participatingRUs_.end();
+  for ( ; it != itEnd ; ++it)
+  {
+    // Create an empty request message
+    toolbox::mem::Reference* copyBufRef =
+      toolbox::mem::getMemoryPoolFactory()->
+      getFrame(fastCtrlMsgPool_, bufSize);
+    char* copyFrame  = (char*)(copyBufRef->getDataLocation());
+
+    // Copy the message under construction into
+    // the newly created empty message
+    memcpy(
+      copyFrame,
+      bufRef->getDataLocation(),
+      bufRef->getDataSize()
+    );
+
+    // Set the size of the copy
+    copyBufRef->setDataSize(bufSize);
+
+    // Set the I2O TID target address
+    ((I2O_MESSAGE_FRAME*)copyFrame)->TargetAddress = it->tid;
+
+    // Send the pairs message to the RU
+    try
+    {
+      bu_->getApplicationContext()->
+        postFrame(
+          copyBufRef,
+          bu_->getApplicationDescriptor(),
+          it->descriptor //,
+          //i2oExceptionHandler_,
+          //it->descriptor
+        );
+    }
+    catch(xcept::Exception &e)
+    {
+      std::stringstream oss;
+      
+      oss << "Failed to send message to RU TID";
+      oss << it->tid;
+
+      XCEPT_RETHROW(exception::I2O, oss.str(), e);
+    }
+  }
 }
 
 
@@ -361,9 +430,155 @@ void evb::bu::RUproxy::configure()
 {
   clear();
 
-  fragmentFIFO_.resize(fragmentFIFOCapacity_);
+  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity.value_);
 
   getApplicationDescriptors();
+}
+
+
+void evb::bu::RUproxy::getApplicationDescriptors()
+{
+  try
+  {
+    tid_ = i2o::utils::getAddressMap()->
+      getTid(bu_->getApplicationDescriptor());
+  }
+  catch(xcept::Exception &e)
+  {
+    XCEPT_RETHROW(exception::Configuration,
+      "Failed to get I2O TID for this application.", e);
+  }
+  
+  getApplicationDescriptorForEVM();
+  getApplicationDescriptorsForRUs();
+}
+
+
+void evb::bu::RUproxy::getApplicationDescriptorForEVM()
+{
+  if (configuration_->evmInstance.value_ < 0)
+  {
+    // Try to find instance number by assuming the first EVM found is the
+    // one to be used.
+    
+    std::set<xdaq::ApplicationDescriptor*> evmDescriptors;
+    
+    try
+    {
+      evmDescriptors =
+        bu_->getApplicationContext()->
+        getDefaultZone()->
+        getApplicationDescriptors("evb::EVM");
+    }
+    catch(xcept::Exception &e)
+    {
+      XCEPT_RETHROW(exception::Configuration,
+        "Failed to get EVM application descriptor", e);
+    }
+    
+    if ( evmDescriptors.empty() )
+    {
+      XCEPT_RAISE(exception::Configuration,
+        "Failed to get EVM application descriptor");
+    }
+    
+    evm_.descriptor = *(evmDescriptors.begin());
+  }
+  else
+  {
+    try
+    {
+      evm_.descriptor =
+        bu_->getApplicationContext()->
+        getDefaultZone()->
+        getApplicationDescriptor("evb::EVM",
+          configuration_->evmInstance.value_);
+    }
+    catch(xcept::Exception &e)
+    {
+      std::ostringstream oss;
+      
+      oss << "Failed to get application descriptor of EVM";
+      oss << configuration_->evmInstance.toString();
+      
+      XCEPT_RETHROW(exception::Configuration, oss.str(), e);
+    }
+  }
+  
+  try
+  {
+    evm_.tid = i2o::utils::getAddressMap()->getTid(evm_.descriptor);
+  }
+  catch(xcept::Exception &e)
+  {
+    XCEPT_RETHROW(exception::Configuration,
+      "Failed to get the I2O TID of the EVM", e);
+  }
+}
+
+
+void evb::bu::RUproxy::getApplicationDescriptorsForRUs()
+{
+  std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
+
+  // Clear list of participating RUs
+  participatingRUs_.clear();
+  ruTids_.clear();
+  
+  try
+  {
+    ruDescriptors =
+      bu_->getApplicationContext()->
+      getDefaultZone()->
+      getApplicationDescriptors("evb::RU");
+  }
+  catch(xcept::Exception &e)
+  {
+    XCEPT_RETHROW(exception::Configuration,
+      "Failed to get RU application descriptor", e);
+  }
+
+  if ( ruDescriptors.empty() )
+  {
+    LOG4CPLUS_WARN(bu_->getApplicationLogger(), "There are no RU application descriptors.");
+    
+    return;
+  }
+
+  std::set<xdaq::ApplicationDescriptor*>::const_iterator it = ruDescriptors.begin();
+  const std::set<xdaq::ApplicationDescriptor*>::const_iterator itEnd = ruDescriptors.end();
+  for ( ; it != itEnd ; ++it)
+  {
+    ApplicationDescriptorAndTid ru;
+    
+    ru.descriptor = *it;
+    
+    try
+    {
+      ru.tid = i2o::utils::getAddressMap()->getTid(*it);
+    }
+    catch(xcept::Exception &e)
+    {
+      std::stringstream oss;
+      
+      oss << "Failed to get I2O TID for RU ";
+      oss << (*it)->getInstance();
+      
+      XCEPT_RETHROW(exception::I2O, oss.str(), e);
+    }
+    
+    if ( ! participatingRUs_.insert(ru).second )
+    {
+      std::stringstream oss;
+      
+      oss << "Participating RU instance is a duplicate.";
+      oss << " Instance:" << (*it)->getInstance();
+      
+      XCEPT_RAISE(exception::Configuration, oss.str());
+    }
+    
+    ruTids_.push_back(ru.tid);
+  }
 }
 
 
@@ -441,12 +656,10 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  fragmentFIFO_.printHtml(out, app_->getApplicationDescriptor()->getURN());
+  fragmentFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
-  ruProxyParams_.printHtml("Configuration", out);
-
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;

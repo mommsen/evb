@@ -1,30 +1,198 @@
+#ifndef _evb_readoutunit_BUproxy_h_
+#define _evb_readoutunit_BUproxy_h_
+
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <stdint.h>
+#include <set>
+#include <vector>
+
+#include "evb/EvBid.h"
+#include "evb/Exception.h"
+#include "evb/FragmentChain.h"
+#include "evb/I2OMessages.h"
+#include "evb/InfoSpaceItems.h"
+#include "evb/OneToOneQueue.h"
+#include "evb/readoutunit/Configuration.h"
+#include "evb/readoutunit/FragmentRequest.h"
+#include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "interface/shared/i2ogevb2g.h"
-#include "evb/RU.h"
-#include "evb/ru/BUproxy.h"
-#include "evb/Exception.h"
+#include "toolbox/lang/Class.h"
 #include "toolbox/mem/HeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
+#include "toolbox/mem/Pool.h"
+#include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoopFactory.h"
+#include "toolbox/task/WorkLoop.h"
 #include "xcept/tools.h"
+#include "xdaq/Application.h"
+#include "xdata/Boolean.h"
+#include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
+#include "xdata/Vector.h"
+#include "xgi/Output.h"
 
-#include <cmath>
-#include <string.h>
+
+namespace evb {
+  
+  class RU;
+  
+  namespace readoutunit {
+    
+    /**
+     * \ingroup xdaqApps
+     * \brief Proxy for RU-BU communication
+     */
+    
+    template<class ReadoutUnit>
+    class BUproxy : public toolbox::lang::Class
+    {
+      
+    public:
+      
+      BUproxy(ReadoutUnit*);
+      
+      /**
+       * Callback for fragment request I2O message from BU
+       */
+      void rqstForFragmentsMsgCallback(toolbox::mem::Reference*);
+      
+      /**
+       * Configure the BU proxy
+       */
+      void configure();
+      
+      /**
+       * Append the info space items to be published in the 
+       * monitoring info space to the InfoSpaceItems
+       */
+      void appendMonitoringItems(InfoSpaceItems&);
+      
+      /**
+       * Update all values of the items put into the monitoring
+       * info space. The caller has to make sure that the info
+       * space where the items reside is locked and properly unlocked
+        * after the call.
+       */
+      void updateMonitoringItems();
+      
+      /**
+       * Reset the monitoring counters
+       */
+      void resetMonitoringCounters();
+      
+      /**
+       * Remove all data
+       */
+      void clear();
+      
+      /**
+       * Start processing messages
+       */
+      void startProcessing();
+      
+      /**
+       * Stop processing messages
+       */
+      void stopProcessing();
+      
+      /**
+       * Return the logical number of I2O_BU_CACHE messages
+       * received since the last call to resetMonitoringCounters
+       */
+      uint64_t i2oBUCacheCount() const
+      { return dataMonitoring_.logicalCount; }
+      
+      /**
+       * Print monitoring/configuration as HTML snipped
+       */
+      void printHtml(xgi::Output*);
+            
+      /**
+       * Print the content of the fragment-request FIFO as HTML snipped
+       */
+      inline void printFragmentRequestFIFO(xgi::Output* out)
+      { fragmentRequestFIFO_.printVerticalHtml(out); }
+      
+      
+    private:
+      
+      void startProcessingWorkLoop();
+      void updateRequestCounters(const FragmentRequest&);
+      bool process(toolbox::task::WorkLoop*);
+      void processRequest(FragmentRequest&);
+      void fillRequest(const msg::RqstForFragmentsMsg*, FragmentRequest&);
+      void sendData(const FragmentRequest&, const SuperFragments&);
+      toolbox::mem::Reference* getNextBlock(const uint32_t blockNb);
+      void fillSuperFragmentHeader
+      (
+        unsigned char*& payload,
+        size_t& remainingPayloadSize,
+        const uint32_t superFragmentNb,
+        const uint32_t superFragmentSize
+      ) const;
+      
+      ReadoutUnit* readoutUnit_;
+      const ConfigurationPtr configuration_;
+      I2O_TID tid_;
+      toolbox::mem::Pool* superFragmentPool_;
+      
+      toolbox::task::WorkLoop* processingWL_;
+      toolbox::task::ActionSignature* action_;
+      bool doProcessing_;
+      bool processActive_;
+
+      typedef OneToOneQueue<FragmentRequest> FragmentRequestFIFO;
+      FragmentRequestFIFO fragmentRequestFIFO_;
+      
+      InfoSpaceItems buParams_;
+      typedef std::map<uint32_t,uint64_t> CountsPerBU;
+      struct RequestMonitoring
+      {
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t i2oCount;
+        CountsPerBU logicalCountPerBU;
+      } requestMonitoring_;
+      boost::mutex requestMonitoringMutex_;
+      
+      struct DataMonitoring
+      {
+        uint32_t lastEventNumberToBUs;
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t i2oCount;
+        CountsPerBU payloadPerBU;
+      } dataMonitoring_;
+      boost::mutex dataMonitoringMutex_;
+      
+      xdata::UnsignedInteger32 lastEventNumberToBUs_;
+      xdata::UnsignedInteger32 nbSuperFragmentsReady_;
+      xdata::UnsignedInteger64 i2oBUCacheCount_;
+      xdata::Vector<xdata::UnsignedInteger64> i2oRUSendCountBU_;
+      xdata::Vector<xdata::UnsignedInteger64> i2oBUCachePayloadBU_;
+      
+    };
+
+  } } //namespace evb::readoutunit
 
 
-evb::ru::BUproxy::BUproxy
-(
-  RU* ru,
-  boost::shared_ptr<ru::Input> input
-) :
-ru_(ru),
-input_(input),
+////////////////////////////////////////////////////////////////////////////////
+// Implementation follows                                                     //
+////////////////////////////////////////////////////////////////////////////////
+
+template<class ReadoutUnit>
+evb::readoutunit::BUproxy<ReadoutUnit>::BUproxy(ReadoutUnit* readoutUnit) :
+readoutUnit_(readoutUnit),
+configuration_(readoutUnit->getConfiguration()),
 tid_(0),
 doProcessing_(false),
 processActive_(false),
-requestFIFO_("requestFIFO")
+fragmentRequestFIFO_("fragmentRequestFIFO")
 {
   try
   {
@@ -33,7 +201,7 @@ requestFIFO_("requestFIFO")
   }
   catch (toolbox::mem::exception::MemoryPoolNotFound)
   {
-    toolbox::net::URN poolURN("toolbox-mem-pool",ru_->getApplicationDescriptor()->getURN());
+    toolbox::net::URN poolURN("toolbox-mem-pool",readoutUnit_->getApplicationDescriptor()->getURN());
     try
     {
       superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->
@@ -60,22 +228,18 @@ requestFIFO_("requestFIFO")
 }
 
 
-void evb::ru::BUproxy::startProcessingWorkLoop()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessingWorkLoop()
 {
   try
   {
     processingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( ru_->getIdentifier("RequestProcessing"), "waiting" );
+      getWorkLoop( readoutUnit_->getIdentifier("RequestProcessing"), "waiting" );
     
     if ( ! processingWL_->isActive() ) processingWL_->activate();
-
-    fragmentAction_ =
-        toolbox::task::bind(this, &evb::ru::BUproxy::processSuperFragments,
-          ru_->getIdentifier("processSuperFragments") );
     
-    triggerAction_ =
-        toolbox::task::bind(this, &evb::ru::BUproxy::processTriggers,
-          ru_->getIdentifier("processTriggers") );
+    action_ = toolbox::task::bind(this, &evb::readoutunit::BUproxy<ReadoutUnit>::process,
+      readoutUnit_->getIdentifier("process") );
   }
   catch (xcept::Exception& e)
   {
@@ -85,18 +249,17 @@ void evb::ru::BUproxy::startProcessingWorkLoop()
 }
 
 
-void evb::ru::BUproxy::startProcessing()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   doProcessing_ = true;
   
-  if ( hasTriggerFED_ )
-    processingWL_->submit(triggerAction_);
-  else
-    processingWL_->submit(fragmentAction_);
+  processingWL_->submit(action_);
 }
 
 
-void evb::ru::BUproxy::stopProcessing()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
 
@@ -104,81 +267,56 @@ void evb::ru::BUproxy::stopProcessing()
 }
 
 
-void evb::ru::BUproxy::rqstForFragmentsMsgCallback(toolbox::mem::Reference* bufRef)
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::rqstForFragmentsMsgCallback(toolbox::mem::Reference* bufRef)
 {
   msg::RqstForFragmentsMsg* rqstMsg =
     (msg::RqstForFragmentsMsg*)bufRef->getDataLocation();
   
-  Request request;
-  request.buTid = ((I2O_MESSAGE_FRAME*)rqstMsg)->InitiatorAddress;
-  request.buResourceId = rqstMsg->buResourceId;
+  FragmentRequest fragmentRequest;
+  fragmentRequest.buTid = ((I2O_MESSAGE_FRAME*)rqstMsg)->InitiatorAddress;
+  fragmentRequest.buResourceId = rqstMsg->buResourceId;
+  fillRequest(rqstMsg, fragmentRequest);  
   
-  // Only react on request if we have the trigger FED and the nbRequests is negative,
-  // or if we don't have the trigger FED and specific evbIds are requested
-  if ( hasTriggerFED_ )
-  {
-    if ( rqstMsg->nbRequests < 0 )
-    {
-      request.nbRequests = abs(rqstMsg->nbRequests);
-      updateRequestCounters(request);
-      
-      while( ! requestFIFO_.enq(request) ) ::usleep(1000);
-    }
-  }
-  else if ( rqstMsg->nbRequests > 0 )
-  {
-    request.nbRequests = rqstMsg->nbRequests;
-    for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
-      request.evbIds.push_back( rqstMsg->evbIds[i] );
-    updateRequestCounters(request);
-
-    while( ! requestFIFO_.enq(request) ) ::usleep(1000);
-  }
-
+  updateRequestCounters(fragmentRequest);
+  
+  while( ! fragmentRequestFIFO_.enq(fragmentRequest) ) ::usleep(1000);
+  
   bufRef->release();
 }
 
 
-void evb::ru::BUproxy::updateRequestCounters(const Request& request)
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequest& fragmentRequest)
 {
   boost::mutex::scoped_lock sl(requestMonitoringMutex_);
   
   requestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
-  if ( !hasTriggerFED_ )
-    requestMonitoring_.payload += (request.nbRequests-1) * sizeof(EvBid);
-  requestMonitoring_.logicalCount += request.nbRequests;
+  if ( !fragmentRequest.evbIds.empty() )
+    requestMonitoring_.payload += (fragmentRequest.nbRequests-1) * sizeof(EvBid);
+  requestMonitoring_.logicalCount += fragmentRequest.nbRequests;
   ++requestMonitoring_.i2oCount;
-  requestMonitoring_.logicalCountPerBU[request.buTid] += request.nbRequests;
+  requestMonitoring_.logicalCountPerBU[fragmentRequest.buTid] += fragmentRequest.nbRequests;
 }
 
 
-bool evb::ru::BUproxy::processSuperFragments(toolbox::task::WorkLoop* wl)
+template<class ReadoutUnit>
+bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl)
 {
   processActive_ = true;
 
-  Request request;
-  SuperFragments superFragments;
+  FragmentRequest fragmentRequest;
   
-  while ( doProcessing_ && requestFIFO_.deq(request) )
+  while ( doProcessing_ && fragmentRequestFIFO_.deq(fragmentRequest) )
   {
     try
     {
-      for (uint32_t i=0; i < request.nbRequests; ++i)
-      {
-        const EvBid& evbId = request.evbIds.at(i);
-        FragmentChainPtr superFragment;
-        
-        while ( doProcessing_ && !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
-
-        if ( superFragment->isValid() ) superFragments.push_back(superFragment);
-      }
-      
-      sendData(request, superFragments);
+      processRequest(fragmentRequest);
     }
     catch(xcept::Exception &e)
     {
       processActive_ = false;
-      stateMachine_->processFSMEvent( Fail(e) );
+      readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
     }
   }
   
@@ -188,63 +326,10 @@ bool evb::ru::BUproxy::processSuperFragments(toolbox::task::WorkLoop* wl)
 }
 
 
-bool evb::ru::BUproxy::processTriggers(toolbox::task::WorkLoop* wl)
-{
-  processActive_ = true;
-
-  Request request;
-  while ( doProcessing_ && requestFIFO_.deq(request) )
-  {
-    try
-    {
-      request.evbIds.clear();
-      request.evbIds.reserve(request.nbRequests);
-      
-      uint32_t tries = 0;
-      SuperFragments superFragments;
-      FragmentChainPtr superFragment;
-      
-      while ( doProcessing_ && !input_->getNextAvailableSuperFragment(superFragment) ) ::usleep(1000);
-      
-      if ( superFragment->isValid() )
-      {
-        superFragments.push_back(superFragment);
-        request.evbIds.push_back( superFragment->getEvBid() );
-      }
-      
-      while ( doProcessing_ && request.evbIds.size() < request.nbRequests && tries < maxTriggerAgeMSec_ )
-      {
-        if ( input_->getNextAvailableSuperFragment(superFragment) )
-        {
-           superFragments.push_back(superFragment);
-           request.evbIds.push_back( superFragment->getEvBid() );
-        }
-        else
-        {
-          ::usleep(1000);
-        }
-        ++tries;
-      }
-      
-      request.nbRequests = request.evbIds.size();
-      sendData(request, superFragments);
-    }
-    catch(xcept::Exception &e)
-    {
-      processActive_ = false;
-      stateMachine_->processFSMEvent( Fail(e) );
-    }
-  }
-  
-  processActive_ = false;
-  
-  return doProcessing_;
-}
-
-
-void evb::ru::BUproxy::sendData
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 (
-  const Request& request,
+  const FragmentRequest& fragmentRequest,
   const SuperFragments& superFragments
 )
 {
@@ -259,9 +344,9 @@ void evb::ru::BUproxy::sendData
   const size_t headerSize =
     sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + (nbSuperFragments-1) * sizeof(EvBid);
-  assert( headerSize < blockSize_ );
+  assert( headerSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + headerSize;
-  size_t remainingPayloadSize = blockSize_ - headerSize;
+  size_t remainingPayloadSize = configuration_->blockSize - headerSize;
 
   do
   {
@@ -289,7 +374,7 @@ void evb::ru::BUproxy::sendData
         // get a new block
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
         payload = (unsigned char*)nextBlock->getDataLocation() + headerSize;
-        remainingPayloadSize = blockSize_ - headerSize;
+        remainingPayloadSize = configuration_->blockSize - headerSize;
         fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,(*superFragmentIter)->getSize());
         tail->setNextReference(nextBlock);
         tail = nextBlock;
@@ -323,18 +408,18 @@ void evb::ru::BUproxy::sendData
     stdMsg->MsgFlags               = 0;
     stdMsg->MessageSize            = bufRef->getDataSize() >> 2;
     stdMsg->InitiatorAddress       = tid_;
-    stdMsg->TargetAddress          = request.buTid;
+    stdMsg->TargetAddress          = fragmentRequest.buTid;
     stdMsg->Function               = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
-    dataBlockMsg->buResourceId     = request.buResourceId;
+    dataBlockMsg->buResourceId     = fragmentRequest.buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
-    dataBlockMsg->nbSuperFragments = request.evbIds.size();
+    dataBlockMsg->nbSuperFragments = fragmentRequest.evbIds.size();
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
-      dataBlockMsg->evbIds[i] = request.evbIds[i];
-      if ( lastEventNumberToBUs < request.evbIds[i].eventNumber() )
-        lastEventNumberToBUs = request.evbIds[i].eventNumber();
+      dataBlockMsg->evbIds[i] = fragmentRequest.evbIds[i];
+      if ( lastEventNumberToBUs < fragmentRequest.evbIds[i].eventNumber() )
+        lastEventNumberToBUs = fragmentRequest.evbIds[i].eventNumber();
     }
     
     payloadSize += (stdMsg->MessageSize << 2) - headerSize;
@@ -351,30 +436,30 @@ void evb::ru::BUproxy::sendData
      dataMonitoring_.i2oCount += i2oCount;
      dataMonitoring_.payload += payloadSize;
      ++dataMonitoring_.logicalCount;
-     dataMonitoring_.payloadPerBU[request.buTid] += payloadSize;
+     dataMonitoring_.payloadPerBU[fragmentRequest.buTid] += payloadSize;
   }
   
   xdaq::ApplicationDescriptor *bu = 0;
   try
   {
-    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(request.buTid);
+    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest.buTid);
   }
   catch(xcept::Exception &e)
   {
     std::stringstream oss;
     
     oss << "Failed to get application descriptor for BU with tid ";
-    oss << request.buTid;
+    oss << fragmentRequest.buTid;
     
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   
   try
   {
-    ru_->getApplicationContext()->
+    readoutUnit_->getApplicationContext()->
       postFrame(
         head,
-        ru_->getApplicationDescriptor(),
+        readoutUnit_->getApplicationDescriptor(),
         bu//,
         //i2oExceptionHandler_,
         //bu
@@ -392,14 +477,15 @@ void evb::ru::BUproxy::sendData
 }
 
 
-toolbox::mem::Reference* evb::ru::BUproxy::getNextBlock
+template<class ReadoutUnit>
+toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
 (
   const uint32_t blockNb
 )
 {
   toolbox::mem::Reference* bufRef =
-    toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,blockSize_);
-  bufRef->setDataSize(blockSize_);
+    toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
+  bufRef->setDataSize(configuration_->blockSize);
   
   msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
   dataBlockMsg->blockNb = blockNb;
@@ -408,7 +494,8 @@ toolbox::mem::Reference* evb::ru::BUproxy::getNextBlock
 }
 
 
-void evb::ru::BUproxy::fillSuperFragmentHeader
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 (
   unsigned char*& payload,
   size_t& remainingPayloadSize,
@@ -427,16 +514,17 @@ void evb::ru::BUproxy::fillSuperFragmentHeader
 }
 
 
-void evb::ru::BUproxy::configure()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 {
   clear();
 
-  requestFIFO_.resize(requestFIFOCapacity_);
+  fragmentRequestFIFO_.resize(configuration_->fragmentRequestFIFOCapacity);
 
   try
   {
     tid_ = i2o::utils::getAddressMap()->
-      getTid(ru_->getApplicationDescriptor());
+      getTid(readoutUnit_->getApplicationDescriptor());
   }
   catch(xcept::Exception &e)
   {
@@ -446,24 +534,8 @@ void evb::ru::BUproxy::configure()
 }
 
 
-void evb::ru::BUproxy::appendConfigurationItems(InfoSpaceItems& params)
-{
-  maxTriggerAgeMSec_ = 1000;
-  blockSize_ = 4096;
-  requestFIFOCapacity_ = 65536;
-  hasTriggerFED_ = false;
-
-  buParams_.clear();
-  buParams_.add("maxTriggerAgeMSec", &maxTriggerAgeMSec_);
-  buParams_.add("blockSize", &blockSize_);
-  buParams_.add("requestFIFOCapacity", &requestFIFOCapacity_);
-  buParams_.add("hasTriggerFED", &hasTriggerFED_);
-
-  params.add(buParams_);
-}
-
-
-void evb::ru::BUproxy::appendMonitoringItems(InfoSpaceItems& items)
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
 {
   lastEventNumberToBUs_ = 0;
   i2oBUCacheCount_ = 0;
@@ -477,7 +549,8 @@ void evb::ru::BUproxy::appendMonitoringItems(InfoSpaceItems& items)
 }
 
 
-void evb::ru::BUproxy::updateMonitoringItems()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
@@ -511,7 +584,8 @@ void evb::ru::BUproxy::updateMonitoringItems()
 }
 
 
-void evb::ru::BUproxy::resetMonitoringCounters()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 {
 
   {
@@ -532,14 +606,16 @@ void evb::ru::BUproxy::resetMonitoringCounters()
 }
 
 
-void evb::ru::BUproxy::clear()
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::clear()
 {
-  Request request;
-  while ( requestFIFO_.deq(request) ) {};
+  FragmentRequest fragmentRequest;
+  while ( fragmentRequestFIFO_.deq(fragmentRequest) ) {};
 }
 
 
-void evb::ru::BUproxy::printHtml(xgi::Output *out)
+template<class ReadoutUnit>
+void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
 {
   *out << "<div>"                                                 << std::endl;
   *out << "<p>BUproxy</p>"                                        << std::endl;
@@ -590,7 +666,7 @@ void evb::ru::BUproxy::printHtml(xgi::Output *out)
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  requestFIFO_.printHtml(out, ru_->getApplicationDescriptor()->getURN());
+  fragmentRequestFIFO_.printHtml(out, readoutUnit_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
@@ -629,27 +705,7 @@ void evb::ru::BUproxy::printHtml(xgi::Output *out)
   *out << "</div>"                                                << std::endl;
 }
 
-
-std::ostream& operator<<
-(
-  std::ostream& str,
-  const evb::ru::BUproxy::Request request
-)
-{
-  str << "Request:" << std::endl;
-  
-  str << "buTid=" << request.buTid << std::endl;
-  str << "buResourceId=" << request.buResourceId << std::endl;
-  str << "nbRequests=" << request.nbRequests << std::endl;
-  if ( !request.evbIds.empty() )
-  {
-    str << "evbIds:" << std::endl;
-    for (uint32_t i=0; i < request.nbRequests; ++i)
-      str << "   [" << i << "]: " << request.evbIds[i] << std::endl;
-  }
-  
-  return str;
-}
+#endif // _evb_readoutunit_BUproxy_h_
 
 /// emacs configuration
 /// Local Variables: -

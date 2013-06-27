@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "evb/bu/FileHandler.h"
-#include "evb/bu/SuperFragmentDescriptor.h"
 #include "evb/EvBid.h"
 #include "evb/EventUtils.h"
 #include "i2o/i2oDdmLib.h"

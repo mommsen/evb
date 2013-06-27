@@ -6,6 +6,7 @@
 
 #include "evb/Exception.h"
 #include "evb/EvBStateMachine.h"
+#include "evb/bu/Configuration.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
@@ -29,7 +30,7 @@ namespace evb {
     // The state machine //
     ///////////////////////
     
-    typedef EvBStateMachine<StateMachine,bu::Outermost> EvBStateMachine;
+    typedef EvBStateMachine<StateMachine,Outermost> EvBStateMachine;
     class StateMachine: public EvBStateMachine
     {
       
@@ -52,22 +53,13 @@ namespace evb {
       boost::shared_ptr<EventTable> eventTable() const { return eventTable_; }
       boost::shared_ptr<ResourceManager> resourceManager() const { return resourceManager_; }
       
-      uint32_t runNumber() const { return runNumber_.value_; }
-      uint32_t maxEvtsUnderConstruction() const { return maxEvtsUnderConstruction_.value_; }
-      
     private:
-      
-      virtual void do_appendConfigurationItems(InfoSpaceItems&);
-      virtual void do_appendMonitoringItems(InfoSpaceItems&);
       
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
       boost::shared_ptr<EventTable> eventTable_;
       boost::shared_ptr<ResourceManager> resourceManager_;
-      
-      xdata::UnsignedInteger32 runNumber_;
-      xdata::UnsignedInteger32 maxEvtsUnderConstruction_;
       
     };
 

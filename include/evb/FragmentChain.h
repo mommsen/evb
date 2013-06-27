@@ -90,6 +90,7 @@ namespace evb {
   }; // FragmentChain
   
   typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
+  typedef std::vector<FragmentChainPtr> SuperFragments;
   
   } // namespace evb
 

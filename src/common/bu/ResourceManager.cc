@@ -149,14 +149,6 @@ bool evb::bu::ResourceManager::getRequest(RequestPtr& request)
 }
 
 
-void evb::bu::ResourceManager::appendConfigurationItems(InfoSpaceItems& params)
-{
-  resourceManagerParams_.clear();
-  
-  params.add(resourceManagerParams_);
-}
-
-
 void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbEventsInBU_ = 0;
@@ -201,7 +193,7 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 }
 
 
-void evb::bu::ResourceManager::configure(const uint32_t maxEvtsUnderConstruction)
+void evb::bu::ResourceManager::configure()
 {
   uint32_t buResourceId;
   while ( freeResourceFIFO_.deq(buResourceId) ) {};
@@ -210,6 +202,7 @@ void evb::bu::ResourceManager::configure(const uint32_t maxEvtsUnderConstruction
   RequestPtr request;
   while ( requestFIFO_.deq(request) ) {};
 
+  const uint32_t maxEvtsUnderConstruction = bu_->getConfiguration()->maxEvtsUnderConstruction.value_;
   freeResourceFIFO_.resize(maxEvtsUnderConstruction);
   blockedResourceFIFO_.resize(maxEvtsUnderConstruction);
   requestFIFO_.resize(maxEvtsUnderConstruction);
@@ -297,14 +290,6 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
   blockedResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-
-  resourceManagerParams_.printHtml("Configuration", out);
-  
-  // *out << "<tr>"                                                  << std::endl;
-  // *out << "<td>maxEvtsUnderConstruction</td>"                     << std::endl;
-  // *out << "<td>" << stateMachine_->maxEvtsUnderConstruction() << "</td>" << std::endl;
-  // *out << "</tr>"                                                 << std::endl;
-  
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
 }

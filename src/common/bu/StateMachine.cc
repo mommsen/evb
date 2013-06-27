@@ -27,27 +27,7 @@ ruProxy_(ruProxy),
 diskWriter_(diskWriter),
 eventTable_(eventTable),
 resourceManager_(resourceManager)
-{
-  // initiate FSM here to assure that the derived state machine class
-  // has been fully constructed.
-  this->initiate();
-}
-
-
-void evb::bu::StateMachine::do_appendConfigurationItems(InfoSpaceItems& params)
-{
-  runNumber_ = 0;
-  maxEvtsUnderConstruction_ = 64;
-  
-  params.add("runNumber", &runNumber_);
-  params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction_);
-}
-
-
-void evb::bu::StateMachine::do_appendMonitoringItems(InfoSpaceItems& items)
-{
-  items.add("runNumber", &runNumber_);
-}
+{}
 
 
 void evb::bu::Configuring::entryAction()
@@ -95,13 +75,11 @@ void evb::bu::Configuring::activity()
   msg = "Failed to configure the components";
   try
   {  
-    const uint32_t maxEvtsUnderConstruction = stateMachine.maxEvtsUnderConstruction();
+    outermost_context_type& stateMachine = outermost_context();
     
-    if (doConfiguring_) stateMachine.bu()->configure();
     if (doConfiguring_) stateMachine.ruProxy()->configure();
-    if (doConfiguring_) stateMachine.diskWriter()->configure(maxEvtsUnderConstruction);
-    if (doConfiguring_) stateMachine.eventTable()->configure();
-    if (doConfiguring_) stateMachine.resourceManager()->configure(maxEvtsUnderConstruction);
+    if (doConfiguring_) stateMachine.diskWriter()->configure();
+    if (doConfiguring_) stateMachine.resourceManager()->configure();
     
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
@@ -153,7 +131,6 @@ void evb::bu::Clearing::activity()
   std::string msg = "Failed to clear the components";
   try
   {
-    if (doClearing_) stateMachine.bu()->clear();
     if (doClearing_) stateMachine.ruProxy()->clear();
     if (doClearing_) stateMachine.diskWriter()->clear();
     if (doClearing_) stateMachine.eventTable()->clear();
@@ -206,7 +183,7 @@ void evb::bu::Enabled::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
   
-  const uint32_t runNumber = stateMachine.runNumber();
+  const uint32_t runNumber = stateMachine.getRunNumber();
 
   stateMachine.diskWriter()->startProcessing(runNumber);
   stateMachine.eventTable()->startProcessing(runNumber);

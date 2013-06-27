@@ -1,5 +1,5 @@
-#ifndef _evb_ru_h_
-#define _evb_ru_h_
+#ifndef _evb_evm_h_
+#define _evb_evm_h_
 
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"
@@ -7,32 +7,32 @@
 
 
 namespace evb {
-  
-  namespace ru {
-    class RUinput;
-    typedef readoutunit::ReadoutUnit<readoutunit::Configuration,RUinput> ReadoutUnit;
+
+  namespace evm {
+    class EVMinput;
+    typedef readoutunit::ReadoutUnit<readoutunit::Configuration,EVMinput> ReadoutUnit;
   }
   
   /**
    * \ingroup xdaqApps
-   * \brief Readout unit (RU)
+   * \brief Event Manager (EVM)
    */
-  class RU : public ru::ReadoutUnit
+  class EVM : public evm::ReadoutUnit
   {
   public:
     
-    RU(xdaq::ApplicationStub*);
+    EVM(xdaq::ApplicationStub*);
     
     XDAQ_INSTANTIATOR();
     
     
   private:
     
-  }; // class RU
+  }; // class EVM
   
 } // namespace evb
 
-#endif // _evb_ru_h_
+#endif // _evb_evm_h_
 
 
 /// emacs configuration

@@ -51,11 +51,6 @@ namespace evb {
       );
       
       /**
-       * Configure
-       */
-      void configure();
-      
-      /**
        * Remove all data
        */
       void clear();

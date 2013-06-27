@@ -4,13 +4,15 @@
 #include <boost/shared_ptr.hpp>
 
 #include <string>
+#include <time.h>
 
 #include "log4cplus/logger.h"
 
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/EvBStateMachine.h"
-#include "evb/TimerManager.h"
+#include "evb/version.h"
+#include "i2o/Method.h"
 #include "toolbox/mem/HeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "toolbox/mem/Pool.h"
@@ -43,103 +45,103 @@
 
 
 namespace evb {
-
-/**
- * \ingroup xdaqApps
- * \brief Generic evb application.
- */
-template<class StateMachine>
-class EvBApplication :
-  public xdaq::WebApplication,
-  public xdata::ActionListener
-{
-public:
-
+  
   /**
-   * Constructor.
+   * \ingroup xdaqApps
+   * \brief Generic evb application.
    */
-  EvBApplication
-  (
-    xdaq::ApplicationStub*,
-    const std::string& codeVersion,
-    const std::string& appIcon
-  );
-
-  std::string getIdentifier(const std::string& suffix = "");
+  template<class Configuration,class StateMachine>
+  class EvBApplication :
+    public xdaq::WebApplication, public xdata::ActionListener
+  {
+  public:
+    
+    /**
+     * Constructor.
+     */
+    EvBApplication
+    (
+      xdaq::ApplicationStub*,
+      const std::string& appIcon
+    );
+    
+    std::string getIdentifier(const std::string& suffix = "");
+    boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
+    boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
+    
+  protected:
+    
+    void initialize();
+    
+    virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&) = 0;
+    virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&) = 0;
+    virtual void do_updateMonitoringInfo() = 0;
+    
+    virtual void do_handleItemChangedEvent(const std::string& item) {};
+    virtual void do_handleItemRetrieveEvent(const std::string& item) {};
+    
+    virtual void do_bindI2oCallbacks() {};
+    
+    virtual void bindNonDefaultXgiCallbacks() {};
+    virtual void do_defaultWebPage(xgi::Output*) = 0;
+    
+    toolbox::mem::Pool* getFastControlMsgPool();
+    xoap::MessageReference createFsmSoapResponseMsg
+    (
+      const std::string& event,
+      const std::string& state
+    );
+    
+    void webPageHeader(xgi::Output*, const std::string& name);
+    void webPageBanner(xgi::Output*);
+    void printWebPageIcon
+    (
+      xgi::Output*,
+      const std::string& imgSrc,
+      const std::string& label,
+      const std::string& href
+    );
+    
+    const std::string appIcon_;
+    log4cplus::Logger logger_;
+    
+    xdata::InfoSpace *monitoringInfoSpace_;
+    
+    boost::shared_ptr<Configuration> configuration_;
+    boost::shared_ptr<StateMachine> stateMachine_;
+    xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
+    
+    std::string urn_;
+    std::string xmlClass_;
+    xdata::UnsignedInteger32 instance_;
+    xdata::String stateName_;
+    xdata::UnsignedInteger32 monitoringSleepSec_;
+    
+    
+  private:
+    
+    void initApplicationInfoSpace();
+    void initMonitoringInfoSpace();
+    void startMonitoring();
+    void bindI2oCallbacks();
+    void bindSoapCallbacks();
+    void bindXgiCallbacks();
+    xoap::MessageReference processSoapFsmEvent(xoap::MessageReference msg);
+    
+    void startMonitoringWorkloop();
+    bool updateMonitoringInfo(toolbox::task::WorkLoop*);
+    
+    void appendApplicationInfoSpaceItems(InfoSpaceItems&);
+    void appendMonitoringInfoSpaceItems(InfoSpaceItems&);
+    void actionPerformed(xdata::Event&);
+    void handleItemChangedEvent(const std::string& item);
+    void handleItemRetrieveEvent(const std::string& item);
+    
+    void defaultWebPage(xgi::Input*, xgi::Output*);
+    std::string getCurrentTimeUTC() const;
+    
+  }; // template class EvBApplication
   
-  
-protected:
-
-  void initialize();
-
-  virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&) = 0;
-  virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&) = 0;
-  virtual void do_updateMonitoringInfo() = 0;
-  
-  virtual void do_handleItemChangedEvent(const std::string& item) {};
-  virtual void do_handleItemRetrieveEvent(const std::string& item) {};
-
-  virtual void bindI2oCallbacks() {};
-
-  virtual void bindNonDefaultXgiCallbacks() {};
-  virtual void do_defaultWebPage(xgi::Output*) = 0;
-
-  toolbox::mem::Pool* getFastControlMsgPool();
-  xoap::MessageReference createFsmSoapResponseMsg
-  (
-    const std::string& event,
-    const std::string& state
-  );
-
-  void webPageHeader(xgi::Output*, const std::string& name);
-  void webPageBanner(xgi::Output*);
-  void printWebPageIcon
-  (
-    xgi::Output*,
-    const std::string& imgSrc,
-    const std::string& label,
-    const std::string& href
-  );
-  
-  const std::string codeVersion_;
-  const std::string appIcon_;
-  log4cplus::Logger logger_;
-  
-  xdata::InfoSpace *monitoringInfoSpace_;
-
-  boost::shared_ptr<StateMachine> stateMachine_;
-  xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
-
-  std::string urn_;
-  std::string xmlClass_;
-  xdata::UnsignedInteger32 instance_;
-  xdata::String stateName_;
-  
-  xdata::UnsignedInteger32 monitoringSleepSec_;
-  
-  
-private:
-
-  void initApplicationInfoSpace();
-  void initMonitoringInfoSpace();
-  void startMonitoring();
-  void bindSoapCallbacks();
-  void bindXgiCallbacks();
-  xoap::MessageReference processSoapFsmEvent(xoap::MessageReference msg);
-  
-  void startMonitoringWorkloop();
-  bool updateMonitoringInfo(toolbox::task::WorkLoop*);
-
-  void appendApplicationInfoSpaceItems(InfoSpaceItems&);
-  void appendMonitoringInfoSpaceItems(InfoSpaceItems&);
-  void actionPerformed(xdata::Event&);
-  void handleItemChangedEvent(const std::string& item);
-  void handleItemRetrieveEvent(const std::string& item);
-
-  void defaultWebPage(xgi::Input*, xgi::Output*);
-
-}; // template class EvBApplication
-
 } // namespace evb
 
 
@@ -147,17 +149,16 @@ private:
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class StateMachine>
-evb::EvBApplication<StateMachine>::EvBApplication
+template<class Configuration,class StateMachine>
+evb::EvBApplication<Configuration,StateMachine>::EvBApplication
 (
-  xdaq::ApplicationStub* s,
-  const std::string& codeVersion,
+  xdaq::ApplicationStub* app,
   const std::string& appIcon
 ) :
-xdaq::WebApplication(s),
-codeVersion_(codeVersion),
+xdaq::WebApplication(app),
 appIcon_(appIcon),
 logger_(getApplicationLogger()),
+configuration_(new Configuration()),
 soapParameterExtractor_(this)
 {
   xdaq::ApplicationDescriptor* appDescriptor = getApplicationDescriptor();
@@ -169,9 +170,11 @@ soapParameterExtractor_(this)
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::initialize()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::initialize()
 {
+  stateMachine_->initiate();
+  
   initApplicationInfoSpace();
   initMonitoringInfoSpace();
   startMonitoring();
@@ -182,8 +185,8 @@ void evb::EvBApplication<StateMachine>::initialize()
 }
 
 
-template<class StateMachine>
-std::string evb::EvBApplication<StateMachine>::getIdentifier(const std::string& suffix)
+template<class Configuration,class StateMachine>
+std::string evb::EvBApplication<Configuration,StateMachine>::getIdentifier(const std::string& suffix)
 {
   std::ostringstream identifier;
   identifier << xmlClass_ << "-" << instance_  << "/" << suffix;
@@ -192,8 +195,8 @@ std::string evb::EvBApplication<StateMachine>::getIdentifier(const std::string& 
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::initApplicationInfoSpace()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
 {
   try
   {
@@ -218,8 +221,8 @@ void evb::EvBApplication<StateMachine>::initApplicationInfoSpace()
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::appendApplicationInfoSpaceItems
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::appendApplicationInfoSpaceItems
 (
   InfoSpaceItems& params
 )
@@ -229,13 +232,17 @@ void evb::EvBApplication<StateMachine>::appendApplicationInfoSpaceItems
 
   params.add("stateName", &stateName_, InfoSpaceItems::retrieve);
   params.add("monitoringSleepSec", &monitoringSleepSec_);
-
+  
+  stateMachine_->appendConfigurationItems(params);
+  
   do_appendApplicationInfoSpaceItems(params);
+
+  configuration_->addToInfoSpace( params, getApplicationDescriptor()->getInstance() );
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::initMonitoringInfoSpace()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
 {
   try
   {
@@ -263,8 +270,8 @@ void evb::EvBApplication<StateMachine>::initMonitoringInfoSpace()
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::appendMonitoringInfoSpaceItems
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::appendMonitoringInfoSpaceItems
 (
   InfoSpaceItems& items
 )
@@ -273,8 +280,8 @@ void evb::EvBApplication<StateMachine>::appendMonitoringInfoSpaceItems
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::actionPerformed(xdata::Event& ispaceEvent)
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::actionPerformed(xdata::Event& ispaceEvent)
 {
   try
   {
@@ -303,15 +310,15 @@ void evb::EvBApplication<StateMachine>::actionPerformed(xdata::Event& ispaceEven
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::handleItemChangedEvent(const std::string& item)
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::handleItemChangedEvent(const std::string& item)
 {
   do_handleItemChangedEvent(item);
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::handleItemRetrieveEvent(const std::string& item)
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::handleItemRetrieveEvent(const std::string& item)
 {
   if (item == "stateName")
   {
@@ -324,8 +331,15 @@ void evb::EvBApplication<StateMachine>::handleItemRetrieveEvent(const std::strin
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::bindSoapCallbacks()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::bindI2oCallbacks()
+{
+  do_bindI2oCallbacks();
+}
+
+
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::bindSoapCallbacks()
 {
   typename StateMachine::SoapFsmEvents soapFsmEvents =
     stateMachine_->getSoapFsmEvents();
@@ -335,7 +349,7 @@ void evb::EvBApplication<StateMachine>::bindSoapCallbacks()
   {
     xoap::bind(
       this,
-      &evb::EvBApplication<StateMachine>::processSoapFsmEvent,
+      &evb::EvBApplication<Configuration,StateMachine>::processSoapFsmEvent,
       *it,
       XDAQ_NS_URI
     );
@@ -343,8 +357,8 @@ void evb::EvBApplication<StateMachine>::bindSoapCallbacks()
 }
 
 
-template<class StateMachine>
-xoap::MessageReference evb::EvBApplication<StateMachine>::processSoapFsmEvent
+template<class Configuration,class StateMachine>
+xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processSoapFsmEvent
 (
   xoap::MessageReference msg
 )
@@ -371,8 +385,8 @@ xoap::MessageReference evb::EvBApplication<StateMachine>::processSoapFsmEvent
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::startMonitoring()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
 {
   try
   {
@@ -388,8 +402,8 @@ void evb::EvBApplication<StateMachine>::startMonitoring()
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::startMonitoringWorkloop()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
 {
   const std::string monitoringWorkLoopName( getIdentifier("monitoring") );
 
@@ -405,7 +419,7 @@ void evb::EvBApplication<StateMachine>::startMonitoringWorkloop()
     toolbox::task::bind
     (
       this,
-      &evb::EvBApplication<StateMachine>::updateMonitoringInfo,
+      &evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo,
       monitoringActionName
     );
   
@@ -432,8 +446,8 @@ void evb::EvBApplication<StateMachine>::startMonitoringWorkloop()
 }
 
 
-template<class StateMachine>
-bool evb::EvBApplication<StateMachine>::updateMonitoringInfo
+template<class Configuration,class StateMachine>
+bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 (
   toolbox::task::WorkLoop* wl
 )
@@ -444,7 +458,6 @@ bool evb::EvBApplication<StateMachine>::updateMonitoringInfo
   {
     monitoringInfoSpace_->lock();
     
-    stateMachine_->updateMonitoringItems();
     do_updateMonitoringInfo();
     
     monitoringInfoSpace_->unlock();
@@ -492,13 +505,13 @@ bool evb::EvBApplication<StateMachine>::updateMonitoringInfo
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::bindXgiCallbacks()
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::bindXgiCallbacks()
 {
   xgi::bind
     (
       this,
-      &evb::EvBApplication<StateMachine>::defaultWebPage,
+      &evb::EvBApplication<Configuration,StateMachine>::defaultWebPage,
       "Default"
     );
 
@@ -506,8 +519,8 @@ void evb::EvBApplication<StateMachine>::bindXgiCallbacks()
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::defaultWebPage
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
 (
   xgi::Input  *in,
   xgi::Output *out
@@ -542,8 +555,109 @@ void evb::EvBApplication<StateMachine>::defaultWebPage
 }
 
 
-template<class StateMachine>
-xoap::MessageReference evb::EvBApplication<StateMachine>::createFsmSoapResponseMsg
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
+(
+  xgi::Output* out,
+  const std::string& name
+)
+{
+  *out << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""          << std::endl;
+  *out << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"          << std::endl;
+
+  *out << "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">" << std::endl;
+  *out << "<head>"                                                                    << std::endl;
+  *out << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>"   << std::endl;
+  *out << "<link type=\"text/css\" rel=\"stylesheet\"";
+  *out << " href=\"/evb/html/evb.css\"/>"                                 << std::endl;
+  *out << "<title>"                                                                   << std::endl;
+  *out << xmlClass_ << " " << instance_ << " - " << name                              << std::endl;
+  *out << "</title>"                                                                  << std::endl;
+  *out << "</head>"                                                                   << std::endl;
+  *out << "<body>"                                                                    << std::endl;
+}
+
+
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
+(
+  xgi::Output* out
+)  
+{
+  *out << "<div class=\"header\">"                                                    << std::endl;
+  *out << "<table border=\"0\" width=\"100%\">"                                       << std::endl;
+  *out << "<tr>"                                                                      << std::endl;
+  *out << "<td class=\"icon\">"                                                       << std::endl;
+  *out << "<img src=\"" << appIcon_ << "\" alt=\"EVM\"/>"                             << std::endl;
+  *out << "<p>created by "
+    <<"<a href=\"mailto:Remigius.Mommsen@cern.ch\">R.K.&nbsp;Mommsen</a>"
+    << " &amp;&nbsp;S.&nbsp;Murray</p>"                                               << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+
+  *out << "<td>"                                                                      << std::endl;
+  *out << "<table width=\"100%\" border=\"0\">"                                       << std::endl;
+  *out << "<tr>"                                                                      << std::endl;
+  *out << "<td>"                                                                      << std::endl;
+  *out << "<b>" << xmlClass_ << " " << instance_ << "</b>"                            << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "<td align=\"right\">"                                                      << std::endl;
+  *out << "<b>" << stateMachine_->getStateName() << "</b>"                            << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "</tr>"                                                                     << std::endl;
+  *out << "<tr>"                                                                      << std::endl;
+  *out << "<td>"                                                                      << std::endl;
+  *out << "Version " << evb::version                                                  << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "<td></td>"                                                                 << std::endl;
+  *out << "</tr>"                                                                     << std::endl;
+  *out << "<tr>"                                                                      << std::endl;
+  *out << "<td>"                                                                      << std::endl;
+  *out << "Page last updated: " << getCurrentTimeUTC() << " UTC"                      << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "<td align=\"right\">"                                                      << std::endl;
+  *out << "<a href=\"/" << urn_ << "/ParameterQuery\">XML</a>"                        << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "</tr>"                                                                     << std::endl;
+  *out << "</table>"                                                                  << std::endl;
+  *out << "</td>"                                                                     << std::endl;
+  *out << "<td class=\"app_links\">"                                                  << std::endl;
+  printWebPageIcon(out, "/hyperdaq/images/HyperDAQ.jpg",
+    "HyperDAQ", "/urn:xdaq-application:service=hyperdaq");
+  *out << "</td>"                                                                     << std::endl;
+  
+  *out << "<td class=\"app_links\">"                                                  << std::endl;
+  printWebPageIcon(out, appIcon_, "Main", "/" + urn_ + "/");
+  *out << "</td>"                                                                     << std::endl;
+  
+  *out << "</tr>"                                                                     << std::endl;
+  *out << "</table>"                                                                  << std::endl;
+  *out << "</div>"                                                                    << std::endl;
+}
+
+
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::printWebPageIcon
+(
+  xgi::Output* out,
+  const std::string& imgSrc,
+  const std::string& label,
+  const std::string& href
+)
+{
+  *out << "<a href=\"" << href << "\">";
+  *out << "<img style=\"border-style:none\"";
+  *out << " src=\"" << imgSrc << "\"";
+  *out << " alt=\"" << label << "\"";
+  *out << " width=\"64\"";
+  *out << " height=\"64\"/>";
+  *out << "</a><br/>" << std::endl;
+  *out << "<a href=\"" << href << "\">" << label << "</a>";
+  *out << std::endl;
+}
+
+
+template<class Configuration,class StateMachine>
+xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFsmSoapResponseMsg
 (
     const std::string& event,
     const std::string& state
@@ -579,8 +693,8 @@ xoap::MessageReference evb::EvBApplication<StateMachine>::createFsmSoapResponseM
 }
 
 
-template<class StateMachine>
-toolbox::mem::Pool* evb::EvBApplication<StateMachine>::getFastControlMsgPool()
+template<class Configuration,class StateMachine>
+toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastControlMsgPool()
 {
   toolbox::mem::Pool* fastCtrlMsgPool = 0;
   
@@ -607,104 +721,19 @@ toolbox::mem::Pool* evb::EvBApplication<StateMachine>::getFastControlMsgPool()
 }
 
 
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::webPageHeader
-(
-  xgi::Output* out,
-  const std::string& name
-)
+template<class Configuration,class StateMachine>
+std::string evb::EvBApplication<Configuration,StateMachine>::getCurrentTimeUTC() const
 {
-  *out << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""          << std::endl;
-  *out << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"          << std::endl;
-
-  *out << "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">" << std::endl;
-  *out << "<head>"                                                                    << std::endl;
-  *out << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>"   << std::endl;
-  *out << "<link type=\"text/css\" rel=\"stylesheet\"";
-  *out << " href=\"/evb/html/evb.css\"/>"                                 << std::endl;
-  *out << "<title>"                                                                   << std::endl;
-  *out << xmlClass_ << " " << instance_ << " - " << name                              << std::endl;
-  *out << "</title>"                                                                  << std::endl;
-  *out << "</head>"                                                                   << std::endl;
-  *out << "<body>"                                                                    << std::endl;
-}
-
-
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::webPageBanner
-(
-  xgi::Output* out
-)  
-{
-  *out << "<div class=\"header\">"                                                    << std::endl;
-  *out << "<table border=\"0\" width=\"100%\">"                                       << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td class=\"icon\">"                                                       << std::endl;
-  *out << "<img src=\"" << appIcon_ << "\" alt=\"EVM\"/>"                             << std::endl;
-  *out << "<p>created by "
-    <<"<a href=\"mailto:Remigius.Mommsen@cern.ch\">R.K.&nbsp;Mommsen</a>"
-    << " &amp;&nbsp;S.&nbsp;Murray</p>"                                               << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-
-  *out << "<td>"                                                                      << std::endl;
-  *out << "<table width=\"100%\" border=\"0\">"                                       << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "<b>" << xmlClass_ << " " << instance_ << "</b>"                            << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<b>" << stateMachine_->getStateName() << "</b>"                            << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "Version " << codeVersion_                                                  << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td></td>"                                                                 << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "Page last updated: " << getCurrentTimeUTC() << " UTC"                      << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<a href=\"/" << urn_ << "/ParameterQuery\">XML</a>"                        << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "</table>"                                                                  << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td class=\"app_links\">"                                                  << std::endl;
-  printWebPageIcon(out, "/hyperdaq/images/HyperDAQ.jpg",
-    "HyperDAQ", "/urn:xdaq-application:service=hyperdaq");
-  *out << "</td>"                                                                     << std::endl;
+  time_t now;
+  struct tm tm;
+  char buf[30];
   
-  *out << "<td class=\"app_links\">"                                                  << std::endl;
-  printWebPageIcon(out, appIcon_, "Main", "/" + urn_ + "/");
-  *out << "</td>"                                                                     << std::endl;
-  
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "</table>"                                                                  << std::endl;
-  *out << "</div>"                                                                    << std::endl;
-}
-
-
-template<class StateMachine>
-void evb::EvBApplication<StateMachine>::printWebPageIcon
-(
-  xgi::Output* out,
-  const std::string& imgSrc,
-  const std::string& label,
-  const std::string& href
-)
-{
-  *out << "<a href=\"" << href << "\">";
-  *out << "<img style=\"border-style:none\"";
-  *out << " src=\"" << imgSrc << "\"";
-  *out << " alt=\"" << label << "\"";
-  *out << " width=\"64\"";
-  *out << " height=\"64\"/>";
-  *out << "</a><br/>" << std::endl;
-  *out << "<a href=\"" << href << "\">" << label << "</a>";
-  *out << std::endl;
+  if (time(&now) != ((time_t)-1))
+  {
+    gmtime_r(&now,&tm);
+    asctime_r(&tm,buf);
+  }
+  return buf;
 }
 
 

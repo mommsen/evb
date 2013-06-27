@@ -8,6 +8,7 @@
 #include <map>
 #include <stdint.h>
 
+#include "evb/bu/Configuration.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/EventTable.h"
@@ -62,12 +63,6 @@ namespace evb {
       void closeLS(const uint32_t lumiSection);
       
       /**
-       * Append the info space parameters used for the
-       * configuration to the InfoSpaceItems
-       */
-      void appendConfigurationItems(InfoSpaceItems&);
-      
-      /**
        * Append the info space items to be published in the 
        * monitoring info space to the InfoSpaceItems
        */
@@ -89,7 +84,7 @@ namespace evb {
       /**
        * Configure
        */
-      void configure(const uint32_t maxEvtsUnderConstruction);
+      void configure();
       
       /**
        * Remove all data
@@ -148,6 +143,8 @@ namespace evb {
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
+      const ConfigurationPtr configuration_;
+      
       const uint32_t buInstance_;
       uint32_t runNumber_;
       uint32_t index_;
@@ -192,19 +189,6 @@ namespace evb {
       volatile bool writingActive_;
       volatile bool doProcessing_;
       volatile bool processActive_;
-      
-      InfoSpaceItems diskWriterParams_;
-      xdata::Boolean dropEventData_;
-      xdata::UnsignedInteger32 numberOfWriters_;
-      xdata::String rawDataDir_;
-      xdata::String metaDataDir_;
-      xdata::Double rawDataHighWaterMark_;
-      xdata::Double rawDataLowWaterMark_;
-      xdata::Double metaDataHighWaterMark_;
-      xdata::Double metaDataLowWaterMark_;
-      xdata::UnsignedInteger32 maxEventsPerFile_;
-      xdata::UnsignedInteger32 eolsFIFOCapacity_;
-      xdata::Boolean tolerateCorruptedEvents_;
       
       struct DiskWriterMonitoring
       {

@@ -1,211 +1,58 @@
-#include "i2o/Method.h"
-#include "interface/shared/i2ogevb2g.h"
-#include "interface/shared/i2oXFunctionCodes.h"
-#include "evb/InfoSpaceItems.h"
-#include "evb/PerformanceMonitor.h"
 #include "evb/RU.h"
-#include "evb/ru/BUproxy.h"
-#include "evb/ru/Input.h"
-#include "evb/TimerManager.h"
-#include "evb/version.h"
-#include "pt/utcp/frl/Method.h"
-#include "toolbox/task/WorkLoopFactory.h"
+#include "evb/readoutunit/BUproxy.h"
+#include "evb/readoutunit/States.h"
+#include "evb/ru/RUinput.h"
 
 
-evb::RU::RU(xdaq::ApplicationStub* s) :
-EvBApplication<ru::StateMachine>(s,evb::version,"/evb/images/ru64x64.gif")
+evb::RU::RU(xdaq::ApplicationStub* app) :
+ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 {
-  ruInput_.reset( new ru::Input(this) );
-  buProxy_.reset( new ru::BUproxy(this, ruInput_) );    
-  stateMachine_.reset( new ru::StateMachine(this, ruInput_, buProxy_) );
-
-  buProxy_->registerStateMachine(stateMachine_);
+  this->initialize();
   
-  initialize();
-  
-  LOG4CPLUS_INFO(logger_, "End of constructor");
+  LOG4CPLUS_INFO(this->logger_, "End of constructor");
 }
 
 
-void evb::RU::do_appendApplicationInfoSpaceItems
-(
-  InfoSpaceItems& appInfoSpaceParams
-)
-{
-  nbSuperFragmentsReady_ = 0;
-  
-  appInfoSpaceParams.add("nbSuperFragmentsReady", &nbSuperFragmentsReady_, InfoSpaceItems::retrieve);
-  
-  buProxy_->appendConfigurationItems(appInfoSpaceParams);
-  ruInput_->appendConfigurationItems(appInfoSpaceParams);
-  stateMachine_->appendConfigurationItems(appInfoSpaceParams);
-}
-
-
-void evb::RU::do_appendMonitoringInfoSpaceItems
-(
-  InfoSpaceItems& monitoringParams
-)
-{
-  buProxy_->appendMonitoringItems(monitoringParams);
-  ruInput_->appendMonitoringItems(monitoringParams);
-  stateMachine_->appendMonitoringItems(monitoringParams);
-}
-
-
-void evb::RU::do_updateMonitoringInfo()
-{
-  buProxy_->updateMonitoringItems();
-  ruInput_->updateMonitoringItems();
-  stateMachine_->updateMonitoringItems();
-}
-
-
-void evb::RU::do_handleItemChangedEvent(const std::string& item)
-{
-  if (item == "inputSource")
-  {
-    ruInput_->inputSourceChanged();
-  }
-}
-
-
-void evb::RU::do_handleItemRetrieveEvent(const std::string& item)
-{
-  if (item == "nbSuperFragmentsReady")
-  {
-    try
+namespace evb {
+  namespace readoutunit {
+    
+    template<>
+    void BUproxy<ru::ReadoutUnit>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
     {
-      nbSuperFragmentsReady_.setValue( *(monitoringInfoSpace_->find("nbSuperFragmentsReady")) );
+      if ( rqstMsg->nbRequests < 0 )
+      {
+        std::ostringstream oss;
+        oss << "Got a fragment request message BU TID " << request.buTid;
+        oss << " not specifying any EvB ids.";
+        oss << " This is a non-valid request to a RU.";
+        XCEPT_RAISE(exception::Configuration, oss.str());
+      }  
+      
+      request.nbRequests = rqstMsg->nbRequests;
+      for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
+        request.evbIds.push_back( rqstMsg->evbIds[i] );
     }
-    catch(xdata::exception::Exception& e)
+    
+    template<>
+    void BUproxy<ru::ReadoutUnit>::processRequest(FragmentRequest& request)
     {
-      nbSuperFragmentsReady_ = 0;
+      SuperFragments superFragments;
+      
+      for (uint32_t i=0; i < request.nbRequests; ++i)
+      {
+        const EvBid& evbId = request.evbIds.at(i);
+        FragmentChainPtr superFragment;
+        
+        while ( doProcessing_ &&
+          !readoutUnit_->getInput()->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
+        
+        if ( superFragment->isValid() ) superFragments.push_back(superFragment);
+      }
+      
+      sendData(request, superFragments);
     }
   }
 }
-
-
-void evb::RU::bindI2oCallbacks()
-{  
-  i2o::bind
-    (
-      this,
-      &evb::RU::I2O_DATA_READY_Callback,
-      I2O_DATA_READY,
-      XDAQ_ORGANIZATION_ID
-    );
-  
-  i2o::bind
-    (
-      this,
-      &evb::RU::I2O_RU_SEND_Callback,
-      I2O_SHIP_FRAGMENTS,
-      XDAQ_ORGANIZATION_ID
-    );
-  
-  pt::utcp::frl::bind
-    (
-      this,
-      &evb::RU::rawDataAvailable
-    );
-}
-
-
-void evb::RU::I2O_DATA_READY_Callback
-(
-  toolbox::mem::Reference *bufRef
-)
-{
-  //ruInput_->dataReadyCallback(bufRef);
-}
-
-
-void evb::RU::I2O_RU_SEND_Callback
-(
-  toolbox::mem::Reference *bufRef
-)
-{
-  buProxy_->rqstForFragmentsMsgCallback(bufRef);
-}
-
-
-void evb::RU::rawDataAvailable
-(
-  toolbox::mem::Reference* bufRef,
-  int originator,
-  pt::utcp::frl::MemoryCache* cache
-)
-{
-  ruInput_->dataReadyCallback(bufRef,cache);
-}
-
-
-void evb::RU::bindNonDefaultXgiCallbacks()
-{
-  xgi::bind
-    (
-      this,
-      &evb::RU::requestFIFOWebPage,
-      "requestFIFO"
-    );
-}
-
-
-void evb::RU::do_defaultWebPage
-(
-  xgi::Output *out
-)
-{
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  ruInput_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  buProxy_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-}
-
-
-void evb::RU::requestFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "requestFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  buProxy_->printRequestFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::RU::configure()
-{}
-
-
-void evb::RU::clear()
-{}
 
 
 /**

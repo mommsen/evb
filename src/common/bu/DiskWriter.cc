@@ -20,6 +20,7 @@ evb::bu::DiskWriter::DiskWriter
 ) :
 bu_(bu),
 resourceManager_(resourceManager),
+configuration_(bu->getConfiguration()),
 buInstance_( bu_->getApplicationDescriptor()->getInstance() ),
 eventFIFO_("eventFIFO"),
 eolsFIFO_("eolsFIFO"),
@@ -40,7 +41,7 @@ evb::bu::DiskWriter::~DiskWriter()
 
 void evb::bu::DiskWriter::writeEvent(const EventPtr event)
 {
-  if ( dropEventData_ )
+  if ( configuration_->dropEventData )
   {
     resourceManager_->discardEvent(event);
   }
@@ -53,7 +54,7 @@ void evb::bu::DiskWriter::writeEvent(const EventPtr event)
 
 void evb::bu::DiskWriter::closeLS(const uint32_t lumiSection)
 {
-  if ( dropEventData_ ) return;
+  if ( configuration_->dropEventData ) return;
 
   while ( ! eolsFIFO_.enq(lumiSection) ) { ::usleep(1000); }
 }
@@ -101,7 +102,7 @@ void evb::bu::DiskWriter::startProcessingWorkLoop()
 
 void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
-  if ( dropEventData_ ) return;
+  if ( configuration_->dropEventData ) return;
 
   runNumber_ = runNumber;
   
@@ -129,7 +130,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   processingWL_->submit(processingAction_);
   resourceMonitoringWL_->submit(resourceMonitoringAction_);
 
-  for (uint32_t i=0; i < numberOfWriters_; ++i)
+  for (uint32_t i=0; i < configuration_->numberOfWriters; ++i)
   {
     writingWorkLoops_.at(i)->submit(writingAction_);
   }
@@ -138,7 +139,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
 void evb::bu::DiskWriter::stopProcessing()
 {
-  if ( dropEventData_ ) return;
+  if ( configuration_->dropEventData ) return;
   
   doProcessing_ = false;
 
@@ -228,7 +229,7 @@ evb::bu::LumiHandlerPtr evb::bu::DiskWriter::getLumiHandler(const uint32_t lumiS
   {
     // New lumi section
     const LumiHandlerPtr lumiHandler(new LumiHandler(
-        buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection, maxEventsPerFile_, numberOfWriters_));
+        buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection, configuration_->maxEventsPerFile, configuration_->numberOfWriters));
     pos = lumiHandlers_.insert(pos, LumiHandlers::value_type(lumiSection, lumiHandler));
     
     boost::mutex::scoped_lock monitorSL(diskWriterMonitoringMutex_);
@@ -297,7 +298,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
         {
           boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
           ++diskWriterMonitoring_.nbEventsCorrupted;
-          if ( tolerateCorruptedEvents_ )
+          if ( configuration_->tolerateCorruptedEvents )
           {
             LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
               xcept::stdformat_exception_history(e));
@@ -409,36 +410,6 @@ void evb::bu::DiskWriter::defineJSON(const boost::filesystem::path& jsonDefFile)
 }
 
 
-void evb::bu::DiskWriter::appendConfigurationItems(InfoSpaceItems& params)
-{
-  dropEventData_ = false;
-  numberOfWriters_ = 8;
-  rawDataDir_ = "/tmp/raw";
-  metaDataDir_ = "/tmp/meta";
-  rawDataHighWaterMark_ = 0.7;
-  rawDataLowWaterMark_ = 0.5;
-  metaDataHighWaterMark_ = 0.9;
-  metaDataLowWaterMark_ = 0.5;
-  maxEventsPerFile_ = 2000;
-  eolsFIFOCapacity_ = 1028;
-  tolerateCorruptedEvents_ = false;
-  
-  diskWriterParams_.add("dropEventData", &dropEventData_);
-  diskWriterParams_.add("numberOfWriters", &numberOfWriters_);
-  diskWriterParams_.add("rawDataDir", &rawDataDir_);
-  diskWriterParams_.add("metaDataDir", &metaDataDir_);
-  diskWriterParams_.add("rawDataHighWaterMark", &rawDataHighWaterMark_);
-  diskWriterParams_.add("rawDataLowWaterMark", &rawDataLowWaterMark_);
-  diskWriterParams_.add("metaDataHighWaterMark", &metaDataHighWaterMark_);
-  diskWriterParams_.add("metaDataLowWaterMark", &metaDataLowWaterMark_);
-  diskWriterParams_.add("maxEventsPerFile", &maxEventsPerFile_);
-  diskWriterParams_.add("eolsFIFOCapacity", &eolsFIFOCapacity_);
-  diskWriterParams_.add("tolerateCorruptedEvents", &tolerateCorruptedEvents_);
-  
-  params.add(diskWriterParams_);
-}
-
-
 void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbEvtsWritten_ = 0;
@@ -475,20 +446,20 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
 }
 
 
-void evb::bu::DiskWriter::configure(const uint32_t maxEvtsUnderConstruction)
+void evb::bu::DiskWriter::configure()
 {
   clear();
 
-  eventFIFO_.resize(maxEvtsUnderConstruction);
-  eolsFIFO_.resize(eolsFIFOCapacity_);
-  fileHandlerAndEventFIFO_.resize(maxEvtsUnderConstruction);
+  eventFIFO_.resize(configuration_->maxEvtsUnderConstruction);
+  eolsFIFO_.resize(configuration_->eolsFIFOCapacity);
+  fileHandlerAndEventFIFO_.resize(configuration_->maxEvtsUnderConstruction);
 
-  if ( ! dropEventData_ )
+  if ( ! configuration_->dropEventData )
   {
     std::ostringstream buDir;
     buDir << "BU-" << std::setfill('0') << std::setw(3) << buInstance_;
     
-    buRawDataDir_ = rawDataDir_.value_;
+    buRawDataDir_ = configuration_->rawDataDir.value_;
     buRawDataDir_ /= buDir.str();
     if ( ! boost::filesystem::exists(buRawDataDir_) &&
       ( ! boost::filesystem::create_directories(buRawDataDir_) ) )
@@ -497,9 +468,9 @@ void evb::bu::DiskWriter::configure(const uint32_t maxEvtsUnderConstruction)
       oss << "Failed to create directory " << buRawDataDir_.string();
       XCEPT_RAISE(exception::DiskWriting, oss.str());
     }
-    rawDataDiskUsage_.reset( new DiskUsage(buRawDataDir_, rawDataHighWaterMark_, rawDataLowWaterMark_) );
+    rawDataDiskUsage_.reset( new DiskUsage(buRawDataDir_, configuration_->rawDataHighWaterMark, configuration_->rawDataLowWaterMark) );
     
-    buMetaDataDir_ = metaDataDir_.value_;
+    buMetaDataDir_ = configuration_->metaDataDir.value_;
     buMetaDataDir_ /= buDir.str();
     if ( ! boost::filesystem::exists(buMetaDataDir_) &&
       ( ! boost::filesystem::create_directories(buMetaDataDir_) ) )
@@ -508,7 +479,7 @@ void evb::bu::DiskWriter::configure(const uint32_t maxEvtsUnderConstruction)
       oss << "Failed to create directory " << buMetaDataDir_.string();
       XCEPT_RAISE(exception::DiskWriting, oss.str());
     }
-    metaDataDiskUsage_.reset( new DiskUsage(buMetaDataDir_, metaDataHighWaterMark_, metaDataLowWaterMark_) );
+    metaDataDiskUsage_.reset( new DiskUsage(buMetaDataDir_, configuration_->metaDataHighWaterMark, configuration_->metaDataLowWaterMark) );
     
     createWritingWorkLoops();
   }
@@ -522,7 +493,7 @@ void evb::bu::DiskWriter::createWritingWorkLoops()
   try
   {
     // Leave any previous created workloops alone. Only add new ones if needed.
-    for (uint16_t i=writingWorkLoops_.size(); i < numberOfWriters_; ++i)
+    for (uint16_t i=writingWorkLoops_.size(); i < configuration_->numberOfWriters; ++i)
     {
       std::ostringstream workLoopName;
       workLoopName << identifier << "DiskWriter_" << i;
@@ -635,9 +606,6 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
   eolsFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
-  diskWriterParams_.printHtml("Configuration", out);
-
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
 }

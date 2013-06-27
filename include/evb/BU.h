@@ -8,7 +8,9 @@
 
 #include "evb/EvBApplication.h"
 #include "evb/PerformanceMonitor.h"
+#include "evb/bu/Configuration.h"
 #include "evb/bu/StateMachine.h"
+#include "evb/bu/States.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
@@ -21,7 +23,6 @@
 namespace evb {
   
   class InfoSpaceItems;
-  class TimerManager;
   
   namespace bu {
     class EventTable;
@@ -34,7 +35,7 @@ namespace evb {
    * \brief Builder Unit (BU)
    */
   
-  class BU : public EvBApplication<bu::StateMachine>
+  class BU : public EvBApplication<bu::Configuration,bu::StateMachine>
   {
     
   public:
@@ -44,21 +45,11 @@ namespace evb {
     virtual ~BU() {};
        
     XDAQ_INSTANTIATOR();
-   
-    /**
-     * Configure
-     */
-    void configure();
-
-    /**
-     * Remove all data
-     */
-    void clear();
     
     
   private:
     
-    virtual void bindI2oCallbacks();
+    virtual void do_bindI2oCallbacks();
     inline void I2O_BU_CACHE_Callback(toolbox::mem::Reference*);
     
     virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);

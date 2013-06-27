@@ -34,10 +34,7 @@ namespace evb {
       
     public:
       
-      ResourceManager
-      (
-        BU*
-      );
+      ResourceManager(BU*);
       
       virtual ~ResourceManager() {};
       
@@ -76,12 +73,6 @@ namespace evb {
       };
       typedef boost::shared_ptr<Request> RequestPtr;
       bool getRequest(RequestPtr&);
-
-      /**
-       * Append the info space parameters used for the
-       * configuration to the InfoSpaceItems
-       */
-      void appendConfigurationItems(InfoSpaceItems&);
       
       /**
        * Append the info space items to be published in the 
@@ -105,7 +96,7 @@ namespace evb {
       /**
        * Configure
        */
-      void configure(const uint32_t maxEvtsUnderConstruction);
+      void configure();
       
       /**
        * Remove all data
@@ -140,6 +131,7 @@ namespace evb {
     private:
       
       BU* bu_;
+      const ConfigurationPtr configuration_;
       
       bool boost_;
       bool throttle_;
@@ -154,8 +146,6 @@ namespace evb {
       
       typedef OneToOneQueue<RequestPtr> RequestFIFO;
       RequestFIFO requestFIFO_;
-      
-      InfoSpaceItems resourceManagerParams_;
             
       struct EventMonitoring
       {

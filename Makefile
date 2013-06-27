@@ -34,18 +34,16 @@ Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
-	EVM.cc \
 	FragmentChain.cc \
 	FragmentGenerator.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
+	readoutunit/StateMachine.cc \
+	EVM.cc \
+	evm/FEROLproxy.cc \
 	RU.cc \
-	ru/BUproxy.cc \
-	ru/DummyInputData.cc \
 	ru/FEROLproxy.cc \
-	ru/Input.cc \
-	ru/StateMachine.cc \
 	BU.cc \
 	bu/DiskUsage.cc \
 	bu/DiskWriter.cc \
@@ -54,21 +52,16 @@ Sources=\
 	bu/FileHandler.cc \
 	bu/LumiHandler.cc \
 	bu/ResourceManager.cc \
-	bu/RUbroadcaster.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
-	TimerManager.cc \
 	version.cc
 
-TestSources = \
-	DummyFEROL.cc \
-	dummyFEROL/StateMachine.cc
+# TestSources = \
+# 	DummyFEROL.cc \
+# 	dummyFEROL/StateMachine.cc
 
 TestExecutables = \
-	Pipe.cxx \
-	Pipe2.cxx \
-	Memcpy.cxx \
-	Memcpy2.cxx
+	Pipe.cxx
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \

@@ -1,6 +1,7 @@
 #ifndef _evb_StateMachine_h_
 #define _evb_StateMachine_h_
 
+#include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 #include <boost/statechart/state.hpp>
 #include <boost/statechart/state_machine.hpp>
@@ -57,7 +58,7 @@ namespace evb {
   // The evb state machine //
   /////////////////////////////////
   
-  template< class MostDerived, class InitialState >
+  template<class MostDerived, class InitialState>
   class EvBStateMachine :
     public boost::statechart::state_machine<MostDerived,InitialState>
   {
@@ -79,16 +80,15 @@ namespace evb {
     void failEvent(const Fail&);
     void unconsumed_event(const boost::statechart::event_base&);
     log4cplus::Logger& getLogger() const { return app_->getApplicationLogger(); }
+
     std::string getStateName() const { return stateName_; }
+    uint32_t getRunNumber() const { return runNumber_.value_; }
     
     typedef std::list<std::string> SoapFsmEvents;
     SoapFsmEvents getSoapFsmEvents() { return soapFsmEvents_; }
 
   protected:
 
-    virtual void do_appendConfigurationItems(InfoSpaceItems&) {};
-    virtual void do_appendMonitoringItems(InfoSpaceItems&) {};
-    virtual void do_updateMonitoringItems() {};
     virtual void do_processSoapEvent(const std::string& event, std::string& newStateName);
     
     xdaq::Application* app_;
@@ -101,9 +101,11 @@ namespace evb {
     boost::shared_mutex eventMutex_;
     boost::shared_mutex stateNameMutex_;
     
+    xdata::UnsignedInteger32 runNumber_;
     std::string stateName_;
-    std::string reasonForFailed_;
     
+    std::string reasonForFailed_;
+    xdata::UnsignedInteger32 monitoringRunNumber_;
     xdata::String monitoringStateName_;    
   };
   
@@ -212,10 +214,11 @@ evb::EvBStateMachine<MostDerived,InitialState>::EvBStateMachine
 app_(app),
 rcmsStateNotifier_
 (
-  app->getApplicationLogger(),
+  getLogger(),
   app->getApplicationDescriptor(),
   app->getApplicationContext()
 ),
+runNumber_(0),
 stateName_("Halted"),
 reasonForFailed_("")
 {
@@ -318,7 +321,9 @@ void evb::EvBStateMachine<MostDerived,InitialState>::appendConfigurationItems
   InfoSpaceItems& params
 )
 {
-  do_appendConfigurationItems(params);
+  runNumber_ = 0;
+  
+  params.add("runNumber", &runNumber_);
 }
 
 
@@ -328,11 +333,11 @@ void evb::EvBStateMachine<MostDerived,InitialState>::appendMonitoringItems
   InfoSpaceItems& items
 )
 {
+  monitoringRunNumber_ = 0;
   monitoringStateName_ = "Halted";
 
+  items.add("runNumber", &monitoringRunNumber_);
   items.add("stateName", &monitoringStateName_);
-
-  do_appendMonitoringItems(items);
 }
 
 
@@ -341,8 +346,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::updateMonitoringItems()
 {
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
   monitoringStateName_ = stateName_;
-
-  do_updateMonitoringItems();
+  monitoringRunNumber_ = runNumber_;
 }
 
 
@@ -361,7 +365,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
 {
   reasonForFailed_ = evt.getTraceback();
 
-  LOG4CPLUS_FATAL(app_->getApplicationLogger(),
+  LOG4CPLUS_FATAL(getLogger(),
     "Failed: " << evt.getReason() << ". " << reasonForFailed_);
 
   rcmsStateNotifier_.stateChanged("Failed", evt.getReason());
@@ -381,7 +385,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
 {
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
   
-  LOG4CPLUS_ERROR(app_->getApplicationLogger(),
+  LOG4CPLUS_ERROR(getLogger(),
     "The " << typeid(evt).name()
     << " event is not supported from the "
     << stateName_ << " state!");

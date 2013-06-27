@@ -7,20 +7,19 @@
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/InfoSpaceItems.h"
-#include "evb/version.h"
 #include "toolbox/task/WorkLoopFactory.h"
 
 #include <math.h>
 
 
-evb::BU::BU(xdaq::ApplicationStub *s) :
-EvBApplication<bu::StateMachine>(s,evb::version,"/evb/images/bu64x64.gif")
+evb::BU::BU(xdaq::ApplicationStub *app) :
+EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif")
 {
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
   resourceManager_.reset( new bu::ResourceManager(this) );
   diskWriter_.reset( new bu::DiskWriter(this, resourceManager_) );
-  ruProxy_.reset( new bu::RUproxy(this, fastCtrlMsgPool, resourceManager_) );
+  ruProxy_.reset( new bu::RUproxy(this, resourceManager_, fastCtrlMsgPool) );
   eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_, resourceManager_) );
   stateMachine_.reset( new bu::StateMachine(this,
       ruProxy_, diskWriter_, eventTable_, resourceManager_) );
@@ -53,11 +52,6 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbEvtsBuilt", &nbEvtsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEvtsCorrupted", &nbEvtsCorrupted_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
-
-  diskWriter_->appendConfigurationItems(appInfoSpaceParams);
-  resourceManager_->appendConfigurationItems(appInfoSpaceParams);
-  ruProxy_->appendConfigurationItems(appInfoSpaceParams);
-  stateMachine_->appendConfigurationItems(appInfoSpaceParams);
 }
 
 
@@ -153,7 +147,7 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
 }
 
 
-void evb::BU::bindI2oCallbacks()
+void evb::BU::do_bindI2oCallbacks()
 {
   i2o::bind
     (
@@ -417,14 +411,6 @@ void evb::BU::fragmentFIFOWebPage
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
 }
-
-
-void evb::BU::configure()
-{}
-
-
-void evb::BU::clear()
-{}
 
 
 /**
