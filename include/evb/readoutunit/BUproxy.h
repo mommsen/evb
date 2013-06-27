@@ -39,8 +39,6 @@
 
 namespace evb {
   
-  class RU;
-  
   namespace readoutunit {
     
     /**
