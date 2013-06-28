@@ -1,16 +1,20 @@
 #ifndef _evb_ru_h_
 #define _evb_ru_h_
 
+#include "evb/ru/RUinput.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"
+#include "evb/readoutunit/StateMachine.h"
 #include "xdaq/ApplicationStub.h"
 
 
 namespace evb {
   
+  class RU;
+  
   namespace ru {
-    class RUinput;
-    typedef readoutunit::ReadoutUnit<readoutunit::Configuration,RUinput> ReadoutUnit;
+    typedef readoutunit::StateMachine<RU> RUStateMachine;
+    typedef readoutunit::ReadoutUnit<RU,readoutunit::Configuration,RUStateMachine> ReadoutUnit;
   }
   
   /**

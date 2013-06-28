@@ -2,7 +2,6 @@
 #define _evb_readoutunit_ReadoutUnit_h_
 
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <string>
 
@@ -10,7 +9,6 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/readoutunit/BUproxy.h"
 #include "evb/readoutunit/Input.h"
-#include "evb/readoutunit/StateMachine.h"
 #include "i2o/Method.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "interface/shared/i2ogevb2g.h"
@@ -34,8 +32,8 @@ namespace evb {
     * \ingroup xdaqApps
     * \brief Template for the readout units (EVM/RU)
     */
-    template<class Configuration,class Input>
-    class ReadoutUnit : public EvBApplication< Configuration,StateMachine< ReadoutUnit<Configuration,Input> > >
+    template<class Unit,class Configuration,class StateMachine>
+    class ReadoutUnit : public EvBApplication<Configuration,StateMachine>
     {
     public:
       
@@ -45,11 +43,16 @@ namespace evb {
         const std::string& appIcon
       );
       
-      boost::shared_ptr<Input> getInput() const
+      boost::shared_ptr< Input<Configuration> > getInput() const
       { return input_; }
       
-      boost::shared_ptr< BUproxy<ReadoutUnit> > getBUproxy() const
+      boost::shared_ptr< BUproxy<Unit> > getBUproxy() const
       { return buProxy_; }
+      
+    protected:
+      
+      boost::shared_ptr< Input<Configuration> > input_;
+      boost::shared_ptr< BUproxy<Unit> > buProxy_;
       
     private:
       
@@ -69,9 +72,6 @@ namespace evb {
       
       void requestFIFOWebPage(xgi::Input*, xgi::Output*);
       
-      boost::shared_ptr<Input> input_;
-      boost::shared_ptr< BUproxy<ReadoutUnit> > buProxy_;
-      
       xdata::UnsignedInteger32 nbSuperFragmentsReady_;
       
     };
@@ -83,22 +83,18 @@ namespace evb {
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class Configuration,class Input>
-evb::readoutunit::ReadoutUnit<Configuration,Input>::ReadoutUnit
+template<class Unit,class Configuration,class StateMachine>
+evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::ReadoutUnit
 (
   xdaq::ApplicationStub* app,
   const std::string& appIcon
 ) :
-EvBApplication< Configuration,StateMachine< ReadoutUnit<Configuration,Input> > >(app,appIcon)
-{
-  this->stateMachine_.reset( new StateMachine< ReadoutUnit<Configuration,Input> >(this) );
-  input_.reset( new Input(app,this->configuration_) );
-  buProxy_.reset( new BUproxy<ReadoutUnit>(this) );    
-}
+EvBApplication<Configuration,StateMachine>(app,appIcon)
+{}
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_appendApplicationInfoSpaceItems
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendApplicationInfoSpaceItems
 (
   InfoSpaceItems& appInfoSpaceParams
 )
@@ -109,8 +105,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_appendApplicationInf
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_appendMonitoringInfoSpaceItems
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendMonitoringInfoSpaceItems
 (
   InfoSpaceItems& monitoringParams
 )
@@ -121,8 +117,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_appendMonitoringInfo
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_updateMonitoringInfo()
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_updateMonitoringInfo()
 {
   input_->updateMonitoringItems();
   buProxy_->updateMonitoringItems();
@@ -130,8 +126,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_updateMonitoringInfo
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_handleItemChangedEvent(const std::string& item)
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleItemChangedEvent(const std::string& item)
 {
   if (item == "inputSource")
   {
@@ -140,8 +136,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_handleItemChangedEve
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_handleItemRetrieveEvent(const std::string& item)
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleItemRetrieveEvent(const std::string& item)
 {
   if (item == "nbSuperFragmentsReady")
   {
@@ -157,8 +153,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_handleItemRetrieveEv
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_bindI2oCallbacks()
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oCallbacks()
 {  
   // i2o::bind(
   //   this,
@@ -169,20 +165,20 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_bindI2oCallbacks()
   
   pt::utcp::frl::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Configuration,Input>::dataReadyCallback
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::dataReadyCallback
   );
   
   i2o::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Configuration,Input>::I2O_RU_SEND_Callback,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_RU_SEND_Callback,
     I2O_SHIP_FRAGMENTS,
     XDAQ_ORGANIZATION_ID
   );
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::dataReadyCallback
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::dataReadyCallback
 (
   toolbox::mem::Reference* bufRef,
   int originator,
@@ -193,8 +189,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::dataReadyCallback
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::I2O_RU_SEND_Callback
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_RU_SEND_Callback
 (
   toolbox::mem::Reference *bufRef
 )
@@ -203,19 +199,19 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::I2O_RU_SEND_Callback
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::bindNonDefaultXgiCallbacks()
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefaultXgiCallbacks()
 {
   xgi::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Configuration,Input>::requestFIFOWebPage,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::requestFIFOWebPage,
     "requestFIFO"
   );
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_defaultWebPage
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_defaultWebPage
 (
   xgi::Output *out
 )
@@ -234,8 +230,8 @@ void evb::readoutunit::ReadoutUnit<Configuration,Input>::do_defaultWebPage
 }
 
 
-template<class Configuration,class Input>
-void evb::readoutunit::ReadoutUnit<Configuration,Input>::requestFIFOWebPage
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::requestFIFOWebPage
 (
   xgi::Input  *in,
   xgi::Output *out

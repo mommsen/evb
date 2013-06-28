@@ -7,7 +7,11 @@
 evb::EVM::EVM(xdaq::ApplicationStub* app) :
 evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
 {
-  //this->initialize();
+  this->stateMachine_.reset( new evm::EVMStateMachine(this) );
+  this->input_.reset( new evm::EVMinput(app,this->configuration_) );
+  this->buProxy_.reset( new readoutunit::BUproxy<EVM>(this) );
+  
+  this->initialize();
   
   LOG4CPLUS_INFO(this->logger_, "End of constructor");
 }
@@ -17,7 +21,7 @@ namespace evb {
   namespace readoutunit {
     
     template<>
-    void BUproxy<evm::ReadoutUnit>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
+    void BUproxy<EVM>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
     {
       if ( rqstMsg->nbRequests > 0 )
       {
@@ -32,7 +36,7 @@ namespace evb {
     }
     
     template<>
-    void BUproxy<evm::ReadoutUnit>::processRequest(FragmentRequest& request)
+    void BUproxy<EVM>::processRequest(FragmentRequest& request)
     {
       request.evbIds.clear();
       request.evbIds.reserve(request.nbRequests);

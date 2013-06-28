@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_StateMachine_h_
 #define _evb_readoutunit_StateMachine_h_
 
+#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 
@@ -14,6 +15,7 @@ namespace evb {
 
   namespace readoutunit {
     
+    template<class> class Outermost;
 
     ///////////////////////
     // Transition events //
@@ -47,33 +49,23 @@ namespace evb {
     // The state machine //
     ///////////////////////
     
-    //class StateMachine;
-    class Outermost;
-    // class Configuration;
-    // template<class Configuration> class Input;
-    // template<class Configuration,class Input> class ReadoutUnit;
-    //template<class ReadoutUnit> class StateMachine;    
-    
-    // typedef StateMachine< ReadoutUnit< Configuration,Input<Configuration> > > ReadoutUnitStateMachine;
-    // typedef EvBStateMachine<ReadoutUnitStateMachine,Outermost> EvBStateMachine;
-    //typedef EvBStateMachine<StateMachine<ReadoutUnit>,Outermost> EvBStateMachine;
-    template<class ReadoutUnit>
-    class StateMachine : public EvBStateMachine<StateMachine<ReadoutUnit>,Outermost>
+    template<class Owner>
+    class StateMachine : public EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >
     {
       
     public:
       
-      StateMachine(ReadoutUnit*);
+      StateMachine(Owner*);
       
       void mismatchEvent(const MismatchDetected&);
       void timedOutEvent(const TimedOut&);
       
-      ReadoutUnit* getReadoutUnit() const
-      { return readoutUnit_; }
+      Owner* getOwner() const
+      { return owner_; }
       
     private:
       
-      ReadoutUnit* readoutUnit_;
+      Owner* owner_;
 
     };
     
@@ -84,15 +76,15 @@ namespace evb {
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class ReadoutUnit>
-evb::readoutunit::StateMachine<ReadoutUnit>::StateMachine(ReadoutUnit* readoutUnit) :
-EvBStateMachine<StateMachine<ReadoutUnit>,readoutunit::Outermost>(readoutUnit),
-readoutUnit_(readoutUnit)
+template<class Owner>
+evb::readoutunit::StateMachine<Owner>::StateMachine(Owner* owner) :
+EvBStateMachine< StateMachine<Owner>,readoutunit::Outermost<Owner> >(owner),
+owner_(owner)
 {}
 
 
-template<class ReadoutUnit>
-void evb::readoutunit::StateMachine<ReadoutUnit>::mismatchEvent(const MismatchDetected& evt)
+template<class Owner>
+void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected& evt)
 {
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
   
@@ -102,8 +94,8 @@ void evb::readoutunit::StateMachine<ReadoutUnit>::mismatchEvent(const MismatchDe
 }
 
 
-template<class ReadoutUnit>
-void evb::readoutunit::StateMachine<ReadoutUnit>::timedOutEvent(const TimedOut& evt)
+template<class Owner>
+void evb::readoutunit::StateMachine<Owner>::timedOutEvent(const TimedOut& evt)
 {
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
   

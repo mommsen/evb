@@ -1,16 +1,20 @@
 #ifndef _evb_evm_h_
 #define _evb_evm_h_
 
+#include "evb/evm/EVMinput.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"
+#include "evb/readoutunit/StateMachine.h"
 #include "xdaq/ApplicationStub.h"
 
 
 namespace evb {
-
+  
+  class EVM;
+  
   namespace evm {
-    class EVMinput;
-    typedef readoutunit::ReadoutUnit<readoutunit::Configuration,EVMinput> ReadoutUnit;
+    typedef readoutunit::StateMachine<EVM> EVMStateMachine;
+    typedef readoutunit::ReadoutUnit<EVM,readoutunit::Configuration,EVMStateMachine> ReadoutUnit;
   }
   
   /**

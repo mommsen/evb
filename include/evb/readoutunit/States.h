@@ -7,11 +7,13 @@
 #include <boost/statechart/state.hpp>
 #include <boost/statechart/transition.hpp>
 
+#include <boost/bind.hpp>
 #include <boost/mpl/list.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/thread/thread.hpp>
 
-#include "evb/readoutunit/ReadoutUnit.h"
+#include "evb/EvBStateMachine.h"
+#include "evb/Exception.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "xcept/Exception.h"
 #include "xcept/tools.h"
@@ -26,27 +28,27 @@ namespace evb {
     ///////////////////////////////////////////
     // Forward declarations of state classes //
     ///////////////////////////////////////////    
-    class Outermost;
+
     // Outer states:
-    class Failed;
-    class AllOk;
+    template<class> class Failed;
+    template<class> class AllOk;
     // Inner states of AllOk
-    class Halted;
-    class Active;
+    template<class> class Halted;
+    template<class> class Active;
     // Inner states of Active
-    class Configuring;
-    class Configured;
-    class Processing;
+    template<class> class Configuring;
+    template<class> class Configured;
+    template<class> class Processing;
     // Inner states of Configured
-    class Clearing;
-    class Ready;
+    template<class> class Clearing;
+    template<class> class Ready;
     // Inner states of Processing
-    class Enabled;
+    template<class> class Enabled;
     // Inner states of Enabled
-    class MismatchDetectedBackPressuring;
-    class TimedOutBackPressuring;
+    template<class> class MismatchDetectedBackPressuring;
+    template<class> class TimedOutBackPressuring;
     
-    typedef StateMachine< ReadoutUnit< Configuration,Input<Configuration> > > ReadoutUnitStateMachine;
+    template<class> class StateMachine;
     
     
     ///////////////////
@@ -56,20 +58,19 @@ namespace evb {
     /**
      * The outermost state
      */
-    class Outermost: public EvBState<Outermost,ReadoutUnitStateMachine,AllOk>
+    template<class Owner>
+    class Outermost: public EvBState< Outermost<Owner>,StateMachine<Owner>,boost::mpl::list< AllOk<Owner> > >
     {
       
     public:
       
+      typedef EvBState< Outermost<Owner>,StateMachine<Owner>,boost::mpl::list< AllOk<Owner> > > my_state;
       typedef boost::mpl::list<> reactions;
       
-      Outermost(my_context c) : my_state("Outermost", c)
-      { 
-        std::cout << "Outermost" << std::endl;
-        safeEntryAction();
-      }
+      Outermost(typename my_state::boost_state::my_context c) : my_state("Outermost", c)
+      { this->safeEntryAction(); }
       virtual ~Outermost()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -77,38 +78,44 @@ namespace evb {
     /**
      * Failed state
      */
-    class Failed: public EvBState<Failed,Outermost>
+    template<class Owner>
+    class Failed: public EvBState< Failed<Owner>,Outermost<Owner> >
     {
       
     public:
       
+      typedef EvBState< Failed<Owner>,Outermost<Owner> > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Fail,Failed>
-      > reactions;
+        boost::statechart::transition< Fail,Failed<Owner> >
+        > reactions;
       
-      Failed(my_context c) : my_state("Failed", c)
-      { safeEntryAction(); }
+      Failed(typename my_state::boost_state::my_context c) : my_state("Failed", c)
+      { this->safeEntryAction(); }
       virtual ~Failed()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
     /**
      * The default state AllOk. Initial state of outer-state Outermost
      */
-    class AllOk: public EvBState<AllOk,Outermost,Halted>
+    template<class Owner>
+    class AllOk: public EvBState< AllOk<Owner>,Outermost<Owner>,boost::mpl::list< Halted<Owner> > >
     {
       
     public:
       
+      typedef EvBState< AllOk<Owner>,Outermost<Owner>,boost::mpl::list< Halted<Owner> > > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Fail,Failed,EvBStateMachine<ReadoutUnitStateMachine,Outermost>,&ReadoutUnitStateMachine::failEvent>
-      > reactions;
+        boost::statechart::transition<Fail,Failed<Owner>,
+                                      EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >,
+                                      &EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >::failEvent>
+        > reactions;
       
-      AllOk(my_context c) : my_state("AllOk", c)
-      { safeEntryAction(); }
+      AllOk(typename my_state::boost_state::my_context c) : my_state("AllOk", c)
+      { this->safeEntryAction(); }
       virtual ~AllOk()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -116,19 +123,21 @@ namespace evb {
     /**
      * The Halted state. Initial state of outer-state AllOk.
      */
-    class Halted: public EvBState<Halted,AllOk>
+    template<class Owner>
+    class Halted: public EvBState< Halted<Owner>,AllOk<Owner> >
     {
       
     public:
       
+      typedef EvBState< Halted<Owner>,AllOk<Owner> > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Configure,Active>
-      > reactions;
+        boost::statechart::transition< Configure,Active<Owner> >
+        > reactions;
       
-      Halted(my_context c) : my_state("Halted", c)
-      { safeEntryAction(); }
+      Halted(typename my_state::boost_state::my_context c) : my_state("Halted", c)
+      { this->safeEntryAction(); }
       virtual ~Halted()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -136,19 +145,21 @@ namespace evb {
     /**
      * The Active state of outer-state AllOk.
      */
-    class Active: public EvBState<Active,AllOk,Configuring>
+    template<class Owner>
+    class Active: public EvBState< Active<Owner>,AllOk<Owner>,boost::mpl::list< Configuring<Owner> > >
     {
       
     public:
       
+      typedef EvBState< Active<Owner>,AllOk<Owner>,boost::mpl::list< Configuring<Owner> > > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Halt,Halted>
-      > reactions;
+        boost::statechart::transition< Halt,Halted<Owner> >
+        > reactions;
       
-      Active(my_context c) : my_state("Active", c)
-      { safeEntryAction(); }
+      Active(typename my_state::boost_state::my_context c) : my_state("Active", c)
+      { this->safeEntryAction(); }
       virtual ~Active()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -156,19 +167,21 @@ namespace evb {
     /**
      * The Configuring state. Initial state of outer-state Active.
      */
-    class Configuring: public EvBState<Configuring,Active>
+    template<class Owner>
+    class Configuring: public EvBState< Configuring<Owner>,Active<Owner> >
     {
       
     public:
       
+      typedef EvBState< Configuring<Owner>,Active<Owner> > my_state;
       typedef boost::mpl::list<
-    boost::statechart::transition<ConfigureDone,Configured>
-      > reactions;
+        boost::statechart::transition< ConfigureDone,Configured<Owner> >
+        > reactions;
       
-      Configuring(my_context c) : my_state("Configuring", c)
-      { safeEntryAction(); }
+      Configuring(typename my_state::boost_state::my_context c) : my_state("Configuring", c)
+      { this->safeEntryAction(); }
       virtual ~Configuring()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
       virtual void entryAction();
       virtual void exitAction();
@@ -184,15 +197,18 @@ namespace evb {
     /**
      * The Configured state of the outer-state Active.
      */
-    class Configured: public EvBState<Configured,Active,Clearing>
+    template<class Owner>
+    class Configured: public EvBState< Configured<Owner>,Active<Owner>,boost::mpl::list< Clearing<Owner> > >
     {
       
     public:
       
-      Configured(my_context c) : my_state("Configured", c)
-      { safeEntryAction(); }
+      typedef EvBState< Configured<Owner>,Active<Owner>,boost::mpl::list< Clearing<Owner> > > my_state;
+      
+      Configured(typename my_state::boost_state::my_context c) : my_state("Configured", c)
+      { this->safeEntryAction(); }
       virtual ~Configured()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -200,19 +216,21 @@ namespace evb {
     /**
      * The Processing state of the outer-state Active.
      */
-    class Processing: public EvBState<Processing,Active,Enabled>
+    template<class Owner>
+    class Processing: public EvBState< Processing<Owner>,Active<Owner>,boost::mpl::list< Enabled<Owner> > >
     {
       
     public:
       
+      typedef EvBState< Processing<Owner>,Active<Owner>,boost::mpl::list< Enabled<Owner> > > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Stop,Configured>
-      > reactions;
+        boost::statechart::transition< Stop,Configured<Owner> >
+        > reactions;
       
-      Processing(my_context c) : my_state("Processing", c)
-      { safeEntryAction(); }
+      Processing(typename my_state::boost_state::my_context c) : my_state("Processing", c)
+      { this->safeEntryAction(); }
       virtual ~Processing()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
       virtual void entryAction();
 
@@ -222,19 +240,21 @@ namespace evb {
     /**
      * The Clearing state. Initial state of outer-state Configured.
      */
-    class Clearing: public EvBState<Clearing,Configured>
+    template<class Owner>
+    class Clearing: public EvBState< Clearing<Owner>,Configured<Owner> >
     {
       
     public:
       
+      typedef EvBState< Clearing<Owner>,Configured<Owner> > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<ClearDone,Ready>
-      > reactions;
+        boost::statechart::transition< ClearDone,Ready<Owner> >
+        > reactions;
       
-      Clearing(my_context c) : my_state("Clearing", c)
-      { safeEntryAction(); }
+      Clearing(typename my_state::boost_state::my_context c) : my_state("Clearing", c)
+      { this->safeEntryAction(); }
       virtual ~Clearing()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
       virtual void entryAction();
       virtual void exitAction();
@@ -250,22 +270,24 @@ namespace evb {
     /**
      * The Ready state of outer-state Configured.
      */
-    class Ready: public EvBState<Ready,Configured>
+    template<class Owner>
+    class Ready: public EvBState< Ready<Owner>,Configured<Owner> >
     {
       
     public:
       
+      typedef EvBState< Ready<Owner>,Configured<Owner> > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<Enable,Processing>
-      > reactions;
+        boost::statechart::transition< Enable,Processing<Owner> >
+        > reactions;
       
-      Ready(my_context c) : my_state("Ready", c)
-      { safeEntryAction(); }
+      Ready(typename my_state::boost_state::my_context c) : my_state("Ready", c)
+      { this->safeEntryAction(); }
       virtual ~Ready()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
       virtual void entryAction()
-      { outermost_context().notifyRCMS("Ready"); }
+      { this->outermost_context().notifyRCMS("Ready"); }
       
     };
     
@@ -273,20 +295,26 @@ namespace evb {
     /**
      * The Enabled state. Initial state of the outer-state Processing.
      */
-    class Enabled: public EvBState<Enabled,Processing>
+    template<class Owner>
+    class Enabled: public EvBState< Enabled<Owner>,Processing<Owner> >
     {
       
     public:
       
+      typedef EvBState< Enabled<Owner>,Processing<Owner> > my_state;
       typedef boost::mpl::list<
-      boost::statechart::transition<MismatchDetected,MismatchDetectedBackPressuring,ReadoutUnitStateMachine,&ReadoutUnitStateMachine::mismatchEvent>,
-      boost::statechart::transition<TimedOut,TimedOutBackPressuring,ReadoutUnitStateMachine,&ReadoutUnitStateMachine::timedOutEvent>
-      > reactions;
+        boost::statechart::transition<MismatchDetected,MismatchDetectedBackPressuring<Owner>,
+                                      StateMachine<Owner>,
+                                      &StateMachine<Owner>::mismatchEvent>,
+        boost::statechart::transition<TimedOut,TimedOutBackPressuring<Owner>,
+                                      StateMachine<Owner>,
+                                      &StateMachine<Owner>::timedOutEvent>
+        > reactions;
     
-      Enabled(my_context c) : my_state("Enabled", c)
-      { safeEntryAction(); }
+      Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
+      { this->safeEntryAction(); }
       virtual ~Enabled()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
       virtual void entryAction();
       virtual void exitAction();
@@ -297,15 +325,18 @@ namespace evb {
     /**
      * The MismatchDetectedBackPressuring state of the outer-state Processing.
      */
-    class MismatchDetectedBackPressuring: public EvBState<MismatchDetectedBackPressuring,Processing>
+    template<class Owner>
+    class MismatchDetectedBackPressuring: public EvBState< MismatchDetectedBackPressuring<Owner>,Processing<Owner> >
     {
       
     public:
       
-      MismatchDetectedBackPressuring(my_context c) : my_state("MismatchDetectedBackPressuring", c)
-      { safeEntryAction(); }
+      typedef EvBState< MismatchDetectedBackPressuring<Owner>,Processing<Owner> > my_state;
+      
+      MismatchDetectedBackPressuring(typename my_state::boost_state::my_context c) : my_state("MismatchDetectedBackPressuring", c)
+      { this->safeEntryAction(); }
       virtual ~MismatchDetectedBackPressuring()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
@@ -313,20 +344,169 @@ namespace evb {
     /**
      * The TimedOutBackPressuring state of the outer-state Processing.
      */
-    class TimedOutBackPressuring: public EvBState<TimedOutBackPressuring,Processing>
+    template<class Owner>
+    class TimedOutBackPressuring: public EvBState< TimedOutBackPressuring<Owner>,Processing<Owner> >
     {
       
     public:
       
-      TimedOutBackPressuring(my_context c) : my_state("TimedOutBackPressuring", c)
-      { safeEntryAction(); }
+      typedef EvBState< TimedOutBackPressuring<Owner>,Processing<Owner> > my_state;
+      
+      TimedOutBackPressuring(typename my_state::boost_state::my_context c) : my_state("TimedOutBackPressuring", c)
+      { this->safeEntryAction(); }
       virtual ~TimedOutBackPressuring()
-      { safeExitAction(); }
+      { this->safeExitAction(); }
       
     };
     
     
   } } //namespace evb::readoutunit
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementation follows                                                     //
+////////////////////////////////////////////////////////////////////////////////
+
+
+template<class Owner>
+void evb::readoutunit::Configuring<Owner>::entryAction()
+{
+  doConfiguring_ = true;
+  configuringThread_.reset(
+    new boost::thread( boost::bind( &evb::readoutunit::Configuring<Owner>::activity, this) )
+  );
+  configuringThread_->detach();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Configuring<Owner>::activity()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+
+  std::string msg = "Failed to configure the components";
+  try
+  {
+    if (doConfiguring_) stateMachine.getOwner()->getInput()->configure();
+    if (doConfiguring_) stateMachine.getOwner()->getBUproxy()->configure();
+    if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
+  }
+  catch( xcept::Exception& e )
+  {
+    XCEPT_DECLARE_NESTED(exception::Configuration,
+      sentinelException, msg, e);
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+  catch( std::exception& e )
+  {
+    msg += ": ";
+    msg += e.what();
+    XCEPT_DECLARE(exception::Configuration,
+      sentinelException, msg );
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    msg += ": unknown exception";
+    XCEPT_DECLARE(exception::Configuration,
+      sentinelException, msg );
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+}
+
+
+template<class Owner>
+void evb::readoutunit::Configuring<Owner>::exitAction()
+{
+  doConfiguring_ = false;
+  configuringThread_->join();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Clearing<Owner>::entryAction()
+{
+  doClearing_ = true;
+  clearingThread_.reset(
+    new boost::thread( boost::bind( &evb::readoutunit::Clearing<Owner>::activity, this) )
+  );
+  clearingThread_->detach();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Clearing<Owner>::activity()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  
+  std::string msg = "Failed to clear the components";
+  try
+  {
+    if (doClearing_) stateMachine.getOwner()->getBUproxy()->clear();
+    if (doClearing_) stateMachine.getOwner()->getInput()->clear();
+    if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
+  }
+  catch( xcept::Exception& e )
+  {
+    XCEPT_DECLARE_NESTED(exception::FSM,
+      sentinelException, msg, e);
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+  catch( std::exception& e )
+  {
+    msg += ": ";
+    msg += e.what();
+    XCEPT_DECLARE(exception::FSM,
+      sentinelException, msg );
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    msg += ": unknown exception";
+    XCEPT_DECLARE(exception::FSM,
+      sentinelException, msg );
+    stateMachine.processFSMEvent( Fail(sentinelException) );
+  }
+}
+
+
+template<class Owner>
+void evb::readoutunit::Clearing<Owner>::exitAction()
+{
+  doClearing_ = false;
+  clearingThread_->join();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Processing<Owner>::entryAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  stateMachine.getOwner()->getBUproxy()->resetMonitoringCounters();
+  stateMachine.getOwner()->getInput()->resetMonitoringCounters();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Enabled<Owner>::entryAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  
+  const uint32_t runNumber = stateMachine.getRunNumber();
+  
+  stateMachine.getOwner()->getInput()->startProcessing(runNumber);
+  stateMachine.getOwner()->getBUproxy()->startProcessing();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Enabled<Owner>::exitAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  stateMachine.getOwner()->getBUproxy()->stopProcessing();
+  stateMachine.getOwner()->getInput()->stopProcessing();
+}
+
 
 #endif //_evb_readoutunit_States_h_
 

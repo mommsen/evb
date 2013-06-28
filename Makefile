@@ -39,7 +39,6 @@ Sources=\
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
-	readoutunit/StateMachine.cc \
 	EVM.cc \
 	evm/FEROLproxy.cc \
 	RU.cc \

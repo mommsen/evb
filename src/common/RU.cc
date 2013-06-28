@@ -7,6 +7,10 @@
 evb::RU::RU(xdaq::ApplicationStub* app) :
 ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 {
+  this->stateMachine_.reset( new ru::RUStateMachine(this) );
+  this->input_.reset( new ru::RUinput(app,this->configuration_) );
+  this->buProxy_.reset( new readoutunit::BUproxy<RU>(this) );
+  
   this->initialize();
   
   LOG4CPLUS_INFO(this->logger_, "End of constructor");
@@ -17,7 +21,7 @@ namespace evb {
   namespace readoutunit {
     
     template<>
-    void BUproxy<ru::ReadoutUnit>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
+    void BUproxy<RU>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
     {
       if ( rqstMsg->nbRequests < 0 )
       {
@@ -34,7 +38,7 @@ namespace evb {
     }
     
     template<>
-    void BUproxy<ru::ReadoutUnit>::processRequest(FragmentRequest& request)
+    void BUproxy<RU>::processRequest(FragmentRequest& request)
     {
       SuperFragments superFragments;
       
