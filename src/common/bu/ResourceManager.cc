@@ -14,6 +14,7 @@ evb::bu::ResourceManager::ResourceManager
   BU* bu
 ) :
 bu_(bu),
+haveRUs_(false),
 boost_(false),
 throttle_(false),
 freeResourceFIFO_("freeResourceFIFO"),
@@ -47,14 +48,14 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
       pos->second.push_back(dataBlockMsg->evbIds[i]);
-      const uint32_t eventNumber = dataBlockMsg->evbIds[i].eventNumber();
-      if ( eventNumber > eventMonitoring_.lastEventNumberFromRUs )
-        eventMonitoring_.lastEventNumberFromRUs = eventNumber;
     }
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
     eventMonitoring_.perf.logicalCount += dataBlockMsg->nbSuperFragments;
-    RequestPtr request( new Request(dataBlockMsg->buResourceId, pos->second) );
-    while ( ! requestFIFO_.enq(request) ) { ::usleep(1000); }
+    if ( haveRUs_ )
+    {
+      RequestPtr request( new Request(dataBlockMsg->buResourceId, pos->second) );
+      while ( ! requestFIFO_.enq(request) ) { ::usleep(1000); }
+    }
   }
   else
   {
@@ -186,7 +187,6 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-  eventMonitoring_.lastEventNumberFromRUs = 0;
   eventMonitoring_.nbEventsInBU = 0;
   eventMonitoring_.nbEventsBuilt = 0;
   eventMonitoring_.perf.reset();
@@ -238,10 +238,6 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last event number from RUs</td>"                   << std::endl;
-    *out << "<td>" << eventMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td># events built</td>"                               << std::endl;
     *out << "<td>" << eventMonitoring_.nbEventsBuilt << "</td>"     << std::endl;

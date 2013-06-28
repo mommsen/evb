@@ -37,6 +37,12 @@ namespace evb {
       ResourceManager(BU*);
       
       virtual ~ResourceManager() {};
+
+      /**
+       * Defines if there are any RUs attached to this BU
+       */
+      void setHaveRUs(bool value)
+      { haveRUs_ = value; }
       
       /**
        * Mark the resource contained in the passed data block as under construction
@@ -66,7 +72,7 @@ namespace evb {
       struct Request
       {
         const uint32_t buResourceId;
-        const EvBids& evbIds;
+        const EvBids evbIds;
 
         Request(uint32_t buResourceId, const EvBids& evbIds)
         : buResourceId(buResourceId), evbIds(evbIds) {};
@@ -133,6 +139,7 @@ namespace evb {
       BU* bu_;
       const ConfigurationPtr configuration_;
       
+      bool haveRUs_;
       bool boost_;
       bool throttle_;
       
@@ -149,7 +156,6 @@ namespace evb {
             
       struct EventMonitoring
       {
-        uint32_t lastEventNumberFromRUs;
         uint32_t nbEventsBuilt;
         uint32_t nbEventsInBU;
         PerformanceMonitor perf;

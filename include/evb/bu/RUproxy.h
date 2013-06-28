@@ -190,6 +190,7 @@ namespace evb {
       typedef std::map<uint32_t,uint64_t> CountsPerRU;
       struct FragmentMonitoring
       {
+        uint32_t lastEventNumberFromEVM;
         uint32_t lastEventNumberFromRUs;
         uint64_t logicalCount;
         uint64_t payload;

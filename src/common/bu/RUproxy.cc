@@ -55,7 +55,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
     {
       boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
       
-      fragmentMonitoring_.lastEventNumberFromRUs = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
+      const uint32_t lastEventNumber = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
+      if ( index.ruTid == evm_.tid )
+        fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+      else
+        fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
       fragmentMonitoring_.payload += payload;
       fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
       ++fragmentMonitoring_.i2oCount;
@@ -124,7 +128,7 @@ void evb::bu::RUproxy::startProcessing()
   doProcessing_ = true;
   requestTriggersWL_->submit(requestTriggersAction_);
   
-  if ( !participatingRUs_.empty() )
+  if ( ! participatingRUs_.empty() )
     requestFragmentsWL_->submit(requestFragmentsAction_);
 }
 
@@ -417,6 +421,8 @@ void evb::bu::RUproxy::resetMonitoringCounters()
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    fragmentMonitoring_.lastEventNumberFromEVM = 0;
+    fragmentMonitoring_.lastEventNumberFromRUs = 0;
     fragmentMonitoring_.payload = 0;
     fragmentMonitoring_.logicalCount = 0;
     fragmentMonitoring_.i2oCount = 0;
@@ -449,8 +455,14 @@ void evb::bu::RUproxy::getApplicationDescriptors()
       "Failed to get I2O TID for this application.", e);
   }
   
+  // Clear list of participating RUs
+  participatingRUs_.clear();
+  ruTids_.clear();
+  
   getApplicationDescriptorForEVM();
   getApplicationDescriptorsForRUs();
+
+  resourceManager_->setHaveRUs( ! participatingRUs_.empty() );
 }
 
 
@@ -514,6 +526,8 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get the I2O TID of the EVM", e);
   }
+
+  ruTids_.push_back(evm_.tid);
 }
 
 
@@ -521,10 +535,6 @@ void evb::bu::RUproxy::getApplicationDescriptorsForRUs()
 {
   std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
 
-  // Clear list of participating RUs
-  participatingRUs_.clear();
-  ruTids_.clear();
-  
   try
   {
     ruDescriptors =
@@ -600,6 +610,32 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
   *out << "</tr>"                                                 << std::endl;
   {
+    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>last event number from EVM</td>"                   << std::endl;
+    *out << "<td>" << fragmentMonitoring_.lastEventNumberFromEVM << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>last event number from RUs</td>"                   << std::endl;
+    *out << "<td>" << fragmentMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td colspan=\"2\" style=\"text-align:center\">Event data</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>payload (MB)</td>"                                 << std::endl;
+    *out << "<td>" << fragmentMonitoring_.payload / 0x100000 << "</td>"<< std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>logical count</td>"                                << std::endl;
+    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"      << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>I2O count</td>"                                    << std::endl;
+    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"          << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+  }
+  {
     boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td colspan=\"2\" style=\"text-align:center\">Requests for trigger data</td>" << std::endl;
@@ -635,24 +671,6 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "<td>" << fragmentRequestMonitoring_.i2oCount << "</td>"        << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-  {
-    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Event data</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (MB)</td>"                                 << std::endl;
-    *out << "<td>" << fragmentMonitoring_.payload / 0x100000 << "</td>"<< std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"      << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"          << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
@@ -680,7 +698,12 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
          it != itEnd; ++it)
     {
       *out << "<tr>"                                                << std::endl;
-      *out << "<td>RU_" << it->first << "</td>"                     << std::endl;
+      *out << "<td>";
+      if ( evm_.tid == it->first )
+        *out << "EVM";
+      else
+        *out << "RU_" << it->first;
+      *out << "</td>"                                               << std::endl;
       *out << "<td>" << it->second << "</td>"                       << std::endl;
       *out << "<td>" << fragmentMonitoring_.payloadPerRU[it->first] / 0x100000 << "</td>" << std::endl;
       *out << "</tr>"                                               << std::endl;
