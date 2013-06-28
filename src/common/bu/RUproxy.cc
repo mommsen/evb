@@ -233,7 +233,7 @@ bool evb::bu::RUproxy::requestTriggers(toolbox::task::WorkLoop*)
       {
         std::stringstream oss;
         
-        oss << "Failed to send message to EVM TID";
+        oss << "Failed to send message to EVM TID ";
         oss << evm_.tid;
         
         XCEPT_RETHROW(exception::I2O, oss.str(), e);
@@ -288,8 +288,8 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       stdMsg->MessageSize      = msgSize >> 2;
       stdMsg->InitiatorAddress = tid_;
       stdMsg->Function         = I2O_PRIVATE_MESSAGE;
-      pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
       pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
+      pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
       rqstMsg->buResourceId    = request->buResourceId;
       rqstMsg->nbRequests      = requestsCount;
       
@@ -373,7 +373,7 @@ void evb::bu::RUproxy::sendToAllRUs
     {
       std::stringstream oss;
       
-      oss << "Failed to send message to RU TID";
+      oss << "Failed to send message to RU TID ";
       oss << it->tid;
 
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
@@ -699,7 +699,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     {
       *out << "<tr>"                                                << std::endl;
       *out << "<td>";
-      if ( evm_.tid == it->first )
+      if ( it->first == evm_.tid )
         *out << "EVM";
       else
         *out << "RU_" << it->first;

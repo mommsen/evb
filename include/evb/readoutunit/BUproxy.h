@@ -147,7 +147,6 @@ namespace evb {
       typedef OneToOneQueue<FragmentRequest> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
       
-      InfoSpaceItems buParams_;
       typedef std::map<uint32_t,uint64_t> CountsPerBU;
       struct RequestMonitoring
       {
@@ -401,7 +400,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-
+    
     stdMsg->VersionOffset          = 0;
     stdMsg->MsgFlags               = 0;
     stdMsg->MessageSize            = bufRef->getDataSize() >> 2;
@@ -467,8 +466,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   {
     std::stringstream oss;
     
-    oss << "Failed to send super fragment to BU";
-    oss << bu->getInstance();
+    oss << "Failed to send super fragment to BU TID ";
+    oss << fragmentRequest.buTid;
     
     XCEPT_RETHROW(exception::I2O, oss.str(), e);
   }
@@ -668,8 +667,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
-  buParams_.printHtml("Configuration", out);
-  
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per BU</td>" << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -686,12 +683,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
        it != itEnd; ++it)
   {
-    const uint32_t buInstance = it->first;
+    const uint32_t buTID = it->first;
 
     *out << "<tr>"                                                << std::endl;
-    *out << "<td>BU_" << buInstance << "</td>"                    << std::endl;
-    *out << "<td>" << requestMonitoring_.logicalCountPerBU[buInstance] << "</td>" << std::endl;
-    *out << "<td>" << dataMonitoring_.payloadPerBU[buInstance] / 0x100000 << "</td>" << std::endl;
+    *out << "<td>BU_" << buTID << "</td>"                         << std::endl;
+    *out << "<td>" << requestMonitoring_.logicalCountPerBU[buTID] << "</td>" << std::endl;
+    *out << "<td>" << dataMonitoring_.payloadPerBU[buTID] / 0x100000 << "</td>" << std::endl;
     *out << "</tr>"                                               << std::endl;
   }
   *out << "</table>"                                              << std::endl;
