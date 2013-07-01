@@ -233,9 +233,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>ResourceManager</p>"                                        << std::endl;
   *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
@@ -263,7 +261,8 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_ << " +/- " << eventSizeStdDev_ << "</td>" << std::endl;
+    *out << "<td>" << eventSize_ / 0x400 <<
+      " +/- " << eventSizeStdDev_ / 0x400 << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);

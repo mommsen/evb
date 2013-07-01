@@ -426,9 +426,6 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>Input - " << configuration_->inputSource.toString() << std::endl;
   *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per FED</td>" << std::endl;

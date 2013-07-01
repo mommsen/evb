@@ -606,9 +606,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>RUproxy</p>"                                        << std::endl;
   *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
