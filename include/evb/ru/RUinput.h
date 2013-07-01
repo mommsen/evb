@@ -64,6 +64,9 @@ namespace evb {
       {
       public:
         
+        DummyInputData(RUinput* input)
+        : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
+        
         virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
         { return createSuperFragment(evbId,superFragment); }
         
@@ -79,7 +82,7 @@ namespace evb {
         }
         else if ( inputSource == "Local" )
         {
-          handler.reset( new DummyInputData() );
+          handler.reset( new DummyInputData(this) );
         }
         else
         {

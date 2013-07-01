@@ -557,7 +557,6 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>current lumi section</td>"                         << std::endl;
     *out << "<td>" << diskWriterMonitoring_.currentLumiSection << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>last EoLS signal</td>"                             << std::endl;
     *out << "<td>" << diskWriterMonitoring_.lastEoLS << "</td>"     << std::endl;
@@ -587,19 +586,19 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
   }
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
   eventFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
   fileHandlerAndEventFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
   eolsFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;

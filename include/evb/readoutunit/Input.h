@@ -188,6 +188,7 @@ namespace evb {
       {
       public:
         
+        DummyInputData(Input<Configuration>* input) : input_(input) {};
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
         
@@ -200,6 +201,7 @@ namespace evb {
 
       private:
         
+        Input<Configuration>* input_;
         FragmentChain::ResourceList fedList_;
         typedef std::map<uint16_t,FragmentTracker> FragmentTrackers;
         FragmentTrackers fragmentTrackers_;
@@ -215,6 +217,7 @@ namespace evb {
       
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
       void updateInputCounters(toolbox::mem::Reference*);
+      void updateSuperFragmentCounters(const FragmentChainPtr&);
       
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
@@ -224,11 +227,16 @@ namespace evb {
         uint32_t lastEventNumber;
         PerformanceMonitor perf;
         double rate;
+        double eventSize;
+        double eventSizeStdDev;
         double bandwidth;
       };
       typedef std::map<uint16_t,InputMonitoring> InputMonitors;
       InputMonitors inputMonitors_;
       boost::mutex inputMonitorsMutex_;
+      
+      InputMonitoring superFragmentMonitor_;
+      boost::mutex superFragmentMonitorMutex_;
       
       bool acceptI2Omessages_;
       xdata::UnsignedInteger32 lastEventNumberFromFEROLs_;
@@ -281,13 +289,13 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
 {
   boost::mutex::scoped_lock sl(inputMonitorsMutex_);
   
-  const I2O_DATA_READY_MESSAGE_FRAME* frame =
-    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
+    + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const ferolh_t* ferolHeader = (ferolh_t*)payload;
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
   const uint64_t fedId = ferolHeader->fed_id();
   const uint64_t eventNumber = ferolHeader->event_number();
+  const uint64_t fedSize = ferolHeader->data_length();
   
   typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
   if ( pos == inputMonitors_.end() )
@@ -302,8 +310,8 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
   }
   
   pos->second.lastEventNumber = eventNumber;
-  pos->second.perf.sumOfSizes += frame->totalLength;
-  pos->second.perf.sumOfSquares += frame->totalLength*frame->totalLength;
+  pos->second.perf.sumOfSizes += fedSize;
+  pos->second.perf.sumOfSquares += fedSize*fedSize;
   ++(pos->second.perf.i2oCount);
   if ( ferolHeader->is_last_packet() )
     ++(pos->second.perf.logicalCount);
@@ -324,14 +332,35 @@ void evb::readoutunit::Input<Configuration>::dumpFragmentToLogger(toolbox::mem::
 template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
-  return handler_->getNextAvailableSuperFragment(superFragment);
+  if ( ! handler_->getNextAvailableSuperFragment(superFragment) ) return false;
+  
+  updateSuperFragmentCounters(superFragment);
+  
+  return true;
 }
 
 
 template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
-  return handler_->getSuperFragmentWithEvBid(evbId,superFragment);
+  if ( ! handler_->getSuperFragmentWithEvBid(evbId,superFragment) ) return false;
+  
+  updateSuperFragmentCounters(superFragment);
+  
+  return true;
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::updateSuperFragmentCounters(const FragmentChainPtr& superFragment)
+{
+  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  
+  const uint32_t size = superFragment->getSize();
+  superFragmentMonitor_.lastEventNumber = superFragment->getEvBid().eventNumber();
+  superFragmentMonitor_.perf.sumOfSizes += size;
+  superFragmentMonitor_.perf.sumOfSquares += size*size;
+  ++superFragmentMonitor_.perf.logicalCount;
 }
 
 
@@ -373,22 +402,37 @@ void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItem
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 {
-  boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-  
-  PerformanceMonitor performanceMonitor;
   uint32_t lastEventNumber = 0;
   uint32_t dataReadyCount = 0;
-  for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
-       it != itEnd; ++it)
+  
   {
-    if ( lastEventNumber < it->second.lastEventNumber )
-      lastEventNumber = it->second.lastEventNumber;
-    dataReadyCount += it->second.perf.logicalCount;
+    boost::mutex::scoped_lock sl(inputMonitorsMutex_);
     
-    it->second.rate = it->second.perf.logicalRate();
-    it->second.bandwidth = it->second.perf.bandwidth();
-    it->second.perf.reset();
+    for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
+         it != itEnd; ++it)
+    {
+      if ( lastEventNumber < it->second.lastEventNumber )
+        lastEventNumber = it->second.lastEventNumber;
+      dataReadyCount += it->second.perf.logicalCount;
+      
+      it->second.rate = it->second.perf.logicalRate();
+      it->second.bandwidth = it->second.perf.bandwidth();
+      it->second.eventSize = it->second.perf.size();
+      it->second.eventSizeStdDev = it->second.perf.sizeStdDev();
+      it->second.perf.reset();
+    }
   }
+
+  {
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    
+    superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate();
+    superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth();
+    superFragmentMonitor_.eventSize = superFragmentMonitor_.perf.size();
+    superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    superFragmentMonitor_.perf.reset();
+  }
+  
   lastEventNumberFromFEROLs_ = lastEventNumber;
   i2oDataReadyCount_ = dataReadyCount;
 }
@@ -397,21 +441,31 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-    
-  inputMonitors_.clear();
-  xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = configuration_->fedSourceIds.begin();
-  const xdata::Vector<xdata::UnsignedInteger32>::const_iterator itEnd = configuration_->fedSourceIds.end();
-  for ( ; it != itEnd ; ++it)
   {
-    InputMonitoring monitor;
-    monitor.lastEventNumber = 0;
-    monitor.rate = 0;
-    monitor.bandwidth = 0;
-    inputMonitors_.insert(typename InputMonitors::value_type(it->value_,monitor));
+    boost::mutex::scoped_lock sl(inputMonitorsMutex_);
+    
+    inputMonitors_.clear();
+    xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = configuration_->fedSourceIds.begin();
+    const xdata::Vector<xdata::UnsignedInteger32>::const_iterator itEnd = configuration_->fedSourceIds.end();
+    for ( ; it != itEnd ; ++it)
+    {
+      InputMonitoring monitor;
+      monitor.lastEventNumber = 0;
+      monitor.rate = 0;
+      monitor.bandwidth = 0;
+      inputMonitors_.insert(typename InputMonitors::value_type(it->value_,monitor));
+    }
+  }
+  {
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    
+    superFragmentMonitor_.rate = 0;
+    superFragmentMonitor_.bandwidth = 0;
+    superFragmentMonitor_.eventSize = 0;
+    superFragmentMonitor_.eventSizeStdDev = 0;
+    superFragmentMonitor_.perf.reset();
   }
 }
-
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::configure()
@@ -423,12 +477,43 @@ void evb::readoutunit::Input<Configuration>::configure()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 {
+  
   *out << "<div>"                                                 << std::endl;
-  *out << "<p>Input - " << configuration_->inputSource.toString() << std::endl;
+  *out << "<p>Input - " << configuration_->inputSource.toString() <<"</p>" << std::endl;
   *out << "<table>"                                               << std::endl;
   
+  const std::_Ios_Fmtflags originalFlags=out->flags();
+  const int originalPrecision=out->precision();
+  out->setf(std::ios::fixed);
+  out->precision(2);
+
+  {
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>evt number of last super fragment</td>"            << std::endl;
+    *out << "<td>" << superFragmentMonitor_.lastEventNumber << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
+    *out << "<td>" << superFragmentMonitor_.bandwidth / 0x100000 << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    out->setf(std::ios::scientific);
+    *out << "<td>rate (events/s)</td>"                              << std::endl;
+    *out << "<td>" << superFragmentMonitor_.rate << "</td>"         << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    out->unsetf(std::ios::scientific);
+    out->precision(1);
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>super fragment size (kB)</td>"                     << std::endl;
+    *out << "<td>" << superFragmentMonitor_.eventSize / 0x400 << " +/- "
+      << superFragmentMonitor_.eventSizeStdDev / 0x400 << "</td>"   << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+  }
+  
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per FED</td>" << std::endl;
+  *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
@@ -436,28 +521,25 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>FED id</td>"                                       << std::endl;
   *out << "<td>Last event</td>"                                   << std::endl;
-  *out << "<td>Rate (kHz)</td>"                                   << std::endl;
+  *out << "<td>Size (kB)</td>"                                    << std::endl;
   *out << "<td>B/w (MB/s)</td>"                                   << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
-  out->setf(std::ios::scientific);
-  out->setf(std::ios::fixed);
-  out->precision(2);
-  
-  boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-  
-  typename InputMonitors::const_iterator it, itEnd;
-  for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
-       it != itEnd; ++it)
+
   {
-    *out << "<tr>"                                                << std::endl;
-    *out << "<td>" << it->first << "</td>"                        << std::endl;
-    *out << "<td>" << it->second.lastEventNumber << "</td>"       << std::endl;
-    *out << "<td>" << it->second.rate / 1000 << "</td>"           << std::endl;
-    *out << "<td>" << it->second.bandwidth / 0x100000 << "</td>"  << std::endl;
-    *out << "</tr>"                                               << std::endl;
+    boost::mutex::scoped_lock sl(inputMonitorsMutex_);
+    
+    typename InputMonitors::const_iterator it, itEnd;
+    for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
+         it != itEnd; ++it)
+    {
+      *out << "<tr>"                                                << std::endl;
+      *out << "<td>" << it->first << "</td>"                        << std::endl;
+      *out << "<td>" << it->second.lastEventNumber << "</td>"       << std::endl;
+      *out << "<td>" << it->second.eventSize / 0x400 << " +/- "
+        << it->second.eventSizeStdDev / 0x400 << "</td>"            << std::endl;
+      *out << "<td>" << it->second.bandwidth / 0x100000 << "</td>"  << std::endl;
+      *out << "</tr>"                                               << std::endl;
+    }
   }
   
   out->flags(originalFlags);
@@ -632,20 +714,23 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
         it != itEnd; ++it)
   {
     uint32_t remainingFedSize = it->second.startFragment(evbId.eventNumber());
+    const uint32_t frameSize = remainingFedSize+sizeof(I2O_DATA_READY_MESSAGE_FRAME)+sizeof(ferolh_t);
     uint32_t packetNumber = 0;
     
     try
     {
       bufRef = toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fragmentPool_,remainingFedSize+sizeof(ferolh_t));
+        getFrame(fragmentPool_,frameSize);
     }
     catch(xcept::Exception& e)
     {
       return false;
     }
     
-    unsigned char* frame = (unsigned char*)bufRef->getDataLocation();
+    bufRef->setDataSize(frameSize);
     bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
+    unsigned char* frame = (unsigned char*)bufRef->getDataLocation()
+      + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
     
     while ( remainingFedSize > 0 )
     {
@@ -675,7 +760,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(it->first);
-      ferolHeader->set_event_number(eventNumber_);
+      ferolHeader->set_event_number(evbId.eventNumber());
       
       frame += filledBytes;
       
@@ -683,6 +768,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       assert(packetNumber < 2048);
     }
     
+    input_->updateInputCounters(bufRef);
     superFragment->append(it->first,bufRef);
   }
 

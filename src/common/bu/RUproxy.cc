@@ -618,7 +618,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "<td>" << fragmentMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Event data</td>" << std::endl;
+    *out << "<th colspan=\"2\">Event data</th>"                     << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (MB)</td>"                                 << std::endl;
@@ -636,7 +636,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   {
     boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Requests for trigger data</td>" << std::endl;
+    *out << "<th colspan=\"2\">Requests for trigger data</th>"      << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (kB)</td>"                                 << std::endl;
@@ -654,7 +654,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   {
     boost::mutex::scoped_lock sl(fragmentRequestMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Requests for fragments</td>" << std::endl;
+    *out << "<th colspan=\"2\">Requests for fragments</th>"         << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (kB)</td>"                                 << std::endl;
@@ -662,16 +662,16 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.logicalCount << "</td>"    << std::endl;
+    *out << "<td>" << fragmentRequestMonitoring_.logicalCount << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.i2oCount << "</td>"        << std::endl;
+    *out << "<td>" << fragmentRequestMonitoring_.i2oCount << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
   fragmentFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -679,7 +679,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per RU</td>" << std::endl;
+    *out << "<th colspan=\"2\">Statistics per RU</th>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td colspan=\"2\">"                                    << std::endl;

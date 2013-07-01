@@ -627,7 +627,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\" style=\"text-align:center\">BU requests</td>" << std::endl;
+  *out << "<th colspan=\"2\">BU requests</th>"                    << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>payload (kB)</td>"                                 << std::endl;
@@ -643,7 +643,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\" style=\"text-align:center\">BU events cache</td>" << std::endl;
+  *out << "<th colspan=\"2\">BU events cache</th>"                << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>payload (MB)</td>"                                 << std::endl;
@@ -659,13 +659,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
   fragmentRequestFIFO_.printHtml(out, readoutUnit_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   
   *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\" style=\"text-align:center\">Statistics per BU</td>" << std::endl;
+  *out << "<th colspan=\"2\">Statistics per BU</th>"              << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;

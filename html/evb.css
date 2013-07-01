@@ -77,6 +77,11 @@ html, body {
     white-space:nowrap;
     table-layout:fixed;
 }
+.component th {
+    font-weight:bold;
+    text-align:center;
+    padding-top:15px;
+}
 .component td {
     text-align:right;
 }
@@ -99,7 +104,14 @@ html, body {
     background:#f7f8f9;
     border: solid 1px #bbb;
 }
+.queue th {
+    padding-top:5px;
+    font-weight:normal;
+    text-align:center;
+    overflow:visible;
+}
 .queue td {
+    font-weight:normal;
     text-align:center;
     overflow:visible;    
 }
