@@ -36,7 +36,7 @@ namespace evb {
       
       Configuration()
       : inputSource("FEROL"),
-        blockSize(4096),
+        blockSize(32768),
         fragmentRequestFIFOCapacity(65536),
         dumpFragmentsToLogger(false),
         dropInputData(false),
