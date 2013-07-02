@@ -2,7 +2,7 @@
 #include "evb/evm/EVMinput.h"
 
 
-bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
+bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   

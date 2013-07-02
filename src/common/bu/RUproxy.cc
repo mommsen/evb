@@ -7,7 +7,6 @@
 #include "evb/bu/RUproxy.h"
 #include "evb/Constants.h"
 #include "evb/EvBid.h"
-#include "evb/I2OMessages.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "toolbox/task/WorkLoopFactory.h"
 #include "xcept/tools.h"
@@ -80,7 +79,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         
         oss << "Received a first super-fragment block from RU tid " << index.ruTid;
         oss << " for BU resource id " << index.buResourceId;
-        oss << " which is already block " <<  dataBlockMsg->blockNb;
+        oss << " which is already block number " <<  dataBlockMsg->blockNb;
         oss << " of " << dataBlockMsg->nbBlocks;
         
         XCEPT_RAISE(exception::EventOrder, oss.str());

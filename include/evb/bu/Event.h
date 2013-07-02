@@ -46,15 +46,16 @@ namespace evb {
       (
         const I2O_TID ruTid,
         toolbox::mem::Reference*,
-        unsigned char* fragmentPos,
-        uint32_t length
+        const unsigned char* fragmentPos,
+        const uint32_t partSize,
+        const uint32_t totalSize
       );
       
       /**
        * Return true if all super fragments have been received
        */
       bool isComplete() const
-      { return ruTids_.empty(); }
+      { return ruSizes_.empty(); }
       
       /**
        * Check the complete event for integrity of the data
@@ -126,14 +127,14 @@ namespace evb {
       
       struct DataLocation
       {
-        unsigned char* location;
-        uint32_t length;
+        const unsigned char* location;
+        const uint32_t length;
         
-        DataLocation(unsigned char* loc, uint32_t len) :
+        DataLocation(const unsigned char* loc, const uint32_t len) :
         location(loc),length(len) {};
       };
-      //typedef boost::shared_ptr<DataLocation> DataLocationPtr;
-      typedef std::vector<DataLocation> DataLocations;
+      typedef boost::shared_ptr<DataLocation> DataLocationPtr;
+      typedef std::vector<DataLocationPtr> DataLocations;
       DataLocations dataLocations_;
       typedef std::vector<toolbox::mem::Reference*> BufferReferences;
       BufferReferences myBufRefs_;
@@ -163,8 +164,8 @@ namespace evb {
       
       const EvBid evbId_;
       const uint32_t buResourceId_;
-      typedef std::vector<I2O_TID> RUtids;
-      RUtids ruTids_;
+      typedef std::map<I2O_TID,uint32_t> RUsizes;
+      RUsizes ruSizes_;
       
     }; // Event
     

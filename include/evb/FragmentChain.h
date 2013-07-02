@@ -18,6 +18,7 @@ namespace evb {
    * \brief A chain of event fragment
    */
   
+  template<class T>
   class FragmentChain
   {
   public:
@@ -89,10 +90,117 @@ namespace evb {
     
   }; // FragmentChain
   
-  typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
-  typedef std::vector<FragmentChainPtr> SuperFragments;
+} // namespace evb
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementation follows                                                     //
+////////////////////////////////////////////////////////////////////////////////
+
+template<class T>
+evb::FragmentChain<T>::FragmentChain() :
+size_(0),
+head_(0),tail_(0)
+{}
+
+
+template<class T>
+evb::FragmentChain<T>::FragmentChain(const uint32_t resourceCount) :
+size_(0),
+head_(0),tail_(0)
+{
+  for (uint32_t i = 1; i <= resourceCount; ++i)
+  {
+    resourceList_.push_back(i);
+  }
+}
+
+
+template<class T>
+evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, const ResourceList& resourceList) :
+evbId_(evbId),
+resourceList_(resourceList),
+size_(0),
+head_(0),tail_(0)
+{}
+
+
+template<class T>
+evb::FragmentChain<T>::~FragmentChain()
+{
+  if (head_) head_->release();
   
-  } // namespace evb
+  for (Caches::iterator it = caches_.begin(), itEnd = caches_.end();
+       it != itEnd; ++it)
+  {
+    it->second->grantFrame(it->first);
+  }
+  caches_.clear();
+}
+
+
+template<class T>
+bool evb::FragmentChain<T>::append
+(
+  const uint32_t resourceId,
+  toolbox::mem::Reference* bufRef
+)
+{
+  if ( ! checkResourceId(resourceId) ) return false;
+
+  if (!head_)
+  {
+    head_ = bufRef;
+    tail_ = bufRef;
+  }
+  else
+  {
+    tail_->setNextReference(bufRef);
+    tail_ = bufRef;
+  }
+  
+  size_ += bufRef->getDataSize() - sizeof(T);
+  
+  // while ( tail_->getNextReference() )
+  // {
+  //   tail_ = tail_->getNextReference();
+  //   size_ += tail_->getDataSize();
+  // }
+  
+  return true;
+}
+  
+
+template<class T>
+bool evb::FragmentChain<T>::append
+(
+  const uint32_t resourceId,
+  toolbox::mem::Reference* bufRef,
+  pt::utcp::frl::MemoryCache* cache
+)
+{
+  if ( append(resourceId, bufRef->duplicate()) )
+  {
+    caches_.insert(Caches::value_type(bufRef,cache));
+    return true;
+  }
+  
+  return false;
+}
+
+
+template<class T>
+bool evb::FragmentChain<T>::checkResourceId(const uint32_t resourceId)
+{
+  ResourceList::iterator pos =
+    std::find(resourceList_.begin(),resourceList_.end(),resourceId);
+
+  if ( pos == resourceList_.end() ) return false;
+
+  resourceList_.erase(pos);
+
+  return true;
+}
 
 
 #endif // _evb_ru_FragmentChain_h_

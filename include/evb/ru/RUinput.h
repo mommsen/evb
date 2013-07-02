@@ -57,7 +57,7 @@ namespace evb {
       {
       public:
         
-        virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
+        virtual bool getSuperFragmentWithEvBid(const EvBid&, readoutunit::FragmentChainPtr&);
       };
       
       class DummyInputData : public readoutunit::Input<readoutunit::Configuration>::DummyInputData
@@ -67,7 +67,7 @@ namespace evb {
         DummyInputData(RUinput* input)
         : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
         
-        virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
+        virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
         { return createSuperFragment(evbId,superFragment); }
         
       };

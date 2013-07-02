@@ -23,10 +23,14 @@ evb::bu::Event::Event
   const std::vector<I2O_TID>& ruTids
 ) :
 evbId_(evbId),
-buResourceId_(buResourceId),
-ruTids_(ruTids)
+buResourceId_(buResourceId)
 {  
   eventInfo_ = new EventInfo(evbId.runNumber(), evbId.eventNumber(), evbId.lumiSection());
+  for (std::vector<I2O_TID>::const_iterator it = ruTids.begin(), itEnd = ruTids.end();
+       it != itEnd; ++it)
+  {
+    ruSizes_.insert(RUsizes::value_type(*it,0));
+  }
 }
 
 
@@ -47,31 +51,39 @@ bool evb::bu::Event::appendSuperFragment
 (
   const I2O_TID ruTid,
   toolbox::mem::Reference* bufRef,
-  unsigned char* fragmentPos,
-  uint32_t length
+  const unsigned char* fragmentPos,
+  const uint32_t partSize,
+  const uint32_t totalSize
 )
 {
-  const RUtids::iterator pos =
-    std::find(ruTids_.begin(),ruTids_.end(),ruTid);
-  if ( pos == ruTids_.end() )
+  const RUsizes::iterator pos = ruSizes_.find(ruTid);
+  if ( pos == ruSizes_.end() )
   {
     std::ostringstream oss;
     oss << "Received a duplicated or unexpected super fragment for event " << eventInfo_->eventNumber;
     oss << " from RU TID " << ruTid << ".";
-    oss << " Outstanding messages from RU TIDs: ";
-    std::copy(ruTids_.begin(),ruTids_.end(),std::ostream_iterator<I2O_TID>(oss," "));
+    oss << " Outstanding messages from RU TIDs:";
+    for (RUsizes::const_iterator it = ruSizes_.begin(), itEnd = ruSizes_.end();
+         it != itEnd; ++it)
+      oss << " " << it->first;
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
+  if ( pos->second == 0 ) pos->second = totalSize;
   
   myBufRefs_.push_back(bufRef);
-  DataLocation dataLocation(fragmentPos,length);
+  DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
   dataLocations_.push_back(dataLocation);
   
   // erase at the very end. Otherwise the event might be considered complete
   // before the last chunk has been fully treated
-  ruTids_.erase(pos);
-
-  return ruTids_.empty();
+  pos->second -= partSize;
+  if ( pos->second == 0 )
+  {
+    ruSizes_.erase(pos);
+    return true;  
+  }
+  
+  return false;
 }
 
 
@@ -95,8 +107,8 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
   for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
        it != itEnd; ++it)
   {
-    memcpy(filepos, it->location, it->length);
-    filepos += it->length;
+    memcpy(filepos, (*it)->location, (*it)->length);
+    filepos += (*it)->length;
   }
 
   if ( munmap(map, bufferSize) == -1 )
@@ -121,32 +133,32 @@ void evb::bu::Event::checkEvent()
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
   const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
 
-  uint32_t remainingLength = rit->length;
+  uint32_t remainingLength = (*rit)->length;
   
   do {
     FedInfo fedInfo;
-    checkFedTrailer(rit->location, remainingLength, fedInfo);
+    checkFedTrailer((*rit)->location, remainingLength, fedInfo);
 
     uint32_t remainingFedSize = fedInfo.fedSize();
 
     // now start the odyssee to the fragment header
     // advance to the data section where we expect the header
-    while ( remainingFedSize > rit->length )
+    while ( remainingFedSize > (*rit)->length )
     {
       // advance to the next block
-      remainingFedSize -= rit->length;
+      remainingFedSize -= (*rit)->length;
       ++rit;
       if ( rit == ritEnd )
       {
         XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered.");
       }
-      remainingLength = rit->length;
+      remainingLength = (*rit)->length;
     }
     
     remainingLength -= remainingFedSize;
     //fedInfo.crc = updateCRC(fedLocations_.size()-1, lastFragment);
 
-    checkFedHeader(rit->location, remainingLength, fedInfo);
+    checkFedHeader((*rit)->location, remainingLength, fedInfo);
     if ( !eventInfo_->addFedSize(fedInfo) )
     {
       std::stringstream oss;
@@ -320,7 +332,6 @@ bool evb::bu::Event::EventInfo::addFedSize(const FedInfo& fedInfo)
   
   const uint32_t fedSize = fedInfo.fedSize();
   fedSizes[fedInfo.fedId] = fedSize;
-  eventSize += fedSize;
 
   updatePaddingSize();
   

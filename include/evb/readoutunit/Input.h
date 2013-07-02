@@ -2,6 +2,7 @@
 #define _evb_readoutunit_Input_h_
 
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <iterator>
@@ -35,6 +36,9 @@
 namespace evb {
   
   namespace readoutunit {
+      
+    typedef FragmentChain<I2O_DATA_READY_MESSAGE_FRAME> FragmentChain;
+    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
     
     /**
      * \ingroup xdaqApps
@@ -417,8 +421,12 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
       
       it->second.rate = it->second.perf.logicalRate();
       it->second.bandwidth = it->second.perf.bandwidth();
-      it->second.eventSize = it->second.perf.size();
-      it->second.eventSizeStdDev = it->second.perf.sizeStdDev();
+      const uint32_t eventSize = it->second.perf.size();
+      if ( eventSize > 0 )
+      { 
+        it->second.eventSize = eventSize;
+        it->second.eventSizeStdDev = it->second.perf.sizeStdDev();
+      }
       it->second.perf.reset();
     }
   }
@@ -428,8 +436,12 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     
     superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate();
     superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth();
-    superFragmentMonitor_.eventSize = superFragmentMonitor_.perf.size();
-    superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    const uint32_t eventSize = superFragmentMonitor_.perf.size();
+    if ( eventSize > 0 )
+    {
+      superFragmentMonitor_.eventSize = eventSize;
+      superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    }
     superFragmentMonitor_.perf.reset();
   }
   
@@ -729,7 +741,14 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     
     bufRef->setDataSize(frameSize);
     bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
-    unsigned char* frame = (unsigned char*)bufRef->getDataLocation()
+    I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
+      (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+    dataReadyMsg->totalLength = remainingFedSize+sizeof(ferolh_t);
+    dataReadyMsg->partLength = remainingFedSize+sizeof(ferolh_t);
+    dataReadyMsg->fedid = it->first;
+    dataReadyMsg->triggerno = evbId.eventNumber();
+    
+    unsigned char* frame = (unsigned char*)dataReadyMsg
       + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
     
     while ( remainingFedSize > 0 )

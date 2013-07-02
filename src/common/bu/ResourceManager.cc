@@ -50,7 +50,6 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
       pos->second.push_back(dataBlockMsg->evbIds[i]);
     }
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
-    eventMonitoring_.perf.logicalCount += dataBlockMsg->nbSuperFragments;
     if ( haveRUs_ )
     {
       RequestPtr request( new Request(dataBlockMsg->buResourceId, pos->second) );
@@ -72,15 +71,17 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
       XCEPT_RAISE(exception::SuperFragment, oss.str());
     }
   }
-  ++eventMonitoring_.perf.i2oCount;
-  const uint32_t size = ((I2O_MESSAGE_FRAME*)dataBlockMsg)->MessageSize << 2;
-  eventMonitoring_.perf.sumOfSizes += size;
-  eventMonitoring_.perf.sumOfSquares += size*size;
 }
 
 
 void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
 {
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  
+  const uint32_t eventSize = event->eventSize();
+  eventMonitoring_.perf.sumOfSizes += eventSize;
+  eventMonitoring_.perf.sumOfSquares += eventSize*eventSize;
+  ++eventMonitoring_.perf.logicalCount;
   ++eventMonitoring_.nbEventsBuilt;
 }
 

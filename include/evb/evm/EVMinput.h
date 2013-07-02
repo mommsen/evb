@@ -56,7 +56,7 @@ namespace evb {
       {
       public:
         
-        virtual bool getNextAvailableSuperFragment(FragmentChainPtr&);
+        virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
         
       private:
         
@@ -71,7 +71,7 @@ namespace evb {
         DummyInputData(EVMinput* input)
         : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
         
-        virtual bool getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
+        virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
         {
           if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
           const EvBid evbId = evbIdFactory_.getEvBid(eventNumber_);

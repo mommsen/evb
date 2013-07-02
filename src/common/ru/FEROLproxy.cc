@@ -1,7 +1,7 @@
 #include "evb/ru/RUinput.h"
 
 
-bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
+bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   

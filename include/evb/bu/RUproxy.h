@@ -9,6 +9,7 @@
 #include "evb/ApplicationDescriptorAndTid.h"
 #include "evb/EvBid.h"
 #include "evb/FragmentChain.h"
+#include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/bu/Configuration.h"
@@ -32,6 +33,9 @@ namespace evb {
     class ResourceManager;
     class StateMachine;
 
+    typedef FragmentChain<msg::I2O_DATA_BLOCK_MESSAGE_FRAME> FragmentChain;
+    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
+    
     /**
      * \ingroup xdaqApps
      * \brief Proxy for EVM-BU communication

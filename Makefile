@@ -34,7 +34,6 @@ Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	EventUtils.cc \
-	FragmentChain.cc \
 	FragmentGenerator.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
