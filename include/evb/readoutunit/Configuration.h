@@ -51,9 +51,9 @@ namespace evb {
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
       {
         // Default is 8 FEDs per super-fragment
-        // RU0 has 1 to 8, RU1 has 9 to 16, etc.
-        const uint32_t firstSourceId = (instance * 8) + 1;
-        const uint32_t lastSourceId  = (instance * 8) + 8;
+        // RU0 has 0 to 7, RU1 has 8 to 15, etc.
+        const uint32_t firstSourceId = (instance * 8);
+        const uint32_t lastSourceId  = (instance * 8) + 7;
         for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
         {
           fedSourceIds.push_back(sourceId);

@@ -73,10 +73,8 @@ namespace evb {
     boost::shared_ptr<bu::EventTable> eventTable_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
     
-    xdata::UnsignedInteger32 nbEvtsUnderConstruction_;
     xdata::UnsignedInteger32 nbEventsInBU_;
-    xdata::UnsignedInteger32 nbEvtsReady_;
-    xdata::UnsignedInteger32 nbEvtsBuilt_;
+    xdata::UnsignedInteger32 nbEventsBuilt_;
     xdata::UnsignedInteger32 nbEvtsCorrupted_;
     xdata::UnsignedInteger32 nbFilesWritten_;
   };

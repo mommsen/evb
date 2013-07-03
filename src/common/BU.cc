@@ -39,17 +39,13 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   InfoSpaceItems& appInfoSpaceParams
 )
 {
-  nbEvtsUnderConstruction_ = 0;
   nbEventsInBU_ = 0;
-  nbEvtsReady_ = 0;
-  nbEvtsBuilt_ = 0;
+  nbEventsBuilt_ = 0;
   nbEvtsCorrupted_ = 0;
   nbFilesWritten_ = 0;
   
-  appInfoSpaceParams.add("nbEvtsUnderConstruction", &nbEvtsUnderConstruction_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("nbEvtsReady", &nbEvtsReady_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("nbEvtsBuilt", &nbEvtsBuilt_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEvtsCorrupted", &nbEvtsCorrupted_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
 }
@@ -78,18 +74,7 @@ void evb::BU::do_updateMonitoringInfo()
 
 void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
 {
-  if (item == "nbEvtsUnderConstruction")
-  {
-    try
-    {
-      nbEvtsUnderConstruction_.setValue( *(monitoringInfoSpace_->find("nbEvtsUnderConstruction")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbEvtsUnderConstruction_ = 0;
-    }
-  }
-  else if (item == "nbEventsInBU")
+  if (item == "nbEventsInBU")
   {
     try
     {
@@ -100,26 +85,15 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
       nbEventsInBU_ = 0;
     }
   }
-  else if (item == "nbEvtsReady")
+  else if (item == "nbEventsBuilt")
   {
     try
     {
-      nbEvtsReady_.setValue( *(monitoringInfoSpace_->find("nbEvtsReady")) );
+      nbEventsBuilt_.setValue( *(monitoringInfoSpace_->find("nbEventsBuilt")) );
     }
     catch(xdata::exception::Exception& e)
     {
-      nbEvtsReady_ = 0;
-    }
-  }
-  else if (item == "nbEvtsBuilt")
-  {
-    try
-    {
-      nbEvtsBuilt_.setValue( *(monitoringInfoSpace_->find("nbEvtsBuilt")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbEvtsBuilt_ = 0;
+      nbEventsBuilt_ = 0;
     }
   }
   else if (item == "nbEvtsCorrupted")

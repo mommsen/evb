@@ -12,8 +12,8 @@
 #include "i2o/Method.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "interface/shared/i2ogevb2g.h"
-#include "pt/utcp/frl/MemoryCache.h"
-#include "pt/utcp/frl/Method.h"
+#include "pt/frl/Method.h"
+#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -57,8 +57,9 @@ namespace evb {
     private:
       
       virtual void do_bindI2oCallbacks();
-      inline void dataReadyCallback(toolbox::mem::Reference*, int originator, pt::utcp::frl::MemoryCache*);
-      inline void I2O_RU_SEND_Callback(toolbox::mem::Reference*);
+      inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*);
+      inline void I2O_SUPER_FRAGMENT_READY_Callback(toolbox::mem::Reference*);
+      inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*);
       
       virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
@@ -156,21 +157,21 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
 template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oCallbacks()
 {  
-  // i2o::bind(
-  //   this,
-  //   &evb::dataReadyCallback,
-  //   I2O_DATA_READY,
-  //   XDAQ_ORGANIZATION_ID
-  // );
-  
-  pt::utcp::frl::bind(
+  pt::frl::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::dataReadyCallback
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvailable
+  );
+
+  i2o::bind(
+    this,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SUPER_FRAGMENT_READY_Callback,
+    I2O_SUPER_FRAGMENT_READY,
+    XDAQ_ORGANIZATION_ID
   );
   
   i2o::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_RU_SEND_Callback,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FRAGMENTS_Callback,
     I2O_SHIP_FRAGMENTS,
     XDAQ_ORGANIZATION_ID
   );
@@ -178,11 +179,11 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oC
 
 
 template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::dataReadyCallback
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvailable
 (
   toolbox::mem::Reference* bufRef,
   int originator,
-  pt::utcp::frl::MemoryCache* cache
+  tcpla::MemoryCache* cache
 )
 {
   input_->dataReadyCallback(bufRef,cache);
@@ -190,7 +191,17 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::dataReadyCa
 
 
 template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_RU_SEND_Callback
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SUPER_FRAGMENT_READY_Callback
+(
+  toolbox::mem::Reference *bufRef
+)
+{
+  bufRef->release();
+}
+
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FRAGMENTS_Callback
 (
   toolbox::mem::Reference *bufRef
 )

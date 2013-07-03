@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "evb/Constants.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
@@ -21,7 +22,7 @@
 #include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
-#include "pt/utcp/frl/MemoryCache.h"
+#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/CommittedHeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "toolbox/mem/Reference.h"
@@ -67,7 +68,7 @@ namespace evb {
       /**
        * Callback for I2O_DATA_READY messages received from frontend
        */
-      void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
+      void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*);
       
       /**
        * Get the next complete super fragment.
@@ -136,7 +137,7 @@ namespace evb {
       {
       public:
         
-        virtual void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*)
+        virtual void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::dataReadyCallback is not implemented"); }
         
         virtual bool getNextAvailableSuperFragment(FragmentChainPtr&)
@@ -157,7 +158,7 @@ namespace evb {
       public:
         
         virtual void configure(boost::shared_ptr<Configuration>);
-        virtual void dataReadyCallback(toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
+        virtual void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void clear();
         
@@ -179,7 +180,6 @@ namespace evb {
         void fillBlockInfo(toolbox::mem::Reference*, const EvBid&, const uint32_t nbBlocks) const;
         
         bool dropInputData_;
-        uint16_t triggerFedId_;
         
         FragmentChain::ResourceList fedList_;
         
@@ -277,7 +277,7 @@ void evb::readoutunit::Input<Configuration>::inputSourceChanged()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::dataReadyCallback(toolbox::mem::Reference* bufRef, pt::utcp::frl::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::dataReadyCallback(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   if ( acceptI2Omessages_ )
   {
@@ -569,6 +569,8 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
+  dropInputData_ = configuration->dropInputData;
+  
   clear();
   
   evbIdFactories_.clear();
@@ -598,7 +600,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef, pt::utcp::frl::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   
@@ -610,7 +612,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::dataReadyCallback(toolb
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
   
-  const uint32_t lsNumber = extractTriggerInformation(payload);
+  const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
 
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;

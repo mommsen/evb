@@ -15,7 +15,6 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/Input.h"
-#include "pt/utcp/frl/MemoryCache.h"
 #include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"

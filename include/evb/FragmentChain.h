@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "evb/EvBid.h"
-#include "pt/utcp/frl/MemoryCache.h"
+#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -36,7 +36,7 @@ namespace evb {
      * Return false if the resource id is not expected.
      */
     bool append(uint32_t resourceId, toolbox::mem::Reference*);
-    bool append(uint32_t resourceId, toolbox::mem::Reference*, pt::utcp::frl::MemoryCache*);
+    bool append(uint32_t resourceId, toolbox::mem::Reference*, tcpla::MemoryCache*);
     
     /**
      * Return the head of the toolbox::mem::Reference chain
@@ -85,7 +85,7 @@ namespace evb {
     toolbox::mem::Reference* head_;
     toolbox::mem::Reference* tail_;
 
-    typedef std::map<toolbox::mem::Reference*,pt::utcp::frl::MemoryCache*> Caches;
+    typedef std::map<toolbox::mem::Reference*,tcpla::MemoryCache*> Caches;
     Caches caches_;
     
   }; // FragmentChain
@@ -176,7 +176,7 @@ bool evb::FragmentChain<T>::append
 (
   const uint32_t resourceId,
   toolbox::mem::Reference* bufRef,
-  pt::utcp::frl::MemoryCache* cache
+  tcpla::MemoryCache* cache
 )
 {
   if ( append(resourceId, bufRef->duplicate()) )

@@ -1,6 +1,6 @@
 # XDAQ
-#export XDAQ_ROOT=/opt/xdaq
-export XDAQ_ROOT=$HOME/daq/xdaq_root
+export XDAQ_ROOT=/opt/xdaq
+#export XDAQ_ROOT=$HOME/daq/xdaq_root
 
 export XDAQ_PLATFORM=`uname -m`
 if test ".$XDAQ_PLATFORM" != ".x86_64"; then
@@ -18,10 +18,11 @@ export PATH=${PATH}:${XDAQ_LOCAL}/bin:${XDAQ_ROOT}/bin
 
 # EvB tester suite
 export EVB_TESTER_HOME=${HOME}/daq/dev/daq/evb/test
-export TESTS_SYMBOL_MAP=${EVB_TESTER_HOME}/cases/standaloneSymbolMap.txt
-export TEST_TYPE=""
+#export TESTS_SYMBOL_MAP=${EVB_TESTER_HOME}/cases/standaloneSymbolMap.txt
+export TESTS_SYMBOL_MAP=${EVB_TESTER_HOME}/cases/daq2valSymbolMap.txt
+#export TEST_TYPE=""
 
 export PATH=${PATH}:${EVB_TESTER_HOME}/scripts
 
-#ulimit -l unlimited
+ulimit -l unlimited
 
