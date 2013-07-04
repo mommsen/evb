@@ -138,7 +138,7 @@ TestLibraryDirs = \
         $(XGI_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -pedantic-errors -Wno-long-long -Werror
+UserCCFlags = -O3 -Wno-long-long -Werror
 
 # These libraries can be platform specific and
 # potentially need conditional processing
