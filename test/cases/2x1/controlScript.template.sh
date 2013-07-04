@@ -59,3 +59,19 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 Enable
 
 #Enable BUs
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
+
+echo "Sending data for 5 seconds"
+sleep 5
+
+nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+
+echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Test launched successfully"
+exit 0
