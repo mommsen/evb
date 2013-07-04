@@ -28,7 +28,9 @@ while(<SYMBOL_MAP_FILE>) {
     my $launcherCmd = "cd /tmp && rm -f /tmp/core.* && source $testDir/setenv$testEnv.sh && xdaqLauncher $port";
     my $awkCmd      = "awk '{print \"$host:$port \" \$0}'";
     my $cmd         = "$sshCmd \"sudo -u $user sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
-    #my $cmd         = "$sshCmd \"sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
+    if($host eq "spare-c2d41-16.cms") {
+      $cmd = "$sshCmd \"sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
+    }
 
     print "$cmd\n";
     system $cmd;
