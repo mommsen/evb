@@ -74,9 +74,14 @@ namespace evb {
       
     private:
       
+      // Lookup table of events, indexed by evb id
+      typedef std::map<EvBid,EventPtr> EventMap;
+      EventMap eventMap_;
+      
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
       bool buildEvents();
+      EventMap::iterator getEventPos(const EvBid&, const uint32_t buResourceId);
       
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
@@ -84,9 +89,6 @@ namespace evb {
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       
-      // Lookup table of events, indexed by evb id
-      typedef std::map<EvBid,EventPtr> EventMap;
-      EventMap eventMap_;
       uint32_t runNumber_;
       
       toolbox::task::WorkLoop* processingWL_;

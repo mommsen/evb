@@ -106,7 +106,10 @@ bool evb::bu::EventTable::buildEvents()
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid);
   uint32_t superFragmentCount = 0;
-  
+
+  const EvBid evbId = dataBlockMsg->evbIds[0];
+  EventMap::iterator eventPos = getEventPos(evbId,buResourceId);
+
   do
   {
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
@@ -116,43 +119,35 @@ bool evb::bu::EventTable::buildEvents()
     uint32_t remainingBufferSize = bufRef->getDataSize() - blockHeaderSize;
     
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
-    { 
+    {
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
       
-      const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
-      
-      // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
-      // std::cout << evbId << std::endl;
-      // std::cout << *superFragmentMsg << std::endl;
-      
-      EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
-      if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
-      {
-        // new event
-        EventPtr event( new Event(evbId, buResourceId, ruProxy_->getRuTids()) );
-        eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
-      }
-
       if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
           payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )
       {
         // the super fragment is complete
         ++superFragmentCount;
-      }
-
-      if ( eventPos->second->isComplete() )
-      {
-        resourceManager_->eventCompleted(eventPos->second);
-        diskWriter_->writeEvent(eventPos->second);
-        eventMap_.erase(eventPos++);
+        
+        if ( eventPos->second->isComplete() )
+        {
+          resourceManager_->eventCompleted(eventPos->second);
+          diskWriter_->writeEvent(eventPos->second);
+          eventMap_.erase(eventPos++);
+        }
+        
+        const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+          (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+        const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
+        eventPos = getEventPos(evbId,buResourceId);
       }
       
       payload += superFragmentMsg->partSize;
       remainingBufferSize -= superFragmentMsg->partSize;
-
-      std::cout << remainingBufferSize << "\t" << nbSuperFragments << "\t" << superFragmentCount << std::endl;
+      
+      // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
+      // std::cout << *superFragmentMsg << std::endl;
     }
     
     bufRef->release(); // The bufRef's holding event fragments are now owned by the events
@@ -161,15 +156,28 @@ bool evb::bu::EventTable::buildEvents()
     
   } while ( bufRef );
 
-  if (superFragmentCount != dataBlockMsg->nbSuperFragments)
+  if (superFragmentCount != nbSuperFragments)
   {
     std::ostringstream oss;
     oss << "Incomplete I2O_DATA_BLOCK_MESSAGE_FRAME from RU TID " << ruTid;
-    oss << ": expected " << dataBlockMsg->nbSuperFragments << " super fragments, but found " << superFragmentCount;
+    oss << ": expected " << nbSuperFragments << " super fragments, but found " << superFragmentCount;
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
   
   return true;
+}
+
+
+evb::bu::EventTable::EventMap::iterator evb::bu::EventTable::getEventPos(const evb::EvBid& evbId, const uint32_t buResourceId)
+{
+  EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
+  if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
+  {
+    // new event
+    EventPtr event( new Event(evbId, buResourceId, ruProxy_->getRuTids()) );
+    eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
+  }
+  return eventPos;
 }
 
 
