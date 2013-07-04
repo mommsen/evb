@@ -270,7 +270,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
     {
       const size_t requestsCount = request->evbIds.size();
       const size_t msgSize = sizeof(msg::RqstForFragmentsMsg) +
-        (requestsCount - 1) * sizeof(EvBid);
+        requestsCount * sizeof(EvBid);
       
       toolbox::mem::Reference* rqstBufRef =
         toolbox::mem::getMemoryPoolFactory()->

@@ -74,7 +74,7 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME dataBlockMsg
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME& dataBlockMsg
 )
 {
   str << "I2O_DATA_BLOCK_MESSAGE_FRAME:" << std::endl;

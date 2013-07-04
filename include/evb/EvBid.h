@@ -66,7 +66,7 @@ namespace evb {
 
     uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
     uint32_t eventNumber_; // The L1 trigger number, aka event number
-    uint32_t lumiSection_;    // The lumi-section number. This number is optional
+    uint32_t lumiSection_; // The lumi-section number. This number is optional
     uint32_t runNumber_;   // The run number
 
   };

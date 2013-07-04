@@ -186,7 +186,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvai
   tcpla::MemoryCache* cache
 )
 {
-  input_->dataReadyCallback(bufRef,cache);
+  input_->rawDataAvailable(bufRef,cache);
 }
 
 
@@ -196,7 +196,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SUPER_F
   toolbox::mem::Reference *bufRef
 )
 {
-  bufRef->release();
+  input_->superFragmentReady(bufRef);
 }
 
 

@@ -66,9 +66,14 @@ namespace evb {
       void inputSourceChanged();
       
       /**
-       * Callback for I2O_DATA_READY messages received from frontend
+       * Callback for I2O_SUPER_FRAGMENT_READY messages received from pt::frl
        */
-      void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*);
+      void superFragmentReady(toolbox::mem::Reference*);
+      
+      /**
+       * Callback for individual FED fragments received from pt::frl
+       */
+      void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
       
       /**
        * Get the next complete super fragment.
@@ -137,8 +142,11 @@ namespace evb {
       {
       public:
         
-        virtual void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*)
-        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::dataReadyCallback is not implemented"); }
+        virtual void superFragmentReady(toolbox::mem::Reference*)
+        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::superFragmentReady is not implemented"); }
+        
+        virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*)
+        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::rawDataAvailable is not implemented"); }
         
         virtual bool getNextAvailableSuperFragment(FragmentChainPtr&)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::getNextAvailableSuperFragment is not implemented"); }
@@ -158,7 +166,8 @@ namespace evb {
       public:
         
         virtual void configure(boost::shared_ptr<Configuration>);
-        virtual void dataReadyCallback(toolbox::mem::Reference*, tcpla::MemoryCache*);
+        virtual void superFragmentReady(toolbox::mem::Reference*);
+        virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void clear();
         
@@ -277,13 +286,25 @@ void evb::readoutunit::Input<Configuration>::inputSourceChanged()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::dataReadyCallback(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::superFragmentReady(toolbox::mem::Reference* bufRef)
 {
   if ( acceptI2Omessages_ )
   {
     updateInputCounters(bufRef);
     dumpFragmentToLogger(bufRef);
-    handler_->dataReadyCallback(bufRef,cache);
+    handler_->superFragmentReady(bufRef);
+  }
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+{
+  if ( acceptI2Omessages_ )
+  {
+    updateInputCounters(bufRef);
+    dumpFragmentToLogger(bufRef);
+    handler_->rawDataAvailable(bufRef,cache);
   }
 }
 
@@ -293,13 +314,19 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
 {
   boost::mutex::scoped_lock sl(inputMonitorsMutex_);
   
-  const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
-    + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  const ferolh_t* ferolHeader = (ferolh_t*)payload;
-  assert( ferolHeader->signature() == FEROL_SIGNATURE );
-  const uint64_t fedId = ferolHeader->fed_id();
-  const uint64_t eventNumber = ferolHeader->event_number();
-  const uint64_t fedSize = ferolHeader->data_length();
+  // const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
+  //   + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  // const ferolh_t* ferolHeader = (ferolh_t*)payload;
+  // assert( ferolHeader->signature() == FEROL_SIGNATURE );
+  // const uint64_t fedId = ferolHeader->fed_id();
+  // const uint64_t eventNumber = ferolHeader->event_number();
+  // const uint64_t fedSize = ferolHeader->data_length();
+  
+  I2O_DATA_READY_MESSAGE_FRAME* frame =
+    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+  const uint16_t fedId = frame->fedid;
+  const uint32_t eventNumber = frame->triggerno;
+  const uint32_t fedSize = frame->totalLength;
   
   typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
   if ( pos == inputMonitors_.end() )
@@ -317,8 +344,8 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
   pos->second.perf.sumOfSizes += fedSize;
   pos->second.perf.sumOfSquares += fedSize*fedSize;
   ++(pos->second.perf.i2oCount);
-  if ( ferolHeader->is_last_packet() )
-    ++(pos->second.perf.logicalCount);
+  //if ( ferolHeader->is_last_packet() )
+  ++(pos->second.perf.logicalCount);
 }
 
 
@@ -600,7 +627,40 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::dataReadyCallback(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(toolbox::mem::Reference* bufRef)
+{
+  boost::mutex::scoped_lock sl(superFragmentMapMutex_);
+  
+  I2O_DATA_READY_MESSAGE_FRAME* frame =
+    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+  unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  const uint16_t fedId = frame->fedid;
+  const uint32_t eventNumber = frame->triggerno;
+  const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
+  
+  const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+
+  FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
+  if ( ! superFragmentMap_.insert(SuperFragmentMap::value_type(evbId,superFragment)).second )
+  {
+    std::ostringstream msg;
+    msg << "Received a duplicated event with EvB id " << evbId;
+    XCEPT_RAISE(exception::EventOrder, msg.str());
+  }
+
+  if ( dropInputData_ )
+  {
+    superFragmentMap_.erase(evbId);
+  }
+  else
+  {
+    ++nbSuperFragmentsReady_;
+  }
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   boost::mutex::scoped_lock sl(superFragmentMapMutex_);
   

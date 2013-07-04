@@ -28,6 +28,7 @@ namespace evb {
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
     FragmentChain(const EvBid&, const ResourceList&);
+    FragmentChain(const EvBid&, toolbox::mem::Reference*);
     
     ~FragmentChain();
     
@@ -122,6 +123,14 @@ evbId_(evbId),
 resourceList_(resourceList),
 size_(0),
 head_(0),tail_(0)
+{}
+
+
+template<class T>
+evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference* bufRef) :
+evbId_(evbId),
+size_(bufRef->getDataSize() - sizeof(T)),
+head_(bufRef),tail_(bufRef)
 {}
 
 

@@ -21,7 +21,7 @@ namespace evb {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
       uint32_t buResourceId;                     // Index of BU resource used to built the event
       int32_t nbRequests;                        // Number of requests. If negative, ignore evbIds 
-      EvBid evbIds[1];                           // Requests
+      EvBid evbIds[];                            // Requests
       
     } RqstForFragmentsMsg;
     
@@ -49,7 +49,7 @@ namespace evb {
       uint32_t nbBlocks;                         // Total number of I2O blocks
       uint32_t blockNb;                          // Index of the this block
       uint32_t nbSuperFragments;                 // Total number of super fragments
-      EvBid evbIds[1];                           // The EvBids of the super fragments
+      EvBid evbIds[];                            // The EvBids of the super fragments
       
     } I2O_DATA_BLOCK_MESSAGE_FRAME;
 
@@ -81,7 +81,7 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME
+  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME&
 );
 
 

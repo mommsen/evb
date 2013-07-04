@@ -293,7 +293,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const Fragmen
   
   requestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
   if ( !fragmentRequest.evbIds.empty() )
-    requestMonitoring_.payload += (fragmentRequest.nbRequests-1) * sizeof(EvBid);
+    requestMonitoring_.payload += fragmentRequest.nbRequests * sizeof(EvBid);
   requestMonitoring_.logicalCount += fragmentRequest.nbRequests;
   ++requestMonitoring_.i2oCount;
   requestMonitoring_.logicalCountPerBU[fragmentRequest.buTid] += fragmentRequest.nbRequests;
@@ -341,9 +341,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
   
-  const uint32_t blockHeaderSize =
-    sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
-    + (nbSuperFragments-1) * sizeof(EvBid);
+  const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
+    + nbSuperFragments * sizeof(EvBid);
   assert( blockHeaderSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
@@ -395,6 +394,20 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     
   } while ( ++superFragmentIter != superFragments.end() );
   
+  xdaq::ApplicationDescriptor *bu = 0;
+  try
+  {
+    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest.buTid);
+  }
+  catch(xcept::Exception &e)
+  {
+    std::stringstream oss;
+    
+    oss << "Failed to get application descriptor for BU with tid ";
+    oss << fragmentRequest.buTid;
+    
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
   
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
@@ -404,6 +417,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   // Prepare each event data block for the BU
   while (bufRef)
   {
+    toolbox::mem::Reference* nextRef = bufRef->getNextReference();
+    bufRef->setNextReference(0);
+    
     I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
@@ -429,7 +445,28 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
     ++i2oCount;
     
-    bufRef = bufRef->getNextReference();
+    try
+    {
+      readoutUnit_->getApplicationContext()->
+        postFrame(
+          bufRef,
+          readoutUnit_->getApplicationDescriptor(),
+          bu//,
+          //i2oExceptionHandler_,
+          //bu
+        );
+    }
+    catch(xcept::Exception &e)
+    {
+      std::stringstream oss;
+      
+      oss << "Failed to send super fragment to BU TID ";
+      oss << fragmentRequest.buTid;
+      
+      XCEPT_RETHROW(exception::I2O, oss.str(), e);
+    }
+    
+    bufRef = nextRef;
   }
 
   {
@@ -441,42 +478,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
      dataMonitoring_.payload += payloadSize;
      ++dataMonitoring_.logicalCount;
      dataMonitoring_.payloadPerBU[fragmentRequest.buTid] += payloadSize;
-  }
-  
-  xdaq::ApplicationDescriptor *bu = 0;
-  try
-  {
-    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest.buTid);
-  }
-  catch(xcept::Exception &e)
-  {
-    std::stringstream oss;
-    
-    oss << "Failed to get application descriptor for BU with tid ";
-    oss << fragmentRequest.buTid;
-    
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
-  
-  try
-  {
-    readoutUnit_->getApplicationContext()->
-      postFrame(
-        head,
-        readoutUnit_->getApplicationDescriptor(),
-        bu//,
-        //i2oExceptionHandler_,
-        //bu
-      );
-  }
-  catch(xcept::Exception &e)
-  {
-    std::stringstream oss;
-    
-    oss << "Failed to send super fragment to BU TID ";
-    oss << fragmentRequest.buTid;
-    
-    XCEPT_RETHROW(exception::I2O, oss.str(), e);
   }
 }
 

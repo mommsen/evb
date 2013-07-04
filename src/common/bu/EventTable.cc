@@ -103,6 +103,8 @@ bool evb::bu::EventTable::buildEvents()
   const I2O_TID ruTid = stdMsg->InitiatorAddress;
   const uint32_t buResourceId = dataBlockMsg->buResourceId;
   const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+  const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
+    + nbSuperFragments * sizeof(EvBid);
   uint32_t superFragmentCount = 0;
   
   do
@@ -110,18 +112,17 @@ bool evb::bu::EventTable::buildEvents()
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
     bufRef->setNextReference(0);
     
-    const unsigned char* payload = (unsigned char*)bufRef->getDataLocation() +
-      sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-    uint32_t remainingBufferSize = bufRef->getDataSize() -
-      sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+    const unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + blockHeaderSize;
+    uint32_t remainingBufferSize = bufRef->getDataSize() - blockHeaderSize;
     
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
     { 
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-      const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
-
+      
+      const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
+      
       // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
       // std::cout << evbId << std::endl;
       // std::cout << *superFragmentMsg << std::endl;
@@ -150,6 +151,8 @@ bool evb::bu::EventTable::buildEvents()
       
       payload += superFragmentMsg->partSize;
       remainingBufferSize -= superFragmentMsg->partSize;
+
+      std::cout << remainingBufferSize << "\t" << nbSuperFragments << "\t" << superFragmentCount << std::endl;
     }
     
     bufRef->release(); // The bufRef's holding event fragments are now owned by the events
