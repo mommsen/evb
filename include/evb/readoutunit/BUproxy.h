@@ -336,6 +336,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   uint32_t blockNb = 1;
   uint32_t superFragmentNb = 1;
   const uint32_t nbSuperFragments = superFragments.size();
+  assert( nbSuperFragments == fragmentRequest.evbIds.size() );
   SuperFragments::const_iterator superFragmentIter = superFragments.begin();
 
   toolbox::mem::Reference* head = getNextBlock(blockNb);
@@ -434,8 +435,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
     dataBlockMsg->buResourceId     = fragmentRequest.buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
-    dataBlockMsg->nbSuperFragments = fragmentRequest.evbIds.size();
-    for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
+    dataBlockMsg->nbSuperFragments = nbSuperFragments;
+    for (uint32_t i=0; i < nbSuperFragments; ++i)
     {
       dataBlockMsg->evbIds[i] = fragmentRequest.evbIds[i];
       if ( lastEventNumberToBUs < fragmentRequest.evbIds[i].eventNumber() )
@@ -476,7 +477,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
        dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
      dataMonitoring_.i2oCount += i2oCount;
      dataMonitoring_.payload += payloadSize;
-     ++dataMonitoring_.logicalCount;
+     dataMonitoring_.logicalCount += nbSuperFragments;
      dataMonitoring_.payloadPerBU[fragmentRequest.buTid] += payloadSize;
   }
 }
