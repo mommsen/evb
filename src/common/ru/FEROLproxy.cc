@@ -3,16 +3,17 @@
 
 bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
 {
-  boost::mutex::scoped_lock sl(superFragmentMapMutex_);
+  // boost::upgrade_lock<boost::shared_mutex> upgradeLock(superFragmentMapMutex_);
   
-  SuperFragmentMap::iterator fragmentPos = superFragmentMap_.find(evbId);
+  // SuperFragmentMap::iterator fragmentPos = superFragmentMap_.find(evbId);
   
-  if ( fragmentPos == superFragmentMap_.end() || !fragmentPos->second->isComplete() ) return false;
+  // if ( fragmentPos == superFragmentMap_.end() || !fragmentPos->second->isComplete() ) return false;
   
-  superFragment = fragmentPos->second;
-  superFragmentMap_.erase(fragmentPos);
-  --nbSuperFragmentsReady_;
-  return true;
+  // superFragment = fragmentPos->second;
+  // superFragmentMap_.erase(fragmentPos);
+  // return true;
+
+  return false;
 }
 
 

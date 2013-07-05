@@ -1,3 +1,5 @@
+#include <sched.h>
+
 #include "evb/EVM.h"
 #include "evb/readoutunit/BUproxy.h"
 #include "evb/readoutunit/States.h"
@@ -45,7 +47,7 @@ namespace evb {
       SuperFragments superFragments;
       FragmentChainPtr superFragment;
       
-      while ( doProcessing_ && !readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) ) ::usleep(1000);
+      while ( doProcessing_ && !readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) ) ::sched_yield(); //::usleep(1000);
       
       if ( superFragment->isValid() )
       {
@@ -53,7 +55,7 @@ namespace evb {
         request.evbIds.push_back( superFragment->getEvBid() );
       }
       
-      while ( doProcessing_ && request.evbIds.size() < request.nbRequests && tries < configuration_->maxTriggerAgeMSec )
+      while ( doProcessing_ && request.evbIds.size() < request.nbRequests && tries < configuration_->maxTriggerAgeMSec*100 )
       {
         if ( readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) )
         {
@@ -62,7 +64,7 @@ namespace evb {
         }
         else
         {
-          ::usleep(1000);
+          ::usleep(10);
         }
         ++tries;
       }

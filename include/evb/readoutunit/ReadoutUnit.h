@@ -71,7 +71,7 @@ namespace evb {
       virtual void bindNonDefaultXgiCallbacks();
       virtual void do_defaultWebPage(xgi::Output*);
       
-      void requestFIFOWebPage(xgi::Input*, xgi::Output*);
+      void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       
       xdata::UnsignedInteger32 nbSuperFragmentsReady_;
       
@@ -215,8 +215,8 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
 {
   xgi::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::requestFIFOWebPage,
-    "requestFIFO"
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage,
+    "fragmentRequestFIFO"
   );
 }
 
@@ -242,13 +242,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_defaultW
 
 
 template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::requestFIFOWebPage
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage
 (
   xgi::Input  *in,
   xgi::Output *out
 )
 {
-  this->webPageHeader(out, "requestFIFO");
+  this->webPageHeader(out, "fragmentRequestFIFO");
 
   *out << "<table class=\"layout\">"                            << std::endl;
   

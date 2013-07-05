@@ -4,6 +4,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <iterator>
 #include <map>
@@ -18,6 +19,7 @@
 #include "evb/FragmentChain.h"
 #include "evb/FragmentTracker.h"
 #include "evb/InfoSpaceItems.h"
+#include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
 #include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/ferol_header.h"
@@ -165,6 +167,8 @@ namespace evb {
       {
       public:
         
+        FEROLproxy();
+
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void superFragmentReady(toolbox::mem::Reference*);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
@@ -175,12 +179,13 @@ namespace evb {
         
         virtual uint32_t extractTriggerInformation(const unsigned char*) const
         { return 0; }
+
+        typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
+        SuperFragmentFIFO superFragmentFIFO_;
         
         typedef std::map<EvBid,FragmentChainPtr> SuperFragmentMap;
         SuperFragmentMap superFragmentMap_;
-        boost::mutex superFragmentMapMutex_;
-        
-        uint32_t nbSuperFragmentsReady_;
+        boost::shared_mutex superFragmentMapMutex_;
         
       private:
         
@@ -594,11 +599,19 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 
 
 template<class Configuration>
+evb::readoutunit::Input<Configuration>::FEROLproxy::FEROLproxy() :
+superFragmentFIFO_("superFragmentFIFO")
+{}
+
+
+template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
   dropInputData_ = configuration->dropInputData;
-  
+
   clear();
+  
+  superFragmentFIFO_.resize(64);
   
   evbIdFactories_.clear();
   fedList_.clear();
@@ -629,40 +642,34 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(toolbox::mem::Reference* bufRef)
 {
-  boost::mutex::scoped_lock sl(superFragmentMapMutex_);
-  
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
   const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
   
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-
+    
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
-  if ( ! superFragmentMap_.insert(SuperFragmentMap::value_type(evbId,superFragment)).second )
-  {
-    std::ostringstream msg;
-    msg << "Received a duplicated event with EvB id " << evbId;
-    XCEPT_RAISE(exception::EventOrder, msg.str());
-  }
-
-  if ( dropInputData_ )
-  {
-    superFragmentMap_.erase(evbId);
-  }
-  else
-  {
-    ++nbSuperFragmentsReady_;
-  }
+  
+  // boost::unique_lock<boost::shared_mutex> uniqueLock(superFragmentMapMutex_);
+  // if ( ! superFragmentMap_.insert(SuperFragmentMap::value_type(evbId,superFragment)).second )
+  // {
+  //   std::ostringstream msg;
+  //   msg << "Received a duplicated event with EvB id " << evbId;
+  //   XCEPT_RAISE(exception::EventOrder, msg.str());
+  // }
+  
+  if ( ! dropInputData_ )
+    while( ! superFragmentFIFO_.enq(superFragment) ) ::usleep(1000);
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  boost::mutex::scoped_lock sl(superFragmentMapMutex_);
+  boost::upgrade_lock<boost::shared_mutex> upgradeLock(superFragmentMapMutex_);
   
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -683,6 +690,8 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbo
   if ( fragmentPos == superFragmentMap_.end() || (superFragmentMap_.key_comp()(evbId,fragmentPos->first)) )
   {
     // new super-fragment
+    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(upgradeLock);
+    
     FragmentChainPtr superFragment( new FragmentChain(evbId,fedList_) );
     fragmentPos = superFragmentMap_.insert(fragmentPos, SuperFragmentMap::value_type(evbId,superFragment));
   }
@@ -699,8 +708,6 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbo
   {
     if ( dropInputData_ )
       superFragmentMap_.erase(fragmentPos);
-    else
-      ++nbSuperFragmentsReady_;
   }
 }
 
@@ -717,10 +724,12 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::startProcessing(const u
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
 {
-  boost::mutex::scoped_lock sl(superFragmentMapMutex_);
+  boost::unique_lock<boost::shared_mutex> sl(superFragmentMapMutex_);
   
   superFragmentMap_.clear();
-  nbSuperFragmentsReady_ = 0;
+
+  FragmentChainPtr superFragment;
+  while ( superFragmentFIFO_.deq(superFragment) ) {};
 }
 
 
