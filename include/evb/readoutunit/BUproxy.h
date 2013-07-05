@@ -337,7 +337,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   uint32_t superFragmentNb = 1;
   const uint32_t nbSuperFragments = superFragments.size();
   assert( nbSuperFragments == fragmentRequest.evbIds.size() );
-  SuperFragments::const_iterator superFragmentIter = superFragments.begin();
 
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
@@ -348,16 +347,18 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
 
-  do
+  for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
-    uint32_t remainingSuperFragmentSize = (*superFragmentIter)->getSize();
-    
+    const FragmentChainPtr superFragment = superFragments[i]; //*superFragmentIter;
+    const uint32_t superFragmentSize = superFragment->getSize();
+    uint32_t remainingSuperFragmentSize = superFragmentSize;
+
     if ( remainingPayloadSize > sizeof(msg::SuperFragment) )
-      fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,(*superFragmentIter)->getSize(),remainingSuperFragmentSize);
+      fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,superFragmentSize,remainingSuperFragmentSize);
     else
       remainingPayloadSize = 0;
     
-    toolbox::mem::Reference* currentFragment = (*superFragmentIter)->head();
+    toolbox::mem::Reference* currentFragment = superFragment->head();
     
     while ( currentFragment )    
     {
@@ -378,7 +379,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
         payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
         remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
-        fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,(*superFragmentIter)->getSize(),remainingSuperFragmentSize);
+        fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,superFragmentSize,remainingSuperFragmentSize);
         tail->setNextReference(nextBlock);
         tail = nextBlock;
       }
@@ -393,7 +394,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       currentFragment = currentFragment->getNextReference();
     }
     
-  } while ( ++superFragmentIter != superFragments.end() );
+  }
   
   xdaq::ApplicationDescriptor *bu = 0;
   try
