@@ -99,8 +99,8 @@ sub processClientRequest {
           $cpu="1";
           $numactl="numactl --physcpubind=$cores --membind=$cpu";
         } elsif ($host =~ "dvru-c2f33-28-01" || $host =~ "dvru-c2f33-31-01") {
-          $cores="0,16,20";
-          $cpu="1";
+          $cores="24";
+          $cpu="0";
           $numactl="numactl --physcpubind=$cores --membind=$cpu";
         } elsif ($host =~ "dveferol-c2f36") {
           $cores="2,3";

@@ -358,10 +358,14 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RequestProcessing/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="24" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="26" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-(.+)/waiting" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
@@ -453,7 +457,7 @@
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
         <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
         <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">false</doSuperFragment>
+        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
         <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
         <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
         <destinationClassName xsi:type="xsd:string">evb::EVM</destinationClassName>
@@ -475,7 +479,8 @@
     <xc:Application class="evb::EVM" id="43" instance="0" network="infini">
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
-        <dropInputData xsi:type="xsd:boolean">true</dropInputData>
+        <dropInputData xsi:type="xsd:boolean">false</dropInputData>
+        <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
       </properties>
    </xc:Application>
     
@@ -491,6 +496,9 @@
   
   <xc:Context url="http://BU0_SOAP_HOST_NAME:BU0_SOAP_PORT">
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
@@ -512,6 +520,7 @@
     <xc:Application class="evb::BU" id="43" instance="0" network="infini">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
+        <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>
     
@@ -532,6 +541,9 @@
   
   <xc:Context url="http://BU1_SOAP_HOST_NAME:BU1_SOAP_PORT">
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
@@ -553,6 +565,7 @@
     <xc:Application class="evb::BU" id="43" instance="1" network="infini">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
+        <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>
     
