@@ -21,39 +21,37 @@ namespace evb {
   namespace readoutunit {
     
     template<>
-    void BUproxy<RU>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
+    void BUproxy<RU>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& fragmentRequest)
     {
       if ( rqstMsg->nbRequests < 0 )
       {
         std::ostringstream oss;
-        oss << "Got a fragment request message BU TID " << request.buTid;
+        oss << "Got a fragment request message BU TID " << fragmentRequest.buTid;
         oss << " not specifying any EvB ids.";
         oss << " This is a non-valid request to a RU.";
         XCEPT_RAISE(exception::Configuration, oss.str());
       }  
       
-      request.nbRequests = rqstMsg->nbRequests;
+      fragmentRequest.nbRequests = rqstMsg->nbRequests;
       for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
-        request.evbIds.push_back( rqstMsg->evbIds[i] );
+        fragmentRequest.evbIds.push_back( rqstMsg->evbIds[i] );
     }
     
     template<>
-    void BUproxy<RU>::processRequest(FragmentRequest& request)
+    bool BUproxy<RU>::processRequest(FragmentRequest& fragmentRequest, SuperFragments& superFragments)
     {
-      SuperFragments superFragments;
-      
-      for (uint32_t i=0; i < request.nbRequests; ++i)
+      for (uint32_t i=0; i < fragmentRequest.nbRequests; ++i)
       {
-        const EvBid& evbId = request.evbIds.at(i);
+        const EvBid& evbId = fragmentRequest.evbIds.at(i);
         FragmentChainPtr superFragment;
         
         while ( doProcessing_ &&
-          !readoutUnit_->getInput()->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(1000);
+          !readoutUnit_->getInput()->getSuperFragmentWithEvBid(evbId, superFragment) ) ::sched_yield(); //::usleep(1000);
         
         if ( superFragment->isValid() ) superFragments.push_back(superFragment);
       }
       
-      sendData(request, superFragments);
+      return !superFragments.empty();
     }
   }
 }

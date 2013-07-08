@@ -23,44 +23,49 @@ namespace evb {
   namespace readoutunit {
     
     template<>
-    void BUproxy<EVM>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& request)
+    void BUproxy<EVM>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& fragmentRequest)
     {
       if ( rqstMsg->nbRequests > 0 )
       {
         std::ostringstream oss;
-        oss << "Got a fragment request message BU TID " << request.buTid;
+        oss << "Got a fragment request message BU TID " << fragmentRequest.buTid;
         oss << " specifying " << rqstMsg->nbRequests << " EvB ids.";
         oss << " This is a non-valid request to the EVM.";
         XCEPT_RAISE(exception::Configuration, oss.str());
       }
       
-      request.nbRequests = abs(rqstMsg->nbRequests);
+      fragmentRequest.nbRequests = abs(rqstMsg->nbRequests);
     }
     
     template<>
-    void BUproxy<EVM>::processRequest(FragmentRequest& request)
+    bool BUproxy<EVM>::processRequest(FragmentRequest& fragmentRequest, SuperFragments& superFragments)
     {
-      request.evbIds.clear();
-      request.evbIds.reserve(request.nbRequests);
+
+      {
+        boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+        if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
+      }
       
-      uint32_t tries = 0;
-      SuperFragments superFragments;
+      fragmentRequest.evbIds.clear();
+      fragmentRequest.evbIds.reserve(fragmentRequest.nbRequests);
+      
       FragmentChainPtr superFragment;
+      uint32_t tries = 0;
       
       while ( doProcessing_ && !readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) ) ::sched_yield(); //::usleep(1000);
       
       if ( superFragment->isValid() )
       {
         superFragments.push_back(superFragment);
-        request.evbIds.push_back( superFragment->getEvBid() );
+        fragmentRequest.evbIds.push_back( superFragment->getEvBid() );
       }
       
-      while ( doProcessing_ && request.evbIds.size() < request.nbRequests && tries < configuration_->maxTriggerAgeMSec*100 )
+      while ( doProcessing_ && fragmentRequest.evbIds.size() < fragmentRequest.nbRequests && tries < configuration_->maxTriggerAgeMSec*100 )
       {
         if ( readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) )
         {
           superFragments.push_back(superFragment);
-          request.evbIds.push_back( superFragment->getEvBid() );
+          fragmentRequest.evbIds.push_back( superFragment->getEvBid() );
         }
         else
         {
@@ -69,8 +74,9 @@ namespace evb {
         ++tries;
       }
       
-      request.nbRequests = request.evbIds.size();
-      sendData(request, superFragments);
+      fragmentRequest.nbRequests = fragmentRequest.evbIds.size();
+
+      return true;
     }
   }
 }
