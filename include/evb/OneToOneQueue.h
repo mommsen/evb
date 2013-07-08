@@ -99,6 +99,7 @@ namespace evb {
     volatile uint32_t writePointer_;
     std::vector<T> container_;
     volatile uint32_t size_;
+    uint32_t queueFull_;
   };
 
   
@@ -110,7 +111,8 @@ namespace evb {
   OneToOneQueue<T>::OneToOneQueue(const std::string& name) :
   name_(name),
   readPointer_(0),
-  writePointer_(0)
+  writePointer_(0),
+  queueFull_(0)
   {
     resize(1);
   }
@@ -120,7 +122,8 @@ namespace evb {
   OneToOneQueue<T>::OneToOneQueue(const std::string& name, const uint32_t size) :
   name_(name),
   readPointer_(0),
-  writePointer_(0)
+  writePointer_(0),
+  queueFull_(0)
   {
     resize(size);
   }
@@ -162,6 +165,7 @@ namespace evb {
     readPointer_ = writePointer_ = 0;
     size_ = size+1;
     container_.resize(size_);
+    queueFull_ = 0;
   }
   
   
@@ -169,7 +173,11 @@ namespace evb {
   bool OneToOneQueue<T>::enq(const T& element)
   {
     volatile const uint32_t nextElement = (writePointer_ + 1) % size_;
-    if ( nextElement == readPointer_ ) return false;
+    if ( nextElement == readPointer_ )
+    {
+      ++queueFull_;
+      return false;
+    }
     container_[writePointer_] = element;
     writePointer_ = nextElement;
     return true;
@@ -218,7 +226,8 @@ namespace evb {
     *out << "</tr>" << std::endl;
 
     *out << "<tr>" << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">" << cachedElements << " / " << cachedSize << "</td>" << std::endl;
+    *out << "<td colspan=\"2\" style=\"text-align:center\">" << cachedElements << " / " << cachedSize
+      << " - full " << queueFull_ << "</td>" << std::endl;
     *out << "</tr>" << std::endl;
 
     *out << "</table>" << std::endl;
