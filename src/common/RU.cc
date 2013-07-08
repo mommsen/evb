@@ -46,7 +46,7 @@ namespace evb {
         FragmentChainPtr superFragment;
         
         while ( doProcessing_ &&
-          !readoutUnit_->getInput()->getSuperFragmentWithEvBid(evbId, superFragment) ) ::sched_yield(); //::usleep(1000);
+          !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::sched_yield(); //::usleep(1000);
         
         if ( superFragment->isValid() ) superFragments.push_back(superFragment);
       }

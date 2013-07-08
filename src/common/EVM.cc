@@ -52,7 +52,7 @@ namespace evb {
       FragmentChainPtr superFragment;
       uint32_t tries = 0;
       
-      while ( doProcessing_ && !readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) ) ::sched_yield(); //::usleep(1000);
+      while ( doProcessing_ && !input_->getNextAvailableSuperFragment(superFragment) ) ::usleep(10);
       
       if ( superFragment->isValid() )
       {
@@ -62,7 +62,7 @@ namespace evb {
       
       while ( doProcessing_ && fragmentRequest.evbIds.size() < fragmentRequest.nbRequests && tries < configuration_->maxTriggerAgeMSec*100 )
       {
-        if ( readoutUnit_->getInput()->getNextAvailableSuperFragment(superFragment) )
+        if ( input_->getNextAvailableSuperFragment(superFragment) )
         {
           superFragments.push_back(superFragment);
           fragmentRequest.evbIds.push_back( superFragment->getEvBid() );

@@ -616,7 +616,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
 
   clear();
   
-  superFragmentFIFO_.resize(64);
+  superFragmentFIFO_.resize(configuration->superFragmentFIFOCapacity);
   
   evbIdFactories_.clear();
   fedList_.clear();

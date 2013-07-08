@@ -138,6 +138,7 @@ namespace evb {
       ) const;
       
       ReadoutUnit* readoutUnit_;
+      typename ReadoutUnit::InputPtr input_;
       const ConfigurationPtr configuration_;
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
@@ -524,6 +525,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   clear();
 
   fragmentRequestFIFO_.resize(configuration_->fragmentRequestFIFOCapacity);
+
+  input_ = readoutUnit_->getInput();
 
   try
   {

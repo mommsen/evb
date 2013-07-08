@@ -43,16 +43,18 @@ namespace evb {
         const std::string& appIcon
       );
       
-      boost::shared_ptr< Input<Configuration> > getInput() const
+      typedef boost::shared_ptr< Input<Configuration> > InputPtr;
+      InputPtr getInput() const
       { return input_; }
       
-      boost::shared_ptr< BUproxy<Unit> > getBUproxy() const
+      typedef boost::shared_ptr< BUproxy<Unit> > BUproxyPtr;
+      BUproxyPtr getBUproxy() const
       { return buProxy_; }
       
     protected:
       
-      boost::shared_ptr< Input<Configuration> > input_;
-      boost::shared_ptr< BUproxy<Unit> > buProxy_;
+      InputPtr input_;
+      BUproxyPtr buProxy_;
       
     private:
       
