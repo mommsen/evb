@@ -8,6 +8,7 @@
 #include "interface/evb/i2oEVBMsgs.h"
 #include "evb/Exception.h"
 #include "toolbox/mem/Reference.h"
+#include "toolbox/net/URN.h"
 #include "xgi/Output.h"
 
 
@@ -63,7 +64,7 @@ namespace evb {
     /**
      * Print summary icon as HTML.
      */
-    void printHtml(xgi::Output*, const std::string& urn);
+    void printHtml(xgi::Output*, const toolbox::net::URN& urn);
 
     /**
      * Print horizontally all elements as HTML.
@@ -189,7 +190,7 @@ namespace evb {
 
 
   template <class T>
-  void OneToOneQueue<T>::printHtml(xgi::Output *out, const std::string& urn)
+  void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn)
   {
     // cache values which might change during the printout
     const uint32_t cachedSize = size(); 
@@ -197,7 +198,7 @@ namespace evb {
     const double fillFraction = cachedSize > 0 ? 100. * cachedElements / cachedSize : 0;
 
     *out << "<div class=\"queue\">" << std::endl;
-    *out << "<table onclick=\"window.open('/" << urn << "/" << name_ << "','_blank')\" "
+    *out << "<table onclick=\"window.open('/" << urn.toString() << "/" << name_ << "','_blank')\" "
       << "onmouseover=\"this.style.cursor = 'pointer'; "
       << "document.getElementById('" << name_ << "').style.visibility = 'visible';\" "
       << "onmouseout=\"document.getElementById('" << name_ << "').style.visibility = 'hidden';\">" << std::endl;

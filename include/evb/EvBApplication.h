@@ -111,8 +111,8 @@ namespace evb {
     boost::shared_ptr<StateMachine> stateMachine_;
     xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
     
-    std::string urn_;
-    std::string xmlClass_;
+    const toolbox::net::URN urn_;
+    const std::string xmlClass_;
     xdata::UnsignedInteger32 instance_;
     xdata::String stateName_;
     xdata::UnsignedInteger32 monitoringSleepSec_;
@@ -159,14 +159,12 @@ xdaq::WebApplication(app),
 appIcon_(appIcon),
 logger_(getApplicationLogger()),
 configuration_(new Configuration()),
-soapParameterExtractor_(this)
+soapParameterExtractor_(this),
+urn_(getApplicationDescriptor()->getURN()),
+xmlClass_(getApplicationDescriptor()->getClassName()),
+instance_(getApplicationDescriptor()->getInstance())
 {
-  xdaq::ApplicationDescriptor* appDescriptor = getApplicationDescriptor();
-  xmlClass_ = appDescriptor->getClassName();
-  instance_ = appDescriptor->getInstance();
-  urn_ = appDescriptor->getURN();
-
-  appDescriptor->setAttribute("icon", appIcon_);
+  getApplicationDescriptor()->setAttribute("icon", appIcon_);
 }
 
 
@@ -615,7 +613,7 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   *out << "Page last updated: " << getCurrentTimeUTC() << " UTC"                      << std::endl;
   *out << "</td>"                                                                     << std::endl;
   *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<a href=\"/" << urn_ << "/ParameterQuery\">XML</a>"                        << std::endl;
+  *out << "<a href=\"/" << urn_.toString() << "/ParameterQuery\">XML</a>"             << std::endl;
   *out << "</td>"                                                                     << std::endl;
   *out << "</tr>"                                                                     << std::endl;
   *out << "</table>"                                                                  << std::endl;
@@ -626,7 +624,7 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   *out << "</td>"                                                                     << std::endl;
   
   *out << "<td class=\"app_links\">"                                                  << std::endl;
-  printWebPageIcon(out, appIcon_, "Main", "/" + urn_ + "/");
+  printWebPageIcon(out, appIcon_, "Main", "/" + urn_.toString() + "/");
   *out << "</td>"                                                                     << std::endl;
   
   *out << "</tr>"                                                                     << std::endl;
