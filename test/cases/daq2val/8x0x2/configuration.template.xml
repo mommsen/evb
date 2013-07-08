@@ -358,7 +358,8 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RequestProcessing/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="4" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="24" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="26" />
@@ -481,6 +482,7 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
+        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
       </properties>
    </xc:Application>
     
