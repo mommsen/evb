@@ -4,28 +4,8 @@
 
 bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
 {
+  boost::mutex::scoped_lock sl(superFragmentFIFOmutex_);
   return superFragmentFIFO_.deq(superFragment);
-
-  if ( superFragmentMap_.empty() ) return false;
-
-  boost::upgrade_lock<boost::shared_mutex> upgradeLock(superFragmentMapMutex_);
-  
-  SuperFragmentMap::iterator fragmentPos = superFragmentMap_.begin();
-  
-  while ( fragmentPos != superFragmentMap_.end() )
-  {
-    if ( fragmentPos->second->isComplete() )
-    {
-      superFragment = fragmentPos->second;
-      
-      boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(upgradeLock);
-      superFragmentMap_.erase(fragmentPos);
-      
-      return true;
-    }
-    ++fragmentPos;
-  }
-  return false;
 }
 
 
