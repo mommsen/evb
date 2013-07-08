@@ -358,9 +358,10 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="4" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="24" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="24" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="16" />
+      <!--pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="23" /-->
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="26" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
@@ -483,7 +484,7 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
-        <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">512</superFragmentFIFOCapacity>
+        <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</superFragmentFIFOCapacity>
       </properties>
    </xc:Application>
     
