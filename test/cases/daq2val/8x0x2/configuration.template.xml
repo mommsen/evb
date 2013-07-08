@@ -483,6 +483,7 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
+        <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">512</superFragmentFIFOCapacity>
       </properties>
    </xc:Application>
     
