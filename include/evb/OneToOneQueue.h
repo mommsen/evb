@@ -182,6 +182,7 @@ namespace evb {
 
     volatile const uint32_t nextElement = (readPointer_ + 1) % size_;
     element = container_[readPointer_];
+    container_[readPointer_] = T();
     readPointer_ = nextElement;
     return true;
   }
