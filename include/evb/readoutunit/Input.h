@@ -160,7 +160,7 @@ namespace evb {
         virtual void startProcessing(const uint32_t runNumber) {};
         virtual void stopProcessing() {};
         virtual void clear() {};
-        virtual void printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn) {};
+        virtual void printSuperFragmentFIFO(xgi::Output*, const toolbox::net::URN&) {};
         
       };
            
@@ -175,8 +175,7 @@ namespace evb {
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void clear();
-        virtual void printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn)
-        { superFragmentFIFO_.printHtml(out, urn); }
+        virtual void printSuperFragmentFIFO(xgi::Output*, const toolbox::net::URN&);
         
       protected:
         
@@ -559,9 +558,9 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
       << superFragmentMonitor_.eventSizeStdDev / 0x400 << "</td>"   << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-
+  
   handler_->printSuperFragmentFIFO(out,app_->getDescriptor()->getURN());  
-
+  
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -736,6 +735,17 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
 
   FragmentChainPtr superFragment;
   while ( superFragmentFIFO_.deq(superFragment) ) {};
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn)
+{
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
+  superFragmentFIFO_.printHtml(out, urn);
+  *out << "</td>"                                                 << std::endl;
+  *out << "</tr>"                                                 << std::endl;
 }
 
 
