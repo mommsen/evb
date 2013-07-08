@@ -160,6 +160,7 @@ namespace evb {
         virtual void startProcessing(const uint32_t runNumber) {};
         virtual void stopProcessing() {};
         virtual void clear() {};
+        virtual void printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn) {};
         
       };
            
@@ -174,6 +175,8 @@ namespace evb {
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void clear();
+        virtual void printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn)
+        { superFragmentFIFO_.printHtml(out, urn); }
         
       protected:
         
@@ -182,6 +185,7 @@ namespace evb {
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
+        boost::mutex superFragmentFIFOmutex_;
         
         typedef std::map<EvBid,FragmentChainPtr> SuperFragmentMap;
         SuperFragmentMap superFragmentMap_;
@@ -555,7 +559,9 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
       << superFragmentMonitor_.eventSizeStdDev / 0x400 << "</td>"   << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-  
+
+  handler_->printSuperFragmentFIFO(out,app_->getDescriptor()->getURN());  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
   *out << "</tr>"                                                 << std::endl;
