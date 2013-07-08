@@ -124,7 +124,7 @@ namespace evb {
       void startProcessingWorkLoop();
       void updateRequestCounters(const FragmentRequest&);
       bool process(toolbox::task::WorkLoop*);
-      void processRequest(FragmentRequest&);
+      bool processRequest(FragmentRequest&,SuperFragments&);
       void fillRequest(const msg::RqstForFragmentsMsg*, FragmentRequest&);
       void sendData(const FragmentRequest&, const SuperFragments&);
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb);
@@ -142,13 +142,15 @@ namespace evb {
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
       
-      toolbox::task::WorkLoop* processingWL_;
+      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
+      WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
       bool doProcessing_;
       bool processActive_;
 
       typedef OneToOneQueue<FragmentRequest> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
+      boost::mutex fragmentRequestFIFOmutex_;
       
       typedef std::map<uint32_t,uint64_t> CountsPerBU;
       struct RequestMonitoring
@@ -231,21 +233,8 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessingWorkLoop()
 {
-  try
-  {
-    processingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( readoutUnit_->getIdentifier("RequestProcessing"), "waiting" );
-    
-    if ( ! processingWL_->isActive() ) processingWL_->activate();
-    
-    action_ = toolbox::task::bind(this, &evb::readoutunit::BUproxy<ReadoutUnit>::process,
-      readoutUnit_->getIdentifier("process") );
-  }
-  catch (xcept::Exception& e)
-  {
-    std::string msg = "Failed to start workloops.";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
-  }
+  action_ = toolbox::task::bind(this, &evb::readoutunit::BUproxy<ReadoutUnit>::process,
+    readoutUnit_->getIdentifier("process") );
 }
 
 
@@ -254,7 +243,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   doProcessing_ = true;
   
-  processingWL_->submit(action_);
+  for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
+  {
+    workLoops_.at(i)->submit(action_);
+  }
 }
 
 
@@ -304,20 +296,22 @@ template<class ReadoutUnit>
 bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl)
 {
   processActive_ = true;
-
-  FragmentRequest fragmentRequest;
   
-  while ( doProcessing_ && fragmentRequestFIFO_.deq(fragmentRequest) )
+  try
   {
-    try
+    FragmentRequest fragmentRequest;
+    SuperFragments superFragments;
+    
+    while ( processRequest(fragmentRequest,superFragments) )
     {
-      processRequest(fragmentRequest);
+      sendData(fragmentRequest, superFragments);
+      superFragments.clear();
     }
-    catch(xcept::Exception &e)
-    {
-      processActive_ = false;
-      readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
-    }
+  }
+  catch(xcept::Exception &e)
+  {
+    processActive_ = false;
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   
   processActive_ = false;
@@ -349,7 +343,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
-    const FragmentChainPtr superFragment = superFragments[i]; //*superFragmentIter;
+    const FragmentChainPtr superFragment = superFragments[i];
     const uint32_t superFragmentSize = superFragment->getSize();
     uint32_t remainingSuperFragmentSize = superFragmentSize;
 
@@ -395,7 +389,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
     
   }
-  
+
   xdaq::ApplicationDescriptor *bu = 0;
   try
   {
@@ -449,6 +443,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     
     try
     {
+      boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+      
       readoutUnit_->getApplicationContext()->
         postFrame(
           bufRef,
@@ -538,6 +534,27 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);
+  }
+  
+  const std::string identifier = readoutUnit_->getIdentifier();
+  
+  try
+  {
+    // Leave any previous created workloops alone. Only add new ones if needed.
+    for (uint16_t i=workLoops_.size(); i < configuration_->numberOfResponders; ++i)
+    {
+      std::ostringstream workLoopName;
+      workLoopName << identifier << "Responder_" << i;
+      toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
+      
+      if ( ! wl->isActive() ) wl->activate();
+      workLoops_.push_back(wl);
+    }
+  }
+  catch (xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloops.";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
 
