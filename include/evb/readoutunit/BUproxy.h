@@ -662,7 +662,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>payload (kB)</td>"                                 << std::endl;
-  *out << "<td>" << requestMonitoring_.payload / 0x400 << "</td>" << std::endl;
+  *out << "<td>" << requestMonitoring_.payload / 1e3 << "</td>"   << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>logical count</td>"                                << std::endl;
@@ -678,7 +678,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>payload (MB)</td>"                                 << std::endl;
-  *out << "<td>" << dataMonitoring_.payload / 0x100000 << "</td>" << std::endl;
+  *out << "<td>" << dataMonitoring_.payload / 1e6 << "</td>"      << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>logical count</td>"                                << std::endl;
@@ -716,7 +716,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
     *out << "<tr>"                                                << std::endl;
     *out << "<td>BU_" << buTID << "</td>"                         << std::endl;
     *out << "<td>" << requestMonitoring_.logicalCountPerBU[buTID] << "</td>" << std::endl;
-    *out << "<td>" << dataMonitoring_.payloadPerBU[buTID] / 0x100000 << "</td>" << std::endl;
+    *out << "<td>" << dataMonitoring_.payloadPerBU[buTID] / 1e6 << "</td>" << std::endl;
     *out << "</tr>"                                               << std::endl;
   }
   *out << "</table>"                                              << std::endl;

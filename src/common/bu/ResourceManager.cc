@@ -252,7 +252,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
+    *out << "<td>" << bandwidth_ / 1e6 << "</td>"                   << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
@@ -263,8 +263,8 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_ / 0x400 <<
-      " +/- " << eventSizeStdDev_ / 0x400 << "</td>" << std::endl;
+    *out << "<td>" << eventSize_ / 1e3 <<
+      " +/- " << eventSizeStdDev_ / 1e3 << "</td>"                  << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);

@@ -621,7 +621,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (MB)</td>"                                 << std::endl;
-    *out << "<td>" << fragmentMonitoring_.payload / 0x100000 << "</td>"<< std::endl;
+    *out << "<td>" << fragmentMonitoring_.payload / 1e6 << "</td>"  << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
@@ -639,7 +639,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << triggerRequestMonitoring_.payload / 0x400 << "</td>" << std::endl;
+    *out << "<td>" << triggerRequestMonitoring_.payload / 1e3 << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
@@ -657,7 +657,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.payload / 0x400 << "</td>" << std::endl;
+    *out << "<td>" << fragmentRequestMonitoring_.payload / 1e3 << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
@@ -702,7 +702,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
         *out << "RU_" << it->first;
       *out << "</td>"                                               << std::endl;
       *out << "<td>" << it->second << "</td>"                       << std::endl;
-      *out << "<td>" << fragmentMonitoring_.payloadPerRU[it->first] / 0x100000 << "</td>" << std::endl;
+      *out << "<td>" << fragmentMonitoring_.payloadPerRU[it->first] / 1e6 << "</td>" << std::endl;
       *out << "</tr>"                                               << std::endl;
     }
     *out << "</table>"                                              << std::endl;

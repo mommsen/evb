@@ -543,7 +543,7 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << superFragmentMonitor_.bandwidth / 0x100000 << "</td>" << std::endl;
+    *out << "<td>" << superFragmentMonitor_.bandwidth / 1e6 << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
@@ -554,8 +554,8 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>super fragment size (kB)</td>"                     << std::endl;
-    *out << "<td>" << superFragmentMonitor_.eventSize / 0x400 << " +/- "
-      << superFragmentMonitor_.eventSizeStdDev / 0x400 << "</td>"   << std::endl;
+    *out << "<td>" << superFragmentMonitor_.eventSize / 1e3 << " +/- "
+      << superFragmentMonitor_.eventSizeStdDev / 1e3 << "</td>"     << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
   
@@ -584,9 +584,9 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
       *out << "<tr>"                                                << std::endl;
       *out << "<td>" << it->first << "</td>"                        << std::endl;
       *out << "<td>" << it->second.lastEventNumber << "</td>"       << std::endl;
-      *out << "<td>" << it->second.eventSize / 0x400 << " +/- "
-        << it->second.eventSizeStdDev / 0x400 << "</td>"            << std::endl;
-      *out << "<td>" << it->second.bandwidth / 0x100000 << "</td>"  << std::endl;
+      *out << "<td>" << it->second.eventSize / 1e3 << " +/- "
+        << it->second.eventSizeStdDev / 1e3 << "</td>"              << std::endl;
+      *out << "<td>" << it->second.bandwidth / 1e6 << "</td>"       << std::endl;
       *out << "</tr>"                                               << std::endl;
     }
   }
