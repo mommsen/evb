@@ -101,14 +101,11 @@ bool evb::bu::EventTable::buildEvents()
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
     (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
   const I2O_TID ruTid = stdMsg->InitiatorAddress;
-  const uint32_t buResourceId = dataBlockMsg->buResourceId;
-  const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
-  const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
-    + nbSuperFragments * sizeof(EvBid);
-  uint32_t superFragmentCount = 0;
+  const uint16_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+  uint16_t superFragmentCount = 0;
+  const uint32_t blockHeaderSize = dataBlockMsg->getHeaderSize();
 
-  const EvBid evbId = dataBlockMsg->evbIds[0];
-  EventMap::iterator eventPos = getEventPos(evbId,buResourceId);
+  EventMap::iterator eventPos = getEventPos(dataBlockMsg,superFragmentCount);
 
   do
   {
@@ -139,8 +136,8 @@ bool evb::bu::EventTable::buildEvents()
         
         const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
           (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-        const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
-        eventPos = getEventPos(evbId,buResourceId);
+        
+        eventPos = getEventPos(dataBlockMsg,superFragmentCount);
       }
       
       payload += superFragmentMsg->partSize;
@@ -168,13 +165,19 @@ bool evb::bu::EventTable::buildEvents()
 }
 
 
-evb::bu::EventTable::EventMap::iterator evb::bu::EventTable::getEventPos(const evb::EvBid& evbId, const uint32_t buResourceId)
+evb::bu::EventTable::EventMap::iterator evb::bu::EventTable::getEventPos
+(
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg,
+  const uint16_t superFragmentCount
+)
 {
+  const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
+  
   EventMap::iterator eventPos = eventMap_.lower_bound(evbId);
   if ( eventPos == eventMap_.end() || (eventMap_.key_comp()(evbId,eventPos->first)) )
   {
     // new event
-    EventPtr event( new Event(evbId, buResourceId, ruProxy_->getRuTids()) );
+    EventPtr event( new Event(evbId, dataBlockMsg) );
     eventPos = eventMap_.insert(eventPos, EventMap::value_type(evbId,event));
   }
   return eventPos;

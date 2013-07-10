@@ -93,8 +93,6 @@ namespace evb {
     return !( *this == other );
   }
   
-  typedef std::list<EvBid> EvBids;
-  
 } // namespace evb
 
 

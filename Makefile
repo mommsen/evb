@@ -40,6 +40,7 @@ Sources=\
 	InfoSpaceItems.cc \
 	EVM.cc \
 	evm/FEROLproxy.cc \
+	evm/RUproxy.cc \
 	RU.cc \
 	ru/FEROLproxy.cc \
 	BU.cc \

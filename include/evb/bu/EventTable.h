@@ -81,7 +81,7 @@ namespace evb {
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
       bool buildEvents();
-      EventMap::iterator getEventPos(const EvBid&, const uint32_t buResourceId);
+      EventMap::iterator getEventPos(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
       
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;

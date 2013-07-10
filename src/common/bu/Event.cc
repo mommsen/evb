@@ -19,17 +19,17 @@
 evb::bu::Event::Event
 (
   const EvBid& evbId,
-  const uint32_t buResourceId,
-  const std::vector<I2O_TID>& ruTids
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
 ) :
 evbId_(evbId),
-buResourceId_(buResourceId)
+buResourceId_(dataBlockMsg->buResourceId)
 {  
   eventInfo_ = new EventInfo(evbId.runNumber(), evbId.eventNumber(), evbId.lumiSection());
-  for (std::vector<I2O_TID>::const_iterator it = ruTids.begin(), itEnd = ruTids.end();
-       it != itEnd; ++it)
+  msg::RUtids ruTids;
+  dataBlockMsg->getRUtids(ruTids);
+  for (uint32_t i = 0; i < dataBlockMsg->nbRUtids; ++i)
   {
-    ruSizes_.insert(RUsizes::value_type(*it,0));
+    ruSizes_.insert(RUsizes::value_type(ruTids[i],0));
   }
 }
 

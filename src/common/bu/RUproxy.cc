@@ -26,13 +26,12 @@ resourceManager_(resourceManager),
 fastCtrlMsgPool_(fastCtrlMsgPool),
 configuration_(bu->getConfiguration()),
 doProcessing_(false),
-requestTriggersActive_(false),
 requestFragmentsActive_(false),
 tid_(0),
 fragmentFIFO_("fragmentFIFO")
 {
   resetMonitoringCounters();
-  startProcessingWorkLoops();
+  startProcessingWorkLoop();
 }
 
 
@@ -44,9 +43,9 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
     const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
       (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-    const size_t payload =
-      (stdMsg->MessageSize << 2) - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-
+    const uint32_t payload = (stdMsg->MessageSize << 2) - 
+      dataBlockMsg->getHeaderSize();
+    
     Index index;
     index.ruTid = stdMsg->InitiatorAddress;
     index.buResourceId = dataBlockMsg->buResourceId;
@@ -125,47 +124,23 @@ bool evb::bu::RUproxy::getData
 void evb::bu::RUproxy::startProcessing()
 {
   doProcessing_ = true;
-  requestTriggersWL_->submit(requestTriggersAction_);
-  
-  if ( ! participatingRUs_.empty() )
-    requestFragmentsWL_->submit(requestFragmentsAction_);
+  requestFragmentsWL_->submit(requestFragmentsAction_);
 }
 
 
 void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
-  while (requestTriggersActive_) ::usleep(1000);
   while (requestFragmentsActive_) ::usleep(1000);
 }
 
 
-void evb::bu::RUproxy::startProcessingWorkLoops()
+void evb::bu::RUproxy::startProcessingWorkLoop()
 {
   try
   {
-    requestTriggersWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( bu_->getIdentifier("RUproxyRequestTriggers"), "waiting" );
-    
-    if ( ! requestTriggersWL_->isActive() )
-    {
-      requestTriggersAction_ =
-        toolbox::task::bind(this, &evb::bu::RUproxy::requestTriggers,
-          bu_->getIdentifier("ruProxyRequestTriggers") );
-    
-      requestTriggersWL_->activate();
-    }
-  }
-  catch (xcept::Exception& e)
-  {
-    std::string msg = "Failed to start workloop 'RUproxyRequestTriggers'.";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
-  }
-  
-  try
-  {
     requestFragmentsWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( bu_->getIdentifier("RUproxyRequestFragments"), "waiting" );
+      getWorkLoop( bu_->getIdentifier("requestFragments"), "waiting" );
     
     if ( ! requestFragmentsWL_->isActive() )
     {
@@ -178,43 +153,47 @@ void evb::bu::RUproxy::startProcessingWorkLoops()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'RUproxyRequestFragments'.";
+    std::string msg = "Failed to start workloop 'requestFragments'.";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
 
 
-bool evb::bu::RUproxy::requestTriggers(toolbox::task::WorkLoop*)
+bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 {
   ::usleep(1000);
   
-  requestTriggersActive_ = true;
+  requestFragmentsActive_ = true;
   
   try
   {
     uint32_t buResourceId;
+    const uint32_t msgSize = sizeof(msg::ReadoutMsg)+sizeof(I2O_TID);
+    
     while ( doProcessing_ && resourceManager_->getResourceId(buResourceId) )
     {
       toolbox::mem::Reference* rqstBufRef = 
         toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, sizeof(msg::RqstForFragmentsMsg));
-      rqstBufRef->setDataSize(sizeof(msg::RqstForFragmentsMsg));
+        getFrame(fastCtrlMsgPool_, msgSize);
+      rqstBufRef->setDataSize(msgSize);
 
       I2O_MESSAGE_FRAME* stdMsg =
         (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
       I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-      msg::RqstForFragmentsMsg* rqstMsg = (msg::RqstForFragmentsMsg*)stdMsg;
+      msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
       
       stdMsg->VersionOffset    = 0;
       stdMsg->MsgFlags         = 0;
-      stdMsg->MessageSize      = sizeof(msg::RqstForFragmentsMsg) >> 2;
+      stdMsg->MessageSize      = msgSize >> 2;
       stdMsg->InitiatorAddress = tid_;
       stdMsg->TargetAddress    = evm_.tid;
       stdMsg->Function         = I2O_PRIVATE_MESSAGE;
       pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
       pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-      rqstMsg->buResourceId    = buResourceId;
-      rqstMsg->nbRequests      = -1 * configuration_->eventsPerRequest; // not specifying any EvbIds
+      readoutMsg->buTid        = tid_;
+      readoutMsg->buResourceId = buResourceId;
+      readoutMsg->nbRequests   = configuration_->eventsPerRequest;
+      readoutMsg->nbRUtids     = 0; // will be filled by EVM
 
       // Send the request to the EVM      
       try
@@ -238,75 +217,11 @@ bool evb::bu::RUproxy::requestTriggers(toolbox::task::WorkLoop*)
         XCEPT_RETHROW(exception::I2O, oss.str(), e);
       }
       
-      boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
+      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
       
-      triggerRequestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
-      triggerRequestMonitoring_.logicalCount += configuration_->eventsPerRequest;
-      ++triggerRequestMonitoring_.i2oCount;
-    }
-  }
-  catch(xcept::Exception &e)
-  {
-    requestTriggersActive_ = false;
-    stateMachine_->processFSMEvent( Fail(e) );
-  }
-  
-  requestTriggersActive_ = false;
-  
-  return doProcessing_;
-}
-
-
-bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
-{
-  ::usleep(1000);
-  
-  requestFragmentsActive_ = true;
-  
-  try
-  {
-    ResourceManager::RequestPtr request;
-    while ( doProcessing_ && resourceManager_->getRequest(request) )
-    {
-      const size_t requestsCount = request->evbIds.size();
-      const size_t msgSize = sizeof(msg::RqstForFragmentsMsg) +
-        requestsCount * sizeof(EvBid);
-      
-      toolbox::mem::Reference* rqstBufRef =
-        toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, msgSize);
-      rqstBufRef->setDataSize(msgSize);
-      
-      I2O_MESSAGE_FRAME* stdMsg =
-        (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
-      I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-      msg::RqstForFragmentsMsg* rqstMsg = (msg::RqstForFragmentsMsg*)stdMsg;
-      
-      stdMsg->VersionOffset    = 0;
-      stdMsg->MsgFlags         = 0;
-      stdMsg->MessageSize      = msgSize >> 2;
-      stdMsg->InitiatorAddress = tid_;
-      stdMsg->Function         = I2O_PRIVATE_MESSAGE;
-      pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
-      pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-      rqstMsg->buResourceId    = request->buResourceId;
-      rqstMsg->nbRequests      = requestsCount;
-      
-      uint32_t i = 0;
-      for (EvBids::const_iterator it = request->evbIds.begin(), itEnd = request->evbIds.end();
-           it != itEnd; ++it, ++i)
-        rqstMsg->evbIds[i] = *it;
-      
-      sendToAllRUs(rqstBufRef, msgSize);
-      
-      // Free the requests message (its copies were sent not it)
-      rqstBufRef->release();
-
-      boost::mutex::scoped_lock sl(fragmentRequestMonitoringMutex_);
-      
-      fragmentRequestMonitoring_.payload += msgSize;
-      fragmentRequestMonitoring_.logicalCount += requestsCount;
-      fragmentRequestMonitoring_.i2oCount += participatingRUs_.size();
+      requestMonitoring_.payload += msgSize;
+      requestMonitoring_.logicalCount += configuration_->eventsPerRequest;
+      ++requestMonitoring_.i2oCount;
     }
   }
   catch(xcept::Exception &e)
@@ -318,66 +233,6 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   requestFragmentsActive_ = false;
   
   return doProcessing_;
-}
-
-
-void evb::bu::RUproxy::sendToAllRUs
-(
-  toolbox::mem::Reference* bufRef,
-  const size_t bufSize
-) const
-{
-  ////////////////////////////////////////////////////////////
-  // Make a copy of the pairs message under construction    //
-  // for each RU and send each copy to its corresponding RU //
-  ////////////////////////////////////////////////////////////
-
-  ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin();
-  const ApplicationDescriptorsAndTids::const_iterator itEnd = participatingRUs_.end();
-  for ( ; it != itEnd ; ++it)
-  {
-    // Create an empty request message
-    toolbox::mem::Reference* copyBufRef =
-      toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fastCtrlMsgPool_, bufSize);
-    char* copyFrame  = (char*)(copyBufRef->getDataLocation());
-
-    // Copy the message under construction into
-    // the newly created empty message
-    memcpy(
-      copyFrame,
-      bufRef->getDataLocation(),
-      bufRef->getDataSize()
-    );
-
-    // Set the size of the copy
-    copyBufRef->setDataSize(bufSize);
-
-    // Set the I2O TID target address
-    ((I2O_MESSAGE_FRAME*)copyFrame)->TargetAddress = it->tid;
-
-    // Send the pairs message to the RU
-    try
-    {
-      bu_->getApplicationContext()->
-        postFrame(
-          copyBufRef,
-          bu_->getApplicationDescriptor(),
-          it->descriptor //,
-          //i2oExceptionHandler_,
-          //it->descriptor
-        );
-    }
-    catch(xcept::Exception &e)
-    {
-      std::stringstream oss;
-      
-      oss << "Failed to send message to RU TID ";
-      oss << it->tid;
-
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-  }
 }
 
 
@@ -394,8 +249,8 @@ void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(fragmentRequestMonitoringMutex_);
-    i2oRUSendCount_ = fragmentRequestMonitoring_.logicalCount;
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    i2oRUSendCount_ = requestMonitoring_.logicalCount;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
@@ -407,16 +262,10 @@ void evb::bu::RUproxy::updateMonitoringItems()
 void evb::bu::RUproxy::resetMonitoringCounters()
 {
   {
-    boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
-    triggerRequestMonitoring_.payload = 0;
-    triggerRequestMonitoring_.logicalCount = 0;
-    triggerRequestMonitoring_.i2oCount = 0;
-  }
-  {
-    boost::mutex::scoped_lock sl(fragmentRequestMonitoringMutex_);
-    fragmentRequestMonitoring_.payload = 0;
-    fragmentRequestMonitoring_.logicalCount = 0;
-    fragmentRequestMonitoring_.i2oCount = 0;
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    requestMonitoring_.payload = 0;
+    requestMonitoring_.logicalCount = 0;
+    requestMonitoring_.i2oCount = 0;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
@@ -454,14 +303,7 @@ void evb::bu::RUproxy::getApplicationDescriptors()
       "Failed to get I2O TID for this application.", e);
   }
   
-  // Clear list of participating RUs
-  participatingRUs_.clear();
-  ruTids_.clear();
-  
   getApplicationDescriptorForEVM();
-  getApplicationDescriptorsForRUs();
-
-  resourceManager_->setHaveRUs( ! participatingRUs_.empty() );
 }
 
 
@@ -525,69 +367,6 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get the I2O TID of the EVM", e);
   }
-
-  ruTids_.push_back(evm_.tid);
-}
-
-
-void evb::bu::RUproxy::getApplicationDescriptorsForRUs()
-{
-  std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
-
-  try
-  {
-    ruDescriptors =
-      bu_->getApplicationContext()->
-      getDefaultZone()->
-      getApplicationDescriptors("evb::RU");
-  }
-  catch(xcept::Exception &e)
-  {
-    XCEPT_RETHROW(exception::Configuration,
-      "Failed to get RU application descriptor", e);
-  }
-
-  if ( ruDescriptors.empty() )
-  {
-    LOG4CPLUS_WARN(bu_->getApplicationLogger(), "There are no RU application descriptors.");
-    
-    return;
-  }
-
-  std::set<xdaq::ApplicationDescriptor*>::const_iterator it = ruDescriptors.begin();
-  const std::set<xdaq::ApplicationDescriptor*>::const_iterator itEnd = ruDescriptors.end();
-  for ( ; it != itEnd ; ++it)
-  {
-    ApplicationDescriptorAndTid ru;
-    
-    ru.descriptor = *it;
-    
-    try
-    {
-      ru.tid = i2o::utils::getAddressMap()->getTid(*it);
-    }
-    catch(xcept::Exception &e)
-    {
-      std::stringstream oss;
-      
-      oss << "Failed to get I2O TID for RU ";
-      oss << (*it)->getInstance();
-      
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-    
-    if ( ! participatingRUs_.insert(ru).second )
-    {
-      std::stringstream oss;
-      
-      oss << "Participating RU instance is a duplicate.";
-      oss << " Instance:" << (*it)->getInstance();
-      
-      XCEPT_RAISE(exception::Configuration, oss.str());
-    }
-    
-    ruTids_.push_back(ru.tid);
-  }
 }
 
 
@@ -605,7 +384,12 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>RUproxy</p>"                                        << std::endl;
   *out << "<table>"                                               << std::endl;
-  
+
+  const std::_Ios_Fmtflags originalFlags=out->flags();
+  const int originalPrecision=out->precision();
+  out->setf(std::ios::fixed);
+  out->precision(0);
+
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
@@ -625,47 +409,29 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"      << std::endl;
+    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"   << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"          << std::endl;
+    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"       << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
   {
-    boost::mutex::scoped_lock sl(triggerRequestMonitoringMutex_);
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
     *out << "<tr>"                                                  << std::endl;
-    *out << "<th colspan=\"2\">Requests for trigger data</th>"      << std::endl;
+    *out << "<th colspan=\"2\">Requests</th>"                       << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << triggerRequestMonitoring_.payload / 1e3 << "</td>" << std::endl;
+    *out << "<td>" << requestMonitoring_.payload / 1e3 << "</td>"   << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << triggerRequestMonitoring_.logicalCount << "</td>"    << std::endl;
+    *out << "<td>" << requestMonitoring_.logicalCount << "</td>"    << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << triggerRequestMonitoring_.i2oCount << "</td>"        << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
-  {
-    boost::mutex::scoped_lock sl(fragmentRequestMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<th colspan=\"2\">Requests for fragments</th>"         << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.payload / 1e3 << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.logicalCount << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << fragmentRequestMonitoring_.i2oCount << "</td>" << std::endl;
+    *out << "<td>" << requestMonitoring_.i2oCount << "</td>"        << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
   
@@ -710,6 +476,9 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "</td>"                                                 << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
+
+  out->flags(originalFlags);
+  out->precision(originalPrecision);
   
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;

@@ -70,13 +70,7 @@ namespace evb {
       /**
        * Send request for N trigger data fragments to the RUs
        */
-      void requestTriggerData(const uint32_t buResourceId, const uint32_t count);
-      
-      /**
-       * Send request for event fragments for the given
-       * event-builder ids to the RUS
-       */
-      void requestFragments(const uint32_t buResourceId, const EvBids&);
+      void requestFragments(const uint32_t buResourceId, const uint32_t count);
       
       /**
        * Append the info space items to be published in the
@@ -103,11 +97,6 @@ namespace evb {
       void configure();
       
       /**
-       * Find the application descriptors of the participating EVM and RUs.
-       */
-      void getApplicationDescriptors();
-      
-      /**
        * Remove all data
        */
       void clear();
@@ -129,12 +118,6 @@ namespace evb {
       void stopProcessing();
       
       /**
-       * Return the tids of RUs participating in the event building
-       */
-      std::vector<I2O_TID>& getRuTids()
-      { return ruTids_; }
-      
-      /**
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);
@@ -148,12 +131,10 @@ namespace evb {
       
     private:
       
-      void startProcessingWorkLoops();
-      bool requestTriggers(toolbox::task::WorkLoop*);
+      void getApplicationDescriptors();
+      void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
-      void sendToAllRUs(toolbox::mem::Reference*, const size_t bufSize) const;
       void getApplicationDescriptorForEVM();
-      void getApplicationDescriptorsForRUs();
       
       BU* bu_;
       boost::shared_ptr<ResourceManager> resourceManager_;
@@ -163,18 +144,13 @@ namespace evb {
       const ConfigurationPtr configuration_;      
       
       bool doProcessing_;
-      bool requestTriggersActive_;
       bool requestFragmentsActive_;
       
-      toolbox::task::WorkLoop* requestTriggersWL_;
-      toolbox::task::ActionSignature* requestTriggersAction_;
       toolbox::task::WorkLoop* requestFragmentsWL_;
       toolbox::task::ActionSignature* requestFragmentsAction_;
       
       I2O_TID tid_;
       ApplicationDescriptorAndTid evm_;
-      ApplicationDescriptorsAndTids participatingRUs_;
-      std::vector<I2O_TID> ruTids_;
       
       typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
@@ -204,21 +180,13 @@ namespace evb {
       } fragmentMonitoring_;
       boost::mutex fragmentMonitoringMutex_;
       
-      struct TriggerRequestMonitoring
+      struct RequestMonitoring
       {
         uint64_t logicalCount;
         uint64_t payload;
         uint64_t i2oCount;
-      } triggerRequestMonitoring_;
-      boost::mutex triggerRequestMonitoringMutex_;
-      
-      struct FragmentRequestMonitoring
-      {
-        uint64_t logicalCount;
-        uint64_t payload;
-        uint64_t i2oCount;
-      } fragmentRequestMonitoring_;
-      boost::mutex fragmentRequestMonitoringMutex_;
+      } requestMonitoring_;
+      boost::mutex requestMonitoringMutex_;
       
       xdata::UnsignedInteger64 i2oBUCacheCount_;
       xdata::UnsignedInteger64 i2oRUSendCount_;
@@ -230,9 +198,8 @@ namespace evb {
   template <>
   inline void OneToOneQueue<toolbox::mem::Reference*>::formatter(toolbox::mem::Reference* bufRef, std::ostringstream* out)
   {
-    const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* msg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-    if ( msg )
-      *out << *msg;
+    if ( bufRef )
+      *out << *(msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
     else
       *out << "n/a";
   }

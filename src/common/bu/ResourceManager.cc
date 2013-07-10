@@ -14,12 +14,10 @@ evb::bu::ResourceManager::ResourceManager
   BU* bu
 ) :
 bu_(bu),
-haveRUs_(false),
 boost_(false),
 throttle_(false),
 freeResourceFIFO_("freeResourceFIFO"),
-blockedResourceFIFO_("blockedResourceFIFO"),
-requestFIFO_("requestFIFO")
+blockedResourceFIFO_("blockedResourceFIFO")
 {
   resetMonitoringCounters();
 }
@@ -50,11 +48,6 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
       pos->second.push_back(dataBlockMsg->evbIds[i]);
     }
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
-    if ( haveRUs_ )
-    {
-      RequestPtr request( new Request(dataBlockMsg->buResourceId, pos->second) );
-      while ( ! requestFIFO_.enq(request) ) { ::usleep(1000); }
-    }
   }
   else
   {
@@ -128,7 +121,7 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
   if ( freeResourceFIFO_.deq(buResourceId) || ( boost_ && blockedResourceFIFO_.deq(buResourceId) ) )
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
-    if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBids())).second )
+    if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
     {
       std::stringstream oss;
       
@@ -142,12 +135,6 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
   }
   
   return false;
-}
-
-
-bool evb::bu::ResourceManager::getRequest(RequestPtr& request)
-{
-  return requestFIFO_.deq(request);
 }
 
 
@@ -200,13 +187,9 @@ void evb::bu::ResourceManager::configure()
   while ( freeResourceFIFO_.deq(buResourceId) ) {};
   while ( blockedResourceFIFO_.deq(buResourceId) ) {};
   
-  RequestPtr request;
-  while ( requestFIFO_.deq(request) ) {};
-
   const uint32_t maxEvtsUnderConstruction = bu_->getConfiguration()->maxEvtsUnderConstruction.value_;
   freeResourceFIFO_.resize(maxEvtsUnderConstruction);
   blockedResourceFIFO_.resize(maxEvtsUnderConstruction);
-  requestFIFO_.resize(maxEvtsUnderConstruction);
 
   for (buResourceId = 0; buResourceId < maxEvtsUnderConstruction; ++buResourceId)
   {
@@ -223,9 +206,6 @@ void evb::bu::ResourceManager::clear()
     freeResourceFIFO_.enq(it->first);
   }
   allocatedResources_.clear();
-  
-  RequestPtr request;
-  while ( requestFIFO_.deq(request) ) {};
 }
 
 
@@ -269,13 +249,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->flags(originalFlags);
     out->precision(originalPrecision);
   }
-    
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                   << std::endl;
-  requestFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-    
+  
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
   freeResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());

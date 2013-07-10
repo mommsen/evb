@@ -55,9 +55,9 @@ namespace evb {
       BUproxy(ReadoutUnit*);
       
       /**
-       * Callback for fragment request I2O message from BU
+       * Callback for fragment request I2O message from BU/EVM
        */
-      void rqstForFragmentsMsgCallback(toolbox::mem::Reference*);
+      void readoutMsgCallback(toolbox::mem::Reference*);
       
       /**
        * Configure the BU proxy
@@ -122,11 +122,11 @@ namespace evb {
       typedef std::vector<FragmentChainPtr> SuperFragments;
       
       void startProcessingWorkLoop();
-      void updateRequestCounters(const FragmentRequest&);
+      void updateRequestCounters(const FragmentRequestPtr);
       bool process(toolbox::task::WorkLoop*);
-      bool processRequest(FragmentRequest&,SuperFragments&);
-      void fillRequest(const msg::RqstForFragmentsMsg*, FragmentRequest&);
-      void sendData(const FragmentRequest&, const SuperFragments&);
+      bool processRequest(FragmentRequestPtr&,SuperFragments&);
+      void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&);
+      void sendData(const FragmentRequestPtr&, const SuperFragments&);
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb);
       void fillSuperFragmentHeader
       (
@@ -149,7 +149,7 @@ namespace evb {
       bool doProcessing_;
       bool processActive_;
 
-      typedef OneToOneQueue<FragmentRequest> FragmentRequestFIFO;
+      typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
       boost::mutex fragmentRequestFIFOmutex_;
       
@@ -261,15 +261,16 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 
 
 template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::rqstForFragmentsMsgCallback(toolbox::mem::Reference* bufRef)
+void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Reference* bufRef)
 {
-  msg::RqstForFragmentsMsg* rqstMsg =
-    (msg::RqstForFragmentsMsg*)bufRef->getDataLocation();
+  msg::ReadoutMsg* readoutMsg =
+    (msg::ReadoutMsg*)bufRef->getDataLocation();
   
-  FragmentRequest fragmentRequest;
-  fragmentRequest.buTid = ((I2O_MESSAGE_FRAME*)rqstMsg)->InitiatorAddress;
-  fragmentRequest.buResourceId = rqstMsg->buResourceId;
-  fillRequest(rqstMsg, fragmentRequest);  
+  FragmentRequestPtr fragmentRequest( new FragmentRequest );
+  fragmentRequest->buTid = readoutMsg->buTid;
+  fragmentRequest->buResourceId = readoutMsg->buResourceId;
+  fragmentRequest->nbRequests = readoutMsg->nbRequests;
+  fillRequest(readoutMsg, fragmentRequest);
   
   updateRequestCounters(fragmentRequest);
   
@@ -280,16 +281,18 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::rqstForFragmentsMsgCallback(toolbox
 
 
 template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequest& fragmentRequest)
+void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequestPtr fragmentRequest)
 {
   boost::mutex::scoped_lock sl(requestMonitoringMutex_);
   
-  requestMonitoring_.payload += sizeof(msg::RqstForFragmentsMsg);
-  if ( !fragmentRequest.evbIds.empty() )
-    requestMonitoring_.payload += fragmentRequest.nbRequests * sizeof(EvBid);
-  requestMonitoring_.logicalCount += fragmentRequest.nbRequests;
+  requestMonitoring_.payload +=
+    sizeof(msg::ReadoutMsg) +
+    (fragmentRequest->ruTids.size()|0x1) * sizeof(I2O_TID); // odd number of I2O_TIDs to align header to 64-bits
+  if ( !fragmentRequest->evbIds.empty() )
+    requestMonitoring_.payload += fragmentRequest->nbRequests * sizeof(EvBid);
+  requestMonitoring_.logicalCount += fragmentRequest->nbRequests;
   ++requestMonitoring_.i2oCount;
-  requestMonitoring_.logicalCountPerBU[fragmentRequest.buTid] += fragmentRequest.nbRequests;
+  requestMonitoring_.logicalCountPerBU[fragmentRequest->buTid] += fragmentRequest->nbRequests;
 }
 
 
@@ -300,7 +303,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   
   try
   {
-    FragmentRequest fragmentRequest;
+    FragmentRequestPtr fragmentRequest;
     SuperFragments superFragments;
     
     while ( processRequest(fragmentRequest,superFragments) )
@@ -324,20 +327,22 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 (
-  const FragmentRequest& fragmentRequest,
+  const FragmentRequestPtr& fragmentRequest,
   const SuperFragments& superFragments
 )
 {
   uint32_t blockNb = 1;
   uint32_t superFragmentNb = 1;
-  const uint32_t nbSuperFragments = superFragments.size();
-  assert( nbSuperFragments == fragmentRequest.evbIds.size() );
+  const uint16_t nbSuperFragments = superFragments.size();
+  assert( nbSuperFragments == fragmentRequest->evbIds.size() );
+  const uint16_t nbRUtids = fragmentRequest->ruTids.size();
 
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
   
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
-    + nbSuperFragments * sizeof(EvBid);
+    + nbSuperFragments * sizeof(EvBid)
+    + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignement
   assert( blockHeaderSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
@@ -394,14 +399,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   xdaq::ApplicationDescriptor *bu = 0;
   try
   {
-    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest.buTid);
+    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest->buTid);
   }
   catch(xcept::Exception &e)
   {
     std::stringstream oss;
     
     oss << "Failed to get application descriptor for BU with tid ";
-    oss << fragmentRequest.buTid;
+    oss << fragmentRequest->buTid;
     
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
@@ -425,18 +430,27 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     stdMsg->MsgFlags               = 0;
     stdMsg->MessageSize            = bufRef->getDataSize() >> 2;
     stdMsg->InitiatorAddress       = tid_;
-    stdMsg->TargetAddress          = fragmentRequest.buTid;
+    stdMsg->TargetAddress          = fragmentRequest->buTid;
     stdMsg->Function               = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
-    dataBlockMsg->buResourceId     = fragmentRequest.buResourceId;
+    dataBlockMsg->buResourceId     = fragmentRequest->buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = nbSuperFragments;
+    dataBlockMsg->nbRUtids         = nbRUtids;
+    
+    unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
     for (uint32_t i=0; i < nbSuperFragments; ++i)
     {
-      dataBlockMsg->evbIds[i] = fragmentRequest.evbIds[i];
-      if ( lastEventNumberToBUs < fragmentRequest.evbIds[i].eventNumber() )
-        lastEventNumberToBUs = fragmentRequest.evbIds[i].eventNumber();
+      memcpy(payload,&fragmentRequest->evbIds[i],sizeof(EvBid));
+      payload += sizeof(EvBid);
+      if ( lastEventNumberToBUs < fragmentRequest->evbIds[i].eventNumber() )
+        lastEventNumberToBUs = fragmentRequest->evbIds[i].eventNumber();
+    }
+    for (uint32_t i=0; i < nbRUtids; ++i)
+    {
+      memcpy(payload,&fragmentRequest->ruTids[i],sizeof(I2O_TID));
+      payload += sizeof(I2O_TID);
     }
     
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
@@ -460,7 +474,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       std::stringstream oss;
       
       oss << "Failed to send super fragment to BU TID ";
-      oss << fragmentRequest.buTid;
+      oss << fragmentRequest->buTid;
       
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
     }
@@ -476,7 +490,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
      dataMonitoring_.i2oCount += i2oCount;
      dataMonitoring_.payload += payloadSize;
      dataMonitoring_.logicalCount += nbSuperFragments;
-     dataMonitoring_.payloadPerBU[fragmentRequest.buTid] += payloadSize;
+     dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
   }
 }
 
@@ -637,7 +651,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::clear()
 {
-  FragmentRequest fragmentRequest;
+  FragmentRequestPtr fragmentRequest;
   while ( fragmentRequestFIFO_.deq(fragmentRequest) ) {};
 }
 

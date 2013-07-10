@@ -19,6 +19,8 @@
 #include "toolbox/task/WorkLoopFactory.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xgi/Input.h"
+#include "xgi/Method.h"
 #include "xgi/Output.h"
 
 
@@ -208,7 +210,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FR
   toolbox::mem::Reference *bufRef
 )
 {
-  buProxy_->rqstForFragmentsMsgCallback(bufRef);
+  buProxy_->readoutMsgCallback(bufRef);
 }
 
 

@@ -188,6 +188,7 @@ namespace evb {
       void activity();
       
     private:
+      void doConfigure() {};
       boost::scoped_ptr<boost::thread> configuringThread_;
       volatile bool doConfiguring_;
       
@@ -233,7 +234,10 @@ namespace evb {
       { this->safeExitAction(); }
       
       virtual void entryAction();
-
+      
+    private:
+      void doResetMonitoringCounters() {};
+      
     };
     
     
@@ -261,6 +265,8 @@ namespace evb {
       void activity();
       
     private:
+      
+      void doClearing() {};
       boost::scoped_ptr<boost::thread> clearingThread_;
       volatile bool doClearing_;
       
@@ -318,6 +324,10 @@ namespace evb {
       
       virtual void entryAction();
       virtual void exitAction();
+
+    private:
+      void doStartProcessing(const uint32_t runNumber) {};
+      void doStopProcessing() {};
       
     };
     
@@ -389,6 +399,8 @@ void evb::readoutunit::Configuring<Owner>::activity()
   {
     if (doConfiguring_) stateMachine.getOwner()->getInput()->configure();
     if (doConfiguring_) stateMachine.getOwner()->getBUproxy()->configure();
+    if (doConfiguring_) doConfigure();
+    
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
   catch( xcept::Exception& e )
@@ -444,6 +456,8 @@ void evb::readoutunit::Clearing<Owner>::activity()
   {
     if (doClearing_) stateMachine.getOwner()->getBUproxy()->clear();
     if (doClearing_) stateMachine.getOwner()->getInput()->clear();
+    if (doClearing_) doClearing();
+    
     if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
   }
   catch( xcept::Exception& e )
@@ -484,6 +498,7 @@ void evb::readoutunit::Processing<Owner>::entryAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   stateMachine.getOwner()->getBUproxy()->resetMonitoringCounters();
   stateMachine.getOwner()->getInput()->resetMonitoringCounters();
+  doResetMonitoringCounters();
 }
 
 
@@ -496,6 +511,7 @@ void evb::readoutunit::Enabled<Owner>::entryAction()
   
   stateMachine.getOwner()->getInput()->startProcessing(runNumber);
   stateMachine.getOwner()->getBUproxy()->startProcessing();
+  doStartProcessing(runNumber);
 }
 
 
@@ -505,6 +521,7 @@ void evb::readoutunit::Enabled<Owner>::exitAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   stateMachine.getOwner()->getBUproxy()->stopProcessing();
   stateMachine.getOwner()->getInput()->stopProcessing();
+  doStopProcessing();
 }
 
 

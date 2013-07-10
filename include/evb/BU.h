@@ -63,7 +63,6 @@ namespace evb {
     
     void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
     void eventFIFOWebPage(xgi::Input*, xgi::Output*);
-    void requestFIFOWebPage(xgi::Input*, xgi::Output*);
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void eolsFIFOWebPage(xgi::Input*, xgi::Output*);

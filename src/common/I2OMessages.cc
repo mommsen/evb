@@ -1,6 +1,86 @@
 #include "evb/I2OMessages.h"
 
 
+uint32_t evb::msg::ReadoutMsg::getHeaderSize() const
+{
+  return 
+    sizeof(msg::ReadoutMsg) +
+    nbRequests * sizeof(EvBid) +
+    (nbRUtids|0x1) * sizeof(I2O_TID); // there's always an odd number of I2O_TIDs to keep 64-bit alignement
+}
+
+
+void evb::msg::ReadoutMsg::getEvBids(evb::msg::EvBids& ids) const
+{
+  ids.clear();
+  ids.reserve(nbRequests);
+
+  unsigned char* payload = (unsigned char*)&evbIds[0];
+  
+  for (uint32_t i=0; i < nbRequests; ++i)
+  {
+    ids.push_back( *(EvBid*)payload );
+    payload += sizeof(EvBid);
+  }
+}
+
+
+void evb::msg::ReadoutMsg::getRUtids(evb::msg::RUtids& tids) const
+{
+  tids.clear();
+  tids.reserve(nbRUtids);
+  
+  unsigned char* payload = (unsigned char*)&evbIds[0] +
+    nbRequests * sizeof(EvBid);
+
+  for (uint32_t i=0; i < nbRUtids; ++i)
+  {
+    tids.push_back( *(I2O_TID*)payload );
+    payload += sizeof(I2O_TID);
+  }
+}
+
+
+uint32_t evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getHeaderSize() const
+{
+  return 
+    sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) +
+    nbSuperFragments * sizeof(EvBid) +
+    ((nbRUtids+1)&~1) * sizeof(I2O_TID); // there's always an even number of I2O_TIDs to keep 64-bit alignement
+}
+
+
+void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getEvBids(evb::msg::EvBids& ids) const
+{
+  ids.clear();
+  ids.reserve(nbSuperFragments);
+
+  unsigned char* payload = (unsigned char*)&evbIds[0];
+  
+  for (uint32_t i=0; i < nbSuperFragments; ++i)
+  {
+    ids.push_back( *(EvBid*)payload );
+    payload += sizeof(EvBid);
+  }
+}
+
+
+void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getRUtids(evb::msg::RUtids& tids) const
+{
+  tids.clear();
+  tids.reserve(nbRUtids);
+  
+  unsigned char* payload = (unsigned char*)&evbIds[0] +
+    nbSuperFragments * sizeof(EvBid);
+
+  for (uint32_t i=0; i < nbRUtids; ++i)
+  {
+    tids.push_back( *(I2O_TID*)payload );
+    payload += sizeof(I2O_TID);
+  }
+}
+
+
 std::ostream& operator<<
 (
   std::ostream& str,
@@ -38,18 +118,17 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream& str,
-  const evb::msg::RqstForFragmentsMsg rqstForFragmentsMsg
+  const evb::msg::ReadoutMsg readoutMsg
 )
 {
-  str << "RqstForFragmentsMsg:" << std::endl;
+  str << "ReadoutMsg:" << std::endl;
   
-  str << rqstForFragmentsMsg.PvtMessageFrame;
+  str << readoutMsg.PvtMessageFrame;
   
-  str << "buResourceId=" << rqstForFragmentsMsg.buResourceId << std::endl;
-  str << "nbRequests=" << rqstForFragmentsMsg.nbRequests << std::endl;
-  str << "evbIds:" << std::endl;
-  for (int32_t i=0; i < rqstForFragmentsMsg.nbRequests; ++i)
-    str << "   [" << i << "]: " << rqstForFragmentsMsg.evbIds[i] << std::endl;
+  str << "buTid=" << readoutMsg.buTid << std::endl;
+  str << "buResourceId=" << readoutMsg.buResourceId << std::endl;
+  str << "nbRequests=" << readoutMsg.nbRequests << std::endl;
+  str << "nbRUtids=" << readoutMsg.nbRUtids << std::endl;
   
   return str;
 }
@@ -85,13 +164,23 @@ std::ostream& operator<<
   str << "nbBlocks=" << dataBlockMsg.nbBlocks << std::endl;
   str << "blockNb=" << dataBlockMsg.blockNb << std::endl;
   str << "nbSuperFragments=" << dataBlockMsg.nbSuperFragments << std::endl;
+  str << "nbRUtids=" << dataBlockMsg.nbRUtids << std::endl;
+
+  evb::msg::EvBids evbIds;
+  dataBlockMsg.getEvBids(evbIds);
   str << "evbIds:" << std::endl;
   for (uint32_t i=0; i < dataBlockMsg.nbSuperFragments; ++i)
-    str << "   [" << i << "]: " << dataBlockMsg.evbIds[i] << std::endl;
+    str << "   [" << i << "]: " << evbIds[i] << std::endl;
+  
+  evb::msg::RUtids ruTids;
+  dataBlockMsg.getRUtids(ruTids);
+  str << "ruTids:" << std::endl;
+  for (uint32_t i=0; i < dataBlockMsg.nbRUtids; ++i)
+    str << "   [" << i << "]: " << ruTids[i] << std::endl;
   
   return str;
 }
-
+ 
 
 /// emacs configuration
 /// Local Variables: -

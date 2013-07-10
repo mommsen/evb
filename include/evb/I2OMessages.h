@@ -3,27 +3,39 @@
 
 #include <iostream>
 #include <stdint.h>
+#include <vector>
 
 #include "i2o/i2o.h"
+#include "i2o/i2oDdmLib.h"
 #include "evb/EvBid.h"
 
 
 namespace evb {
   namespace msg {
-        
+    
+    typedef std::vector<EvBid> EvBids;
+    typedef std::vector<I2O_TID> RUtids;
+    
     /**
-     * BU to RU message that contains one or more requests for event
-     * fragments for the passed event-builder id. If the first
-     * EvBid is not valid, the next available <nbRequests> events are sent.
+     * BU to EVM to RU message that contains one or more event-builder ids to be sent
+     * to the BU TID specified. The EVM ignores the evbIds and sends the next nbRequests
+     * fragements available. The RU TIDs are filled by the EVM.
      */
-    typedef struct
+    struct ReadoutMsg
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
+      I2O_TID buTid;                             // BU TID to send the data
       uint32_t buResourceId;                     // Index of BU resource used to built the event
-      int32_t nbRequests;                        // Number of requests. If negative, ignore evbIds 
-      EvBid evbIds[];                            // Requests
+      uint16_t nbRequests;                       // Number of EvBids
+      uint16_t nbRUtids;                         // Number of RU TIDs
+      EvBid evbIds[];                            // EvBids
+      I2O_TID ruTids[];                          // List of RU TIDs participating in the event building
       
-    } RqstForFragmentsMsg;
+      uint32_t getHeaderSize() const;
+      void getEvBids(EvBids&) const;
+      void getRUtids(RUtids&) const;
+      
+    };
     
     
     /**
@@ -40,19 +52,25 @@ namespace evb {
     
     
     /**
-     * RU to BU message that contains one or more super-fragments
+     * EVM/RU to BU message that contains one or more super-fragments
      */
-    typedef struct
+    struct I2O_DATA_BLOCK_MESSAGE_FRAME
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
       uint32_t buResourceId;                     // Index of BU resource used to built the event
       uint32_t nbBlocks;                         // Total number of I2O blocks
       uint32_t blockNb;                          // Index of the this block
-      uint32_t nbSuperFragments;                 // Total number of super fragments
+      uint16_t nbSuperFragments;                 // Total number of super fragments
+      uint16_t nbRUtids;                         // Number of RU TIDs
       EvBid evbIds[];                            // The EvBids of the super fragments
-      
-    } I2O_DATA_BLOCK_MESSAGE_FRAME;
+      I2O_TID ruTids[];                          // List of RU TIDs participating in the event building
 
+      uint32_t getHeaderSize() const;
+      void getEvBids(EvBids&) const;
+      void getRUtids(RUtids&) const;
+      
+    };
+    
     
   } } // namespace evb::msg
 
@@ -67,7 +85,7 @@ std::ostream& operator<<
 std::ostream& operator<<
 (
   std::ostream&,
-  const evb::msg::RqstForFragmentsMsg
+  const evb::msg::ReadoutMsg
 );
 
 

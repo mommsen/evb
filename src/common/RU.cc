@@ -21,32 +21,27 @@ namespace evb {
   namespace readoutunit {
     
     template<>
-    void BUproxy<RU>::fillRequest(const msg::RqstForFragmentsMsg* rqstMsg, FragmentRequest& fragmentRequest)
+    void BUproxy<RU>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
     {
-      if ( rqstMsg->nbRequests < 0 )
-      {
-        std::ostringstream oss;
-        oss << "Got a fragment request message BU TID " << fragmentRequest.buTid;
-        oss << " not specifying any EvB ids.";
-        oss << " This is a non-valid request to a RU.";
-        XCEPT_RAISE(exception::Configuration, oss.str());
-      }  
-      
-      fragmentRequest.nbRequests = rqstMsg->nbRequests;
-      for (int32_t i = 0; i < rqstMsg->nbRequests; ++i)
-        fragmentRequest.evbIds.push_back( rqstMsg->evbIds[i] );
+      readoutMsg->getEvBids(fragmentRequest->evbIds);
+      readoutMsg->getRUtids(fragmentRequest->ruTids);
     }
     
     template<>
-    bool BUproxy<RU>::processRequest(FragmentRequest& fragmentRequest, SuperFragments& superFragments)
+    bool BUproxy<RU>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      for (uint32_t i=0; i < fragmentRequest.nbRequests; ++i)
       {
-        const EvBid& evbId = fragmentRequest.evbIds.at(i);
+        boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+        if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
+      }
+
+      for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
+      {
+        const EvBid& evbId = fragmentRequest->evbIds.at(i);
         FragmentChainPtr superFragment;
         
         while ( doProcessing_ &&
-          !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::sched_yield(); //::usleep(1000);
+          !input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(10);
         
         if ( superFragment->isValid() ) superFragments.push_back(superFragment);
       }

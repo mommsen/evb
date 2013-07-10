@@ -10,6 +10,7 @@
 #include "evb/bu/FileHandler.h"
 #include "evb/EvBid.h"
 #include "evb/EventUtils.h"
+#include "evb/I2OMessages.h"
 #include "i2o/i2oDdmLib.h"
 #include "toolbox/mem/Reference.h"
 
@@ -31,9 +32,8 @@ namespace evb {
       
       Event
       (
-        const EvBid& evbId,
-        const uint32_t buResourceId,
-        const std::vector<I2O_TID>& ruTids
+        const EvBid&,
+        const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
       );
       
       ~Event();

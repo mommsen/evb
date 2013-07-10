@@ -547,11 +547,12 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
+    out->precision(4);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
     *out << "<td>" << superFragmentMonitor_.rate << "</td>"         << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
-    out->precision(1);
+    out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>super fragment size (kB)</td>"                     << std::endl;
     *out << "<td>" << superFragmentMonitor_.eventSize / 1e3 << " +/- "

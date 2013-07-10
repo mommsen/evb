@@ -37,12 +37,6 @@ namespace evb {
       ResourceManager(BU*);
       
       virtual ~ResourceManager() {};
-
-      /**
-       * Defines if there are any RUs attached to this BU
-       */
-      void setHaveRUs(bool value)
-      { haveRUs_ = value; }
       
       /**
        * Mark the resource contained in the passed data block as under construction
@@ -64,21 +58,6 @@ namespace evb {
        * Return false if no free resource id is available.
        */
       bool getResourceId(uint32_t& resourceId);
-      
-      /**
-       * Get the next request for fragments.
-       * Return false if no request is available.
-       */
-      struct Request
-      {
-        const uint32_t buResourceId;
-        const EvBids evbIds;
-
-        Request(uint32_t buResourceId, const EvBids& evbIds)
-        : buResourceId(buResourceId), evbIds(evbIds) {};
-      };
-      typedef boost::shared_ptr<Request> RequestPtr;
-      bool getRequest(RequestPtr&);
       
       /**
        * Append the info space items to be published in the 
@@ -115,12 +94,6 @@ namespace evb {
       void printHtml(xgi::Output*);
       
       /**
-       * Print the content of the request FIFO as HTML snipped
-       */
-      inline void printRequestFIFO(xgi::Output* out)
-      { requestFIFO_.printVerticalHtml(out); }
-      
-      /**
        * Print the content of the free resource FIFO as HTML snipped
        */
       inline void printFreeResourceFIFO(xgi::Output* out)
@@ -139,11 +112,11 @@ namespace evb {
       BU* bu_;
       const ConfigurationPtr configuration_;
       
-      bool haveRUs_;
       bool boost_;
       bool throttle_;
       
-      typedef std::map<uint32_t, EvBids> AllocatedResources;
+      typedef std::list<EvBid> EvBidList;
+      typedef std::map<uint32_t, EvBidList> AllocatedResources;
       AllocatedResources allocatedResources_;
       boost::mutex allocatedResourcesMutex_;
       
@@ -151,9 +124,6 @@ namespace evb {
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
       
-      typedef OneToOneQueue<RequestPtr> RequestFIFO;
-      RequestFIFO requestFIFO_;
-            
       struct EventMonitoring
       {
         uint32_t nbEventsBuilt;
@@ -171,28 +141,8 @@ namespace evb {
 
     };
     
-  } //namespace evb::bu
-  
-  template <>
-  inline void OneToOneQueue<bu::ResourceManager::RequestPtr>::formatter(bu::ResourceManager::RequestPtr request, std::ostringstream* out)
-  {
-    *out << "Request with buResourceId " << request->buResourceId;
-    *out << " for EvBids: " << std::endl;
-    for (EvBids::const_iterator it = request->evbIds.begin(), itEnd = request->evbIds.end();
-           it != itEnd; ++it)
-    {
-      try
-      {  
-        *out << *it << std::endl;
-      }
-      catch(...)
-      {
-        *out << "n/a" << std::endl;
-      }
-    }
-  }
-  
-} //namespace evb
+  } } //namespace evb::bu
+
 
 #endif // _evb_bu_ResourceManager_h_
 

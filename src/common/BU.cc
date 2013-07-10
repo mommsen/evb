@@ -154,13 +154,6 @@ void evb::BU::bindNonDefaultXgiCallbacks()
   xgi::bind
     (
       this,
-      &evb::BU::requestFIFOWebPage,
-      "requestFIFO"
-    );
-  
-  xgi::bind
-    (
-      this,
       &evb::BU::freeResourceFIFOWebPage,
       "freeResouceFIFO"
     );
@@ -232,35 +225,6 @@ void evb::BU::eventFIFOWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   diskWriter_->printEventFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "</table>"                                            << std::endl;
-  
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::requestFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "requestFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-  
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  resourceManager_->printRequestFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   

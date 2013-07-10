@@ -44,35 +44,7 @@ void evb::bu::Configuring::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
   
-  std::string msg = "Failed to get descriptors of peer applications";
-  try
-  {
-    if (doConfiguring_) stateMachine.ruProxy()->getApplicationDescriptors();
-  }
-  catch( xcept::Exception& e )
-  {
-    XCEPT_DECLARE_NESTED(exception::Configuration,
-      sentinelException, msg, e);
-    stateMachine.processFSMEvent( Fail(sentinelException) );
-  }
-  catch( std::exception& e )
-  {
-    msg += ": ";
-    msg += e.what();
-    XCEPT_DECLARE(exception::Configuration,
-      sentinelException, msg );
-    stateMachine.processFSMEvent( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    msg += ": unknown exception";
-    XCEPT_DECLARE(exception::Configuration,
-      sentinelException, msg );
-    stateMachine.processFSMEvent( Fail(sentinelException) );
-  }
-
-
-  msg = "Failed to configure the components";
+  std::string msg = "Failed to configure the components";
   try
   {  
     outermost_context_type& stateMachine = outermost_context();
