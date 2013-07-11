@@ -46,12 +46,6 @@ namespace evb {
     { return head_; }
     
     /**
-     * Return a duplicate of the toolbox::mem::Reference chain
-     */
-    toolbox::mem::Reference* duplicate() const
-    { return head_->duplicate(); }
-    
-    /**
      * Return the size of the super fragment
      */
     size_t getSize() const

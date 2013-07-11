@@ -92,10 +92,11 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
 
 bool evb::bu::EventTable::buildEvents()
 {
-  toolbox::mem::Reference* bufRef = 0;
+  FragmentChainPtr superFragments;
   
-  if ( ! ruProxy_->getData(bufRef) ) return false;
+  if ( ! ruProxy_->getData(superFragments) ) return false;
 
+  toolbox::mem::Reference* bufRef = superFragments->head();
   const I2O_MESSAGE_FRAME* stdMsg =
     (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
@@ -146,8 +147,6 @@ bool evb::bu::EventTable::buildEvents()
       // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
       // std::cout << *superFragmentMsg << std::endl;
     }
-    
-    bufRef->release(); // The bufRef's holding event fragments are now owned by the events
     
     bufRef = nextRef;
     

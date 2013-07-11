@@ -147,8 +147,8 @@ void evb::BU::bindNonDefaultXgiCallbacks()
   xgi::bind
     (
       this,
-      &evb::BU::fragmentFIFOWebPage,
-      "fragmentFIFO"
+      &evb::BU::superFragmentFIFOWebPage,
+      "superFragmentFIFO"
     );
   
   xgi::bind
@@ -322,13 +322,13 @@ void evb::BU::eolsFIFOWebPage
 }
 
 
-void evb::BU::fragmentFIFOWebPage
+void evb::BU::superFragmentFIFOWebPage
 (
   xgi::Input  *in,
   xgi::Output *out
 )
 {
-  webPageHeader(out, "fragmentFIFO");
+  webPageHeader(out, "superFragmentFIFO");
 
   *out << "<table class=\"layout\">"                            << std::endl;
   
@@ -340,7 +340,7 @@ void evb::BU::fragmentFIFOWebPage
   
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
-  ruProxy_->printFragmentFIFO(out);
+  ruProxy_->printSuperFragmentFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   

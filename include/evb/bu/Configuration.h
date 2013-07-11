@@ -23,7 +23,7 @@ namespace evb {
       xdata::Integer32 evmInstance;
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;
       xdata::UnsignedInteger32 eventsPerRequest;
-      xdata::UnsignedInteger32 fragmentFIFOCapacity;
+      xdata::UnsignedInteger32 superFragmentFIFOCapacity;
       xdata::Boolean dropEventData;
       xdata::UnsignedInteger32 numberOfWriters;
       xdata::String rawDataDir;
@@ -40,7 +40,7 @@ namespace evb {
       : evmInstance(-1), // Explicitly indicate parameter not set
         maxEvtsUnderConstruction(64),
         eventsPerRequest(1),
-        fragmentFIFOCapacity(16384),
+        superFragmentFIFOCapacity(16384),
         dropEventData(false),
         numberOfWriters(8),
         rawDataDir("/tmp/raw"),
@@ -59,7 +59,7 @@ namespace evb {
         params.add("evmInstance", &evmInstance);
         params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);
         params.add("eventsPerRequest", &eventsPerRequest);
-        params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
+        params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);
         params.add("numberOfWriters", &numberOfWriters);
         params.add("rawDataDir", &rawDataDir);

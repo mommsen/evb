@@ -28,7 +28,7 @@ configuration_(bu->getConfiguration()),
 doProcessing_(false),
 requestFragmentsActive_(false),
 tid_(0),
-fragmentFIFO_("fragmentFIFO")
+superFragmentFIFO_("superFragmentFIFO")
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -103,7 +103,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
     
     if ( dataBlockPos->second->isComplete() )
     {
-      while ( ! fragmentFIFO_.enq(dataBlockPos->second->duplicate()) ) { ::usleep(1000); }
+      while ( ! superFragmentFIFO_.enq(dataBlockPos->second) ) ::usleep(1000);
       dataBlockMap_.erase(dataBlockPos);
     }
     
@@ -114,10 +114,10 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
 bool evb::bu::RUproxy::getData
 (
-  toolbox::mem::Reference*& bufRef
+  FragmentChainPtr& superFragment
 )
 {
-  return fragmentFIFO_.deq(bufRef);
+  return superFragmentFIFO_.deq(superFragment);
 }
 
 
@@ -284,7 +284,7 @@ void evb::bu::RUproxy::configure()
 {
   clear();
 
-  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity.value_);
+  superFragmentFIFO_.resize(configuration_->superFragmentFIFOCapacity.value_);
 
   getApplicationDescriptors();
 }
@@ -372,8 +372,8 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
 
 void evb::bu::RUproxy::clear()
 {
-  toolbox::mem::Reference* bufRef;
-  while ( fragmentFIFO_.deq(bufRef) ) { bufRef->release(); }
+  FragmentChainPtr superFragment;
+  while ( superFragmentFIFO_.deq(superFragment) ) {}
   
   dataBlockMap_.clear();
 }
@@ -437,7 +437,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  fragmentFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  superFragmentFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   

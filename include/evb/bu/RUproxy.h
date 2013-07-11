@@ -65,7 +65,7 @@ namespace evb {
        * into the passed buffer reference.
        * Return false if no data is available
        */
-      bool getData(toolbox::mem::Reference*&);
+      bool getData(FragmentChainPtr&);
       
       /**
        * Send request for N trigger data fragments to the RUs
@@ -123,10 +123,10 @@ namespace evb {
       void printHtml(xgi::Output*);
       
       /**
-       * Print the content of the fragment FIFO as HTML snipped
+       * Print the content of the super-fragment FIFO as HTML snipped
        */
-      inline void printFragmentFIFO(xgi::Output* out)
-      { fragmentFIFO_.printVerticalHtml(out); }
+      inline void printSuperFragmentFIFO(xgi::Output* out)
+      { superFragmentFIFO_.printVerticalHtml(out); }
       
       
     private:
@@ -152,8 +152,8 @@ namespace evb {
       I2O_TID tid_;
       ApplicationDescriptorAndTid evm_;
       
-      typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
-      FragmentFIFO fragmentFIFO_;
+      typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
+      SuperFragmentFIFO superFragmentFIFO_;
       
       // Lookup table of data blocks, indexed by RU tid and BU resource id
       struct Index
