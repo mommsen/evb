@@ -6,6 +6,7 @@
 #include "evb/I2OMessages.h"
 #include "xcept/tools.h"
 
+#include <algorithm>
 #include <string.h>
 
 
@@ -187,11 +188,13 @@ void evb::bu::ResourceManager::configure()
   while ( freeResourceFIFO_.deq(buResourceId) ) {};
   while ( blockedResourceFIFO_.deq(buResourceId) ) {};
   
-  const uint32_t maxEvtsUnderConstruction = bu_->getConfiguration()->maxEvtsUnderConstruction.value_;
-  freeResourceFIFO_.resize(maxEvtsUnderConstruction);
-  blockedResourceFIFO_.resize(maxEvtsUnderConstruction);
+  const uint32_t nbResources = std::max(1U,
+    bu_->getConfiguration()->maxEvtsUnderConstruction.value_ / 
+    bu_->getConfiguration()->eventsPerRequest.value_);
+  freeResourceFIFO_.resize(nbResources);
+  blockedResourceFIFO_.resize(nbResources);
 
-  for (buResourceId = 0; buResourceId < maxEvtsUnderConstruction; ++buResourceId)
+  for (buResourceId = 0; buResourceId < nbResources; ++buResourceId)
   {
     freeResourceFIFO_.enq(buResourceId);
   }
