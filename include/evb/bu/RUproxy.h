@@ -196,8 +196,9 @@ namespace evb {
   } //namespace evb::bu
 
   template <>
-  inline void OneToOneQueue<toolbox::mem::Reference*>::formatter(toolbox::mem::Reference* bufRef, std::ostringstream* out)
+  inline void OneToOneQueue<evb::bu::FragmentChainPtr>::formatter(evb::bu::FragmentChainPtr fragmentChain, std::ostringstream* out)
   {
+    toolbox::mem::Reference* bufRef = fragmentChain->head();
     if ( bufRef )
       *out << *(msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
     else
