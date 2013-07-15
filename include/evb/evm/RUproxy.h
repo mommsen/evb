@@ -131,6 +131,7 @@ namespace evb {
             
       typedef OneToOneQueue<readoutunit::FragmentRequestPtr> AllocateFIFO;
       AllocateFIFO allocateFIFO_;
+      boost::mutex allocateFIFOmutex_;
 
       bool doProcessing_;
       bool assignEventsActive_;

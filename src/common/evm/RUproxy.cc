@@ -35,6 +35,8 @@ void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr fragme
 {
   if ( participatingRUs_.empty() ) return;
   
+  boost::mutex::scoped_lock sl(allocateFIFOmutex_);
+  
   while ( ! allocateFIFO_.enq(fragmentRequest) ) ::usleep(1000);
 }
 
