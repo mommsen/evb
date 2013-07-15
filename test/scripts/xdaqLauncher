@@ -106,7 +106,7 @@ sub processClientRequest {
           $cores="2,3";
           $cpu="0";
           $numactl="numactl --physcpubind=$cores --membind=$cpu";
-        } elsif ($host =~ "dvrubu-c2f33") {
+        } elsif ($host =~ "dvrubu-c2f33" || $host =~ "dvrubu-c2f34") {
           $cores="8,9,10,12,13,14,15";
           $cpu="1";
           $numactl="numactl --physcpubind=$cores --membind=$cpu";
