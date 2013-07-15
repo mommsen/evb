@@ -76,6 +76,7 @@ namespace evb {
       virtual void do_defaultWebPage(xgi::Output*);
       
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
+      void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
       
       xdata::UnsignedInteger32 nbSuperFragmentsReady_;
       
@@ -222,6 +223,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage,
     "fragmentRequestFIFO"
   );
+  
+  xgi::bind(
+    this,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage,
+    "superFragmentFIFO"
+  );
 }
 
 
@@ -265,6 +272,36 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentReq
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   buProxy_->printFragmentRequestFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "</table>"                                            << std::endl;
+  
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  this->webPageHeader(out, "fragmentRequestFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  this->webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+  
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  input_->printSuperFragmentFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
   

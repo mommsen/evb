@@ -137,6 +137,11 @@ namespace evb {
        */
       void printHtml(xgi::Output*);
       
+      /**
+       * Print the content of the super-fragment FIFO as HTML snipped
+       */
+      void printSuperFragmentFIFO(xgi::Output* out);
+ 
       
     protected:
       
@@ -160,7 +165,8 @@ namespace evb {
         virtual void startProcessing(const uint32_t runNumber) {};
         virtual void stopProcessing() {};
         virtual void clear() {};
-        virtual void printSuperFragmentFIFO(xgi::Output*, const toolbox::net::URN&) {};
+        virtual void printSuperFragmentFIFO(xgi::Output*) {};
+        virtual void printSuperFragmentFIFOsnipped(xgi::Output*, const toolbox::net::URN&) {};
         
       };
            
@@ -175,7 +181,8 @@ namespace evb {
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void clear();
-        virtual void printSuperFragmentFIFO(xgi::Output*, const toolbox::net::URN&);
+        virtual void printSuperFragmentFIFO(xgi::Output*);
+        virtual void printSuperFragmentFIFOsnipped(xgi::Output*, const toolbox::net::URN&);
         
       protected:
         
@@ -322,19 +329,19 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
 {
   boost::mutex::scoped_lock sl(inputMonitorsMutex_);
   
-  // const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
-  //   + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  // const ferolh_t* ferolHeader = (ferolh_t*)payload;
-  // assert( ferolHeader->signature() == FEROL_SIGNATURE );
-  // const uint64_t fedId = ferolHeader->fed_id();
-  // const uint64_t eventNumber = ferolHeader->event_number();
-  // const uint64_t fedSize = ferolHeader->data_length();
+  const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
+    + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  const ferolh_t* ferolHeader = (ferolh_t*)payload;
+  assert( ferolHeader->signature() == FEROL_SIGNATURE );
+  const uint16_t fedId = ferolHeader->fed_id();
+  const uint32_t eventNumber = ferolHeader->event_number();
+  const uint32_t fedSize = ferolHeader->data_length();
   
-  I2O_DATA_READY_MESSAGE_FRAME* frame =
-    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const uint16_t fedId = frame->fedid;
-  const uint32_t eventNumber = frame->triggerno;
-  const uint32_t fedSize = frame->totalLength;
+  // I2O_DATA_READY_MESSAGE_FRAME* frame =
+  //   (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+  // const uint16_t fedId = frame->fedid;
+  // const uint32_t eventNumber = frame->triggerno;
+  // const uint32_t fedSize = frame->totalLength;
   
   typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
   if ( pos == inputMonitors_.end() )
@@ -560,7 +567,7 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
   }
   
-  handler_->printSuperFragmentFIFO(out,app_->getDescriptor()->getURN());  
+  handler_->printSuperFragmentFIFOsnipped(out,app_->getDescriptor()->getURN());  
   
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
@@ -601,6 +608,13 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
   *out << "</tr>"                                                 << std::endl;
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::printSuperFragmentFIFO(xgi::Output *out)
+{
+  handler_->printSuperFragmentFIFO(out);
 }
 
 
@@ -740,7 +754,14 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(xgi::Output* out, const toolbox::net::URN& urn)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(xgi::Output* out)
+{
+  superFragmentFIFO_.printVerticalHtml(out);
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFOsnipped(xgi::Output* out, const toolbox::net::URN& urn)
 {
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
@@ -888,6 +909,29 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
 {
   eventNumber_ = 0;
   evbIdFactory_.reset(runNumber);
+}
+
+namespace evb
+{
+  template <>
+  inline void OneToOneQueue<evb::readoutunit::FragmentChainPtr>::formatter(readoutunit::FragmentChainPtr fragmentChain, std::ostringstream* out)
+  {
+    if ( fragmentChain.get() )
+    {
+      toolbox::mem::Reference* bufRef = fragmentChain->head();
+      if ( bufRef )
+      {
+        I2O_DATA_READY_MESSAGE_FRAME* msg =
+          (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+        *out << "I2O_DATA_READY_MESSAGE_FRAME:" << std::endl;
+        *out << "  FED id: " << msg->fedid << std::endl;
+        *out << "  trigger no: " << msg->triggerno << std::endl;
+        *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
+      }
+    }
+    else
+      *out << "n/a";
+  }
 }
 
 
