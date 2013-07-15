@@ -94,7 +94,7 @@ sub processClientRequest {
 	my $numactl="";
 	my $cores="";
         my $cpu="";
-        if ($host =~ "dvrubu-c2f33-23-01" || $host =~ "dvrubu-c2f33-23-04") {
+        if ($host =~ "dvrubu-c2f33-23") {
           $cores="8,24";
           $cpu="1";
           $numactl="numactl --physcpubind=$cores --membind=$cpu";
