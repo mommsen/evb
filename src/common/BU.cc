@@ -155,7 +155,7 @@ void evb::BU::bindNonDefaultXgiCallbacks()
     (
       this,
       &evb::BU::freeResourceFIFOWebPage,
-      "freeResouceFIFO"
+      "freeResourceFIFO"
     );
   
   xgi::bind
