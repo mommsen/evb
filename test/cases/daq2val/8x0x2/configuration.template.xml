@@ -5,7 +5,7 @@
     <i2o:target class="evb::BU" instance="0" tid="30"/>
     <i2o:target class="evb::BU" instance="1" tid="31"/>
   </i2o:protocol>
-
+  
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
@@ -16,7 +16,7 @@
     </pol:policy>
     
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="ferol00" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
-
+    
     <xc:Application class="pt::frl::Application" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
@@ -46,7 +46,9 @@
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    
   </xc:Context>
+  
   
   <xc:Context url="http://FEROL1_SOAP_HOST_NAME:FEROL1_SOAP_PORT">
     
@@ -89,7 +91,7 @@
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     
   </xc:Context>
-
+  
   
   <xc:Context url="http://FEROL2_SOAP_HOST_NAME:FEROL2_SOAP_PORT">
     
@@ -175,8 +177,8 @@
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     
   </xc:Context>
-
-
+  
+  
   <xc:Context url="http://FEROL4_SOAP_HOST_NAME:FEROL4_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
@@ -218,8 +220,8 @@
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     
   </xc:Context>
-
-
+  
+  
   <xc:Context url="http://FEROL5_SOAP_HOST_NAME:FEROL5_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
@@ -261,8 +263,8 @@
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     
   </xc:Context>
-
-
+  
+  
   <xc:Context url="http://FEROL6_SOAP_HOST_NAME:FEROL6_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
@@ -304,8 +306,8 @@
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     
   </xc:Context>
-
-
+  
+  
   <xc:Context url="http://FEROL7_SOAP_HOST_NAME:FEROL7_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
@@ -352,16 +354,26 @@
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
     
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="6" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
+      <!-- for C6220 -->
+      <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="12" />
+      <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
+      <!-- for R720
+      <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="6" />
+      <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="24" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="8" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="16" />
-      <!--pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="23" /-->
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="26" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
@@ -370,6 +382,7 @@
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
+      -->
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
@@ -394,9 +407,9 @@
     <xc:Alias name="ferol06">ferolb</xc:Alias>
     <xc:Alias name="ferol07">ferolb</xc:Alias>
     
-    <xc:Endpoint protocol="udapl" service="i2o"  hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="infini" />
+    <xc:Endpoint protocol="udapl" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="infini" />
     
-    <xc:Application class="pt::udapl::Application"  id="10" network="local">
+    <xc:Application class="pt::udapl::Application" id="10" network="local">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
         <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
         <senderPoolSize xsi:type="xsd:unsignedInt">0xFA00000</senderPoolSize>
@@ -404,7 +417,6 @@
       </properties>
     </xc:Application>
     
-    <!-- Shared object library that contains the implementation -->
     <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
@@ -484,7 +496,7 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
-        <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</superFragmentFIFOCapacity>
+        <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">236</superFragmentFIFOCapacity>
       </properties>
    </xc:Application>
     
@@ -510,8 +522,8 @@
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
     </pol:policy>
     
-    <xc:Endpoint protocol="udapl" service="i2o"  hostname="BU0_I2O_HOST_NAME" port="BU0_I2O_PORT" network="infini" />
-    <xc:Application class="pt::udapl::Application"  id="21" network="infini">
+    <xc:Endpoint protocol="udapl" service="i2o" hostname="BU0_I2O_HOST_NAME" port="BU0_I2O_PORT" network="infini" />
+    <xc:Application class="pt::udapl::Application" id="21" network="infini">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
         <senderPoolSize xsi:type="xsd:unsignedInt">0x40000000</senderPoolSize>
         <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
@@ -524,6 +536,7 @@
     <xc:Application class="evb::BU" id="43" instance="0" network="infini">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
+        <maxEvtsUnderConstruction xsi:type="xsd:unsignedInt">2048</maxEvtsUnderConstruction>
         <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>
@@ -555,8 +568,8 @@
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
     </pol:policy>
     
-    <xc:Endpoint protocol="udapl" service="i2o"  hostname="BU1_I2O_HOST_NAME" port="BU1_I2O_PORT" network="infini" />
-    <xc:Application class="pt::udapl::Application"  id="21" network="infini">
+    <xc:Endpoint protocol="udapl" service="i2o" hostname="BU1_I2O_HOST_NAME" port="BU1_I2O_PORT" network="infini" />
+    <xc:Application class="pt::udapl::Application" id="21" network="infini">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
         <senderPoolSize xsi:type="xsd:unsignedInt">0x40000000</senderPoolSize>
         <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
@@ -569,6 +582,7 @@
     <xc:Application class="evb::BU" id="43" instance="1" network="infini">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
+        <maxEvtsUnderConstruction xsi:type="xsd:unsignedInt">2048</maxEvtsUnderConstruction>
         <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>

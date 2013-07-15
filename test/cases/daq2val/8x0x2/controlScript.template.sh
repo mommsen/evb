@@ -177,42 +177,42 @@ echo "Client 6 nbEvtsBuilt: $nbCounterServerFEROL6"
 echo "Client 7 nbEvtsBuilt: $nbCounterServerFEROL7"
 
 
-if test $nbCounterServerFEROL0 -lt 100
+if [[ $nbCounterServerFEROL0 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL1 -lt 100
+if [[ $nbCounterServerFEROL1 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL2 -lt 100
+if [[ $nbCounterServerFEROL2 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL3 -lt 100
+if [[ $nbCounterServerFEROL3 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL4 -lt 100
+if [[ $nbCounterServerFEROL4 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL5 -lt 100
+if [[ $nbCounterServerFEROL5 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL6 -lt 100
+if [[ $nbCounterServerFEROL6 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
 fi
-if test $nbCounterServerFEROL7 -lt 100
+if [[ $nbCounterServerFEROL7 -lt 100 ]]
 then
   echo "Test failed"
   exit 1
@@ -224,13 +224,12 @@ nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBu
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
 
-if test $nbEventsBuiltBU0 -lt 1000
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
   echo "Test failed"
   exit 1
 fi
-
-if test $nbEventsBuiltBU1 -lt 1000
+if [[ $nbEventsBuiltBU1 -lt 1000 ]]
 then
   echo "Test failed"
   exit 1
