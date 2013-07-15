@@ -198,13 +198,16 @@ namespace evb {
   template <>
   inline void OneToOneQueue<evb::bu::FragmentChainPtr>::formatter(evb::bu::FragmentChainPtr fragmentChain, std::ostringstream* out)
   {
-    toolbox::mem::Reference* bufRef = fragmentChain->head();
-    if ( bufRef )
-      *out << *(msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+    if ( fragmentChain.get() )
+    {
+      toolbox::mem::Reference* bufRef = fragmentChain->head();
+      if ( bufRef )
+        *out << *(msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+    }
     else
       *out << "n/a";
   }
-
+  
 
 } //namespace evb
 
