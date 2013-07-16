@@ -3,10 +3,7 @@
 
 bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
 {
-  {
-    boost::mutex::scoped_lock sl(superFragmentFIFOmutex_);
-    if ( ! superFragmentFIFO_.deq(superFragment) ) return false;
-  }
+  if ( ! superFragmentFIFO_.deq(superFragment) ) return false;
   
   if ( superFragment->getEvBid() != evbId )
   {

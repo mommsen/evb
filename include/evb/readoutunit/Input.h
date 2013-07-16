@@ -191,7 +191,6 @@ namespace evb {
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
-        boost::mutex superFragmentFIFOmutex_;
         
         typedef std::map<EvBid,FragmentChainPtr> SuperFragmentMap;
         SuperFragmentMap superFragmentMap_;
@@ -670,7 +669,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
   const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
   
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-    
+  
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
   
   // boost::unique_lock<boost::shared_mutex> uniqueLock(superFragmentMapMutex_);
@@ -927,6 +926,7 @@ namespace evb
         *out << "  FED id: " << msg->fedid << std::endl;
         *out << "  trigger no: " << msg->triggerno << std::endl;
         *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
+        *out << "  evbId: " << fragmentChain->getEvBid() << std::endl;
       }
     }
     else
