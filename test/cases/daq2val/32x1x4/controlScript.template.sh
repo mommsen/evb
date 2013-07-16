@@ -35,8 +35,6 @@ sendCmdToLauncher FEROL30_SOAP_HOST_NAME FEROL30_LAUNCHER_PORT STARTXDAQFEROL30_
 sendCmdToLauncher FEROL31_SOAP_HOST_NAME FEROL31_LAUNCHER_PORT STARTXDAQFEROL31_SOAP_PORT
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
 sendCmdToLauncher RU1_SOAP_HOST_NAME RU1_LAUNCHER_PORT STARTXDAQRU1_SOAP_PORT
-sendCmdToLauncher RU2_SOAP_HOST_NAME RU2_LAUNCHER_PORT STARTXDAQRU2_SOAP_PORT
-sendCmdToLauncher RU3_SOAP_HOST_NAME RU3_LAUNCHER_PORT STARTXDAQRU3_SOAP_PORT
 sendCmdToLauncher BU0_SOAP_HOST_NAME BU0_LAUNCHER_PORT STARTXDAQBU0_SOAP_PORT
 sendCmdToLauncher BU1_SOAP_HOST_NAME BU1_LAUNCHER_PORT STARTXDAQBU1_SOAP_PORT
 sendCmdToLauncher BU2_SOAP_HOST_NAME BU2_LAUNCHER_PORT STARTXDAQBU2_SOAP_PORT
@@ -213,16 +211,6 @@ then
   echo "Test failed"
   exit 1
 fi
-if ! webPingXDAQ RU2_SOAP_HOST_NAME RU2_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ RU3_SOAP_HOST_NAME RU3_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
 if ! webPingXDAQ BU0_SOAP_HOST_NAME BU0_SOAP_PORT 5
 then
   echo "Test failed"
@@ -280,8 +268,6 @@ sendCmdToExecutive FEROL31_SOAP_HOST_NAME FEROL31_SOAP_PORT configure.cmd.xml
 
 sendCmdToExecutive RU0_SOAP_HOST_NAME RU0_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive RU1_SOAP_HOST_NAME RU1_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive RU2_SOAP_HOST_NAME RU2_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive RU3_SOAP_HOST_NAME RU3_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive BU0_SOAP_HOST_NAME BU0_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive BU1_SOAP_HOST_NAME BU1_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive BU2_SOAP_HOST_NAME BU2_SOAP_PORT configure.cmd.xml
@@ -355,7 +341,7 @@ sendSimpleCmdToApp FEROL31_SOAP_HOST_NAME FEROL31_SOAP_PORT pt::frl::Application
 
 #Set parameter
 sleep 2
-fragmentSize=2048
+fragmentSize=1024
 setParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT Client 0 currentSize unsignedLong $fragmentSize
 setParam FEROL1_SOAP_HOST_NAME FEROL1_SOAP_PORT Client 1 currentSize unsignedLong $fragmentSize
 setParam FEROL2_SOAP_HOST_NAME FEROL2_SOAP_PORT Client 2 currentSize unsignedLong $fragmentSize
@@ -458,8 +444,6 @@ echo "Client31 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL31"
 #Configure
 sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Configure
 sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 Configure
-sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 2 Configure
-sendSimpleCmdToApp RU3_SOAP_HOST_NAME RU3_SOAP_PORT evb::RU 3 Configure
 
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Configure
 sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Configure
@@ -470,10 +454,8 @@ sleep 1
 
 #Enable EVM
 sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Enable
-#Enable RUs
+#Enable RU
 sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 Enable
-sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 2 Enable
-sendSimpleCmdToApp RU3_SOAP_HOST_NAME RU3_SOAP_PORT evb::RU 3 Enable
 #Enable BUs
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable

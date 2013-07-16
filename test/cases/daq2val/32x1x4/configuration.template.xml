@@ -3,8 +3,6 @@
   <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
     <i2o:target class="evb::EVM" instance="0" tid="1"/>
     <i2o:target class="evb::RU" instance="1" tid="10"/>
-    <i2o:target class="evb::RU" instance="2" tid="11"/>
-    <i2o:target class="evb::RU" instance="3" tid="12"/>
     <i2o:target class="evb::BU" instance="0" tid="30"/>
     <i2o:target class="evb::BU" instance="1" tid="31"/>
     <i2o:target class="evb::BU" instance="2" tid="32"/>
@@ -374,15 +372,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="8" network="ferol08">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol08" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol08" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -417,15 +415,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="9" network="ferol09">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol09" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol09" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -460,15 +458,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="10" network="ferol10">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol10" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol10" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -503,15 +501,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="11" network="ferol11">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol11" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol11" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -546,15 +544,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="12" network="ferol12">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol12" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol12" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -589,15 +587,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="13" network="ferol13">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol13" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol13" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -632,15 +630,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="14" network="ferol14">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol14" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol14" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -675,15 +673,15 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="15" network="ferol15">
-      <xc:Unicast class="evb::RU" instance="1" network="ferol15" />
+      <xc:Unicast class="evb::EVM" instance="0" network="ferol15" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
         <numberOfSamples xsi:type="xsd:unsignedLong">12</numberOfSamples>
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
-        <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
+        <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
+        <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -718,7 +716,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="16" network="ferol16">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol16" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol16" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -726,7 +724,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -761,7 +759,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="17" network="ferol17">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol17" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol17" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -769,7 +767,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -804,7 +802,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="18" network="ferol18">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol18" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol18" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -812,7 +810,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -847,7 +845,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="19" network="ferol19">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol19" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol19" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -855,7 +853,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -890,7 +888,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="20" network="ferol20">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol20" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol20" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -898,7 +896,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -933,7 +931,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="21" network="ferol21">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol21" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol21" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -941,7 +939,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -976,7 +974,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="22" network="ferol22">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol22" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol22" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -984,7 +982,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1019,7 +1017,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="23" network="ferol23">
-      <xc:Unicast class="evb::RU" instance="2" network="ferol23" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol23" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1027,7 +1025,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">2</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1063,7 +1061,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="24" network="ferol24">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol24" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol24" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1071,7 +1069,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1106,7 +1104,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="25" network="ferol25">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol25" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol25" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1114,7 +1112,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1149,7 +1147,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="26" network="ferol26">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol26" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol26" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1157,7 +1155,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1192,7 +1190,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="27" network="ferol27">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol27" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol27" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1200,7 +1198,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1236,7 +1234,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="28" network="ferol28">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol28" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol28" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1244,7 +1242,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1279,7 +1277,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="29" network="ferol29">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol29" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol29" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1287,7 +1285,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1322,7 +1320,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="30" network="ferol30">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol30" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol30" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1330,7 +1328,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1365,7 +1363,7 @@
     </xc:Application>
     
     <xc:Application class="Client" id="10" instance="31" network="ferol31">
-      <xc:Unicast class="evb::RU" instance="3" network="ferol31" />
+      <xc:Unicast class="evb::RU" instance="1" network="ferol31" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
         <maxFrameSize xsi:type="xsd:unsignedLong">0x40000</maxFrameSize>
         <committedPoolSize xsi:type="xsd:unsignedLong">2000000000</committedPoolSize>
@@ -1373,7 +1371,7 @@
         <sampleTime xsi:type="xsd:string">PT5S</sampleTime>
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
-        <destinationInstance xsi:type="xsd:unsignedLong">3</destinationInstance>
+        <destinationInstance xsi:type="xsd:unsignedLong">1</destinationInstance>
         <useRate xsi:type="xsd:boolean">true</useRate>
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
@@ -1425,10 +1423,18 @@
     <xc:Alias name="ferol01">ferola</xc:Alias>
     <xc:Alias name="ferol02">ferola</xc:Alias>
     <xc:Alias name="ferol03">ferola</xc:Alias>
-    <xc:Alias name="ferol04">ferolb</xc:Alias>
-    <xc:Alias name="ferol05">ferolb</xc:Alias>
-    <xc:Alias name="ferol06">ferolb</xc:Alias>
-    <xc:Alias name="ferol07">ferolb</xc:Alias>
+    <xc:Alias name="ferol04">ferola</xc:Alias>
+    <xc:Alias name="ferol05">ferola</xc:Alias>
+    <xc:Alias name="ferol06">ferola</xc:Alias>
+    <xc:Alias name="ferol07">ferola</xc:Alias>
+    <xc:Alias name="ferol08">ferolb</xc:Alias>
+    <xc:Alias name="ferol09">ferolb</xc:Alias>
+    <xc:Alias name="ferol10">ferolb</xc:Alias>
+    <xc:Alias name="ferol11">ferolb</xc:Alias>
+    <xc:Alias name="ferol12">ferolb</xc:Alias>
+    <xc:Alias name="ferol13">ferolb</xc:Alias>
+    <xc:Alias name="ferol14">ferolb</xc:Alias>
+    <xc:Alias name="ferol15">ferolb</xc:Alias>
     
     <xc:Endpoint protocol="udapl" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="infini" />
     
@@ -1442,7 +1448,7 @@
     
     <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
+        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[16]">
           <item xsi:type="soapenc:Struct" soapenc:position="[0]">
             <fedid xsi:type="xsd:string">0</fedid>
             <className xsi:type="xsd:string">evb::EVM</className>
@@ -1483,6 +1489,46 @@
             <className xsi:type="xsd:string">evb::EVM</className>
             <instance xsi:type="xsd:string">0</instance>
           </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[8]">
+            <fedid xsi:type="xsd:string">8</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[9]">
+            <fedid xsi:type="xsd:string">9</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[10]">
+            <fedid xsi:type="xsd:string">10</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[11]">
+            <fedid xsi:type="xsd:string">11</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[12]">
+            <fedid xsi:type="xsd:string">12</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[13]">
+            <fedid xsi:type="xsd:string">13</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[14]">
+            <fedid xsi:type="xsd:string">14</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[15]">
+            <fedid xsi:type="xsd:string">15</fedid>
+            <className xsi:type="xsd:string">evb::EVM</className>
+            <instance xsi:type="xsd:string">0</instance>
+          </item>
         </frlRouting>
         <frlDispatcher xsi:type="xsd:string">copy</frlDispatcher>
         <useUdaplPool xsi:type="xsd:boolean">true</useUdaplPool>
@@ -1519,6 +1565,24 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
+        <fedSourceIds soapenc:arrayType="xsd:ur-type[16]" xsi:type="soapenc:Array">
+          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">0</item>
+          <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">1</item>
+          <item soapenc:position="[2]" xsi:type="xsd:unsignedInt">2</item>
+          <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">3</item>
+          <item soapenc:position="[4]" xsi:type="xsd:unsignedInt">4</item>
+          <item soapenc:position="[5]" xsi:type="xsd:unsignedInt">5</item>
+          <item soapenc:position="[6]" xsi:type="xsd:unsignedInt">6</item>
+          <item soapenc:position="[7]" xsi:type="xsd:unsignedInt">7</item>
+          <item soapenc:position="[8]" xsi:type="xsd:unsignedInt">8</item>
+          <item soapenc:position="[9]" xsi:type="xsd:unsignedInt">9</item>
+          <item soapenc:position="[10]" xsi:type="xsd:unsignedInt">10</item>
+          <item soapenc:position="[11]" xsi:type="xsd:unsignedInt">11</item>
+          <item soapenc:position="[12]" xsi:type="xsd:unsignedInt">12</item>
+          <item soapenc:position="[13]" xsi:type="xsd:unsignedInt">13</item>
+          <item soapenc:position="[14]" xsi:type="xsd:unsignedInt">14</item>
+          <item soapenc:position="[15]" xsi:type="xsd:unsignedInt">15</item>
+        </fedSourceIds>
       </properties>
    </xc:Application>
     
@@ -1564,14 +1628,22 @@
     <xc:Endpoint protocol="ftcp" service="frl" hostname="RU1_FRL_HOST_NAME" port="RU1_FRL_PORT" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
     <xc:Endpoint protocol="ftcp" service="frl" hostname="RU1_FRL_HOST_NAME" port="60600" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select"  nonblock="true" datagramSize="131072" />
     
-    <xc:Alias name="ferol08">ferola</xc:Alias>
-    <xc:Alias name="ferol09">ferola</xc:Alias>
-    <xc:Alias name="ferol10">ferola</xc:Alias>
-    <xc:Alias name="ferol11">ferola</xc:Alias>
-    <xc:Alias name="ferol12">ferolb</xc:Alias>
-    <xc:Alias name="ferol13">ferolb</xc:Alias>
-    <xc:Alias name="ferol14">ferolb</xc:Alias>
-    <xc:Alias name="ferol15">ferolb</xc:Alias>
+    <xc:Alias name="ferol16">ferola</xc:Alias>
+    <xc:Alias name="ferol17">ferola</xc:Alias>
+    <xc:Alias name="ferol18">ferola</xc:Alias>
+    <xc:Alias name="ferol19">ferola</xc:Alias>
+    <xc:Alias name="ferol20">ferola</xc:Alias>
+    <xc:Alias name="ferol21">ferola</xc:Alias>
+    <xc:Alias name="ferol22">ferola</xc:Alias>
+    <xc:Alias name="ferol23">ferola</xc:Alias>
+    <xc:Alias name="ferol24">ferolb</xc:Alias>
+    <xc:Alias name="ferol25">ferolb</xc:Alias>
+    <xc:Alias name="ferol26">ferolb</xc:Alias>
+    <xc:Alias name="ferol27">ferolb</xc:Alias>
+    <xc:Alias name="ferol28">ferolb</xc:Alias>
+    <xc:Alias name="ferol29">ferolb</xc:Alias>
+    <xc:Alias name="ferol30">ferolb</xc:Alias>
+    <xc:Alias name="ferol31">ferolb</xc:Alias>
     
     <xc:Endpoint protocol="udapl" service="i2o" hostname="RU1_I2O_HOST_NAME" port="RU1_I2O_PORT" network="infini" />
     
@@ -1585,44 +1657,84 @@
     
     <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
+        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[16]">
           <item xsi:type="soapenc:Struct" soapenc:position="[0]">
-            <fedid xsi:type="xsd:string">8</fedid>
+            <fedid xsi:type="xsd:string">16</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[1]">
-            <fedid xsi:type="xsd:string">9</fedid>
+            <fedid xsi:type="xsd:string">17</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[2]">
-            <fedid xsi:type="xsd:string">10</fedid>
+            <fedid xsi:type="xsd:string">18</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[3]">
-            <fedid xsi:type="xsd:string">11</fedid>
+            <fedid xsi:type="xsd:string">19</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[4]">
-            <fedid xsi:type="xsd:string">12</fedid>
+            <fedid xsi:type="xsd:string">20</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[5]">
-            <fedid xsi:type="xsd:string">13</fedid>
+            <fedid xsi:type="xsd:string">21</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[6]">
-            <fedid xsi:type="xsd:string">14</fedid>
+            <fedid xsi:type="xsd:string">22</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
           <item xsi:type="soapenc:Struct" soapenc:position="[7]">
-            <fedid xsi:type="xsd:string">15</fedid>
+            <fedid xsi:type="xsd:string">23</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[8]">
+            <fedid xsi:type="xsd:string">24</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[9]">
+            <fedid xsi:type="xsd:string">25</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[10]">
+            <fedid xsi:type="xsd:string">26</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[11]">
+            <fedid xsi:type="xsd:string">27</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[12]">
+            <fedid xsi:type="xsd:string">28</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[13]">
+            <fedid xsi:type="xsd:string">29</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[14]">
+            <fedid xsi:type="xsd:string">30</fedid>
+            <className xsi:type="xsd:string">evb::RU</className>
+            <instance xsi:type="xsd:string">1</instance>
+          </item>
+          <item xsi:type="soapenc:Struct" soapenc:position="[15]">
+            <fedid xsi:type="xsd:string">31</fedid>
             <className xsi:type="xsd:string">evb::RU</className>
             <instance xsi:type="xsd:string">1</instance>
           </item>
@@ -1662,293 +1774,25 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
-      </properties>
-    </xc:Application>
-    
-    <xc:Module>/usr/lib64/libdat2.so</xc:Module>
-    <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>		
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>		
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-	
-  </xc:Context>
-  
-  
-  <xc:Context url="http://RU2_SOAP_HOST_NAME:RU2_SOAP_PORT">
-    
-    <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="12" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU2_FRL_HOST_NAME:RU2_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU2_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
-      <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-i2o" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-frl-fragment" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-frl-socket" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-PublicServicePoint-rlist/RU2_FRL_HOST_NAME" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-CopyWorker-rlist" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-MemoryCache-rlist" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:squeue:alloc" type="alloc" package="numa" mempolicy="onnode" node="0" />
-    </pol:policy>
-    
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="RU2_FRL_HOST_NAME" port="RU2_FRL_PORT" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="RU2_FRL_HOST_NAME" port="60600" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select"  nonblock="true" datagramSize="131072" />
-    
-    <xc:Alias name="ferol16">ferola</xc:Alias>
-    <xc:Alias name="ferol17">ferola</xc:Alias>
-    <xc:Alias name="ferol18">ferola</xc:Alias>
-    <xc:Alias name="ferol19">ferola</xc:Alias>
-    <xc:Alias name="ferol20">ferolb</xc:Alias>
-    <xc:Alias name="ferol21">ferolb</xc:Alias>
-    <xc:Alias name="ferol22">ferolb</xc:Alias>
-    <xc:Alias name="ferol23">ferolb</xc:Alias>
-    
-    <xc:Endpoint protocol="udapl" service="i2o" hostname="RU2_I2O_HOST_NAME" port="RU2_I2O_PORT" network="infini" />
-    
-    <xc:Application class="pt::udapl::Application" id="10" network="local">
-      <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
-        <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
-        <senderPoolSize xsi:type="xsd:unsignedInt">0xFA00000</senderPoolSize>
-        <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
-      </properties>
-    </xc:Application>
-    
-    <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
-      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
-          <item xsi:type="soapenc:Struct" soapenc:position="[0]">
-            <fedid xsi:type="xsd:string">16</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[1]">
-            <fedid xsi:type="xsd:string">17</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[2]">
-            <fedid xsi:type="xsd:string">18</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[3]">
-            <fedid xsi:type="xsd:string">19</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[4]">
-            <fedid xsi:type="xsd:string">20</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[5]">
-            <fedid xsi:type="xsd:string">21</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[6]">
-            <fedid xsi:type="xsd:string">22</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[7]">
-            <fedid xsi:type="xsd:string">23</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">2</instance>
-          </item>
-        </frlRouting>
-        <frlDispatcher xsi:type="xsd:string">copy</frlDispatcher>
-        <useUdaplPool xsi:type="xsd:boolean">true</useUdaplPool>
-        <autoConnect xsi:type="xsd:boolean">false</autoConnect>
-        <!-- Copy worker configuration -->
-        <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">16</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">700000</i2oFragmentPoolSize>
-        <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-        <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
-        <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
-        <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
-        <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
-        <destinationClassName xsi:type="xsd:string">evb::RU</destinationClassName>
-        <destinationClassInstance xsi:type="xsd:unsignedLong">2</destinationClassInstance>
-        <dropAtSuperFragmentWorker xsi:type="xsd:boolean">false</dropAtSuperFragmentWorker>
-        <dropAtSuperFragmentDelivery xsi:type="xsd:boolean">false</dropAtSuperFragmentDelivery>
-        <!-- Input configuration e.g. PSP -->
-        <inputStreamPoolSize xsi:type="xsd:double">1400000</inputStreamPoolSize>
-        <maxClients xsi:type="xsd:unsignedInt">10</maxClients>
-        <ioQueueSize xsi:type="xsd:unsignedInt">64</ioQueueSize>
-        <eventQueueSize xsi:type="xsd:unsignedInt">64</eventQueueSize>
-        <maxInputReceiveBuffers xsi:type="xsd:unsignedInt">8</maxInputReceiveBuffers>
-        <maxInputBlockSize xsi:type="xsd:unsignedInt">131072</maxInputBlockSize>
-      </properties>
-    </xc:Application>
-    
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Application class="evb::RU" id="43" instance="2" network="infini">
-      <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
-        <inputSource xsi:type="xsd:string">FEROL</inputSource>
-        <dropInputData xsi:type="xsd:boolean">false</dropInputData>
-        <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
-      </properties>
-    </xc:Application>
-    
-    <xc:Module>/usr/lib64/libdat2.so</xc:Module>
-    <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>		
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>		
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-	
-  </xc:Context>
-  
-  
-  <xc:Context url="http://RU3_SOAP_HOST_NAME:RU3_SOAP_PORT">
-    
-    <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-connector(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-acceptor(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="12" />
-      <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU3_FRL_HOST_NAME:RU3_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU3_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
-      <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-i2o" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-frl-fragment" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:toolbox-mem-allocator-frl-frl-socket" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-PublicServicePoint-rlist/RU3_FRL_HOST_NAME" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-CopyWorker-rlist" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:pt-frl-MemoryCache-rlist" type="alloc" package="numa" mempolicy="onnode" node="0" />
-      <pol:element pattern="urn:squeue:alloc" type="alloc" package="numa" mempolicy="onnode" node="0" />
-    </pol:policy>
-    
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="RU3_FRL_HOST_NAME" port="RU3_FRL_PORT" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="RU3_FRL_HOST_NAME" port="60600" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select"  nonblock="true" datagramSize="131072" />
-    
-    <xc:Alias name="ferol24">ferola</xc:Alias>
-    <xc:Alias name="ferol25">ferola</xc:Alias>
-    <xc:Alias name="ferol26">ferola</xc:Alias>
-    <xc:Alias name="ferol27">ferola</xc:Alias>
-    <xc:Alias name="ferol28">ferolb</xc:Alias>
-    <xc:Alias name="ferol29">ferolb</xc:Alias>
-    <xc:Alias name="ferol30">ferolb</xc:Alias>
-    <xc:Alias name="ferol31">ferolb</xc:Alias>
-    
-    <xc:Endpoint protocol="udapl" service="i2o" hostname="RU3_I2O_HOST_NAME" port="RU3_I2O_PORT" network="infini" />
-    
-    <xc:Application class="pt::udapl::Application" id="10" network="local">
-      <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
-        <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
-        <senderPoolSize xsi:type="xsd:unsignedInt">0xFA00000</senderPoolSize>
-        <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
-      </properties>
-    </xc:Application>
-    
-    <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
-      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-        <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
-          <item xsi:type="soapenc:Struct" soapenc:position="[0]">
-            <fedid xsi:type="xsd:string">24</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[1]">
-            <fedid xsi:type="xsd:string">25</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[2]">
-            <fedid xsi:type="xsd:string">26</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[3]">
-            <fedid xsi:type="xsd:string">27</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[4]">
-            <fedid xsi:type="xsd:string">28</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[5]">
-            <fedid xsi:type="xsd:string">29</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[6]">
-            <fedid xsi:type="xsd:string">30</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-          <item xsi:type="soapenc:Struct" soapenc:position="[7]">
-            <fedid xsi:type="xsd:string">31</fedid>
-            <className xsi:type="xsd:string">evb::RU</className>
-            <instance xsi:type="xsd:string">3</instance>
-          </item>
-        </frlRouting>
-        <frlDispatcher xsi:type="xsd:string">copy</frlDispatcher>
-        <useUdaplPool xsi:type="xsd:boolean">true</useUdaplPool>
-        <autoConnect xsi:type="xsd:boolean">false</autoConnect>
-        <!-- Copy worker configuration -->
-        <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">16</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">700000</i2oFragmentPoolSize>
-        <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-        <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
-        <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
-        <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
-        <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
-        <destinationClassName xsi:type="xsd:string">evb::RU</destinationClassName>
-        <destinationClassInstance xsi:type="xsd:unsignedLong">3</destinationClassInstance>
-        <dropAtSuperFragmentWorker xsi:type="xsd:boolean">false</dropAtSuperFragmentWorker>
-        <dropAtSuperFragmentDelivery xsi:type="xsd:boolean">false</dropAtSuperFragmentDelivery>
-        <!-- Input configuration e.g. PSP -->
-        <inputStreamPoolSize xsi:type="xsd:double">1400000</inputStreamPoolSize>
-        <maxClients xsi:type="xsd:unsignedInt">10</maxClients>
-        <ioQueueSize xsi:type="xsd:unsignedInt">64</ioQueueSize>
-        <eventQueueSize xsi:type="xsd:unsignedInt">64</eventQueueSize>
-        <maxInputReceiveBuffers xsi:type="xsd:unsignedInt">8</maxInputReceiveBuffers>
-        <maxInputBlockSize xsi:type="xsd:unsignedInt">131072</maxInputBlockSize>
-      </properties>
-    </xc:Application>
-    
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Application class="evb::RU" id="43" instance="3" network="infini">
-      <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
-        <inputSource xsi:type="xsd:string">FEROL</inputSource>
-        <dropInputData xsi:type="xsd:boolean">false</dropInputData>
-        <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
-      </properties>
+        <fedSourceIds soapenc:arrayType="xsd:ur-type[16]" xsi:type="soapenc:Array">
+          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">16</item>
+          <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">17</item>
+          <item soapenc:position="[2]" xsi:type="xsd:unsignedInt">18</item>
+          <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">19</item>
+          <item soapenc:position="[4]" xsi:type="xsd:unsignedInt">20</item>
+          <item soapenc:position="[5]" xsi:type="xsd:unsignedInt">21</item>
+          <item soapenc:position="[6]" xsi:type="xsd:unsignedInt">22</item>
+          <item soapenc:position="[7]" xsi:type="xsd:unsignedInt">23</item>
+          <item soapenc:position="[8]" xsi:type="xsd:unsignedInt">24</item>
+          <item soapenc:position="[9]" xsi:type="xsd:unsignedInt">25</item>
+          <item soapenc:position="[10]" xsi:type="xsd:unsignedInt">26</item>
+          <item soapenc:position="[11]" xsi:type="xsd:unsignedInt">27</item>
+          <item soapenc:position="[12]" xsi:type="xsd:unsignedInt">28</item>
+          <item soapenc:position="[13]" xsi:type="xsd:unsignedInt">29</item>
+          <item soapenc:position="[14]" xsi:type="xsd:unsignedInt">30</item>
+          <item soapenc:position="[15]" xsi:type="xsd:unsignedInt">31</item>
+        </fedSourceIds>
+       </properties>
     </xc:Application>
     
     <xc:Module>/usr/lib64/libdat2.so</xc:Module>

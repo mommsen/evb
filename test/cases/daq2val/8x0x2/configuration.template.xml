@@ -24,7 +24,6 @@
       </properties>
     </xc:Application>
     
-    <!-- Declare an application -->
     <xc:Application class="Client" id="10" instance="0" network="local">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">

@@ -1,12 +1,13 @@
 #!/bin/sh
 
-for TEST_NAME in `ls ${EVB_TESTER_HOME}/cases/ | grep "^[012]"`; do
+for TEST_NAME in `/bin/ls -1d ${EVB_TESTER_HOME}/cases/$1/[0-9]* | sed -nre "s:${EVB_TESTER_HOME}/cases/+::p" | sort -V` ; do
   startTime=`date "+%H:%M:%S"`
   printf "%-32s: $startTime " $TEST_NAME
 
   mkdir -p ${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/${TEST_NAME}
 
-  if runTest $TEST_NAME 2>&1 > ${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/${TEST_NAME}/${TEST_NAME}.log
+  logfile=${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/${TEST_NAME}/`basename ${TEST_NAME}`.log
+  if runTest $TEST_NAME 2>&1 > ${logfile}
   then
     date=`date "+%H:%M:%S"`
     echo -e "$date \033[1;30;42m Passed \033[30;47;0m"
