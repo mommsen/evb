@@ -663,6 +663,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<p>BUproxy</p>"                                        << std::endl;
   *out << "<table>"                                               << std::endl;
   
+  const std::_Ios_Fmtflags originalFlags=out->flags();
+  const int originalPrecision=out->precision();
+  out->setf(std::ios::fixed);
+  out->precision(0);
+  
   boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
   boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
 
@@ -737,6 +742,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
+  
+  out->flags(originalFlags);
+  out->precision(originalPrecision);
   
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;

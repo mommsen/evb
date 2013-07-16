@@ -239,6 +239,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
+    out->precision(4);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
     *out << "<td>" << rate_ << "</td>"                              << std::endl;
     *out << "</tr>"                                                 << std::endl;
