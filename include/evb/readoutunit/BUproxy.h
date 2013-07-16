@@ -99,13 +99,6 @@ namespace evb {
       void stopProcessing();
       
       /**
-       * Return the logical number of I2O_BU_CACHE messages
-       * received since the last call to resetMonitoringCounters
-       */
-      uint64_t i2oBUCacheCount() const
-      { return dataMonitoring_.logicalCount; }
-      
-      /**
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);
@@ -174,7 +167,6 @@ namespace evb {
       boost::mutex dataMonitoringMutex_;
       
       xdata::UnsignedInteger32 lastEventNumberToBUs_;
-      xdata::UnsignedInteger32 nbSuperFragmentsReady_;
       xdata::UnsignedInteger64 i2oBUCacheCount_;
       xdata::Vector<xdata::UnsignedInteger64> i2oRUSendCountBU_;
       xdata::Vector<xdata::UnsignedInteger64> i2oBUCachePayloadBU_;

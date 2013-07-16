@@ -266,6 +266,8 @@ namespace evb {
       boost::mutex superFragmentMonitorMutex_;
       
       bool acceptI2Omessages_;
+      xdata::UnsignedInteger32 eventRate_;
+      xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 lastEventNumberFromFEROLs_;
       xdata::UnsignedInteger64 i2oDataReadyCount_;
       
@@ -436,9 +438,13 @@ void evb::readoutunit::Input<Configuration>::clear()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItems& items)
 {
+  eventRate_ = 0;
+  superFragmentSize_ = 0;
   lastEventNumberFromFEROLs_ = 0;
   i2oDataReadyCount_ = 0;
 
+  items.add("eventRate", &eventRate_);
+  items.add("superFragmentSize", &superFragmentSize_);
   items.add("lastEventNumberFromFEROLs", &lastEventNumberFromFEROLs_);
   items.add("i2oDataReadyCount", &i2oDataReadyCount_);
 }
@@ -486,6 +492,8 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     superFragmentMonitor_.perf.reset();
   }
   
+  eventRate_ = superFragmentMonitor_.rate;
+  superFragmentSize_ = superFragmentMonitor_.eventSize;
   lastEventNumberFromFEROLs_ = lastEventNumber;
   i2oDataReadyCount_ = dataReadyCount;
 }

@@ -78,7 +78,8 @@ namespace evb {
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
       
-      xdata::UnsignedInteger32 nbSuperFragmentsReady_;
+      xdata::UnsignedInteger32 eventRate_;
+      xdata::UnsignedInteger32 superFragmentSize_;
       
     };
     
@@ -105,9 +106,11 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendAp
   InfoSpaceItems& appInfoSpaceParams
 )
 {
-  nbSuperFragmentsReady_ = 0;
+  eventRate_ = 0;
+  superFragmentSize_ = 0;
   
-  appInfoSpaceParams.add("nbSuperFragmentsReady", &nbSuperFragmentsReady_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("superFragmentSize", &superFragmentSize_, InfoSpaceItems::retrieve);
 }
 
 
@@ -145,15 +148,26 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
 template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleItemRetrieveEvent(const std::string& item)
 {
-  if (item == "nbSuperFragmentsReady")
+  if (item == "eventRate")
   {
     try
     {
-      nbSuperFragmentsReady_.setValue( *(this->monitoringInfoSpace_->find("nbSuperFragmentsReady")) );
+      eventRate_.setValue( *(this->monitoringInfoSpace_->find("eventRate")) );
     }
     catch(xdata::exception::Exception& e)
     {
-      nbSuperFragmentsReady_ = 0;
+      eventRate_ = 0;
+    }
+  }
+  else if (item == "superFragmentSize")
+  {
+    try
+    {
+      superFragmentSize_.setValue( *(this->monitoringInfoSpace_->find("superFragmentSize")) );
+    }
+    catch(xdata::exception::Exception& e)
+    {
+      superFragmentSize_ = 0;
     }
   }
 }
