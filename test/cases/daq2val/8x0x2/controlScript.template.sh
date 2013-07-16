@@ -158,6 +158,27 @@ sendSimpleCmdToApp FEROL7_SOAP_HOST_NAME FEROL7_SOAP_PORT Client 7 start
 echo "Sending data for 10 seconds"
 sleep 10
 
+expectedEventSize=$((8*($fragmentSize+16))) #add FEROL header size
+
+superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+
+echo "EVM superFragmentSize: $superFragmentSizeEVM"
+
+if [[ $superFragmentSizeEVM -ne $expectedEventSize ]]
+then
+  echo "Test failed: expected $expectedEventSize"
+  exit 1
+fi
+
+eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+echo "EVM eventRate: $eventRateEVM"
+
+if [[ $eventRateEVM -lt 200000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
 nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
 

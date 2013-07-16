@@ -517,6 +517,51 @@ sendSimpleCmdToApp FEROL31_SOAP_HOST_NAME FEROL31_SOAP_PORT Client 31 start
 echo "Sending data for 10 seconds"
 sleep 10
 
+expectedEventSize=$((8*($fragmentSize+16))) #add FEROL header size
+
+superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+superFragmentSizeRU1=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt`
+superFragmentSizeRU2=`getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 2 superFragmentSize xsd:unsignedInt`
+superFragmentSizeRU3=`getParam RU3_SOAP_HOST_NAME RU3_SOAP_PORT evb::RU 3 superFragmentSize xsd:unsignedInt`
+
+echo "EVM superFragmentSize: $superFragmentSizeEVM"
+echo "RU1 superFragmentSize: $superFragmentSizeRU1"
+echo "RU2 superFragmentSize: $superFragmentSizeRU2"
+echo "RU3 superFragmentSize: $superFragmentSizeRU3"
+
+if [[ $superFragmentSizeEVM -ne $expectedEventSize ]]
+then
+  echo "Test failed: expected $expectedEventSize"
+  exit 1
+fi
+
+if [[ $superFragmentSizeRU1 -ne $expectedEventSize ]]
+then
+  echo "Test failed: expected $expectedEventSize"
+  exit 1
+fi
+
+if [[ $superFragmentSizeRU2 -ne $expectedEventSize ]]
+then
+  echo "Test failed: expected $expectedEventSize"
+  exit 1
+fi
+
+if [[ $superFragmentSizeRU3 -ne $expectedEventSize ]]
+then
+  echo "Test failed: expected $expectedEventSize"
+  exit 1
+fi
+
+eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+echo "EVM eventRate: $eventRateEVM"
+
+if [[ $eventRateEVM -lt 200000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
 nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
 nbEventsBuiltBU2=`getParam BU2_SOAP_HOST_NAME BU2_SOAP_PORT evb::BU 2 nbEventsBuilt xsd:unsignedInt`
