@@ -298,10 +298,13 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
     FragmentRequestPtr fragmentRequest;
     SuperFragments superFragments;
 
-    while ( processRequest(fragmentRequest,superFragments) )
+    while ( doProcessing_ )
     {
-      sendData(fragmentRequest, superFragments);
-      superFragments.clear();
+      if ( processRequest(fragmentRequest,superFragments) )
+      {
+        sendData(fragmentRequest, superFragments);
+        superFragments.clear();
+      }
     }
   }
   catch(xcept::Exception &e)
