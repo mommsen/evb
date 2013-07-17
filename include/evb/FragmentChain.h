@@ -22,12 +22,26 @@ namespace evb {
   class FragmentChain
   {
   public:
-    
+
+    struct Fragment
+    {
+      const EvBid evbId;
+      toolbox::mem::Reference* bufRef;
+      tcpla::MemoryCache* cache;
+
+      Fragment(EvBid evbId, toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+      : evbId(evbId),bufRef(bufRef),cache(cache) {};
+
+      ~Fragment() { cache->grantFrame(bufRef); }
+    };
+    typedef boost::shared_ptr<Fragment> FragmentPtr;
+
     typedef std::vector<uint32_t> ResourceList;
     
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
-    FragmentChain(const EvBid&, const ResourceList&);
+    FragmentChain(FragmentPtr&);
+    FragmentChain(const EvBid&);
     FragmentChain(const EvBid&, toolbox::mem::Reference*);
     
     ~FragmentChain();
@@ -37,7 +51,16 @@ namespace evb {
      * Return false if the resource id is not expected.
      */
     bool append(uint32_t resourceId, toolbox::mem::Reference*);
-    bool append(uint32_t resourceId, toolbox::mem::Reference*, tcpla::MemoryCache*);
+
+    /**
+     * Append the toolbox::mem::Reference to the fragment.
+     */
+    void append(toolbox::mem::Reference*);
+
+    /**
+     * Append the fragment. Keep track of the tcpla::MemoryCache.
+     */
+    void append(FragmentPtr&);
     
     /**
      * Return the head of the toolbox::mem::Reference chain
@@ -80,8 +103,8 @@ namespace evb {
     toolbox::mem::Reference* head_;
     toolbox::mem::Reference* tail_;
 
-    typedef std::map<toolbox::mem::Reference*,tcpla::MemoryCache*> Caches;
-    Caches caches_;
+    typedef std::vector<FragmentPtr> Fragments;
+    Fragments fragments_;
     
   }; // FragmentChain
   
@@ -112,9 +135,8 @@ head_(0),tail_(0)
 
 
 template<class T>
-evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, const ResourceList& resourceList) :
+evb::FragmentChain<T>::FragmentChain(const EvBid& evbId) :
 evbId_(evbId),
-resourceList_(resourceList),
 size_(0),
 head_(0),tail_(0)
 {}
@@ -129,16 +151,21 @@ head_(bufRef),tail_(bufRef)
 
 
 template<class T>
+evb::FragmentChain<T>::FragmentChain(FragmentPtr& fragment) :
+evbId_(fragment->evbId),
+size_(fragment->bufRef->getDataSize() - sizeof(T)),
+head_(fragment->bufRef),tail_(fragment->bufRef)
+{
+  fragments_.push_back(fragment);
+}
+
+
+template<class T>
 evb::FragmentChain<T>::~FragmentChain()
 {
-  if (head_) head_->release();
-  
-  for (Caches::iterator it = caches_.begin(), itEnd = caches_.end();
-       it != itEnd; ++it)
-  {
-    it->second->grantFrame(it->first);
-  }
-  caches_.clear();
+  if ( fragments_.empty() && head_ ) head_->release();
+
+  fragments_.clear();
 }
 
 
@@ -151,6 +178,18 @@ bool evb::FragmentChain<T>::append
 {
   if ( ! checkResourceId(resourceId) ) return false;
 
+  append(bufRef);
+
+  return true;
+}
+
+
+template<class T>
+void evb::FragmentChain<T>::append
+(
+  toolbox::mem::Reference* bufRef
+)
+{
   if (!head_)
   {
     head_ = bufRef;
@@ -163,32 +202,18 @@ bool evb::FragmentChain<T>::append
   }
   
   size_ += bufRef->getDataSize() - sizeof(T);
-  
-  // while ( tail_->getNextReference() )
-  // {
-  //   tail_ = tail_->getNextReference();
-  //   size_ += tail_->getDataSize();
-  // }
-  
-  return true;
 }
   
 
 template<class T>
-bool evb::FragmentChain<T>::append
+void evb::FragmentChain<T>::append
 (
-  const uint32_t resourceId,
-  toolbox::mem::Reference* bufRef,
-  tcpla::MemoryCache* cache
+  FragmentPtr& fragment
 )
 {
-  if ( append(resourceId, bufRef->duplicate()) )
-  {
-    caches_.insert(Caches::value_type(bufRef,cache));
-    return true;
-  }
-  
-  return false;
+  append(fragment->bufRef);
+
+  fragments_.push_back(fragment);
 }
 
 

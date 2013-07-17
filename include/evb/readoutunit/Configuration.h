@@ -24,7 +24,7 @@ namespace evb {
       xdata::String inputSource;
       xdata::UnsignedInteger32 numberOfResponders;
       xdata::UnsignedInteger32 blockSize;
-      xdata::UnsignedInteger32 superFragmentFIFOCapacity;
+      xdata::UnsignedInteger32 fragmentFIFOCapacity;
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;
       xdata::Boolean dumpFragmentsToLogger;
       xdata::Boolean dropInputData;
@@ -40,7 +40,7 @@ namespace evb {
       : inputSource("FEROL"),
         numberOfResponders(1),
         blockSize(32768),
-        superFragmentFIFOCapacity(128),
+        fragmentFIFOCapacity(128),
         fragmentRequestFIFOCapacity(80*8), // 80 BUs with max 8 request
         dumpFragmentsToLogger(false),
         dropInputData(false),
@@ -66,7 +66,7 @@ namespace evb {
         params.add("inputSource", &inputSource, InfoSpaceItems::change);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);
-        params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
+        params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
         params.add("dumpFragmentsToLogger", &dumpFragmentsToLogger);
         params.add("dropInputData", &dropInputData);

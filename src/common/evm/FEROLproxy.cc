@@ -4,7 +4,51 @@
 
 bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
 {
-  return superFragmentFIFO_.deq(superFragment);
+  // if we got a superFragment from pt::frl, use it
+  if ( superFragmentFIFO_.deq(superFragment) ) return true;
+
+  readoutunit::FragmentChain::FragmentPtr fragment;
+
+  FragmentFIFOs::iterator masterFED = fragmentFIFOs_.find(GTP_FED_ID);
+  if ( masterFED == fragmentFIFOs_.end() )
+  {
+    // no trigger FED, use the first FED
+    masterFED = fragmentFIFOs_.begin();
+  }
+
+  if ( ! masterFED->second->deq(fragment) ) return false;
+
+  const EvBid evbId = fragment->evbId;
+  superFragment.reset( new readoutunit::FragmentChain(fragment) );
+
+  for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    if ( it != masterFED )
+    {
+      while ( doProcessing_ && ! it->second->deq(fragment) ) ::usleep(10);
+
+      if (doProcessing_)
+      {
+        if ( evbId != fragment->evbId )
+        {
+          std::stringstream oss;
+
+          oss << "Mismatch detected: expected evb id "
+            << evbId << ", but found evb id "
+            << fragment->evbId
+            << " in data block from FED "
+            << it->first;
+
+          XCEPT_RAISE(exception::MismatchDetected, oss.str());
+        }
+
+        superFragment->append(fragment);
+      }
+    }
+  }
+
+  return true;
 }
 
 
