@@ -56,10 +56,13 @@ namespace evb {
       public:
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
+        virtual void configure(boost::shared_ptr<readoutunit::Configuration>);
 
       private:
 
         virtual uint32_t extractTriggerInformation(const unsigned char*) const;
+
+        FragmentFIFOs::iterator masterFED_;
 
       };
 

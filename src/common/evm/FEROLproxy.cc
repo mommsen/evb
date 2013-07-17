@@ -9,14 +9,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
 
   readoutunit::FragmentChain::FragmentPtr fragment;
 
-  FragmentFIFOs::iterator masterFED = fragmentFIFOs_.find(GTP_FED_ID);
-  if ( masterFED == fragmentFIFOs_.end() )
-  {
-    // no trigger FED, use the first FED
-    masterFED = fragmentFIFOs_.begin();
-  }
-
-  if ( ! masterFED->second->deq(fragment) ) return false;
+  if ( ! masterFED_->second->deq(fragment) ) return false;
 
   const EvBid evbId = fragment->evbId;
   superFragment.reset( new readoutunit::FragmentChain(fragment) );
@@ -24,7 +17,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    if ( it != masterFED )
+    if ( it != masterFED_ )
     {
       while ( doProcessing_ && ! it->second->deq(fragment) ) ::usleep(10);
 
@@ -49,6 +42,19 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
   }
 
   return true;
+}
+
+
+void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Configuration> configuration)
+{
+  readoutunit::Input<readoutunit::Configuration>::FEROLproxy::configure(configuration);
+
+  masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
+  if ( masterFED_ == fragmentFIFOs_.end() )
+  {
+    // no trigger FED, use the first FED
+    masterFED_ = fragmentFIFOs_.begin();
+  }
 }
 
 
