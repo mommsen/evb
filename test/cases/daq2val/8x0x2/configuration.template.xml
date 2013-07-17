@@ -467,7 +467,7 @@
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <!-- Copy worker configuration -->
         <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">256</i2oFragmentsNo>
+        <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
         <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
         <copyWorkersNo xsi:type="xsd:unsignedInt">4</copyWorkersNo>
@@ -496,8 +496,8 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <numberOfResponders xsi:type="xsd:unsignedInt">4</numberOfResponders>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">256</fragmentFIFOCapacity>
+        <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
       </properties>
    </xc:Application>
 
