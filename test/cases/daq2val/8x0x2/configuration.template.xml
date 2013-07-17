@@ -360,10 +360,10 @@
       <!-- for C6220 -->
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="11" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="27" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
@@ -467,8 +467,8 @@
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <!-- Copy worker configuration -->
         <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">5000000</i2oFragmentPoolSize>
+        <i2oFragmentsNo xsi:type="xsd:unsignedInt">256</i2oFragmentsNo>
+        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
         <copyWorkersNo xsi:type="xsd:unsignedInt">4</copyWorkersNo>
         <!-- Super fragment configuration -->
@@ -497,7 +497,7 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <numberOfResponders xsi:type="xsd:unsignedInt">4</numberOfResponders>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
+        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">256</fragmentFIFOCapacity>
       </properties>
    </xc:Application>
 
