@@ -29,51 +29,51 @@
 
 namespace evb {
   namespace test {
-    
+
     /**
      * \ingroup xdaqApps
      * \brief The dummy FEROL
      */
-    
+
     class DummyFEROL : public EvBApplication<dummyFEROL::StateMachine>
     {
-      
+
     public:
-      
+
       DummyFEROL(xdaq::ApplicationStub*);
 
       virtual ~DummyFEROL() {};
-      
+
       XDAQ_INSTANTIATOR();
-      
+
       /**
        * Reset the monitoring counters
        */
       void resetMonitoringCounters();
-      
+
       /**
        * Configure
        */
       void configure();
-      
+
       /**
        * Remove all data
        */
       void clear();
-      
+
       /**
        * Start triggers and send messages
        */
       void startProcessing();
-      
+
       /**
        * Stop triggers and sending messages
        */
       void stopProcessing();
-      
-      
+
+
     private:
-      
+
       virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
       virtual void do_updateMonitoringInfo();
@@ -89,9 +89,9 @@ namespace evb {
       void updateCounters(toolbox::mem::Reference*);
       void sendData(toolbox::mem::Reference*);
       void getPerformance(PerformanceMonitor&);
-      
+
       xdaq::ApplicationDescriptor* ruDescriptor_;
-    
+
       volatile bool doProcessing_;
       volatile bool generatingActive_;
       volatile bool sendingActive_;
@@ -100,21 +100,21 @@ namespace evb {
       toolbox::task::WorkLoop* sendingWL_;
       toolbox::task::ActionSignature* generatingAction_;
       toolbox::task::ActionSignature* sendingAction_;
-      
+
       typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
 
       FragmentGenerator fragmentGenerator_;
-      
+
       PerformanceMonitor dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
-      
+
       xdata::Double bandwidth_;
       xdata::Double frameRate_;
       xdata::Double fragmentRate_;
       xdata::Double fragmentSize_;
       xdata::Double fragmentSizeStdDev_;
-      
+
       InfoSpaceItems dummyFerolParams_;
       xdata::String destinationClass_;
       xdata::UnsignedInteger32 destinationInstance_;
@@ -126,8 +126,8 @@ namespace evb {
       xdata::UnsignedInteger32 fedSizeStdDev_;
       xdata::UnsignedInteger32 fragmentFIFOCapacity_;
     };
-    
-    
+
+
   } } //namespace evb::test
 
 #endif // _evb_test_DummyFEROL_h_

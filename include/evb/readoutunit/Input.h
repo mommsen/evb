@@ -37,12 +37,12 @@
 
 
 namespace evb {
-  
+
   namespace readoutunit {
-      
+
     typedef FragmentChain<I2O_DATA_READY_MESSAGE_FRAME> FragmentChain;
     typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
-    
+
     /**
      * \ingroup xdaqApps
      * \brief Generic input for the readout units
@@ -51,32 +51,32 @@ namespace evb {
     class Input
     {
     public:
-      
+
       Input
       (
         xdaq::ApplicationStub*,
         boost::shared_ptr<Configuration>
       );
-      
+
       virtual ~Input() {};
-      
+
       /**
        * Notify the proxy of an input source change.
        * The input source is taken from the info space
        * parameter 'inputSource'.
        */
       void inputSourceChanged();
-      
+
       /**
        * Callback for I2O_SUPER_FRAGMENT_READY messages received from pt::frl
        */
       void superFragmentReady(toolbox::mem::Reference*);
-      
+
       /**
        * Callback for individual FED fragments received from pt::frl
        */
       void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
-      
+
       /**
        * Get the next complete super fragment.
        * If none is available, the method returns false.
@@ -84,7 +84,7 @@ namespace evb {
        * toolbox::mem::Reference chain to the FED fragements.
        */
       bool getNextAvailableSuperFragment(FragmentChainPtr&);
-      
+
       /**
        * Get the complete super fragment with EvBid.
        * If it is not available or complete, the method returns false.
@@ -92,13 +92,13 @@ namespace evb {
        * toolbox::mem::Reference chain to the FED fragements.
        */
       bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
-      
+
       /**
-       * Append the info space items to be published in the 
+       * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
       void appendMonitoringItems(InfoSpaceItems&);
-      
+
       /**
        * Update all values of the items put into the monitoring
        * info space. The caller has to make sure that the info
@@ -106,74 +106,74 @@ namespace evb {
        * after the call.
        */
       void updateMonitoringItems();
-      
+
       /**
        * Reset the monitoring counters
        */
       void resetMonitoringCounters();
-      
+
       /**
        * Configure
        */
       void configure();
-      
+
       /**
        * Start processing messages
        */
       void startProcessing(const uint32_t runNumber);
-      
+
       /**
        * Stop processing messages
        */
       void stopProcessing();
-      
+
       /**
        * Remove all data
        */
       void clear();
-      
+
       /**
        * Print monitoring information as HTML snipped
        */
       void printHtml(xgi::Output*);
-      
+
       /**
        * Print the content of the super-fragment FIFO as HTML snipped
        */
       void printSuperFragmentFIFO(xgi::Output* out);
- 
-      
+
+
     protected:
-      
+
       class Handler
       {
       public:
-        
+
         virtual void superFragmentReady(toolbox::mem::Reference*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::superFragmentReady is not implemented"); }
-        
+
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::rawDataAvailable is not implemented"); }
-        
+
         virtual bool getNextAvailableSuperFragment(FragmentChainPtr&)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::getNextAvailableSuperFragment is not implemented"); }
-        
+
         virtual bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::getSuperFragmentWithEvBid is not implemented"); }
-        
+
         virtual void configure(boost::shared_ptr<Configuration>) {};
         virtual void startProcessing(const uint32_t runNumber) {};
         virtual void stopProcessing() {};
         virtual void clear() {};
         virtual void printSuperFragmentFIFO(xgi::Output*) {};
         virtual void printSuperFragmentFIFOsnipped(xgi::Output*, const toolbox::net::URN&) {};
-        
+
       };
-           
+
       class FEROLproxy : public Handler
       {
       public:
-        
+
         FEROLproxy();
 
         virtual void configure(boost::shared_ptr<Configuration>);
@@ -183,51 +183,51 @@ namespace evb {
         virtual void clear();
         virtual void printSuperFragmentFIFO(xgi::Output*);
         virtual void printSuperFragmentFIFOsnipped(xgi::Output*, const toolbox::net::URN&);
-        
+
       protected:
-        
+
         virtual uint32_t extractTriggerInformation(const unsigned char*) const
         { return 0; }
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
-        
+
         typedef std::map<EvBid,FragmentChainPtr> SuperFragmentMap;
         SuperFragmentMap superFragmentMap_;
         boost::shared_mutex superFragmentMapMutex_;
-        
+
       private:
-        
+
         void addFragment(toolbox::mem::Reference*);
         toolbox::mem::Reference* copyDataIntoDataBlock(FragmentChainPtr);
         void fillBlockInfo(toolbox::mem::Reference*, const EvBid&, const uint32_t nbBlocks) const;
-        
+
         bool dropInputData_;
-        
+
         FragmentChain::ResourceList fedList_;
-        
+
         typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
         EvBidFactories evbIdFactories_;
-        
+
       };
 
       class DummyInputData : public Handler
       {
       public:
-        
+
         DummyInputData(Input<Configuration>* input) : input_(input) {};
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
-        
+
       protected:
-        
+
         bool createSuperFragment(const EvBid&, FragmentChainPtr&);
 
         EvBidFactory evbIdFactory_;
         uint32_t eventNumber_;
 
       private:
-        
+
         Input<Configuration>* input_;
         FragmentChain::ResourceList fedList_;
         typedef std::map<uint16_t,FragmentTracker> FragmentTrackers;
@@ -237,18 +237,18 @@ namespace evb {
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
       { handler.reset(new Handler); }
-      
+
       const boost::shared_ptr<Configuration> configuration_;
-      
+
     private:
-      
+
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
       void updateInputCounters(toolbox::mem::Reference*);
       void updateSuperFragmentCounters(const FragmentChainPtr&);
-      
+
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
-      
+
       struct InputMonitoring
       {
         uint32_t lastEventNumber;
@@ -261,18 +261,18 @@ namespace evb {
       typedef std::map<uint16_t,InputMonitoring> InputMonitors;
       InputMonitors inputMonitors_;
       boost::mutex inputMonitorsMutex_;
-      
+
       InputMonitoring superFragmentMonitor_;
       boost::mutex superFragmentMonitorMutex_;
-      
+
       bool acceptI2Omessages_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 lastEventNumberFromFEROLs_;
       xdata::UnsignedInteger64 i2oDataReadyCount_;
-      
+
     };
-    
+
   } } //namespace evb::readoutunit
 
 
@@ -329,7 +329,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::Reference* bufRef)
 {
   boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-  
+
   const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
     + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const ferolh_t* ferolHeader = (ferolh_t*)payload;
@@ -337,13 +337,13 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
   const uint32_t fedSize = ferolHeader->data_length();
-  
+
   // I2O_DATA_READY_MESSAGE_FRAME* frame =
   //   (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   // const uint16_t fedId = frame->fedid;
   // const uint32_t eventNumber = frame->triggerno;
   // const uint32_t fedSize = frame->totalLength;
-  
+
   typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
   if ( pos == inputMonitors_.end() )
   {
@@ -355,7 +355,7 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
       std::ostream_iterator<uint16_t>(msg," "));
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
-  
+
   pos->second.lastEventNumber = eventNumber;
   pos->second.perf.sumOfSizes += fedSize;
   pos->second.perf.sumOfSquares += fedSize*fedSize;
@@ -380,9 +380,9 @@ template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
   if ( ! handler_->getNextAvailableSuperFragment(superFragment) ) return false;
-  
+
   updateSuperFragmentCounters(superFragment);
-  
+
   return true;
 }
 
@@ -391,9 +391,9 @@ template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
   if ( ! handler_->getSuperFragmentWithEvBid(evbId,superFragment) ) return false;
-  
+
   updateSuperFragmentCounters(superFragment);
-  
+
   return true;
 }
 
@@ -402,7 +402,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateSuperFragmentCounters(const FragmentChainPtr& superFragment)
 {
   boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
-  
+
   const uint32_t size = superFragment->getSize();
   superFragmentMonitor_.lastEventNumber = superFragment->getEvBid().eventNumber();
   superFragmentMonitor_.perf.sumOfSizes += size;
@@ -455,22 +455,22 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 {
   uint32_t lastEventNumber = 0;
   uint32_t dataReadyCount = 0;
-  
+
   {
     boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-    
+
     for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
          it != itEnd; ++it)
     {
       if ( lastEventNumber < it->second.lastEventNumber )
         lastEventNumber = it->second.lastEventNumber;
       dataReadyCount += it->second.perf.logicalCount;
-      
+
       it->second.rate = it->second.perf.logicalRate();
       it->second.bandwidth = it->second.perf.bandwidth();
       const uint32_t eventSize = it->second.perf.size();
       if ( eventSize > 0 )
-      { 
+      {
         it->second.eventSize = eventSize;
         it->second.eventSizeStdDev = it->second.perf.sizeStdDev();
       }
@@ -480,7 +480,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
-    
+
     superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate();
     superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth();
     const uint32_t eventSize = superFragmentMonitor_.perf.size();
@@ -491,7 +491,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     }
     superFragmentMonitor_.perf.reset();
   }
-  
+
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
   lastEventNumberFromFEROLs_ = lastEventNumber;
@@ -504,7 +504,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
 {
   {
     boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-    
+
     inputMonitors_.clear();
     xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = configuration_->fedSourceIds.begin();
     const xdata::Vector<xdata::UnsignedInteger32>::const_iterator itEnd = configuration_->fedSourceIds.end();
@@ -519,7 +519,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
   }
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
-    
+
     superFragmentMonitor_.rate = 0;
     superFragmentMonitor_.bandwidth = 0;
     superFragmentMonitor_.eventSize = 0;
@@ -538,11 +538,11 @@ void evb::readoutunit::Input<Configuration>::configure()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 {
-  
+
   *out << "<div>"                                                 << std::endl;
   *out << "<p>Input - " << configuration_->inputSource.toString() <<"</p>" << std::endl;
   *out << "<table>"                                               << std::endl;
-  
+
   const std::_Ios_Fmtflags originalFlags=out->flags();
   const int originalPrecision=out->precision();
   out->setf(std::ios::fixed);
@@ -573,9 +573,9 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
       << superFragmentMonitor_.eventSizeStdDev / 1e3 << "</td>"     << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-  
-  handler_->printSuperFragmentFIFOsnipped(out,app_->getDescriptor()->getURN());  
-  
+
+  handler_->printSuperFragmentFIFOsnipped(out,app_->getDescriptor()->getURN());
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -591,7 +591,7 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 
   {
     boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-    
+
     typename InputMonitors::const_iterator it, itEnd;
     for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
          it != itEnd; ++it)
@@ -605,12 +605,12 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
       *out << "</tr>"                                               << std::endl;
     }
   }
-  
+
   out->flags(originalFlags);
   out->precision(originalPrecision);
-  
+
   *out << "</table>"                                              << std::endl;
-  
+
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "</table>"                                              << std::endl;
@@ -637,9 +637,9 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
   dropInputData_ = configuration->dropInputData;
 
   clear();
-  
+
   superFragmentFIFO_.resize(configuration->superFragmentFIFOCapacity);
-  
+
   evbIdFactories_.clear();
   fedList_.clear();
   fedList_.reserve(configuration->fedSourceIds.size());
@@ -651,14 +651,14 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
     if (fedId > FED_SOID_WIDTH)
     {
       std::ostringstream oss;
-      
+
       oss << "fedSourceId is too large.";
       oss << "Actual value: " << fedId;
       oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
-      
+
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
-    
+
     fedList_.push_back(fedId);
     evbIdFactories_.insert(EvBidFactories::value_type(fedId,EvBidFactory()));
   }
@@ -675,11 +675,11 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
   const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
-  
+
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-  
+
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
-  
+
   // boost::unique_lock<boost::shared_mutex> uniqueLock(superFragmentMapMutex_);
   // if ( ! superFragmentMap_.insert(SuperFragmentMap::value_type(evbId,superFragment)).second )
   // {
@@ -687,7 +687,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
   //   msg << "Received a duplicated event with EvB id " << evbId;
   //   XCEPT_RAISE(exception::EventOrder, msg.str());
   // }
-  
+
   if ( ! dropInputData_ )
     while( ! superFragmentFIFO_.enq(superFragment) ) ::usleep(1000);
 }
@@ -697,7 +697,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   boost::upgrade_lock<boost::shared_mutex> upgradeLock(superFragmentMapMutex_);
-  
+
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
@@ -705,24 +705,24 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbo
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
-  
+
   const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
 
   const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
   //bufRef->release(); return;
   //cache->grantFrame(bufRef); return;
-  
+
   SuperFragmentMap::iterator fragmentPos = superFragmentMap_.lower_bound(evbId);
   if ( fragmentPos == superFragmentMap_.end() || (superFragmentMap_.key_comp()(evbId,fragmentPos->first)) )
   {
     // new super-fragment
     boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(upgradeLock);
-    
+
     FragmentChainPtr superFragment( new FragmentChain(evbId,fedList_) );
     fragmentPos = superFragmentMap_.insert(fragmentPos, SuperFragmentMap::value_type(evbId,superFragment));
   }
-  
+
   if ( ! fragmentPos->second->append(fedId,bufRef,cache) )
   {
     std::ostringstream msg;
@@ -730,7 +730,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbo
       << "for event " << eventNumber;
     XCEPT_RAISE(exception::EventOrder, msg.str());
   }
-  
+
   if ( fragmentPos->second->isComplete() )
   {
     if ( dropInputData_ )
@@ -752,7 +752,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
 {
   boost::unique_lock<boost::shared_mutex> sl(superFragmentMapMutex_);
-  
+
   superFragmentMap_.clear();
 
   FragmentChainPtr superFragment;
@@ -782,7 +782,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
 {
   clear();
-  
+
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
   {
@@ -792,7 +792,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
   {
     // don't care
   }
-  
+
   try
   {
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(configuration->fragmentPoolSize.value_);
@@ -803,7 +803,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for dummy fragments.", e);
   }
-  
+
   fragmentTrackers_.clear();
   fedList_.clear();
   fedList_.reserve(configuration->fedSourceIds.size());
@@ -815,14 +815,14 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
     if (fedId > FED_SOID_WIDTH)
     {
       std::ostringstream oss;
-      
+
       oss << "fedSourceId is too large.";
       oss << "Actual value: " << fedId;
       oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
-      
+
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
-    
+
     fedList_.push_back(fedId);
     fragmentTrackers_.insert(FragmentTrackers::value_type(fedId,
         FragmentTracker(fedId,configuration->dummyFedSize.value_,configuration->dummyFedSizeStdDev.value_)));
@@ -834,17 +834,17 @@ template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
   superFragment.reset( new FragmentChain(evbId, fedList_) );
-  
+
   toolbox::mem::Reference* bufRef = 0;
   const uint32_t ferolBlockSize = 4*1024;
-  
+
   for ( FragmentTrackers::iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
         it != itEnd; ++it)
   {
     uint32_t remainingFedSize = it->second.startFragment(evbId.eventNumber());
     const uint32_t frameSize = remainingFedSize+sizeof(I2O_DATA_READY_MESSAGE_FRAME)+sizeof(ferolh_t);
     uint32_t packetNumber = 0;
-    
+
     try
     {
       bufRef = toolbox::mem::getMemoryPoolFactory()->
@@ -854,7 +854,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     {
       return false;
     }
-    
+
     bufRef->setDataSize(frameSize);
     bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
     I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
@@ -863,22 +863,22 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     dataReadyMsg->partLength = remainingFedSize+sizeof(ferolh_t);
     dataReadyMsg->fedid = it->first;
     dataReadyMsg->triggerno = evbId.eventNumber();
-    
+
     unsigned char* frame = (unsigned char*)dataReadyMsg
       + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-    
+
     while ( remainingFedSize > 0 )
     {
       assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
       uint32_t length;
-      
+
       ferolh_t* ferolHeader = (ferolh_t*)frame;
       ferolHeader->set_signature();
       ferolHeader->set_packet_number(packetNumber);
-      
+
       if (packetNumber == 0)
         ferolHeader->set_first_packet();
-      
+
       if ( remainingFedSize > ferolBlockSize )
       {
         length = ferolBlockSize;
@@ -890,19 +890,19 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       }
       remainingFedSize -= length;
       frame += sizeof(ferolh_t);
-      
+
       const size_t filledBytes = it->second.fillData(frame, length);
-      
+
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(it->first);
       ferolHeader->set_event_number(evbId.eventNumber());
-      
+
       frame += filledBytes;
-      
+
       ++packetNumber;
       assert(packetNumber < 2048);
     }
-    
+
     input_->updateInputCounters(bufRef);
     superFragment->append(it->first,bufRef);
   }

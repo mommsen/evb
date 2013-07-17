@@ -51,7 +51,7 @@ evb::bu::FileHandlerPtr evb::bu::LumiHandler::getFileHandler(boost::shared_ptr<S
 
   fileHandler->incrementAllocatedEventCount();
   ++eventsPerLS_;
-  
+
   ++nextFileHandler_;
   if ( nextFileHandler_ == numberOfWriters_ )
     nextFileHandler_ = 0;
@@ -89,7 +89,7 @@ void evb::bu::LumiHandler::writeJSON() const
     oss << "The JSON file " << jsonFile.string() << " already exists.";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                         << std::endl;
   json << "   \"Data\" : [ \""     << eventsPerLS_  << "\", \""

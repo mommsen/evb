@@ -163,7 +163,7 @@ namespace evb { namespace bu {
     virtual void entryAction();
     virtual void exitAction();
     void activity();
-    
+
   private:
     boost::scoped_ptr<boost::thread> configuringThread_;
     volatile bool doConfiguring_;
@@ -198,7 +198,7 @@ namespace evb { namespace bu {
     typedef boost::mpl::list<
     boost::statechart::transition<Stop,Configured>
     > reactions;
-    
+
     Processing(my_context c) : my_state("Processing", c)
     { safeEntryAction(); }
     virtual ~Processing()
@@ -225,15 +225,15 @@ namespace evb { namespace bu {
     { safeEntryAction(); }
     virtual ~Clearing()
     { safeExitAction(); }
-    
+
     virtual void entryAction();
     virtual void exitAction();
     void activity();
-    
+
   private:
     boost::scoped_ptr<boost::thread> clearingThread_;
     volatile bool doClearing_;
-    
+
   };
 
 
@@ -278,7 +278,7 @@ namespace evb { namespace bu {
 
   };
 
-  
+
 } } //namespace evb::bu
 
 #endif //_evb_bu_States_h_

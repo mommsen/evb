@@ -25,23 +25,23 @@
 namespace evb {
 
   class BU;
-  
+
   namespace bu {
-    
+
     class DiskWriter;
     class RUproxy;
     class ResourceManager;
     class StateMachine;
-    
+
     /**
      * \ingroup xdaqApps
      * \brief Keep track of events
      */
-    
+
     class EventTable : public toolbox::lang::Class
     {
     public:
-      
+
       EventTable
       (
         BU*,
@@ -49,18 +49,18 @@ namespace evb {
         boost::shared_ptr<DiskWriter>,
         boost::shared_ptr<ResourceManager>
       );
-      
+
       /**
        * Remove all data
        */
       void clear();
-      
+
       /**
        * Register the state machine
        */
       void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
-      
+
       /**
        * Start processing messages
        */
@@ -70,37 +70,37 @@ namespace evb {
        * Stop processing messages
        */
       void stopProcessing();
-      
-      
+
+
     private:
-      
+
       // Lookup table of events, indexed by evb id
       typedef std::map<EvBid,EventPtr> EventMap;
       EventMap eventMap_;
-      
+
       void startProcessingWorkLoop();
       bool process(toolbox::task::WorkLoop*);
       bool buildEvents();
       EventMap::iterator getEventPos(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
-      
+
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
-      
+
       uint32_t runNumber_;
-      
+
       toolbox::task::WorkLoop* processingWL_;
       toolbox::task::ActionSignature* processingAction_;
-      
+
       volatile bool doProcessing_;
       volatile bool processActive_;
-      
+
     }; // EventTable
-    
+
     typedef boost::shared_ptr<EventTable> EventTablePtr;
-    
+
   } } // namespace evb::bu
 
 #endif // _evb_bu_EventTable_h_

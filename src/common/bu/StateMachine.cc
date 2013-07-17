@@ -43,16 +43,16 @@ void evb::bu::Configuring::entryAction()
 void evb::bu::Configuring::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
-  
+
   std::string msg = "Failed to configure the components";
   try
-  {  
+  {
     outermost_context_type& stateMachine = outermost_context();
-    
+
     if (doConfiguring_) stateMachine.ruProxy()->configure();
     if (doConfiguring_) stateMachine.diskWriter()->configure();
     if (doConfiguring_) stateMachine.resourceManager()->configure();
-    
+
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
   catch( xcept::Exception& e )
@@ -99,7 +99,7 @@ void evb::bu::Clearing::entryAction()
 void evb::bu::Clearing::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
-  
+
   std::string msg = "Failed to clear the components";
   try
   {
@@ -107,7 +107,7 @@ void evb::bu::Clearing::activity()
     if (doClearing_) stateMachine.diskWriter()->clear();
     if (doClearing_) stateMachine.eventTable()->clear();
     if (doClearing_) stateMachine.resourceManager()->clear();
-    
+
     if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
   }
   catch( xcept::Exception& e )
@@ -154,7 +154,7 @@ void evb::bu::Processing::entryAction()
 void evb::bu::Enabled::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  
+
   const uint32_t runNumber = stateMachine.getRunNumber();
 
   stateMachine.diskWriter()->startProcessing(runNumber);

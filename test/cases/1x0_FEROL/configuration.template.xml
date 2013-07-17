@@ -1,13 +1,13 @@
 <xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  
+
   <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
     <i2o:target class="evb::RU" instance="0" tid="15"/>
   </i2o:protocol>
-  
+
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
-    
+
     <xc:Endpoint protocol="atcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="fdr" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:W:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::utcp::Application" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
@@ -20,7 +20,7 @@
         <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="evb::test::DummyFEROL" id="12" instance="0" network="fdr">
       <xc:Unicast class="evb::RU" instance="0" network="fdr"/>
       <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
@@ -29,9 +29,9 @@
         <fedId xsi:type="xsd:unsignedInt">1</fedId>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
+
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
@@ -41,9 +41,9 @@
 
 
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
-    
+
     <xc:Endpoint protocol="atcp" service="frl" hostname="RU0_FRL_HOST_NAME" port="RU0_FRL_PORT" network="fdr" sndTimeout="2000" rcvTimeout="0" targetId="13" affinity="RCV:P:2,SND:W:*,DSR:P:6,DSS:W:*" singleThread="false" pollingCycle="1" rmode="select" nonblock="true" datagramSize="131072"/>
-    
+
     <xc:Application class="pt::utcp::Application" id="12" instance="2" network="local">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
@@ -72,7 +72,7 @@
         <frlDispatcher xsi:type="xsd:string">copy</frlDispatcher>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="evb::RU" id="13" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
@@ -82,14 +82,14 @@
         </fedSourceIds>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
+
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    
+
   </xc:Context>
-  
+
 </xc:Partition>

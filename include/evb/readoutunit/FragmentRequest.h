@@ -11,7 +11,7 @@
 namespace evb {
 
   namespace readoutunit {
-    
+
     struct FragmentRequest
     {
       I2O_TID  buTid;
@@ -20,9 +20,9 @@ namespace evb {
       std::vector<EvBid> evbIds;
       std::vector<I2O_TID> ruTids;
     };
-    
+
     typedef boost::shared_ptr<FragmentRequest> FragmentRequestPtr;
-        
+
   } } // namespace evb::readoutunit
 
 
@@ -35,7 +35,7 @@ inline std::ostream& operator<<
   if ( request.get() )
   {
     str << "Fragment request:" << std::endl;
-    
+
     str << "buTid=" << request->buTid << std::endl;
     str << "buResourceId=" << request->buResourceId << std::endl;
     str << "nbRequests=" << request->nbRequests << std::endl;
@@ -52,7 +52,7 @@ inline std::ostream& operator<<
         str << "   [" << i << "]: " << request->ruTids[i] << std::endl;
     }
   }
-  
+
   return str;
 }
 

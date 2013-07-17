@@ -1,29 +1,29 @@
 <xc:Partition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
-  
+
   <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
     <i2o:target class="evb::EVM" instance="0" tid="1"/>
     <i2o:target class="evb::BU" instance="0" tid="30"/>
     <i2o:target class="evb::BU" instance="1" tid="31"/>
   </i2o:protocol>
-  
+
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL0_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL0_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-0/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="ferol00" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="0" network="local">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -38,35 +38,35 @@
         <currentSize xsi:type="xsd:unsignedLong">128</currentSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL1_SOAP_HOST_NAME:FEROL1_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL1_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL1_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-1/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL1_FRL_HOST_NAME" port="FEROL1_FRL_PORT" network="ferol01" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="1" network="ferol01">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol01" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -81,35 +81,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL2_SOAP_HOST_NAME:FEROL2_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL2_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL2_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-2/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL2_FRL_HOST_NAME" port="FEROL2_FRL_PORT" network="ferol02" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="2" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="2" network="ferol02">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol02" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -124,35 +124,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL3_SOAP_HOST_NAME:FEROL3_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL3_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL3_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-3/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL3_FRL_HOST_NAME" port="FEROL3_FRL_PORT" network="ferol03" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="3" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="3" network="ferol03">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol03" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -167,35 +167,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL4_SOAP_HOST_NAME:FEROL4_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL4_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL4_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-4/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL4_FRL_HOST_NAME" port="FEROL4_FRL_PORT" network="ferol04" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="4" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="4" network="ferol04">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol04" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -210,35 +210,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL5_SOAP_HOST_NAME:FEROL5_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL5_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL5_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-5/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL5_FRL_HOST_NAME" port="FEROL5_FRL_PORT" network="ferol05" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="5" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="5" network="ferol05">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol05" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -253,35 +253,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL6_SOAP_HOST_NAME:FEROL6_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL6_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL6_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-6/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL6_FRL_HOST_NAME" port="FEROL6_FRL_PORT" network="ferol06" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="6" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="6" network="ferol06">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol06" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -296,35 +296,35 @@
         <destinationInstance xsi:type="xsd:unsignedLong">0</destinationInstance>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://FEROL7_SOAP_HOST_NAME:FEROL7_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL7_FRL_HOST_NAME/polling" type="thread" package="numa" mempolicy="local" affinity="2" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL7_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-7/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL7_FRL_HOST_NAME" port="FEROL7_FRL_PORT" network="ferol07" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
-    
+
     <xc:Application class="pt::frl::Application" id="11" instance="7" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="Client" id="10" instance="7" network="ferol07">
       <xc:Unicast class="evb::EVM" instance="0" network="ferol07" />
       <properties xmlns="urn:xdaq-application:Client" xsi:type="soapenc:Struct">
@@ -339,19 +339,19 @@
         <rate xsi:type="xsd:unsignedLong">4000</rate>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
-    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module> 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>        
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>		
+
+    <xc:Module>$XDAQ_ROOT/lib/libfrl2g.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
-    
+
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-cno(.+)" type="thread" package="numa" mempolicy="onnode" memnode="1" cpunodes="1"  />
@@ -393,10 +393,10 @@
       <pol:element pattern="urn:pt-frl-MemoryCache-rlist" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="urn:squeue:alloc" type="alloc" package="numa" mempolicy="onnode" node="0" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="ftcp" service="frl" hostname="RU0_FRL_HOST_NAME" port="RU0_FRL_PORT" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
     <xc:Endpoint protocol="ftcp" service="frl" hostname="RU0_FRL_HOST_NAME" port="60600" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="43" affinity="RCV:P,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="4" rmode="select"  nonblock="true" datagramSize="131072" />
-    
+
     <xc:Alias name="ferol00">ferola</xc:Alias>
     <xc:Alias name="ferol01">ferola</xc:Alias>
     <xc:Alias name="ferol02">ferola</xc:Alias>
@@ -405,9 +405,9 @@
     <xc:Alias name="ferol05">ferolb</xc:Alias>
     <xc:Alias name="ferol06">ferolb</xc:Alias>
     <xc:Alias name="ferol07">ferolb</xc:Alias>
-    
+
     <xc:Endpoint protocol="udapl" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="infini" />
-    
+
     <xc:Application class="pt::udapl::Application" id="10" network="local">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
         <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
@@ -415,7 +415,7 @@
         <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="pt::frl::Application" id="12" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[8]">
@@ -486,9 +486,9 @@
         <maxInputBlockSize xsi:type="xsd:unsignedInt">131072</maxInputBlockSize>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-    
+
     <xc:Application class="evb::EVM" id="43" instance="0" network="infini">
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
@@ -498,17 +498,17 @@
         <superFragmentFIFOCapacity xsi:type="xsd:unsignedInt">236</superFragmentFIFOCapacity>
       </properties>
    </xc:Application>
-    
+
     <xc:Module>/usr/lib64/libdat2.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>		
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>		
+    <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://BU0_SOAP_HOST_NAME:BU0_SOAP_PORT">
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
@@ -520,7 +520,7 @@
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="udapl" service="i2o" hostname="BU0_I2O_HOST_NAME" port="BU0_I2O_PORT" network="infini" />
     <xc:Application class="pt::udapl::Application" id="21" network="infini">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
@@ -529,7 +529,7 @@
         <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="22" instance="0" network="local"/>
 
     <xc:Application class="evb::BU" id="43" instance="0" network="infini">
@@ -539,22 +539,22 @@
         <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="pt::frl::Application" id="12" instance="4" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
       </properties>
     </xc:Application>
-    
+
     <xc:Module>/usr/lib64/libdat2.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>                
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-       
+
   </xc:Context>
-  
-  
+
+
   <xc:Context url="http://BU1_SOAP_HOST_NAME:BU1_SOAP_PORT">
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
@@ -566,7 +566,7 @@
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
     </pol:policy>
-    
+
     <xc:Endpoint protocol="udapl" service="i2o" hostname="BU1_I2O_HOST_NAME" port="BU1_I2O_PORT" network="infini" />
     <xc:Application class="pt::udapl::Application" id="21" network="infini">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
@@ -575,9 +575,9 @@
         <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="xmem::probe::Application" id="22" instance="0" network="local"/>
-    
+
     <xc:Application class="evb::BU" id="43" instance="1" network="infini">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
@@ -585,7 +585,7 @@
         <eventsPerRequest xsi:type="xsd:unsignedInt">32</eventsPerRequest>
       </properties>
     </xc:Application>
-    
+
     <xc:Application class="pt::frl::Application" id="12" instance="4" network="local">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
       </properties>
@@ -593,11 +593,11 @@
 
     <xc:Module>/usr/lib64/libdat2.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>                
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptudapl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-    
+
   </xc:Context>
-  
+
 </xc:Partition>

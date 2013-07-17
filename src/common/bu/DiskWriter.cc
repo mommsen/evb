@@ -66,28 +66,28 @@ void evb::bu::DiskWriter::startProcessingWorkLoop()
   {
     processingWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("DiskWriterProcessing"), "waiting" );
-    
+
     if ( ! processingWL_->isActive() )
     {
       processingAction_ =
         toolbox::task::bind(this, &evb::bu::DiskWriter::process,
           bu_->getIdentifier("diskWriterProcess") );
-    
+
       processingWL_->activate();
     }
-    
+
     resourceMonitoringWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("DiskWriterResourceMonitoring"), "waiting" );
-    
+
     if ( ! resourceMonitoringWL_->isActive() )
     {
       resourceMonitoringAction_ =
         toolbox::task::bind(this, &evb::bu::DiskWriter::resourceMonitoring,
           bu_->getIdentifier("resourceMonitoringProcess") );
-    
+
       resourceMonitoringWL_->activate();
     }
-    
+
     writingAction_ =
       toolbox::task::bind(this, &evb::bu::DiskWriter::writing,
         bu_->getIdentifier("diskWriting") );
@@ -105,10 +105,10 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   if ( configuration_->dropEventData ) return;
 
   runNumber_ = runNumber;
-  
+
   std::ostringstream runDir;
   runDir << "run" << std::setfill('0') << std::setw(8) << runNumber_;
-  
+
   runRawDataDir_ = buRawDataDir_ / runDir.str() / "open";
   if ( ! boost::filesystem::create_directories(runRawDataDir_) )
   {
@@ -116,7 +116,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     oss << "Failed to create directory " << runRawDataDir_.string();
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   runMetaDataDir_ = buMetaDataDir_ / runDir.str();
   if ( ! boost::filesystem::exists(runMetaDataDir_) &&
     ( ! boost::filesystem::create_directories(runMetaDataDir_) ) )
@@ -125,7 +125,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     oss << "Failed to create directory " << runMetaDataDir_.string();
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   doProcessing_ = true;
   processingWL_->submit(processingAction_);
   resourceMonitoringWL_->submit(resourceMonitoringAction_);
@@ -140,18 +140,18 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 void evb::bu::DiskWriter::stopProcessing()
 {
   if ( configuration_->dropEventData ) return;
-  
+
   doProcessing_ = false;
 
   while ( processActive_ || writingActive_ ) ::usleep(1000);
-  
+
   for (LumiHandlers::const_iterator it = lumiHandlers_.begin(), itEnd = lumiHandlers_.end();
        it != itEnd; ++it)
   {
     it->second->close();
   }
   lumiHandlers_.clear();
-  
+
   if ( boost::filesystem::exists(runRawDataDir_) &&
     ( ! boost::filesystem::remove(runRawDataDir_) ) )
   {
@@ -167,9 +167,9 @@ void evb::bu::DiskWriter::stopProcessing()
 bool evb::bu::DiskWriter::process(toolbox::task::WorkLoop*)
 {
   ::usleep(1000);
-  
+
   processActive_ = true;
-  
+
   try
   {
     while (
@@ -184,9 +184,9 @@ bool evb::bu::DiskWriter::process(toolbox::task::WorkLoop*)
     processActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }
-  
+
   processActive_ = false;
-  
+
   return doProcessing_;
 }
 
@@ -195,7 +195,7 @@ bool evb::bu::DiskWriter::handleEvents()
 {
   EventPtr event;
   if ( ! eventFIFO_.deq(event) ) return false;
-  
+
   if ( event->runNumber() != runNumber_ )
   {
     std::ostringstream oss;
@@ -206,10 +206,10 @@ bool evb::bu::DiskWriter::handleEvents()
 
   const LumiHandlerPtr lumiHandler = getLumiHandler( event->lumiSection() );
   const FileHandlerPtr fileHandler = lumiHandler->getFileHandler(stateMachine_);
-  
+
   if ( fileHandler->getAllocatedEventCount() == 1 )
     ++diskWriterMonitoring_.nbFiles;
-  
+
   FileHandlerAndEventPtr fileHandlerAndEvent(
     new FileHandlerAndEvent(fileHandler, event)
   );
@@ -222,7 +222,7 @@ bool evb::bu::DiskWriter::handleEvents()
 evb::bu::LumiHandlerPtr evb::bu::DiskWriter::getLumiHandler(const uint32_t lumiSection)
 {
   boost::mutex::scoped_lock handlerSL(lumiHandlersMutex_);
-  
+
   LumiHandlers::iterator pos = lumiHandlers_.lower_bound(lumiSection);
 
   if ( pos == lumiHandlers_.end() || (lumiHandlers_.key_comp()(lumiSection,pos->first)) )
@@ -231,7 +231,7 @@ evb::bu::LumiHandlerPtr evb::bu::DiskWriter::getLumiHandler(const uint32_t lumiS
     const LumiHandlerPtr lumiHandler(new LumiHandler(
         buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection, configuration_->maxEventsPerFile, configuration_->numberOfWriters));
     pos = lumiHandlers_.insert(pos, LumiHandlers::value_type(lumiSection, lumiHandler));
-    
+
     boost::mutex::scoped_lock monitorSL(diskWriterMonitoringMutex_);
     ++diskWriterMonitoring_.nbLumiSections;
     diskWriterMonitoring_.currentLumiSection = lumiSection;
@@ -245,12 +245,12 @@ bool evb::bu::DiskWriter::handleEoLS()
 {
   uint32_t lumiSection;
   if ( ! eolsFIFO_.deq(lumiSection) ) return false;
-  
+
   boost::mutex::scoped_lock handlerSL(lumiHandlersMutex_);
   boost::mutex::scoped_lock monitorSL(diskWriterMonitoringMutex_);
-  
+
   LumiHandlers::iterator pos = lumiHandlers_.find(lumiSection);
-  
+
   if ( lumiSection > diskWriterMonitoring_.lastEoLS )
     diskWriterMonitoring_.lastEoLS = lumiSection;
 
@@ -266,18 +266,18 @@ bool evb::bu::DiskWriter::handleEoLS()
   {
     pos->second->close();
     lumiHandlers_.erase(pos);
-  }    
-  
+  }
+
   return true;
 }
 
 
 bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
-{  
+{
   ::usleep(1000);
 
   writingActive_ = true;
-  
+
   try
   {
     FileHandlerAndEventPtr fileHandlerAndEvent;
@@ -327,9 +327,9 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
     writingActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }
-  
+
   writingActive_ = false;
-  
+
   return doProcessing_;
 }
 
@@ -342,9 +342,9 @@ bool evb::bu::DiskWriter::resourceMonitoring(toolbox::task::WorkLoop*)
   allOkay &= checkDiskSize(metaDataDiskUsage_);
 
   //eventTable_->requestEvents(allOkay);
-  
+
   ::sleep(5);
-  
+
   return doProcessing_;
 }
 
@@ -364,16 +364,16 @@ void evb::bu::DiskWriter::writeJSON()
   fileNameStream
     << "EoR_" << std::setfill('0') << std::setw(8) << runNumber_ << ".jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
-  
+
   if ( boost::filesystem::exists(jsonFile) )
   {
     std::ostringstream oss;
     oss << "The JSON file " << jsonFile.string() << " already exists.";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-  
+
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                                           << std::endl;
   json << "   \"Data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
@@ -415,7 +415,7 @@ void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
   nbEvtsWritten_ = 0;
   nbFilesWritten_ = 0;
   nbEvtsCorrupted_ = 0;
-  
+
   items.add("nbEvtsWritten", &nbEvtsWritten_);
   items.add("nbFilesWritten", &nbFilesWritten_);
   items.add("nbEvtsCorrupted", &nbEvtsCorrupted_);
@@ -425,7 +425,7 @@ void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::DiskWriter::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-  
+
   nbEvtsWritten_ = diskWriterMonitoring_.nbEventsWritten;
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
   nbEvtsCorrupted_ = diskWriterMonitoring_.nbEventsCorrupted;
@@ -435,7 +435,7 @@ void evb::bu::DiskWriter::updateMonitoringItems()
 void evb::bu::DiskWriter::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-  
+
   diskWriterMonitoring_.nbFiles = 0;
   diskWriterMonitoring_.nbEventsWritten = 0;
   diskWriterMonitoring_.nbLumiSections = 0;
@@ -458,7 +458,7 @@ void evb::bu::DiskWriter::configure()
   {
     std::ostringstream buDir;
     buDir << "BU-" << std::setfill('0') << std::setw(3) << buInstance_;
-    
+
     buRawDataDir_ = configuration_->rawDataDir.value_;
     buRawDataDir_ /= buDir.str();
     if ( ! boost::filesystem::exists(buRawDataDir_) &&
@@ -469,7 +469,7 @@ void evb::bu::DiskWriter::configure()
       XCEPT_RAISE(exception::DiskWriting, oss.str());
     }
     rawDataDiskUsage_.reset( new DiskUsage(buRawDataDir_, configuration_->rawDataHighWaterMark, configuration_->rawDataLowWaterMark) );
-    
+
     buMetaDataDir_ = configuration_->metaDataDir.value_;
     buMetaDataDir_ /= buDir.str();
     if ( ! boost::filesystem::exists(buMetaDataDir_) &&
@@ -480,7 +480,7 @@ void evb::bu::DiskWriter::configure()
       XCEPT_RAISE(exception::DiskWriting, oss.str());
     }
     metaDataDiskUsage_.reset( new DiskUsage(buMetaDataDir_, configuration_->metaDataHighWaterMark, configuration_->metaDataLowWaterMark) );
-    
+
     createWritingWorkLoops();
   }
 }
@@ -489,7 +489,7 @@ void evb::bu::DiskWriter::configure()
 void evb::bu::DiskWriter::createWritingWorkLoops()
 {
   const std::string identifier = bu_->getIdentifier();
-  
+
   try
   {
     // Leave any previous created workloops alone. Only add new ones if needed.
@@ -498,7 +498,7 @@ void evb::bu::DiskWriter::createWritingWorkLoops()
       std::ostringstream workLoopName;
       workLoopName << identifier << "DiskWriter_" << i;
       toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
-      
+
       if ( ! wl->isActive() ) wl->activate();
       writingWorkLoops_.push_back(wl);
     }
@@ -515,7 +515,7 @@ void evb::bu::DiskWriter::clear()
 {
   EventPtr event;
   while ( eventFIFO_.deq(event) ) { event.reset(); }
-  
+
   uint32_t lumiSection;
   while ( eolsFIFO_.deq(lumiSection) ) {}
 
@@ -529,10 +529,10 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>DiskWriter</p>"                                     << std::endl;
   *out << "<table>"                                               << std::endl;
-  
+
   {
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-    
+
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>last evt number written</td>"                      << std::endl;
     *out << "<td>" << diskWriterMonitoring_.lastEventNumberWritten  << "</td>" << std::endl;
@@ -584,19 +584,19 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>" << metaDataDiskUsage_->relDiskUsage() << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
   eventFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
   fileHandlerAndEventFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
   eolsFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());

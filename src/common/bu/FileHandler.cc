@@ -43,14 +43,14 @@ adlerB_(0)
       << "_" << std::setw(6) << index << ".raw";
   fileName_ = fileNameStream.str();
   const boost::filesystem::path rawFile = rawDataDir_ / fileName_;
-  
+
   if ( boost::filesystem::exists(rawFile) )
   {
     std::ostringstream oss;
     oss << "The output file " << rawFile.string() << " already exists.";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   fileDescriptor_ = open(rawFile.string().c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
   if ( fileDescriptor_ == -1 )
   {
@@ -71,7 +71,7 @@ evb::bu::FileHandler::~FileHandler()
 void* evb::bu::FileHandler::getMemMap(const size_t length)
 {
   boost::mutex::scoped_lock sl(mutex_);
-  
+
   const int result = lseek(fileDescriptor_, fileSize_+length-1, SEEK_SET);
   if ( result == -1 )
   {
@@ -80,7 +80,7 @@ void* evb::bu::FileHandler::getMemMap(const size_t length)
       << " by " << length << " Bytes: " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   // Something needs to be written at the end of the file to
   // have the file actually have the new size.
   // Just writing an empty string at the current file position will do.
@@ -102,7 +102,7 @@ void* evb::bu::FileHandler::getMemMap(const size_t length)
   }
 
   fileSize_ += length;
-  
+
   return map;
 }
 
@@ -110,11 +110,11 @@ void* evb::bu::FileHandler::getMemMap(const size_t length)
 void evb::bu::FileHandler::close()
 {
   boost::mutex::scoped_lock sl(mutex_);
-  
+
   std::string msg = "Failed to close the output file " + fileName_.string();
 
   try
-  { 
+  {
     if ( fileDescriptor_ )
     {
       if ( ::close(fileDescriptor_) < 0 )
@@ -130,7 +130,7 @@ void evb::bu::FileHandler::close()
       #else
       boost::filesystem::rename(rawDataDir_ / fileName_, rawDataDir_.parent_path() / fileName_);
       #endif
-      
+
       writeJSON();
     }
   }
@@ -165,16 +165,16 @@ void evb::bu::FileHandler::writeJSON() const
   boost::filesystem::path jsonFile = metaDataDir_ / newFilename;
   #else
   boost::filesystem::path jsonFile = metaDataDir_ / fileName_;
-  jsonFile.replace_extension("jsn");  
+  jsonFile.replace_extension("jsn");
   #endif
-  
+
   if ( boost::filesystem::exists(jsonFile) )
   {
     std::ostringstream oss;
     oss << "The JSON file " << jsonFile.string() << " already exists.";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  
+
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                         << std::endl;
   json << "   \"Data\" : [ \""     << eventCount_   << "\" ],"        << std::endl;
@@ -204,7 +204,7 @@ void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile
 void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
 {
   #define MOD_ADLER 65521
-  
+
   while (len > 0) {
     size_t tlen = (len > 5552 ? 5552 : len);
     len -= tlen;
@@ -212,7 +212,7 @@ void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
       adlerA_ += *address++ & 0xff;
       adlerB_ += adlerA_;
     } while (--tlen);
-    
+
     adlerA_ %= MOD_ADLER;
     adlerB_ %= MOD_ADLER;
   }

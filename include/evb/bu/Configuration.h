@@ -11,7 +11,7 @@
 
 
 namespace evb {
-  
+
   namespace bu {
 
     /**
@@ -35,7 +35,7 @@ namespace evb {
       xdata::UnsignedInteger32 maxEventsPerFile;
       xdata::UnsignedInteger32 eolsFIFOCapacity;
       xdata::Boolean tolerateCorruptedEvents;
-      
+
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
         maxEvtsUnderConstruction(64),
@@ -53,7 +53,7 @@ namespace evb {
         eolsFIFOCapacity(1028),
         tolerateCorruptedEvents(false)
       {};
-      
+
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
       {
         params.add("evmInstance", &evmInstance);
@@ -73,9 +73,9 @@ namespace evb {
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
       }
     };
-    
+
     typedef boost::shared_ptr<Configuration> ConfigurationPtr;
-    
+
   } } // namespace evb::bu
 
 #endif // _evb_bu_configuration_h_

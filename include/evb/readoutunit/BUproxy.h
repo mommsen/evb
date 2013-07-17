@@ -38,38 +38,38 @@
 
 
 namespace evb {
-  
+
   namespace readoutunit {
-    
+
     /**
      * \ingroup xdaqApps
      * \brief Proxy for RU-BU communication
      */
-    
+
     template<class ReadoutUnit>
     class BUproxy : public toolbox::lang::Class
     {
-      
+
     public:
-      
+
       BUproxy(ReadoutUnit*);
-      
+
       /**
        * Callback for fragment request I2O message from BU/EVM
        */
       void readoutMsgCallback(toolbox::mem::Reference*);
-      
+
       /**
        * Configure the BU proxy
        */
       void configure();
-      
+
       /**
-       * Append the info space items to be published in the 
+       * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
       void appendMonitoringItems(InfoSpaceItems&);
-      
+
       /**
        * Update all values of the items put into the monitoring
        * info space. The caller has to make sure that the info
@@ -77,43 +77,43 @@ namespace evb {
         * after the call.
        */
       void updateMonitoringItems();
-      
+
       /**
        * Reset the monitoring counters
        */
       void resetMonitoringCounters();
-      
+
       /**
        * Remove all data
        */
       void clear();
-      
+
       /**
        * Start processing messages
        */
       void startProcessing();
-      
+
       /**
        * Stop processing messages
        */
       void stopProcessing();
-      
+
       /**
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);
-            
+
       /**
        * Print the content of the fragment-request FIFO as HTML snipped
        */
       inline void printFragmentRequestFIFO(xgi::Output* out)
       { fragmentRequestFIFO_.printVerticalHtml(out); }
-      
-      
+
+
     private:
-      
+
       typedef std::vector<FragmentChainPtr> SuperFragments;
-      
+
       void startProcessingWorkLoop();
       void updateRequestCounters(const FragmentRequestPtr);
       bool process(toolbox::task::WorkLoop*);
@@ -129,13 +129,13 @@ namespace evb {
         const uint32_t superFragmentSize,
         const uint32_t currentFragmentSize
       ) const;
-      
+
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
       const ConfigurationPtr configuration_;
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
-      
+
       typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
       WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
@@ -145,7 +145,7 @@ namespace evb {
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
       boost::mutex fragmentRequestFIFOmutex_;
-      
+
       typedef std::map<uint32_t,uint64_t> CountsPerBU;
       struct RequestMonitoring
       {
@@ -155,7 +155,7 @@ namespace evb {
         CountsPerBU logicalCountPerBU;
       } requestMonitoring_;
       boost::mutex requestMonitoringMutex_;
-      
+
       struct DataMonitoring
       {
         uint32_t lastEventNumberToBUs;
@@ -165,12 +165,12 @@ namespace evb {
         CountsPerBU payloadPerBU;
       } dataMonitoring_;
       boost::mutex dataMonitoringMutex_;
-      
+
       xdata::UnsignedInteger32 lastEventNumberToBUs_;
       xdata::UnsignedInteger64 i2oBUCacheCount_;
       xdata::Vector<xdata::UnsignedInteger64> i2oRUSendCountBU_;
       xdata::Vector<xdata::UnsignedInteger64> i2oBUCachePayloadBU_;
-      
+
     };
 
   } } //namespace evb::readoutunit
@@ -235,7 +235,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   doProcessing_ = true;
-  
+
   for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
   {
     workLoops_.at(i)->submit(action_);
@@ -257,17 +257,17 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
 {
   msg::ReadoutMsg* readoutMsg =
     (msg::ReadoutMsg*)bufRef->getDataLocation();
-  
+
   FragmentRequestPtr fragmentRequest( new FragmentRequest );
   fragmentRequest->buTid = readoutMsg->buTid;
   fragmentRequest->buResourceId = readoutMsg->buResourceId;
   fragmentRequest->nbRequests = readoutMsg->nbRequests;
   fillRequest(readoutMsg, fragmentRequest);
-  
+
   updateRequestCounters(fragmentRequest);
-  
+
   while( ! fragmentRequestFIFO_.enq(fragmentRequest) ) ::usleep(1000);
-  
+
   bufRef->release();
 }
 
@@ -276,7 +276,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequestPtr fragmentRequest)
 {
   boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-  
+
   requestMonitoring_.payload +=
     sizeof(msg::ReadoutMsg) +
     (fragmentRequest->ruTids.size()|0x1) * sizeof(I2O_TID); // odd number of I2O_TIDs to align header to 64-bits
@@ -292,12 +292,12 @@ template<class ReadoutUnit>
 bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl)
 {
   processActive_ = true;
-  
+
   try
   {
     FragmentRequestPtr fragmentRequest;
     SuperFragments superFragments;
-    
+
     while ( processRequest(fragmentRequest,superFragments) )
     {
       sendData(fragmentRequest, superFragments);
@@ -309,9 +309,9 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
     processActive_ = false;
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
-  
+
   processActive_ = false;
-  
+
   return doProcessing_;
 }
 
@@ -331,7 +331,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
-  
+
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid)
     + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignement
@@ -349,15 +349,15 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,superFragmentSize,remainingSuperFragmentSize);
     else
       remainingPayloadSize = 0;
-    
+
     toolbox::mem::Reference* currentFragment = superFragment->head();
-    
-    while ( currentFragment )    
+
+    while ( currentFragment )
     {
       uint32_t currentFragmentSize =
         ((I2O_DATA_READY_MESSAGE_FRAME*)currentFragment->getDataLocation())->totalLength;
       uint32_t copiedSize = 0;
-      
+
       while ( currentFragmentSize > remainingPayloadSize )
       {
         // fill the remaining block
@@ -366,7 +366,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         copiedSize += remainingPayloadSize;
         currentFragmentSize -= remainingPayloadSize;
         remainingSuperFragmentSize -= remainingPayloadSize;
-        
+
         // get a new block
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
         payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
@@ -375,17 +375,17 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         tail->setNextReference(nextBlock);
         tail = nextBlock;
       }
-    
+
       // fill the remaining fragment into the block
       memcpy(payload, (char*)currentFragment->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + copiedSize,
         currentFragmentSize);
       payload += currentFragmentSize;
       remainingPayloadSize -= currentFragmentSize;
       remainingSuperFragmentSize -= currentFragmentSize;
-      
+
       currentFragment = currentFragment->getNextReference();
     }
-    
+
   }
 
   xdaq::ApplicationDescriptor *bu = 0;
@@ -396,13 +396,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   catch(xcept::Exception &e)
   {
     std::stringstream oss;
-    
+
     oss << "Failed to get application descriptor for BU with tid ";
     oss << fragmentRequest->buTid;
-    
+
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
-  
+
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
   uint32_t i2oCount = 0;
@@ -413,11 +413,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   {
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
     bufRef->setNextReference(0);
-    
+
     I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-    
+
     stdMsg->VersionOffset          = 0;
     stdMsg->MsgFlags               = 0;
     stdMsg->MessageSize            = bufRef->getDataSize() >> 2;
@@ -430,7 +430,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = nbSuperFragments;
     dataBlockMsg->nbRUtids         = nbRUtids;
-    
+
     unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
     for (uint32_t i=0; i < nbSuperFragments; ++i)
     {
@@ -444,14 +444,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       memcpy(payload,&fragmentRequest->ruTids[i],sizeof(I2O_TID));
       payload += sizeof(I2O_TID);
     }
-    
+
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
     ++i2oCount;
-    
+
     try
     {
       boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-      
+
       readoutUnit_->getApplicationContext()->
         postFrame(
           bufRef,
@@ -464,13 +464,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     catch(xcept::Exception &e)
     {
       std::stringstream oss;
-      
+
       oss << "Failed to send super fragment to BU TID ";
       oss << fragmentRequest->buTid;
-      
+
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
     }
-    
+
     bufRef = nextRef;
   }
 
@@ -496,10 +496,10 @@ toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
   toolbox::mem::Reference* bufRef =
     toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
   bufRef->setDataSize(configuration_->blockSize);
-  
+
   msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
   dataBlockMsg->blockNb = blockNb;
-  
+
   return bufRef;
 }
 
@@ -515,10 +515,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 ) const
 {
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-  
+
   payload += sizeof(msg::SuperFragment);
   remainingPayloadSize -= sizeof(msg::SuperFragment);
-  
+
   superFragmentMsg->superFragmentNb = superFragmentNb;
   superFragmentMsg->totalSize = superFragmentSize;
   superFragmentMsg->partSize = currentFragmentSize > remainingPayloadSize ? remainingPayloadSize : currentFragmentSize;
@@ -544,9 +544,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);
   }
-  
+
   const std::string identifier = readoutUnit_->getIdentifier();
-  
+
   try
   {
     // Leave any previous created workloops alone. Only add new ones if needed.
@@ -555,7 +555,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
       std::ostringstream workLoopName;
       workLoopName << identifier << "Responder_" << i;
       toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
-      
+
       if ( ! wl->isActive() ) wl->activate();
       workLoops_.push_back(wl);
     }
@@ -588,7 +588,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    
+
     i2oRUSendCountBU_.clear();
     i2oRUSendCountBU_.reserve(requestMonitoring_.logicalCountPerBU.size());
     CountsPerBU::const_iterator it, itEnd;
@@ -601,10 +601,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-    
+
     lastEventNumberToBUs_ = dataMonitoring_.lastEventNumberToBUs;
     i2oBUCacheCount_ = dataMonitoring_.logicalCount;
-    
+
     i2oBUCachePayloadBU_.clear();
     i2oBUCachePayloadBU_.reserve(dataMonitoring_.payloadPerBU.size());
     CountsPerBU::const_iterator it, itEnd;
@@ -654,12 +654,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<div>"                                                 << std::endl;
   *out << "<p>BUproxy</p>"                                        << std::endl;
   *out << "<table>"                                               << std::endl;
-  
+
   const std::_Ios_Fmtflags originalFlags=out->flags();
   const int originalPrecision=out->precision();
   out->setf(std::ios::fixed);
   out->precision(0);
-  
+
   boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
   boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
 
@@ -667,7 +667,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<td>last evt number to BUs</td>"                       << std::endl;
   *out << "<td>" << dataMonitoring_.lastEventNumberToBUs << "</td>" << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">BU requests</th>"                    << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -683,7 +683,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<td>I2O count</td>"                                    << std::endl;
   *out << "<td>" << requestMonitoring_.i2oCount << "</td>"        << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">BU events cache</th>"                << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -699,13 +699,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<td>I2O count</td>"                                    << std::endl;
   *out << "<td>" << dataMonitoring_.i2oCount << "</td>"           << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
   fragmentRequestFIFO_.printHtml(out, readoutUnit_->getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<th colspan=\"2\">Statistics per BU</th>"              << std::endl;
   *out << "</tr>"                                                 << std::endl;
@@ -717,7 +717,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
   *out << "<td>Nb requests</td>"                                  << std::endl;
   *out << "<td>Data payload (MB)</td>"                            << std::endl;
   *out << "</tr>"                                                 << std::endl;
-    
+
   CountsPerBU::const_iterator it, itEnd;
   for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
        it != itEnd; ++it)
@@ -731,13 +731,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
     *out << "</tr>"                                               << std::endl;
   }
   *out << "</table>"                                              << std::endl;
-  
+
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-  
+
   out->flags(originalFlags);
   out->precision(originalPrecision);
-  
+
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
 }

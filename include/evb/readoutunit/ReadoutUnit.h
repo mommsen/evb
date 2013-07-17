@@ -27,7 +27,7 @@
 namespace evb {
 
   namespace readoutunit {
-    
+
     class Configuration;
 
     /**
@@ -38,51 +38,51 @@ namespace evb {
     class ReadoutUnit : public EvBApplication<Configuration,StateMachine>
     {
     public:
-      
+
       ReadoutUnit
       (
         xdaq::ApplicationStub*,
         const std::string& appIcon
       );
-      
+
       typedef boost::shared_ptr< Input<Configuration> > InputPtr;
       InputPtr getInput() const
       { return input_; }
-      
+
       typedef boost::shared_ptr< BUproxy<Unit> > BUproxyPtr;
       BUproxyPtr getBUproxy() const
       { return buProxy_; }
-      
+
     protected:
-      
+
       InputPtr input_;
       BUproxyPtr buProxy_;
-      
+
     private:
-      
+
       virtual void do_bindI2oCallbacks();
       inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*);
       inline void I2O_SUPER_FRAGMENT_READY_Callback(toolbox::mem::Reference*);
       inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*);
-      
+
       virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
       virtual void do_updateMonitoringInfo();
-      
+
       virtual void do_handleItemChangedEvent(const std::string& item);
       virtual void do_handleItemRetrieveEvent(const std::string& item);
-      
+
       virtual void bindNonDefaultXgiCallbacks();
       virtual void do_defaultWebPage(xgi::Output*);
-      
+
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
-      
+
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
-      
+
     };
-    
+
   } } // namespace evb::readoutunit
 
 
@@ -108,7 +108,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendAp
 {
   eventRate_ = 0;
   superFragmentSize_ = 0;
-  
+
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("superFragmentSize", &superFragmentSize_, InfoSpaceItems::retrieve);
 }
@@ -175,7 +175,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
 
 template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oCallbacks()
-{  
+{
   pt::frl::bind(
     this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvailable
@@ -187,7 +187,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oC
     I2O_SUPER_FRAGMENT_READY,
     XDAQ_ORGANIZATION_ID
   );
-  
+
   i2o::bind(
     this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FRAGMENTS_Callback,
@@ -237,7 +237,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage,
     "fragmentRequestFIFO"
   );
-  
+
   xgi::bind(
     this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage,
@@ -276,21 +276,21 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentReq
   this->webPageHeader(out, "fragmentRequestFIFO");
 
   *out << "<table class=\"layout\">"                            << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   this->webPageBanner(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   buProxy_->printFragmentRequestFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "</table>"                                            << std::endl;
-  
+
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
 }
@@ -306,21 +306,21 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragme
   this->webPageHeader(out, "fragmentRequestFIFO");
 
   *out << "<table class=\"layout\">"                            << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   this->webPageBanner(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   input_->printSuperFragmentFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "</table>"                                            << std::endl;
-  
+
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
 }

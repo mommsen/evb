@@ -29,61 +29,61 @@
 namespace evb {
 
   class EVM;
-  
+
   namespace evm {
-    
+
     /**
      * \ingroup xdaqApps
      * \brief Event fragment input handler of EVM
      */
-    
+
     class EVMinput : public readoutunit::Input<readoutunit::Configuration>
     {
 
     public:
-      
+
       EVMinput
       (
         xdaq::ApplicationStub* app,
         boost::shared_ptr<readoutunit::Configuration> configuration
       ) :
       readoutunit::Input<readoutunit::Configuration>(app,configuration) {};
-      
+
     private:
-      
+
       class FEROLproxy : public readoutunit::Input<readoutunit::Configuration>::FEROLproxy
       {
       public:
-        
+
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
-        
+
       private:
-        
+
         virtual uint32_t extractTriggerInformation(const unsigned char*) const;
-        
+
       };
-      
+
       class DummyInputData : public readoutunit::Input<readoutunit::Configuration>::DummyInputData
       {
       public:
-        
+
         DummyInputData(EVMinput* input)
         : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
-        
+
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
         {
           if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
           const EvBid evbId = evbIdFactory_.getEvBid(eventNumber_);
-          
+
           return createSuperFragment(evbId,superFragment);
         }
-        
+
       };
-      
+
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
       {
         const std::string inputSource = configuration_->inputSource.toString();
-        
+
         if ( inputSource == "FEROL" )
         {
           handler.reset( new FEROLproxy() );
@@ -98,10 +98,10 @@ namespace evb {
             "Unknown input source " + inputSource + " requested.");
         }
       }
-      
+
     };
-    
-    
+
+
   } } //namespace evb::evm
 
 

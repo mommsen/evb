@@ -11,34 +11,34 @@
 
 namespace evb {
   namespace test {
-    
+
     class DummyFEROL;
-    
+
     namespace dummyFEROL {
-      
+
       class StateMachine;
       class Outermost;
-      
+
       ///////////////////////
       // The state machine //
       ///////////////////////
-      
+
       typedef EvBStateMachine<StateMachine,Outermost> EvBStateMachine;
       class StateMachine: public EvBStateMachine
       {
-        
+
       public:
-        
+
         StateMachine(DummyFEROL*);
-        
+
         DummyFEROL* dummyFEROL() const { return dummyFEROL_; }
 
       private:
-        
+
         DummyFEROL* dummyFEROL_;
-        
+
       };
-      
+
     } } } //namespace evb::test::dummyFEROL
 
 #endif //_evb_test_dummyFEROL_StateMachine_h_

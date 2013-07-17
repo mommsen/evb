@@ -12,7 +12,7 @@
 
 
 namespace evb {
-  
+
   namespace readoutunit {
 
     /**
@@ -35,7 +35,7 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
       xdata::UnsignedInteger32 maxTriggerAgeMSec;
-      
+
       Configuration()
       : inputSource("FEROL"),
         numberOfResponders(1),
@@ -45,13 +45,13 @@ namespace evb {
         dumpFragmentsToLogger(false),
         dropInputData(false),
         usePlayback(false),
-        playbackDataFile(""),  
+        playbackDataFile(""),
         dummyFedSize(2048),
         dummyFedSizeStdDev(0),
         fragmentPoolSize(1638400),
         maxTriggerAgeMSec(1000)
       {};
-     
+
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
       {
         // Default is 8 FEDs per super-fragment
@@ -62,7 +62,7 @@ namespace evb {
         {
           fedSourceIds.push_back(sourceId);
         }
-        
+
         params.add("inputSource", &inputSource, InfoSpaceItems::change);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);
@@ -81,7 +81,7 @@ namespace evb {
     };
 
     typedef boost::shared_ptr<Configuration> ConfigurationPtr;
-    
+
   } } // namespace evb::readoutunit
 
 #endif // _evb_readoutunit_configuration_h_

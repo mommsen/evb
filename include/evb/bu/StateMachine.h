@@ -13,11 +13,11 @@
 
 
 namespace evb {
-  
+
   class BU;
-  
+
   namespace bu {
-    
+
     class FUproxy;
     class RUproxy;
     class DiskWriter;
@@ -25,17 +25,17 @@ namespace evb {
     class ResourceManager;
     class StateMachine;
     class Outermost;
-    
+
     ///////////////////////
     // The state machine //
     ///////////////////////
-    
+
     typedef EvBStateMachine<StateMachine,Outermost> EvBStateMachine;
     class StateMachine: public EvBStateMachine
     {
-      
+
     public:
-      
+
       StateMachine
       (
         BU*,
@@ -44,23 +44,23 @@ namespace evb {
         boost::shared_ptr<EventTable>,
         boost::shared_ptr<ResourceManager>
       );
-      
+
       void buCache(toolbox::mem::Reference*);
-      
+
       BU* bu() const { return bu_; }
       boost::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }
       boost::shared_ptr<DiskWriter> diskWriter() const { return diskWriter_; }
       boost::shared_ptr<EventTable> eventTable() const { return eventTable_; }
       boost::shared_ptr<ResourceManager> resourceManager() const { return resourceManager_; }
-      
+
     private:
-      
+
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
       boost::shared_ptr<EventTable> eventTable_;
       boost::shared_ptr<ResourceManager> resourceManager_;
-      
+
     };
 
   } } //namespace evb::bu

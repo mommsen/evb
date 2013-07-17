@@ -30,51 +30,51 @@
 namespace evb {
 
   class RU;
-  
+
   namespace ru {
-    
+
     /**
      * \ingroup xdaqApps
      * \brief Event fragment input handler of RU
      */
-    
+
     class RUinput : public readoutunit::Input<readoutunit::Configuration>
     {
 
     public:
-      
+
       RUinput
       (
         xdaq::ApplicationStub* app,
         boost::shared_ptr<readoutunit::Configuration> configuration
       ) :
       readoutunit::Input<readoutunit::Configuration>(app,configuration) {};
-      
+
     private:
-      
+
       class FEROLproxy : public readoutunit::Input<readoutunit::Configuration>::FEROLproxy
       {
       public:
-        
+
         virtual bool getSuperFragmentWithEvBid(const EvBid&, readoutunit::FragmentChainPtr&);
       };
-      
+
       class DummyInputData : public readoutunit::Input<readoutunit::Configuration>::DummyInputData
       {
       public:
-        
+
         DummyInputData(RUinput* input)
         : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
-        
+
         virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
         { return createSuperFragment(evbId,superFragment); }
-        
+
       };
-      
+
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
       {
         const std::string inputSource = configuration_->inputSource.toString();
-        
+
         if ( inputSource == "FEROL" )
         {
           handler.reset( new FEROLproxy() );
@@ -89,10 +89,10 @@ namespace evb {
             "Unknown input source " + inputSource + " requested.");
         }
       }
-      
+
     };
-    
-    
+
+
   } } //namespace evb::ru
 
 

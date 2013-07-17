@@ -30,13 +30,13 @@ evb::bu::DiskUsage::~DiskUsage()
 bool evb::bu::DiskUsage::update()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
-  
+
   if ( ! lock ) return false; // don't start another thread if there's already one
-  
+
   boost::thread thread(
     boost::bind( &DiskUsage::doStatFs, this )
   );
-  
+
   return (
     thread.timed_join( boost::posix_time::milliseconds(500) ) &&
     retVal_ == 0
@@ -47,7 +47,7 @@ bool evb::bu::DiskUsage::update()
 bool evb::bu::DiskUsage::tooHigh()
 {
   const double diskUsage = relDiskUsage();
-  
+
   if ( diskUsage < 0 ) return true; //error condition
 
   // The disk usage is too high if the high water mark is exceeded.
@@ -58,7 +58,7 @@ bool evb::bu::DiskUsage::tooHigh()
   else
     tooHigh_ = ( diskUsage > highWaterMark_ );
 
-  return tooHigh_;  
+  return tooHigh_;
 }
 
 
@@ -66,7 +66,7 @@ double evb::bu::DiskUsage::diskSizeGB()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
   if ( ! lock ) return -2;
-  
+
   return ( retVal_==0 ? static_cast<double>(statfs_.f_blocks * statfs_.f_bsize) / 1024 / 1024 / 1024 : -1 );
 }
 
@@ -75,11 +75,11 @@ double evb::bu::DiskUsage::relDiskUsage()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
   if ( ! lock ) return -2;
-  
+
   return ( retVal_==0 ? 1 - static_cast<double>(statfs_.f_bavail)/statfs_.f_blocks : -1 );
 }
 
-  
+
 void evb::bu::DiskUsage::doStatFs()
 {
   retVal_ = statfs64(path_.string().c_str(), &statfs_);

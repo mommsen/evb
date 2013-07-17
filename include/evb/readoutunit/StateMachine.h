@@ -14,13 +14,13 @@
 namespace evb {
 
   namespace readoutunit {
-    
+
     template<class> class Outermost;
 
     ///////////////////////
     // Transition events //
     ///////////////////////
-    
+
     class MismatchDetected : public boost::statechart::event<MismatchDetected>
     {
     public:
@@ -28,11 +28,11 @@ namespace evb {
       std::string getReason() const { return exception_.message(); }
       std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
       xcept::Exception& getException() const { return exception_; }
-      
+
     private:
       mutable xcept::Exception exception_;
     };
-    
+
     class TimedOut : public boost::statechart::event<TimedOut>
     {
     public:
@@ -40,35 +40,35 @@ namespace evb {
       std::string getReason() const { return exception_.message(); }
       std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
       xcept::Exception& getException() const { return exception_; }
-      
+
     private:
       mutable xcept::Exception exception_;
     };
-    
+
     ///////////////////////
     // The state machine //
     ///////////////////////
-    
+
     template<class Owner>
     class StateMachine : public EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >
     {
-      
+
     public:
-      
+
       StateMachine(Owner*);
-      
+
       void mismatchEvent(const MismatchDetected&);
       void timedOutEvent(const TimedOut&);
-      
+
       Owner* getOwner() const
       { return owner_; }
-      
+
     private:
-      
+
       Owner* owner_;
 
     };
-    
+
   } } //namespace evb::readoutunit
 
 
@@ -87,7 +87,7 @@ template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected& evt)
 {
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
-  
+
   this->rcmsStateNotifier_.stateChanged("MismatchDetectedBackPressuring", evt.getReason());
 
   this->app_->notifyQualified("error", evt.getException());
@@ -98,7 +98,7 @@ template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::timedOutEvent(const TimedOut& evt)
 {
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
-  
+
   this->rcmsStateNotifier_.stateChanged("TimedOutBackPressuring", evt.getReason());
 
   this->app_->notifyQualified("error", evt.getException());
