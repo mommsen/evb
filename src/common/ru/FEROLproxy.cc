@@ -3,20 +3,54 @@
 
 bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
 {
-  if ( ! superFragmentFIFO_.deq(superFragment) ) return false;
-
-  if ( superFragment->getEvBid() != evbId )
+  // if we got a superFragment from pt::frl, use it
+  if ( superFragmentFIFO_.deq(superFragment) )
   {
-    std::stringstream oss;
+    if ( superFragment->getEvBid() != evbId )
+    {
+      std::stringstream oss;
 
-    oss << "Mismatch detected: expected evb id "
-      << evbId << ", but found evb id "
-      << superFragment->getEvBid() << " in data block.";
+      oss << "Mismatch detected: expected evb id "
+        << evbId << ", but found evb id "
+        << superFragment->getEvBid() << " in data block.";
 
-    XCEPT_RAISE(exception::MismatchDetected, oss.str());
+      XCEPT_RAISE(exception::MismatchDetected, oss.str());
+    }
+
+    return true;
   }
 
-  return true;
+  if ( fragmentFIFOs_.begin()->second->empty() ) return false;
+
+  readoutunit::FragmentChain::FragmentPtr fragment;
+  superFragment.reset( new readoutunit::FragmentChain(evbId) );
+
+  for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    while ( doProcessing_ && ! it->second->deq(fragment) ) ::usleep(10);
+
+    if (doProcessing_)
+    {
+      if ( evbId != fragment->evbId )
+      {
+        std::stringstream oss;
+
+        oss << "Mismatch detected: expected evb id "
+          << evbId << ", but found evb id "
+          << fragment->evbId
+          << " in data block from FED "
+          << it->first;
+
+        XCEPT_RAISE(exception::MismatchDetected, oss.str());
+      }
+
+      superFragment->append(fragment);
+
+    }
+  }
+
+  return doProcessing_;
 }
 
 

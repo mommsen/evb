@@ -41,7 +41,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
     }
   }
 
-  return true;
+  return doProcessing_;
 }
 
 
