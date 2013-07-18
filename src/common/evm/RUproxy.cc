@@ -124,8 +124,7 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
       {
         memcpy(payload,&fragmentRequest->evbIds[i],sizeof(EvBid));
         payload += sizeof(EvBid);
-        if ( lastEventNumberToRUs < fragmentRequest->evbIds[i].eventNumber() )
-          lastEventNumberToRUs = fragmentRequest->evbIds[i].eventNumber();
+        lastEventNumberToRUs = fragmentRequest->evbIds[i].eventNumber();
       }
 
       for (uint32_t i = 0; i < ruCount; ++i)

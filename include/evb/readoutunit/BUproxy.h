@@ -439,8 +439,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     {
       memcpy(payload,&fragmentRequest->evbIds[i],sizeof(EvBid));
       payload += sizeof(EvBid);
-      if ( lastEventNumberToBUs < fragmentRequest->evbIds[i].eventNumber() )
-        lastEventNumberToBUs = fragmentRequest->evbIds[i].eventNumber();
+      lastEventNumberToBUs = fragmentRequest->evbIds[i].eventNumber();
     }
     for (uint32_t i=0; i < nbRUtids; ++i)
     {
@@ -480,8 +479,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   {
      boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
-     if ( dataMonitoring_.lastEventNumberToBUs < lastEventNumberToBUs )
-       dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
+     dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
      dataMonitoring_.i2oCount += i2oCount;
      dataMonitoring_.payload += payloadSize;
      dataMonitoring_.logicalCount += nbSuperFragments;

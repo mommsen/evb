@@ -463,8 +463,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
          it != itEnd; ++it)
     {
-      if ( lastEventNumber < it->second.lastEventNumber )
-        lastEventNumber = it->second.lastEventNumber;
+      lastEventNumber = it->second.lastEventNumber;
       dataReadyCount += it->second.perf.logicalCount;
 
       it->second.rate = it->second.perf.logicalRate();
