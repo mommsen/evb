@@ -1054,14 +1054,12 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-2" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="30" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-3" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="31" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
@@ -1145,12 +1143,12 @@
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <!-- Copy worker configuration -->
         <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
+        <i2oFragmentsNo xsi:type="xsd:unsignedInt">16</i2oFragmentsNo>
+        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">700000</i2oFragmentPoolSize>
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-        <copyWorkersNo xsi:type="xsd:unsignedInt">4</copyWorkersNo>
+        <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
         <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">false</doSuperFragment>
+        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
         <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
         <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
         <destinationClassName xsi:type="xsd:string">evb::EVM</destinationClassName>
@@ -1174,8 +1172,7 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
-        <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
       </properties>
    </xc:Application>
 
@@ -1200,14 +1197,12 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU1_FRL_HOST_NAME:RU1_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU1_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-2" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="30" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-3" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="31" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
@@ -1291,12 +1286,12 @@
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <!-- Copy worker configuration -->
         <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
+        <i2oFragmentsNo xsi:type="xsd:unsignedInt">16</i2oFragmentsNo>
+        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">700000</i2oFragmentPoolSize>
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-        <copyWorkersNo xsi:type="xsd:unsignedInt">4</copyWorkersNo>
+        <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
         <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">false</doSuperFragment>
+        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
         <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
         <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
         <destinationClassName xsi:type="xsd:string">evb::RU</destinationClassName>
@@ -1320,8 +1315,7 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
-        <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
       </properties>
     </xc:Application>
 
@@ -1346,14 +1340,12 @@
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="onnode" memnode="1" affinity="10" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="25" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-0/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
+      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-SuperFragmentWorker-1-1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU2_FRL_HOST_NAME:RU2_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU2_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-1" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="14" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-2" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="30" />
-      <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-3" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="31" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-sender-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="0" />
       <pol:element pattern="toolbox-mem-allocator-udapl-receiver-ofa-v2-ib0" type="alloc" package="numa" mempolicy="onnode" node="1" />
@@ -1437,12 +1429,12 @@
         <autoConnect xsi:type="xsd:boolean">false</autoConnect>
         <!-- Copy worker configuration -->
         <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-        <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
-        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
+        <i2oFragmentsNo xsi:type="xsd:unsignedInt">16</i2oFragmentsNo>
+        <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">700000</i2oFragmentPoolSize>
         <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-        <copyWorkersNo xsi:type="xsd:unsignedInt">4</copyWorkersNo>
+        <copyWorkersNo xsi:type="xsd:unsignedInt">2</copyWorkersNo>
         <!-- Super fragment configuration -->
-        <doSuperFragment xsi:type="xsd:boolean">false</doSuperFragment>
+        <doSuperFragment xsi:type="xsd:boolean">true</doSuperFragment>
         <superFragmentWorkersNo xsi:type="xsd:unsignedInt">1</superFragmentWorkersNo>
         <superFragmentWorkerQueueSize xsi:type="xsd:unsignedLong">1024</superFragmentWorkerQueueSize>
         <destinationClassName xsi:type="xsd:string">evb::RU</destinationClassName>
@@ -1466,8 +1458,7 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
-        <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
       </properties>
     </xc:Application>
 
