@@ -2,7 +2,7 @@
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/FileHandler.h"
 #include "evb/bu/RUproxy.h"
-#include "evb/bu/EventTable.h"
+#include "evb/bu/EventBuilder.h"
 #include "evb/bu/ResourceManager.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/bu/States.h"
@@ -18,14 +18,14 @@ evb::bu::StateMachine::StateMachine
   BU* bu,
   boost::shared_ptr<RUproxy> ruProxy,
   boost::shared_ptr<DiskWriter> diskWriter,
-  EventTablePtr eventTable,
+  EventBuilderPtr eventBuilder,
   boost::shared_ptr<ResourceManager> resourceManager
 ):
 EvBStateMachine(bu),
 bu_(bu),
 ruProxy_(ruProxy),
 diskWriter_(diskWriter),
-eventTable_(eventTable),
+eventBuilder_(eventBuilder),
 resourceManager_(resourceManager)
 {}
 
@@ -105,7 +105,7 @@ void evb::bu::Clearing::activity()
   {
     if (doClearing_) stateMachine.ruProxy()->clear();
     if (doClearing_) stateMachine.diskWriter()->clear();
-    if (doClearing_) stateMachine.eventTable()->clear();
+    if (doClearing_) stateMachine.eventBuilder()->clear();
     if (doClearing_) stateMachine.resourceManager()->clear();
 
     if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
@@ -158,7 +158,7 @@ void evb::bu::Enabled::entryAction()
   const uint32_t runNumber = stateMachine.getRunNumber();
 
   stateMachine.diskWriter()->startProcessing(runNumber);
-  stateMachine.eventTable()->startProcessing(runNumber);
+  stateMachine.eventBuilder()->startProcessing(runNumber);
   stateMachine.ruProxy()->startProcessing();
 }
 
@@ -167,7 +167,7 @@ void evb::bu::Enabled::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
   stateMachine.ruProxy()->stopProcessing();
-  stateMachine.eventTable()->stopProcessing();
+  stateMachine.eventBuilder()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }
 

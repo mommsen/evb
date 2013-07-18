@@ -25,7 +25,7 @@ namespace evb {
   class InfoSpaceItems;
   
   namespace bu {
-    class EventTable;
+    class EventBuilder;
     class ResourceManager;
     class RUproxy;
   }
@@ -69,7 +69,7 @@ namespace evb {
     
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;
-    boost::shared_ptr<bu::EventTable> eventTable_;
+    boost::shared_ptr<bu::EventBuilder> eventBuilder_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
     
     xdata::UnsignedInteger32 nbEventsInBU_;

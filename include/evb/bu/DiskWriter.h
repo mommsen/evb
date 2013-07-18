@@ -11,7 +11,7 @@
 #include "evb/bu/Configuration.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
-#include "evb/bu/EventTable.h"
+#include "evb/bu/EventBuilder.h"
 #include "evb/bu/FileHandler.h"
 #include "evb/bu/LumiHandler.h"
 #include "evb/InfoSpaceItems.h"

@@ -341,7 +341,7 @@ bool evb::bu::DiskWriter::resourceMonitoring(toolbox::task::WorkLoop*)
   allOkay &= checkDiskSize(rawDataDiskUsage_);
   allOkay &= checkDiskSize(metaDataDiskUsage_);
 
-  //eventTable_->requestEvents(allOkay);
+  //eventBuilder_->requestEvents(allOkay);
 
   ::sleep(5);
 

@@ -2,7 +2,7 @@
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
-#include "evb/bu/EventTable.h"
+#include "evb/bu/EventBuilder.h"
 #include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StateMachine.h"
@@ -11,7 +11,7 @@
 #include "xcept/tools.h"
 
 
-evb::bu::EventTable::EventTable
+evb::bu::EventBuilder::EventBuilder
 (
   BU* bu,
   boost::shared_ptr<RUproxy> ruProxy,
@@ -29,7 +29,7 @@ processActive_(false)
 }
 
 
-void evb::bu::EventTable::startProcessing(const uint32_t runNumber)
+void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
   doProcessing_ = true;
@@ -37,38 +37,38 @@ void evb::bu::EventTable::startProcessing(const uint32_t runNumber)
 }
 
 
-void evb::bu::EventTable::stopProcessing()
+void evb::bu::EventBuilder::stopProcessing()
 {
   doProcessing_ = false;
   while (processActive_) ::usleep(1000);
 }
 
 
-void evb::bu::EventTable::startProcessingWorkLoop()
+void evb::bu::EventBuilder::startProcessingWorkLoop()
 {
   try
   {
     processingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( bu_->getIdentifier("EventTableProcessing"), "waiting" );
+      getWorkLoop( bu_->getIdentifier("EventBuilderProcessing"), "waiting" );
 
     if ( ! processingWL_->isActive() )
     {
       processingAction_ =
-        toolbox::task::bind(this, &evb::bu::EventTable::process,
-          bu_->getIdentifier("eventTableProcess") );
+        toolbox::task::bind(this, &evb::bu::EventBuilder::process,
+          bu_->getIdentifier("eventBuilderProcess") );
 
       processingWL_->activate();
     }
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'EventTableProcessing'.";
+    std::string msg = "Failed to start workloop 'EventBuilderProcessing'.";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
 
 
-bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
+bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop*)
 {
   ::usleep(1000);
 
@@ -90,7 +90,7 @@ bool evb::bu::EventTable::process(toolbox::task::WorkLoop*)
 }
 
 
-bool evb::bu::EventTable::buildEvents()
+bool evb::bu::EventBuilder::buildEvents()
 {
   FragmentChainPtr superFragments;
 
@@ -130,6 +130,7 @@ bool evb::bu::EventTable::buildEvents()
 
         if ( eventPos->second->isComplete() )
         {
+          // the event is complete
           resourceManager_->eventCompleted(eventPos->second);
           diskWriter_->writeEvent(eventPos->second);
           eventMap_.erase(eventPos++);
@@ -165,7 +166,7 @@ bool evb::bu::EventTable::buildEvents()
 }
 
 
-evb::bu::EventTable::EventMap::iterator evb::bu::EventTable::getEventPos
+evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 (
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg,
   const uint16_t superFragmentCount
@@ -184,7 +185,7 @@ evb::bu::EventTable::EventMap::iterator evb::bu::EventTable::getEventPos
 }
 
 
-void evb::bu::EventTable::clear()
+void evb::bu::EventBuilder::clear()
 {
   eventMap_.clear();
 }

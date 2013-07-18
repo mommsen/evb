@@ -1,5 +1,5 @@
-#ifndef _evb_bu_EventTable_h_
-#define _evb_bu_EventTable_h_
+#ifndef _evb_bu_EventBuilder_h_
+#define _evb_bu_EventBuilder_h_
 
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
@@ -38,11 +38,11 @@ namespace evb {
      * \brief Keep track of events
      */
 
-    class EventTable : public toolbox::lang::Class
+    class EventBuilder : public toolbox::lang::Class
     {
     public:
 
-      EventTable
+      EventBuilder
       (
         BU*,
         boost::shared_ptr<RUproxy>,
@@ -97,13 +97,13 @@ namespace evb {
       volatile bool doProcessing_;
       volatile bool processActive_;
 
-    }; // EventTable
+    }; // EventBuilder
 
-    typedef boost::shared_ptr<EventTable> EventTablePtr;
+    typedef boost::shared_ptr<EventBuilder> EventBuilderPtr;
 
   } } // namespace evb::bu
 
-#endif // _evb_bu_EventTable_h_
+#endif // _evb_bu_EventBuilder_h_
 
 
 /// emacs configuration

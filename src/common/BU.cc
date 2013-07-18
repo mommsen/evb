@@ -2,7 +2,7 @@
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
-#include "evb/bu/EventTable.h"
+#include "evb/bu/EventBuilder.h"
 #include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StateMachine.h"
@@ -20,12 +20,12 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
   resourceManager_.reset( new bu::ResourceManager(this) );
   diskWriter_.reset( new bu::DiskWriter(this, resourceManager_) );
   ruProxy_.reset( new bu::RUproxy(this, resourceManager_, fastCtrlMsgPool) );
-  eventTable_.reset( new bu::EventTable(this, ruProxy_, diskWriter_, resourceManager_) );
+  eventBuilder_.reset( new bu::EventBuilder(this, ruProxy_, diskWriter_, resourceManager_) );
   stateMachine_.reset( new bu::StateMachine(this,
-      ruProxy_, diskWriter_, eventTable_, resourceManager_) );
+      ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
   diskWriter_->registerStateMachine(stateMachine_);
-  eventTable_->registerStateMachine(stateMachine_);
+  eventBuilder_->registerStateMachine(stateMachine_);
   ruProxy_->registerStateMachine(stateMachine_);
   
   initialize();

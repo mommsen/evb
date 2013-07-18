@@ -47,7 +47,7 @@ Sources=\
 	bu/DiskUsage.cc \
 	bu/DiskWriter.cc \
 	bu/Event.cc \
-	bu/EventTable.cc \
+	bu/EventBuilder.cc \
 	bu/FileHandler.cc \
 	bu/LumiHandler.cc \
 	bu/ResourceManager.cc \
