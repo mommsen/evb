@@ -918,7 +918,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
 namespace evb
 {
   template <>
-  inline void OneToOneQueue<evb::readoutunit::FragmentChainPtr>::formatter(readoutunit::FragmentChainPtr fragmentChain, std::ostringstream* out)
+  inline void OneToOneQueue<readoutunit::FragmentChainPtr>::formatter(readoutunit::FragmentChainPtr fragmentChain, std::ostringstream* out)
   {
     if ( fragmentChain.get() )
     {
@@ -932,6 +932,28 @@ namespace evb
         *out << "  trigger no: " << msg->triggerno << std::endl;
         *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
         *out << "  evbId: " << fragmentChain->getEvBid() << std::endl;
+      }
+    }
+    else
+      *out << "n/a";
+  }
+
+
+  template <>
+  inline void OneToOneQueue<readoutunit::FragmentChain::FragmentPtr>::formatter(readoutunit::FragmentChain::FragmentPtr fragment, std::ostringstream* out)
+  {
+    if ( fragment.get() )
+    {
+      toolbox::mem::Reference* bufRef = fragment->bufRef;
+      if ( bufRef )
+      {
+        I2O_DATA_READY_MESSAGE_FRAME* msg =
+          (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
+        *out << "I2O_DATA_READY_MESSAGE_FRAME:" << std::endl;
+        *out << "  FED id: " << msg->fedid << std::endl;
+        *out << "  trigger no: " << msg->triggerno << std::endl;
+        *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
+        *out << "  evbId: " << fragment->evbId << std::endl;
       }
     }
     else
