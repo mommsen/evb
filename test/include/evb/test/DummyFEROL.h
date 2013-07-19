@@ -10,20 +10,13 @@
 #include "evb/FragmentGenerator.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
+#include "evb/test/dummyFEROL/Configuration.h"
 #include "evb/test/dummyFEROL/StateMachine.h"
-#include "i2o/i2oDdmLib.h"
-#include "toolbox/lang/Class.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
-#include "xdaq/Application.h"
-#include "xdaq/ApplicationDescriptor.h"
-#include "xdata/Boolean.h"
+#include "xdaq/ApplicationStub.h"
 #include "xdata/Double.h"
-#include "xdata/String.h"
-#include "xdata/UnsignedInteger32.h"
-#include "xdata/UnsignedInteger64.h"
-#include "xdata/Vector.h"
 #include "xgi/Output.h"
 
 
@@ -35,7 +28,7 @@ namespace evb {
      * \brief The dummy FEROL
      */
 
-    class DummyFEROL : public EvBApplication<dummyFEROL::StateMachine>
+    class DummyFEROL : public EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>
     {
 
     public:
@@ -115,16 +108,6 @@ namespace evb {
       xdata::Double fragmentSize_;
       xdata::Double fragmentSizeStdDev_;
 
-      InfoSpaceItems dummyFerolParams_;
-      xdata::String destinationClass_;
-      xdata::UnsignedInteger32 destinationInstance_;
-      xdata::Boolean usePlayback_;
-      xdata::String playbackDataFile_;
-      xdata::UnsignedInteger32 frameSize_;
-      xdata::UnsignedInteger32 fedId_;
-      xdata::UnsignedInteger32 fedSize_;
-      xdata::UnsignedInteger32 fedSizeStdDev_;
-      xdata::UnsignedInteger32 fragmentFIFOCapacity_;
     };
 
 

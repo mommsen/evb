@@ -6,6 +6,7 @@
 #include "evb/Exception.h"
 #include "evb/version.h"
 #include "evb/test/DummyFEROL.h"
+#include "evb/test/dummyFEROL/States.h"
 #include "evb/test/dummyFEROL/StateMachine.h"
 #include "toolbox/task/WorkLoopFactory.h"
 #include "xcept/tools.h"
@@ -15,18 +16,18 @@
 
 #define DOUBLE_WORKLOOPS
 
-evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* s) :
-EvBApplication<dummyFEROL::StateMachine>(s,evb::version,"/evb/images/rui64x64.gif"),
+evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
+EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/rui64x64.gif"),
 doProcessing_(false),
 fragmentFIFO_("fragmentFIFO")
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );
-  
-  initialize();
-  
+
   resetMonitoringCounters();
   startWorkLoops();
-  
+
+  initialize();
+
   LOG4CPLUS_INFO(logger_, "End of constructor");
 }
 
@@ -36,29 +37,6 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   InfoSpaceItems& appInfoSpaceParams
 )
 {
-  destinationClass_ = "rubuilder::ru::Application";
-  destinationInstance_ = instance_;
-  fedId_ = instance_;
-  fedSize_ = 2048;
-  fedSizeStdDev_ = 0;
-  usePlayback_ = false;
-  playbackDataFile_ = "";  
-  frameSize_ = 0x40000;
-  fragmentFIFOCapacity_ = 32;
-
-  dummyFerolParams_.add("destinationClass", &destinationClass_);
-  dummyFerolParams_.add("destinationInstance", &destinationInstance_);
-  dummyFerolParams_.add("fedId", &fedId_);
-  dummyFerolParams_.add("fedSize", &fedSize_);
-  dummyFerolParams_.add("fedSizeStdDev", &fedSizeStdDev_);
-  dummyFerolParams_.add("usePlayback", &usePlayback_);
-  dummyFerolParams_.add("playbackDataFile", &playbackDataFile_);
-  dummyFerolParams_.add("frameSize", &frameSize_);
-  dummyFerolParams_.add("fragmentFIFOCapacity", &fragmentFIFOCapacity_);
-
-  stateMachine_->appendConfigurationItems(dummyFerolParams_);
-
-  appInfoSpaceParams.add(dummyFerolParams_);
 }
 
 
@@ -72,14 +50,12 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
   fragmentRate_ = 0;
   fragmentSize_ = 0;
   fragmentSizeStdDev_ = 0;
-  
+
   monitoringParams.add("bandwidth", &bandwidth_);
   monitoringParams.add("frameRate", &frameRate_);
   monitoringParams.add("fragmentRate", &fragmentRate_);
   monitoringParams.add("fragmentSize", &fragmentSize_);
   monitoringParams.add("fragmentSizeStdDev", &fragmentSizeStdDev_);
-  
-  stateMachine_->appendMonitoringItems(monitoringParams);
 }
 
 
@@ -122,7 +98,7 @@ void evb::test::DummyFEROL::do_defaultWebPage
 
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-    
+
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>message count</td>"                                << std::endl;
     *out << "<td>" << dataMonitoring_.i2oCount << "</td>"           << std::endl;
@@ -155,14 +131,12 @@ void evb::test::DummyFEROL::do_defaultWebPage
     out->flags(originalFlags);
     out->precision(originalPrecision);
   }
- 
+
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
   fragmentFIFO_.printHtml(out, getApplicationDescriptor()->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
-
-  dummyFerolParams_.printHtml("Configuration", out);
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
@@ -180,21 +154,21 @@ void evb::test::DummyFEROL::fragmentFIFOWebPage
   webPageHeader(out, "fragmentFIFO");
 
   *out << "<table class=\"layout\">"                            << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   webPageBanner(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   fragmentFIFO_.printVerticalHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
-  
+
   *out << "</table>"                                            << std::endl;
-  
+
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
 }
@@ -211,12 +185,16 @@ void evb::test::DummyFEROL::configure()
 {
   clear();
 
-  fragmentFIFO_.resize(fragmentFIFOCapacity_);
+  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
 
   fragmentGenerator_.configure(
-    fedId_, usePlayback_, playbackDataFile_,
-    frameSize_, fedSize_, fedSizeStdDev_,
-    frameSize_*fragmentFIFOCapacity_
+    configuration_->fedId,
+    configuration_->usePlayback,
+    configuration_->playbackDataFile,
+    configuration_->frameSize,
+    configuration_->fedSize,
+    configuration_->fedSizeStdDev,
+    configuration_->frameSize*configuration_->fragmentFIFOCapacity
   );
 
   getApplicationDescriptors();
@@ -224,21 +202,20 @@ void evb::test::DummyFEROL::configure()
 
 
 void evb::test::DummyFEROL::getApplicationDescriptors()
-{  
+{
   try
   {
     ruDescriptor_ =
       getApplicationContext()->
       getDefaultZone()->
-      getApplicationDescriptor(destinationClass_,destinationInstance_);
+      getApplicationDescriptor(configuration_->destinationClass,configuration_->destinationInstance);
   }
   catch(xcept::Exception &e)
   {
     std::stringstream oss;
-    
-    oss << "Failed to get application descriptor of RU";
-    oss << destinationClass_.toString() << destinationInstance_.toString();
-    
+
+    oss << "Failed to get application descriptor of the destination";
+
     XCEPT_RETHROW(exception::Configuration, oss.str(), e);
   }
 }
@@ -276,13 +253,13 @@ void evb::test::DummyFEROL::startWorkLoops()
   {
     generatingWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( getIdentifier("generating"), "waiting" );
-    
+
     if ( ! generatingWL_->isActive() )
     {
       generatingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
           getIdentifier("generatingAction") );
-      
+
       generatingWL_->activate();
     }
   }
@@ -297,13 +274,13 @@ void evb::test::DummyFEROL::startWorkLoops()
   {
     sendingWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( getIdentifier("sending"), "waiting" );
-    
+
     if ( ! sendingWL_->isActive() )
     {
       sendingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
           getIdentifier("sendingAction") );
-      
+
       sendingWL_->activate();
     }
   }
@@ -319,9 +296,9 @@ void evb::test::DummyFEROL::startWorkLoops()
 bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 {
   generatingActive_ = true;
-  
+
   toolbox::mem::Reference* bufRef = 0;
-  
+
   //fix affinity to core 0
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
@@ -347,9 +324,9 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
       #endif
     }
   }
-  
+
   generatingActive_ = false;
-  
+
   return doProcessing_;
 }
 
@@ -385,9 +362,9 @@ bool evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
       ::usleep(10);
     }
   }
-  
+
   sendingActive_ = false;
-  
+
   return doProcessing_;
 }
 
@@ -395,16 +372,16 @@ bool evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRef)
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-  
+
   const uint32_t payload = bufRef->getDataSize();
-  
+
   ++dataMonitoring_.i2oCount;
-  dataMonitoring_.logicalCount += frameSize_/(fedSize_+sizeof(ferolh_t));
+  dataMonitoring_.logicalCount += configuration_->frameSize/(configuration_->fedSize+sizeof(ferolh_t));
   dataMonitoring_.sumOfSizes += payload;
   dataMonitoring_.sumOfSquares += payload*payload;
 }
 
- 
+
 inline void evb::test::DummyFEROL::sendData(toolbox::mem::Reference* bufRef)
 {
   getApplicationContext()->

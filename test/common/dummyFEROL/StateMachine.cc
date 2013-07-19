@@ -1,7 +1,7 @@
 #include "evb/Exception.h"
 #include "evb/test/DummyFEROL.h"
-#include "evb/test/dummyFEROL/States.h"
 #include "evb/test/dummyFEROL/StateMachine.h"
+#include "evb/test/dummyFEROL/States.h"
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -13,11 +13,7 @@ evb::test::dummyFEROL::StateMachine::StateMachine
 ):
 EvBStateMachine(dummyFEROL),
 dummyFEROL_(dummyFEROL)
-{
-  // initiate FSM here to assure that the derived state machine class
-  // has been fully constructed.
-  this->initiate();
-}
+{}
 
 
 void evb::test::dummyFEROL::Configuring::entryAction()
@@ -84,7 +80,7 @@ void evb::test::dummyFEROL::Clearing::entryAction()
 void evb::test::dummyFEROL::Clearing::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
-  
+
   std::string msg = "Failed to clear the components";
   try
   {
