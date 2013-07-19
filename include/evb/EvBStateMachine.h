@@ -57,25 +57,25 @@ namespace evb {
   /////////////////////////////////
   // The evb state machine //
   /////////////////////////////////
-  
+
   template<class MostDerived, class InitialState>
   class EvBStateMachine :
     public boost::statechart::state_machine<MostDerived,InitialState>
   {
-    
+
   public:
-    
+
     EvBStateMachine(xdaq::Application*);
-    
+
     void processSoapEvent(const std::string& event, std::string& newStateName);
     std::string processFSMEvent(const boost::statechart::event_base&);
     void processEvent(const boost::statechart::event_base&);
     void fail(xcept::Exception&);
-    
+
     void appendConfigurationItems(InfoSpaceItems&);
     void appendMonitoringItems(InfoSpaceItems&);
     void updateMonitoringItems();
-    
+
     void notifyRCMS(const std::string& stateName);
     void failEvent(const Fail&);
     void unconsumed_event(const boost::statechart::event_base&);
@@ -83,37 +83,37 @@ namespace evb {
 
     std::string getStateName() const { return stateName_; }
     uint32_t getRunNumber() const { return runNumber_.value_; }
-    
+
     typedef std::list<std::string> SoapFsmEvents;
     SoapFsmEvents getSoapFsmEvents() { return soapFsmEvents_; }
 
   protected:
 
     virtual void do_processSoapEvent(const std::string& event, std::string& newStateName);
-    
+
     xdaq::Application* app_;
     xdaq2rc::RcmsStateNotifier rcmsStateNotifier_;
 
     SoapFsmEvents soapFsmEvents_;
 
   private:
-    
+
     boost::shared_mutex eventMutex_;
     boost::shared_mutex stateNameMutex_;
-    
+
     xdata::UnsignedInteger32 runNumber_;
     std::string stateName_;
-    
+
     std::string reasonForFailed_;
     xdata::UnsignedInteger32 monitoringRunNumber_;
-    xdata::String monitoringStateName_;    
+    xdata::String monitoringStateName_;
   };
-  
-  
+
+
   ////////////////////////////
   // Wrapper state template //
   ////////////////////////////
-  
+
   template< class MostDerived,
             class Context,
             class InnerInitial = boost::mpl::list<>,
@@ -128,7 +128,7 @@ namespace evb {
   protected:
     typedef boost::statechart::state<MostDerived, Context, InnerInitial, historyMode> boost_state;
     typedef EvBState my_state;
-    
+
     EvBState(const std::string stateName, typename boost_state::my_context& c) :
     boost_state(c), stateName_(stateName) {};
     virtual ~EvBState() {};
@@ -322,7 +322,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::appendConfigurationItems
 )
 {
   runNumber_ = 0;
-  
+
   params.add("runNumber", &runNumber_);
 }
 
@@ -384,7 +384,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
 )
 {
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
-  
+
   LOG4CPLUS_ERROR(getLogger(),
     "The " << typeid(evt).name()
     << " event is not supported from the "

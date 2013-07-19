@@ -10,9 +10,9 @@ namespace evb {
   class EvBidFactory
   {
   public:
-    
+
     EvBidFactory();
-    
+
     /**
      * Return EvBid for given eventNumber
      */
@@ -22,13 +22,13 @@ namespace evb {
      * Reset the counters for a new run
      */
     void reset(const uint32_t runNumber);
-    
+
   private:
-    
+
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
-    
+
   };
 
 } // namespace evb

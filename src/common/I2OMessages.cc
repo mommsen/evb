@@ -3,7 +3,7 @@
 
 uint32_t evb::msg::ReadoutMsg::getHeaderSize() const
 {
-  return 
+  return
     sizeof(msg::ReadoutMsg) +
     nbRequests * sizeof(EvBid) +
     (nbRUtids|0x1) * sizeof(I2O_TID); // there's always an odd number of I2O_TIDs to keep 64-bit alignement
@@ -16,7 +16,7 @@ void evb::msg::ReadoutMsg::getEvBids(evb::msg::EvBids& ids) const
   ids.reserve(nbRequests);
 
   unsigned char* payload = (unsigned char*)&evbIds[0];
-  
+
   for (uint32_t i=0; i < nbRequests; ++i)
   {
     ids.push_back( *(EvBid*)payload );
@@ -29,7 +29,7 @@ void evb::msg::ReadoutMsg::getRUtids(evb::msg::RUtids& tids) const
 {
   tids.clear();
   tids.reserve(nbRUtids);
-  
+
   unsigned char* payload = (unsigned char*)&evbIds[0] +
     nbRequests * sizeof(EvBid);
 
@@ -43,7 +43,7 @@ void evb::msg::ReadoutMsg::getRUtids(evb::msg::RUtids& tids) const
 
 uint32_t evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getHeaderSize() const
 {
-  return 
+  return
     sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) +
     nbSuperFragments * sizeof(EvBid) +
     ((nbRUtids+1)&~1) * sizeof(I2O_TID); // there's always an even number of I2O_TIDs to keep 64-bit alignement
@@ -56,7 +56,7 @@ void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getEvBids(evb::msg::EvBids& ids) co
   ids.reserve(nbSuperFragments);
 
   unsigned char* payload = (unsigned char*)&evbIds[0];
-  
+
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
     ids.push_back( *(EvBid*)payload );
@@ -69,7 +69,7 @@ void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getRUtids(evb::msg::RUtids& tids) c
 {
   tids.clear();
   tids.reserve(nbRUtids);
-  
+
   unsigned char* payload = (unsigned char*)&evbIds[0] +
     nbSuperFragments * sizeof(EvBid);
 
@@ -89,25 +89,25 @@ std::ostream& operator<<
 {
   str << "PvtMessageFrame.StdMessageFrame.VersionOffset=";
   str << pvtMessageFrame.StdMessageFrame.VersionOffset << std::endl;
-  
+
   str << "PvtMessageFrame.StdMessageFrame.MsgFlags=";
   str << pvtMessageFrame.StdMessageFrame.MsgFlags << std::endl;
-  
+
   str << "PvtMessageFrame.StdMessageFrame.MessageSize=";
   str << pvtMessageFrame.StdMessageFrame.MessageSize << std::endl;
-  
+
   str << "PvtMessageFrame.StdMessageFrame.TargetAddress=";
   str << pvtMessageFrame.StdMessageFrame.TargetAddress << std::endl;
-  
+
   str << "PvtMessageFrame.StdMessageFrame.InitiatorAddress=";
   str << pvtMessageFrame.StdMessageFrame.InitiatorAddress << std::endl;
-  
+
   str << "PvtMessageFrame.StdMessageFrame.Function=";
   str << pvtMessageFrame.StdMessageFrame.Function << std::endl;
-  
+
   str << "PvtMessageFrame.XFunctionCode=";
   str << pvtMessageFrame.XFunctionCode << std::endl;
-  
+
   str << "PvtMessageFrame.OrganizationID=";
   str << pvtMessageFrame.OrganizationID << std::endl;
 
@@ -122,14 +122,14 @@ std::ostream& operator<<
 )
 {
   str << "ReadoutMsg:" << std::endl;
-  
+
   str << readoutMsg.PvtMessageFrame;
-  
+
   str << "buTid=" << readoutMsg.buTid << std::endl;
   str << "buResourceId=" << readoutMsg.buResourceId << std::endl;
   str << "nbRequests=" << readoutMsg.nbRequests << std::endl;
   str << "nbRUtids=" << readoutMsg.nbRUtids << std::endl;
-  
+
   return str;
 }
 
@@ -141,11 +141,11 @@ std::ostream& operator<<
 )
 {
   str << "SuperFragment:" << std::endl;
-  
+
   str << "superFragmentNb=" << superFragment.superFragmentNb << std::endl;
   str << "totalSize=" << superFragment.totalSize << std::endl;
   str << "partSize=" << superFragment.partSize << std::endl;
-  
+
   return str;
 }
 
@@ -157,9 +157,9 @@ std::ostream& operator<<
 )
 {
   str << "I2O_DATA_BLOCK_MESSAGE_FRAME:" << std::endl;
-  
+
   str << dataBlockMsg.PvtMessageFrame;
-  
+
   str << "buResourceId=" << dataBlockMsg.buResourceId << std::endl;
   str << "nbBlocks=" << dataBlockMsg.nbBlocks << std::endl;
   str << "blockNb=" << dataBlockMsg.blockNb << std::endl;
@@ -171,16 +171,16 @@ std::ostream& operator<<
   str << "evbIds:" << std::endl;
   for (uint32_t i=0; i < dataBlockMsg.nbSuperFragments; ++i)
     str << "   [" << i << "]: " << evbIds[i] << std::endl;
-  
+
   evb::msg::RUtids ruTids;
   dataBlockMsg.getRUtids(ruTids);
   str << "ruTids:" << std::endl;
   for (uint32_t i=0; i < dataBlockMsg.nbRUtids; ++i)
     str << "   [" << i << "]: " << ruTids[i] << std::endl;
-  
+
   return str;
 }
- 
+
 
 /// emacs configuration
 /// Local Variables: -

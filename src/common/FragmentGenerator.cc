@@ -44,11 +44,11 @@ void evb::FragmentGenerator::configure
   if (fedId > FED_SOID_WIDTH)
   {
     std::stringstream oss;
-    
+
     oss << "fedSourceId is too large.";
     oss << "Actual value: " << fedId;
     oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
-    
+
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   fedId_ = fedId;
@@ -56,10 +56,10 @@ void evb::FragmentGenerator::configure
   if ( fedSize % 8 != 0 )
   {
     std::stringstream oss;
-    
+
     oss << "The requested FED payload of " << fedSize << " bytes";
     oss << " is not a multiple of 8 bytes";
-    
+
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
@@ -76,7 +76,7 @@ void evb::FragmentGenerator::configure
   {
     // don't care
   }
-  
+
   try
   {
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(fragmentPoolSize);
@@ -87,11 +87,11 @@ void evb::FragmentGenerator::configure
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for dummy fragments.", e);
   }
-  
-  fragmentTracker_.reset( 
+
+  fragmentTracker_.reset(
     new FragmentTracker(fedId,fedSize,fedSizeStdDev)
   );
-  
+
   playbackData_.clear();
   if ( usePlayback )
     cacheData(playbackDataFile);
@@ -120,10 +120,10 @@ bool evb::FragmentGenerator::getData(toolbox::mem::Reference*& bufRef)
   {
     // bufRef = clone(*playbackDataPos_);
     // if ( bufRef == 0 ) return false;
-    
+
     if ( (*playbackDataPos_)->getBuffer()->getRefCounter() > 1024 ) return false;
     bufRef = (*playbackDataPos_)->duplicate();
-    
+
     if ( ++playbackDataPos_ == playbackData_.end() )
       playbackDataPos_ = playbackData_.begin();
     return true;
@@ -146,14 +146,14 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
   {
     return false;
   }
-  
+
   unsigned char* frame = (unsigned char*)bufRef->getDataLocation();
   bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
-  
+
   uint32_t usedFrameSize = 0;
   uint32_t remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
   const uint32_t ferolBlockSize = 4*1024;
-  
+
   while ( (usedFrameSize + remainingFedSize + sizeof(ferolh_t)) <= bufRef->getBuffer()->getSize() )
   {
     uint32_t packetNumber = 0;
@@ -162,14 +162,14 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
     {
       assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
       uint32_t length;
-      
+
       ferolh_t* ferolHeader = (ferolh_t*)frame;
       ferolHeader->set_signature();
       ferolHeader->set_packet_number(packetNumber);
-      
+
       if (packetNumber == 0)
         ferolHeader->set_first_packet();
-      
+
       if ( remainingFedSize > ferolBlockSize )
       {
         length = ferolBlockSize;
@@ -181,34 +181,34 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
       }
       remainingFedSize -= length;
       frame += sizeof(ferolh_t);
-      
+
       const size_t filledBytes = fragmentTracker_->fillData(frame, length);
       //const size_t filledBytes = length;
-      
+
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(fedId_);
       ferolHeader->set_event_number(eventNumber_);
-      
+
       // assert( ferolHeader->signature() == FEROL_SIGNATURE );
       // assert( ferolHeader->packet_number() == packetNumber );
       // assert( ferolHeader->data_length() == filledBytes );
       // assert( ferolHeader->data_length() == length );
       // assert( ferolHeader->fed_id() == fedId_ );
       // assert( ferolHeader->event_number() == eventNumber_ );
-      
+
       frame += filledBytes;
       usedFrameSize += filledBytes + sizeof(ferolh_t);
-      
+
       ++packetNumber;
       assert(packetNumber < 2048);
     }
-    
+
     if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
     remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
   }
-  
+
   bufRef->setDataSize(usedFrameSize);
-  
+
   return true;
 }
 
@@ -221,7 +221,7 @@ toolbox::mem::Reference* evb::FragmentGenerator::clone
   toolbox::mem::Reference* head = 0;
   toolbox::mem::Reference* tail = 0;
   toolbox::mem::Reference* copyBufRef = 0;
-  
+
   while (bufRef)
   {
     try
@@ -240,7 +240,7 @@ toolbox::mem::Reference* evb::FragmentGenerator::clone
       bufRef->getDataLocation(),
       bufRef->getDataSize()
     );
-    
+
     // Set the size of the copy
     copyBufRef->setDataSize(bufRef->getDataSize());
 
@@ -268,10 +268,10 @@ void evb::FragmentGenerator::fillTriggerPayload
 ) const
 {
   using namespace evtn;
-  
-  //set offsets based on record scheme 
+
+  //set offsets based on record scheme
   evm_board_setformat(fedSize_);
-  
+
   unsigned char* ptr = fedPtr + sizeof(fedh_t);
 
   //board id
@@ -341,11 +341,11 @@ void evb::FragmentGenerator::updateCRC
 ) const
 {
   fedt_t* fedTrailer = (fedt_t*)(fedPtr + fedSize_ - sizeof(fedt_t));
-  
+
   // Force CRC field to zero before re-computing the CRC.
   // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
   fedTrailer->conscheck = 0;
-  
+
   unsigned short crc = compute_crc(fedPtr,fedSize_);
   fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
 }

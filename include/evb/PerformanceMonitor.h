@@ -16,37 +16,37 @@ namespace evb {
     uint64_t sumOfSizes;
     uint64_t sumOfSquares;
     double startTime;
-    
+
     PerformanceMonitor()
     {
-      reset();    
+      reset();
     }
-    
+
     double deltaT()
     {
       struct timeval time;
       gettimeofday(&time,0);
       return ( time.tv_sec + static_cast<double>(time.tv_usec) / 1000000 - startTime );
     }
-    
+
     double logicalRate()
     {
       const double delta = deltaT();
       return ( delta>0 ? logicalCount/delta : 0 );
     }
-    
+
     double i2oRate()
     {
       const double delta = deltaT();
       return ( delta>0 ? i2oCount/delta : 0 );
     }
-    
+
     double bandwidth()
     {
       const double delta = deltaT();
       return ( delta>0 ? sumOfSizes/delta : 0 );
     }
-    
+
     double bandwidthStdDev()
     {
       const double delta = deltaT();
@@ -58,12 +58,12 @@ namespace evb {
 
       return ( variance>0 ? sqrt(variance) : 0 );
     }
-    
+
     double size()
     {
       return ( logicalCount>0 ? static_cast<double>(sumOfSizes)/logicalCount : 0 );
     }
-    
+
     double sizeStdDev()
     {
       if ( logicalCount == 0 ) return 0;
@@ -81,7 +81,7 @@ namespace evb {
       i2oCount = 0;
       sumOfSizes = 0;
       sumOfSquares = 0;
-      
+
       struct timeval time;
       gettimeofday(&time,0);
       startTime = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
@@ -110,7 +110,7 @@ namespace evb {
       return diff;
     }
   };
-  
+
 } //namespace evb
 
 #endif // _evb_PerformaceMonitor_h_

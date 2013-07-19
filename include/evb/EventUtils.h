@@ -31,7 +31,7 @@ struct L1Information
   uint64_t l1Technical;
   uint64_t l1Decision_0_63;
   uint64_t l1Decision_64_127;
-  
+
   L1Information();
   void reset();
   const L1Information& operator=(const L1Information&);
@@ -48,7 +48,7 @@ struct FedInfo
   uint32_t fedSize() const { return ( trailer?FED_EVSZ_EXTRACT(trailer->eventsize)<<3:0 ); }
   //fedt_t* trailer() const { return fedSize>0?(fedt_t*)(&(data[0]) + fedSize - sizeof(fedt_t)):0; }
 };
-    
+
 
 /**
  * Sets the L1 trigger bits to fake patterns using the patternScheme.

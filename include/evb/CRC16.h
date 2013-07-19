@@ -9,7 +9,7 @@ namespace evb
   unsigned short compute_crc(const unsigned char* buffer, size_t bufSize);
   unsigned short compute_crc_8bit(unsigned short crc, const unsigned char data);
   unsigned short compute_crc_64bit(unsigned short crc, const unsigned char* p);
-  
+
   /*
   The lookup table can be generated with the following code
   (taken from http://www.codeproject.com/Articles/19059/C-CCITT-8-CRC-Algorithm)
@@ -18,17 +18,17 @@ namespace evb
   {
     unsigned short crc_table[256];
     unsigned short remainder;
-    
+
     #define POLYNOMIAL 0x8005
     #define WIDTH  (8 * sizeof(unsigned short))
     #define TOPBIT (1 << (WIDTH - 1))
-    
+
     //Compute the remainder of each possible dividend.
     for (int dividend = 0; dividend < 256; ++dividend)
     {
       //Start with the dividend followed by zeros.
       remainder = dividend << (WIDTH - 8);
-      
+
       // Perform modulo-2 division, a bit at a time.
       for (uint8_t bit = 8; bit > 0; --bit)
       {
@@ -38,13 +38,13 @@ namespace evb
         else
           remainder = (remainder << 1);
       }
-      
+
       crc_table[dividend] = remainder;
       printf( " %3d:%04x", dividend, remainder);
     }
   }
   */
-  
+
   const unsigned short crc_table[256] =
   {
     0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -80,7 +80,7 @@ namespace evb
     0x0220, 0x8225, 0x822F, 0x022A, 0x823B, 0x023E, 0x0234, 0x8231,
     0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202
   };
-  
+
 }
 
 

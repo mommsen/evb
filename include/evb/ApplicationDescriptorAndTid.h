@@ -19,14 +19,14 @@ namespace evb {
   {
     xdaq::ApplicationDescriptor *descriptor;
     I2O_TID tid;
-    
+
     /**
      * Constructor which initialises both the application descriptor and
      * I2O_TID to 0.
      */
     ApplicationDescriptorAndTid() :
     descriptor(0),tid(0) {}
-    
+
     friend bool operator<(
       const ApplicationDescriptorAndTid& a,
       const ApplicationDescriptorAndTid& b
@@ -36,7 +36,7 @@ namespace evb {
       return ( a.tid < b.tid );
     }
   };
-  
+
   typedef std::set<ApplicationDescriptorAndTid> ApplicationDescriptorsAndTids;
 
 } // namespace evb

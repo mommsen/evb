@@ -17,10 +17,10 @@ namespace evb {
   class EvBid
   {
   public:
-    
+
     EvBid()
     : resyncCount_(0), eventNumber_(0), lumiSection_(0), runNumber_(0) {};
-    
+
     EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t lumiSection, uint32_t runNumber)
     : resyncCount_(resyncCount), eventNumber_(eventNumber), lumiSection_(lumiSection), runNumber_(runNumber) {};
 
@@ -60,8 +60,8 @@ namespace evb {
     bool operator< (const EvBid& other) const;
     bool operator== (const EvBid& other) const;
     bool operator!= (const EvBid& other) const;
-     
-    
+
+
   private:
 
     uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
@@ -92,7 +92,7 @@ namespace evb {
   {
     return !( *this == other );
   }
-  
+
 } // namespace evb
 
 
@@ -106,7 +106,7 @@ inline std::ostream& operator<<
   s << "lumiSection=" << evbId.lumiSection() << " ";
   s << "resyncCount=" << evbId.resyncCount() << " ";
   s << "eventNumber=" << evbId.eventNumber();
-  
+
   return s;
 }
 

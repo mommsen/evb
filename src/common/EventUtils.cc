@@ -58,12 +58,12 @@ void evb::setFakeTriggerBits
 )
 {
   l1Info.isValid = true;
-  
+
   //static const uint64_t bitPattern0   = 0ULL;
   static const uint64_t bitPattern1   = 0x5555555555555555ULL;
   static const uint64_t bitPattern2   = 0xaaaaaaaaaaaaaaaaULL;
   static const uint64_t bitPatternf   = 0xffffffffffffffffULL;
-  
+
   switch(patternScheme)
   {
     case -1:
@@ -99,43 +99,43 @@ uint32_t evb::checkFrlHeader
   const void* payload = (void*)((unsigned char*)block +
     sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME));
   const frlh_t* frlHeader = (frlh_t*)payload;
-  
+
   if (frlHeader->trigno != block->eventNumber)
   {
     std::stringstream oss;
-    
+
     oss << "Event number of RU builder header does not match that of FRL header";
     oss << " block->eventNumber: " << block->eventNumber;
     oss << " frlHeader->trigno: " << frlHeader->trigno;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
-  
+
   if (frlHeader->segno != block->blockNb)
   {
     std::stringstream oss;
-    
+
     oss << "Block number of RU builder header does not match that of FRL header";
     oss << " block->blockNb: " << block->blockNb;
     oss << " frlHeader->segno: " << frlHeader->segno;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
-  
+
   const size_t expectedSegSize = bufRef->getDataSize()
     - sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME)
     - sizeof(frlh_t);
-  
+
   const uint32_t segSize = frlHeader->segsize & FRL_SEGSIZE_MASK;
-  
+
   if (segSize != expectedSegSize)
   {
     std::stringstream oss;
-    
+
     oss << "FRL header segment size is not as expected.";
     oss << " Expected: " << expectedSegSize;
     oss << " Received: " << segSize;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
 
@@ -146,13 +146,13 @@ uint32_t evb::checkFrlHeader
   )
   {
     std::stringstream oss;
-    
+
     oss << "End of super-fragment of FU header does not match FRL header.";
     oss << " FU header: ";
     oss << (block->blockNb == (block->nbBlocksInSuperFragment - 1));
     oss << " FRL header: ";
     oss << ((frlHeader->segsize & (~FRL_LAST_SEGM)) != 0);
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
 
@@ -172,28 +172,28 @@ void evb::checkFedHeader
   const void* payload = (void*)((unsigned char*)block +
     sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) + sizeof(frlh_t) + offset);
   const fedh_t* fedHeader = (fedh_t*)payload;
-  
-  if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER ) 
+
+  if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
   {
     std::stringstream oss;
-    
+
     oss << "Expected FED header of event " << block->eventNumber;
     oss << " but got event id 0x" << std::hex << fedHeader->eventid;
     oss << " and source id 0x" << std::hex << fedHeader->sourceid;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
-  
+
   const uint32_t eventid = FED_LVL1_EXTRACT(fedHeader->eventid);
   if (eventid != block->eventNumber)
   {
     std::stringstream oss;
-    
+
     oss << "FED header \"eventid\" does not match";
     oss << " RU builder header \"eventNumber\"";
     oss << " eventid: " << eventid;
     oss << " eventNumber: " << block->eventNumber;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
 
@@ -202,13 +202,13 @@ void evb::checkFedHeader
   if ( fedInfo.fedId >= FED_COUNT )
   {
     std::stringstream oss;
-    
+
     oss << "The FED id " << fedInfo.fedId << " is larger than the maximum " << FED_COUNT;
     oss << " in event " << block->eventNumber;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
-  } 
-  
+  }
+
   checkCRC(fedInfo, block->eventNumber);
 }
 
@@ -225,15 +225,15 @@ void evb::checkFedTrailer
   fedInfo.trailer = (fedt_t*)((unsigned char*)block +
     sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME) +
     sizeof(frlh_t) + segSize - sizeof(fedt_t));
-  
+
   if ( FED_TCTRLID_EXTRACT(fedInfo.trailer->eventsize) != FED_SLINK_END_MARKER )
   {
     std::stringstream oss;
-    
+
     oss << "Expected FED trailer of event " << block->eventNumber;
     oss << " but got event size 0x" << std::hex << fedInfo.trailer->eventsize;
     oss << " and conscheck 0x" << std::hex << fedInfo.trailer->conscheck;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
 
@@ -241,7 +241,7 @@ void evb::checkFedTrailer
   // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
   fedInfo.conscheck = fedInfo.trailer->conscheck;
   fedInfo.trailer->conscheck = 0;
-}  
+}
 
 
 inline void evb::checkCRC
@@ -256,12 +256,12 @@ inline void evb::checkCRC
   if ( fedInfo.crc != 0xffff && trailerCRC != fedInfo.crc )
   {
     std::stringstream oss;
-    
+
     oss << "Wrong CRC checksum in FED trailer of event " << eventNumber;
     oss << " for FED " << fedInfo.fedId;
     oss << ": found 0x" << std::hex << trailerCRC;
     oss << ", but calculated 0x" << std::hex << fedInfo.crc;
-    
+
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
 }

@@ -5,7 +5,7 @@
 
 
 namespace evb {
-  
+
   /**
    * Functor that can be used with the STL in order to determine if one
    * xdata::UnsignedInteger32 is less than another.
@@ -13,7 +13,7 @@ namespace evb {
   class UnsignedInteger32Less
   {
   public:
-    
+
     /**
      * Returns true if ul1 is less than ul2.
      */
@@ -26,7 +26,7 @@ namespace evb {
       return ul1.value_ < ul2.value_;
     }
   };
-  
+
 } // namespace evb
 
 #endif

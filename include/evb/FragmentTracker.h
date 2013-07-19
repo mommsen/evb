@@ -12,7 +12,7 @@ namespace evb {
   class FragmentTracker
   {
   public:
-    
+
     /**
      * Constructor.
      */
@@ -22,7 +22,7 @@ namespace evb {
       const uint32_t fedSize,
       const uint32_t fedSizeStdDev
     );
-    
+
     ~FragmentTracker();
 
     /**
@@ -42,18 +42,18 @@ namespace evb {
       const size_t nbBytesAvailable
     );
 
-    
+
   private:
-    
+
     uint32_t getFedSize();
-    
+
     enum FedComponent
     {
       FED_HEADER,
       FED_PAYLOAD,
       FED_TRAILER
     };
-    
+
     const uint32_t fedId_;
     const uint32_t fedSize_;
     toolbox::math::LogNormalGen* logNormalGen_;
@@ -63,7 +63,7 @@ namespace evb {
     uint32_t remainingFedSize_;
     uint32_t eventNumber_;
   };
-    
+
 } // namespace evb
 
 #endif // _evb_FragmentTracker_h_

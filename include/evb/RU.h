@@ -9,14 +9,14 @@
 
 
 namespace evb {
-  
+
   class RU;
-  
+
   namespace ru {
     typedef readoutunit::StateMachine<RU> RUStateMachine;
     typedef readoutunit::ReadoutUnit<RU,readoutunit::Configuration,RUStateMachine> ReadoutUnit;
   }
-  
+
   /**
    * \ingroup xdaqApps
    * \brief Readout unit (RU)
@@ -24,16 +24,16 @@ namespace evb {
   class RU : public ru::ReadoutUnit
   {
   public:
-    
+
     RU(xdaq::ApplicationStub*);
-    
+
     XDAQ_INSTANTIATOR();
-    
-    
+
+
   private:
-    
+
   }; // class RU
-  
+
 } // namespace evb
 
 #endif // _evb_ru_h_

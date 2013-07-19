@@ -22,14 +22,14 @@ namespace evb {
    * \ingroup xdaqApps
    * \brief Provide dummy FED data
    */
-    
+
   class FragmentGenerator
   {
-    
+
   public:
 
     FragmentGenerator();
-    
+
     ~FragmentGenerator() {};
 
     /**
@@ -59,8 +59,8 @@ namespace evb {
      * Returns false if no fragment can be generated
      */
     bool getData(toolbox::mem::Reference*&);
-    
-    
+
+
   private:
 
     void cacheData(const std::string& playbackDataFile);
@@ -76,7 +76,7 @@ namespace evb {
     (
       const unsigned char* fedPtr
     ) const;
-    
+
     uint32_t frameSize_;
     uint32_t fedSize_;
     uint32_t eventNumber_;
@@ -85,14 +85,14 @@ namespace evb {
     bool usePlayback_;
     toolbox::mem::Pool* fragmentPool_;
     uint32_t fragmentPoolSize_;
-    
+
     boost::scoped_ptr<FragmentTracker> fragmentTracker_;
     typedef std::vector<toolbox::mem::Reference*> PlaybackData;
     PlaybackData playbackData_;
     PlaybackData::const_iterator playbackDataPos_;
 
   };
-  
+
 } //namespace evb
 
 #endif // _evb_FragmentGenerator_h_

@@ -12,10 +12,10 @@
 
 namespace evb {
   namespace msg {
-    
+
     typedef std::vector<EvBid> EvBids;
     typedef std::vector<I2O_TID> RUtids;
-    
+
     /**
      * BU to EVM to RU message that contains one or more event-builder ids to be sent
      * to the BU TID specified. The EVM ignores the evbIds and sends the next nbRequests
@@ -30,16 +30,16 @@ namespace evb {
       uint16_t nbRUtids;                         // Number of RU TIDs
       EvBid evbIds[];                            // EvBids
       I2O_TID ruTids[];                          // List of RU TIDs participating in the event building
-      
+
       uint32_t getHeaderSize() const;
       void getEvBids(EvBids&) const;
       void getRUtids(RUtids&) const;
-      
+
     };
-    
-    
+
+
     /**
-     * A super-fragment containing data from all FEDs connected to the RU 
+     * A super-fragment containing data from all FEDs connected to the RU
      */
     typedef struct
     {
@@ -47,10 +47,10 @@ namespace evb {
       uint32_t totalSize;                        // Total size of the super fragment
       uint32_t partSize;                         // Partial size of the super-fragment contained in this message
       uint32_t padding;
-      
+
     } SuperFragment;
-    
-    
+
+
     /**
      * EVM/RU to BU message that contains one or more super-fragments
      */
@@ -68,10 +68,10 @@ namespace evb {
       uint32_t getHeaderSize() const;
       void getEvBids(EvBids&) const;
       void getRUtids(RUtids&) const;
-      
+
     };
-    
-    
+
+
   } } // namespace evb::msg
 
 

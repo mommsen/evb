@@ -15,14 +15,14 @@
 
 
 namespace evb {
-  
+
   class EVM;
-  
+
   namespace evm {
     typedef readoutunit::StateMachine<EVM> EVMStateMachine;
     typedef readoutunit::ReadoutUnit<EVM,readoutunit::Configuration,EVMStateMachine> ReadoutUnit;
   }
-  
+
   /**
    * \ingroup xdaqApps
    * \brief Event Manager (EVM)
@@ -30,27 +30,27 @@ namespace evb {
   class EVM : public evm::ReadoutUnit
   {
   public:
-    
+
     EVM(xdaq::ApplicationStub*);
-    
+
     XDAQ_INSTANTIATOR();
-    
+
     typedef boost::shared_ptr<evm::RUproxy> RUproxyPtr;
     RUproxyPtr getRUproxy() const
     { return ruProxy_; }
-    
+
     std::vector<I2O_TID>& getRUtids() const
     { return ruProxy_->getRUtids(); }
-    
+
     void allocateFIFOWebPage(xgi::Input*, xgi::Output*);
-    
+
   private:
 
     boost::shared_ptr<evm::RUproxy> ruProxy_;
-    
-    
+
+
   }; // class EVM
-  
+
 } // namespace evb
 
 #endif // _evb_evm_h_

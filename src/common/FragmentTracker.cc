@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <sstream>
-#include <time.h> 
+#include <time.h>
 
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
@@ -41,10 +41,10 @@ uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
   if ( typeOfNextComponent_ != FED_HEADER )
   {
     std::ostringstream oss;
-    
+
     oss << "Request to start a new dummy FED fragment for FED id " << fedId_;
     oss << " while the previous fragment is not yet complete";
-    
+
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
@@ -75,7 +75,7 @@ size_t evb::FragmentTracker::fillData
   fedt_t* fedTrailer = 0;
   size_t payloadSize = 0;
   size_t bytesFilled = 0;
-  
+
   while ( nbBytesAvailable > 0 )
   {
     switch (typeOfNextComponent_)
@@ -84,10 +84,10 @@ size_t evb::FragmentTracker::fillData
         if ( nbBytesAvailable < sizeof(fedh_t) ) return bytesFilled;
 
         fedHeader = (fedh_t*)payload;
-        
+
         fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber_;
-        
+
         #ifdef CALCULATE_CRC
         fedCRC_ = compute_crc(payload,sizeof(fedh_t));
         #endif
@@ -95,13 +95,13 @@ size_t evb::FragmentTracker::fillData
         bytesFilled += sizeof(fedh_t);
         nbBytesAvailable -= sizeof(fedh_t);
         remainingFedSize_ -= sizeof(fedh_t);
-        
+
         typeOfNextComponent_ = FED_PAYLOAD;
         break;
-        
+
       case FED_PAYLOAD:
         if ( nbBytesAvailable < 8 ) return bytesFilled; // Minium payload size is 8 bytes
-        
+
         if ( (remainingFedSize_-sizeof(fedt_t)) > nbBytesAvailable )
         {
           // Payload must always be a multiple of 8 bytes
@@ -112,12 +112,12 @@ size_t evb::FragmentTracker::fillData
           payloadSize = remainingFedSize_ - sizeof(fedt_t);
           typeOfNextComponent_ = FED_TRAILER;
         }
-        
+
         #ifdef CALCULATE_CRC
         for (size_t i=0; i<payloadSize/8; ++i)
           fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
         #endif
-        
+
         payload += payloadSize;
         bytesFilled += payloadSize;
         nbBytesAvailable -= payloadSize;
@@ -127,30 +127,30 @@ size_t evb::FragmentTracker::fillData
 
       case FED_TRAILER:
         if ( nbBytesAvailable < sizeof(fedt_t) ) return bytesFilled;
-        
+
         fedTrailer = (fedt_t*)payload;
-      
+
         fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) |
           (currentFedSize_ >> 3);
-        
+
         // Force CRC field to zero before re-computing the CRC.
         // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
         fedTrailer->conscheck = 0;
-        
+
         #ifdef CALCULATE_CRC
         for (size_t i=0; i<sizeof(fedt_t)/8; ++i)
           fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
         #endif
-        
+
         fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
 
         payload += sizeof(fedt_t);
         bytesFilled += sizeof(fedt_t);
         nbBytesAvailable -= sizeof(fedt_t);
-        
+
         typeOfNextComponent_ = FED_HEADER;
         break;
-        
+
       default:
         XCEPT_RAISE(exception::DummyData, "Unknown component type");
     }

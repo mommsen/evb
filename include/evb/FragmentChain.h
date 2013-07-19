@@ -12,12 +12,12 @@
 
 
 namespace evb {
-  
+
   /**
    * \ingroup xdaqApps
    * \brief A chain of event fragment
    */
-  
+
   template<class T>
   class FragmentChain
   {
@@ -37,15 +37,15 @@ namespace evb {
     typedef boost::shared_ptr<Fragment> FragmentPtr;
 
     typedef std::vector<uint32_t> ResourceList;
-    
+
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
     FragmentChain(FragmentPtr&);
     FragmentChain(const EvBid&);
     FragmentChain(const EvBid&, toolbox::mem::Reference*);
-    
+
     ~FragmentChain();
-    
+
     /**
      * Append the toolbox::mem::Reference to the fragment.
      * Return false if the resource id is not expected.
@@ -61,42 +61,42 @@ namespace evb {
      * Append the fragment. Keep track of the tcpla::MemoryCache.
      */
     void append(FragmentPtr&);
-    
+
     /**
      * Return the head of the toolbox::mem::Reference chain
      */
     toolbox::mem::Reference* head() const
     { return head_; }
-    
+
     /**
      * Return the size of the super fragment
      */
     size_t getSize() const
     { return size_; }
-    
+
     /**
      * Return the event-builder id of the super fragment
      */
     EvBid getEvBid() const
     { return evbId_; }
-    
+
     /**
      * Return true if there's a valid super fragment
      */
     bool isValid() const
     { return ( size_ > 0 && head_ ); }
-    
+
     /**
      * Return true if the super fragment is complete
      */
     bool isComplete() const
     { return resourceList_.empty(); }
-    
-    
+
+
   private:
-    
+
     bool checkResourceId(const uint32_t resourceId);
-    
+
     EvBid evbId_;
     ResourceList resourceList_;
     size_t size_;
@@ -105,9 +105,9 @@ namespace evb {
 
     typedef std::vector<FragmentPtr> Fragments;
     Fragments fragments_;
-    
+
   }; // FragmentChain
-  
+
 } // namespace evb
 
 
@@ -200,10 +200,10 @@ void evb::FragmentChain<T>::append
     tail_->setNextReference(bufRef);
     tail_ = bufRef;
   }
-  
+
   size_ += bufRef->getDataSize() - sizeof(T);
 }
-  
+
 
 template<class T>
 void evb::FragmentChain<T>::append

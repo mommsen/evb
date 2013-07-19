@@ -26,7 +26,7 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_
     ++resyncCount_;
     evbId = EvBid(resyncCount_,eventNumber,lsNumber,runNumber_);
   }
-  
+
   previousEventNumber_ = eventNumber;
   return evbId;
 }

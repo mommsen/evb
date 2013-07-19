@@ -45,7 +45,7 @@
 
 
 namespace evb {
-  
+
   /**
    * \ingroup xdaqApps
    * \brief Generic evb application.
@@ -55,7 +55,7 @@ namespace evb {
     public xdaq::WebApplication, public xdata::ActionListener
   {
   public:
-    
+
     /**
      * Constructor.
      */
@@ -64,34 +64,34 @@ namespace evb {
       xdaq::ApplicationStub*,
       const std::string& appIcon
     );
-    
+
     std::string getIdentifier(const std::string& suffix = "");
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
-    
+
   protected:
-    
+
     void initialize();
-    
+
     virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&) = 0;
     virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&) = 0;
     virtual void do_updateMonitoringInfo() = 0;
-    
+
     virtual void do_handleItemChangedEvent(const std::string& item) {};
     virtual void do_handleItemRetrieveEvent(const std::string& item) {};
-    
+
     virtual void do_bindI2oCallbacks() {};
-    
+
     virtual void bindNonDefaultXgiCallbacks() {};
     virtual void do_defaultWebPage(xgi::Output*) = 0;
-    
+
     toolbox::mem::Pool* getFastControlMsgPool();
     xoap::MessageReference createFsmSoapResponseMsg
     (
       const std::string& event,
       const std::string& state
     );
-    
+
     void webPageHeader(xgi::Output*, const std::string& name);
     void webPageBanner(xgi::Output*);
     void printWebPageIcon
@@ -101,25 +101,25 @@ namespace evb {
       const std::string& label,
       const std::string& href
     );
-    
+
     const std::string appIcon_;
     log4cplus::Logger logger_;
-    
+
     xdata::InfoSpace *monitoringInfoSpace_;
-    
-    boost::shared_ptr<Configuration> configuration_;
+
+    const boost::shared_ptr<Configuration> configuration_;
     boost::shared_ptr<StateMachine> stateMachine_;
     xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
-    
+
     const toolbox::net::URN urn_;
     const std::string xmlClass_;
     xdata::UnsignedInteger32 instance_;
     xdata::String stateName_;
     xdata::UnsignedInteger32 monitoringSleepSec_;
-    
-    
+
+
   private:
-    
+
     void initApplicationInfoSpace();
     void initMonitoringInfoSpace();
     void startMonitoring();
@@ -127,21 +127,21 @@ namespace evb {
     void bindSoapCallbacks();
     void bindXgiCallbacks();
     xoap::MessageReference processSoapFsmEvent(xoap::MessageReference msg);
-    
+
     void startMonitoringWorkloop();
     bool updateMonitoringInfo(toolbox::task::WorkLoop*);
-    
+
     void appendApplicationInfoSpaceItems(InfoSpaceItems&);
     void appendMonitoringInfoSpaceItems(InfoSpaceItems&);
     void actionPerformed(xdata::Event&);
     void handleItemChangedEvent(const std::string& item);
     void handleItemRetrieveEvent(const std::string& item);
-    
+
     void defaultWebPage(xgi::Input*, xgi::Output*);
     std::string getCurrentTimeUTC() const;
-    
+
   }; // template class EvBApplication
-  
+
 } // namespace evb
 
 
@@ -172,11 +172,11 @@ template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::initialize()
 {
   stateMachine_->initiate();
-  
+
   initApplicationInfoSpace();
   initMonitoringInfoSpace();
   startMonitoring();
-  
+
   bindSoapCallbacks();
   bindI2oCallbacks();
   bindXgiCallbacks();
@@ -202,7 +202,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
     xdata::InfoSpace *appInfoSpace = getApplicationInfoSpace();
 
     appendApplicationInfoSpaceItems(appInfoSpaceParams);
- 
+
     appInfoSpaceParams.putIntoInfoSpace(appInfoSpace, this);
   }
   catch(xcept::Exception &e)
@@ -210,7 +210,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
     const std::string msg = "Failed to put parameters into application info space";
     LOG4CPLUS_ERROR(logger_,
       msg << xcept::stdformat_exception_history(e));
-    
+
     // Notify the sentinel
     XCEPT_DECLARE_NESTED(exception::Monitoring,
       sentinelException, msg, e);
@@ -230,9 +230,9 @@ void evb::EvBApplication<Configuration,StateMachine>::appendApplicationInfoSpace
 
   params.add("stateName", &stateName_, InfoSpaceItems::retrieve);
   params.add("monitoringSleepSec", &monitoringSleepSec_);
-  
+
   stateMachine_->appendConfigurationItems(params);
-  
+
   do_appendApplicationInfoSpaceItems(params);
 
   configuration_->addToInfoSpace( params, getApplicationDescriptor()->getInstance() );
@@ -245,7 +245,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
   try
   {
     InfoSpaceItems monitoringParams;
-    
+
     appendMonitoringInfoSpaceItems(monitoringParams);
 
     // Create info space for monitoring
@@ -259,7 +259,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
     const std::string msg = "Failed to put parameters into monitoring info space";
     LOG4CPLUS_ERROR(logger_,
       msg << xcept::stdformat_exception_history(e));
-    
+
     // Notify the sentinel
     XCEPT_DECLARE_NESTED(exception::Monitoring,
       sentinelException, msg, e);
@@ -341,7 +341,7 @@ void evb::EvBApplication<Configuration,StateMachine>::bindSoapCallbacks()
 {
   typename StateMachine::SoapFsmEvents soapFsmEvents =
     stateMachine_->getSoapFsmEvents();
-  
+
   for (typename StateMachine::SoapFsmEvents::const_iterator it = soapFsmEvents.begin(),
          itEnd = soapFsmEvents.end(); it != itEnd; ++it)
   {
@@ -362,7 +362,7 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processS
 )
 {
   std::string event = "";
-  std::string newState = "unknown";  
+  std::string newState = "unknown";
 
   try
   {
@@ -410,9 +410,9 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
       monitoringWorkLoopName,
       "waiting"
     );
-  
+
   const std::string monitoringActionName( getIdentifier("monitoringAction") );
-  
+
   toolbox::task::ActionSignature* monitoringActionSignature =
     toolbox::task::bind
     (
@@ -420,7 +420,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
       &evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo,
       monitoringActionName
     );
-  
+
   try
   {
     monitoringWorkLoop->submit(monitoringActionSignature);
@@ -431,7 +431,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
       "Failed to submit action to work loop: " + monitoringWorkLoopName,
       e);
   }
-  
+
   try
   {
     monitoringWorkLoop->activate();
@@ -451,22 +451,22 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 )
 {
   std::string errorMsg = "Failed to update monitoring counters: ";
-  
+
   try
   {
     monitoringInfoSpace_->lock();
-    
+
     do_updateMonitoringInfo();
-    
+
     monitoringInfoSpace_->unlock();
   }
   catch(xcept::Exception &e)
   {
     monitoringInfoSpace_->unlock();
-    
+
     LOG4CPLUS_ERROR(logger_,
       errorMsg << xcept::stdformat_exception_history(e));
-    
+
     XCEPT_DECLARE_NESTED(exception::Monitoring,
       sentinelException, errorMsg, e);
     notifyQualified("error",sentinelException);
@@ -474,11 +474,11 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
   catch(std::exception &e)
   {
     monitoringInfoSpace_->unlock();
-    
+
     errorMsg += e.what();
-    
+
     LOG4CPLUS_ERROR(logger_, errorMsg);
-    
+
     XCEPT_DECLARE(exception::Monitoring,
       sentinelException, errorMsg );
     notifyQualified("error",sentinelException);
@@ -486,18 +486,18 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
   catch(...)
   {
     monitoringInfoSpace_->unlock();
-    
+
     errorMsg += "Unknown exception";
 
     LOG4CPLUS_ERROR(logger_, errorMsg);
-    
+
     XCEPT_DECLARE(exception::Monitoring,
       sentinelException, errorMsg );
     notifyQualified("error",sentinelException);
   }
-  
+
   ::sleep(monitoringSleepSec_.value_);
-  
+
   // Reschedule this action code
   return true;
 }
@@ -525,9 +525,9 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
 )
 {
   webPageHeader(out, "MAIN");
-  
+
   *out << "<table class=\"layout\">"                            << std::endl;
-  
+
   *out << "<colgroup>"                                          << std::endl;
   *out << "<col/>"                                              << std::endl;
   *out << "<col class=\"arrow\"/>"                              << std::endl;
@@ -535,19 +535,19 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
   *out << "<col class=\"arrow\"/>"                              << std::endl;
   *out << "<col/>"                                              << std::endl;
   *out << "</colgroup>"                                         << std::endl;
-  
+
   *out << "<tr>"                                                << std::endl;
   *out << "<td colspan=\"5\">"                                  << std::endl;
-  
+
   webPageBanner(out);
-  
+
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
 
   do_defaultWebPage(out);
-  
+
   *out << "</table>"                                            << std::endl;
-  
+
   *out << "</body>"                                             << std::endl;
   *out << "</html>"                                             << std::endl;
 }
@@ -580,7 +580,7 @@ template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
 (
   xgi::Output* out
-)  
+)
 {
   *out << "<div class=\"header\">"                                                    << std::endl;
   *out << "<table border=\"0\" width=\"100%\">"                                       << std::endl;
@@ -622,11 +622,11 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   printWebPageIcon(out, "/hyperdaq/images/HyperDAQ.jpg",
     "HyperDAQ", "/urn:xdaq-application:service=hyperdaq");
   *out << "</td>"                                                                     << std::endl;
-  
+
   *out << "<td class=\"app_links\">"                                                  << std::endl;
   printWebPageIcon(out, appIcon_, "Main", "/" + urn_.toString() + "/");
   *out << "</td>"                                                                     << std::endl;
-  
+
   *out << "</tr>"                                                                     << std::endl;
   *out << "</table>"                                                                  << std::endl;
   *out << "</div>"                                                                    << std::endl;
@@ -677,9 +677,9 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFs
       responseElement.addChildElement(stateName);
     xoap::SOAPName attributeName =
       envelope.createName("stateName", "xdaq", XDAQ_NS_URI);
-    
+
     stateElement.addAttribute(attributeName, state);
-    
+
     return message;
   }
   catch(xcept::Exception &e)
@@ -695,7 +695,7 @@ template<class Configuration,class StateMachine>
 toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastControlMsgPool()
 {
   toolbox::mem::Pool* fastCtrlMsgPool = 0;
-  
+
   try
   {
     toolbox::net::URN urn("toolbox-mem-pool", "sudapl");
@@ -704,17 +704,17 @@ toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastCont
   catch (toolbox::mem::exception::MemoryPoolNotFound)
   {
     const std::string fastCtrlMsgPoolName( getIdentifier(" fast control message pool") );
-    
+
     toolbox::net::URN urn("toolbox-mem-pool", fastCtrlMsgPoolName);
     toolbox::mem::HeapAllocator* a = new toolbox::mem::HeapAllocator();
-    
+
     fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->createPool(urn, a);
   }
   catch (toolbox::mem::exception::Exception e)
   {
     XCEPT_RETHROW(exception::OutOfMemory, "Failed to create fast control message memory pool", e);
   }
-  
+
   return fastCtrlMsgPool;
 }
 
@@ -725,7 +725,7 @@ std::string evb::EvBApplication<Configuration,StateMachine>::getCurrentTimeUTC()
   time_t now;
   struct tm tm;
   char buf[30];
-  
+
   if (time(&now) != ((time_t)-1))
   {
     gmtime_r(&now,&tm);

@@ -16,7 +16,7 @@ namespace evb {
 
   /**
    * \ingroup xdaqApps
-   * \brief A lock-free queue which is threadsafe if 
+   * \brief A lock-free queue which is threadsafe if
    * there is only one producer and one consumer.
    */
 
@@ -75,7 +75,7 @@ namespace evb {
      * Print horizontally upto nbElementsToPrint as HTML.
      */
     void printHorizontalHtml(xgi::Output*, const uint32_t nbElementsToPrint);
- 
+
     /**
      * Print vertically all elements as HTML.
      */
@@ -85,15 +85,15 @@ namespace evb {
      * Print vertically upto nbElementsToPrint as HTML.
      */
     void printVerticalHtml(xgi::Output*, const uint32_t nbElementsToPrint);
- 
+
 
   private:
-    
+
     /**
      * Format passed element information into the ostringstream.
-     */    
+     */
     void formatter(T, std::ostringstream*);
-    
+
     const std::string name_;
     volatile uint32_t readPointer_;
     volatile uint32_t writePointer_;
@@ -102,7 +102,7 @@ namespace evb {
     uint32_t queueFull_;
   };
 
-  
+
   //------------------------------------------------------------------
   // Implementation follows
   //------------------------------------------------------------------
@@ -116,8 +116,8 @@ namespace evb {
   {
     resize(1);
   }
-  
-  
+
+
   template <class T>
   OneToOneQueue<T>::OneToOneQueue(const std::string& name, const uint32_t size) :
   name_(name),
@@ -127,13 +127,13 @@ namespace evb {
   {
     resize(size);
   }
-  
-  
+
+
   template <class T>
   inline uint32_t OneToOneQueue<T>::elements() const
   {
-    volatile const uint32_t cachedWritePointer = writePointer_; 
-    volatile const uint32_t cachedReadPointer = readPointer_; 
+    volatile const uint32_t cachedWritePointer = writePointer_;
+    volatile const uint32_t cachedReadPointer = readPointer_;
     const uint32_t elements = cachedWritePointer < cachedReadPointer ?
       cachedWritePointer + size_ - cachedReadPointer :
       cachedWritePointer - cachedReadPointer;
@@ -144,15 +144,15 @@ namespace evb {
   template <class T>
   inline uint32_t OneToOneQueue<T>::size() const
   {
-    return (size_ - 1);  
+    return (size_ - 1);
   }
 
 
   template <class T>
   bool OneToOneQueue<T>::empty() const
   { return (readPointer_ == writePointer_); }
-  
-  
+
+
   template <class T>
   void OneToOneQueue<T>::resize(const uint32_t size)
   {
@@ -167,8 +167,8 @@ namespace evb {
     container_.resize(size_);
     queueFull_ = 0;
   }
-  
-  
+
+
   template <class T>
   bool OneToOneQueue<T>::enq(const T& element)
   {
@@ -182,8 +182,8 @@ namespace evb {
     writePointer_ = nextElement;
     return true;
   }
-  
-  
+
+
   template <class T>
   bool OneToOneQueue<T>::deq(T& element)
   {
@@ -201,7 +201,7 @@ namespace evb {
   void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn)
   {
     // cache values which might change during the printout
-    const uint32_t cachedSize = size(); 
+    const uint32_t cachedSize = size();
     const uint32_t cachedElements = elements();
     const double fillFraction = cachedSize > 0 ? 100. * cachedElements / cachedSize : 0;
 
@@ -214,14 +214,14 @@ namespace evb {
     *out << "<col width=\"" << static_cast<unsigned int>( fillFraction + 0.5 ) << "%\"/>" << std::endl;
     *out << "<col width=\"" << static_cast<unsigned int>( (100-fillFraction) + 0.5 ) << "%\"/>" << std::endl;
     *out << "</colgroup>" << std::endl;
-    
+
     *out << "<tr>" << std::endl;
     *out << "<th colspan=\"2\">" << name_ << "</th>" << std::endl;
     *out << "</tr>" << std::endl;
 
     *out << "<tr>" << std::endl;
     *out << "<td style=\"height:1em;background:#8178fe\"></td>" << std::endl;
- 
+
     *out << "<td style=\"background:#feffd6\"></td>" << std::endl;
     *out << "</tr>" << std::endl;
 
@@ -248,8 +248,8 @@ namespace evb {
   {
     printHorizontalHtml( out, size() );
   }
-  
-  
+
+
   template <class T>
   void OneToOneQueue<T>::printHorizontalHtml
   (
@@ -258,7 +258,7 @@ namespace evb {
   )
   {
     // cache values which might change during the printout
-    // Note: we do not want to lock the queue for the debug 
+    // Note: we do not want to lock the queue for the debug
     // printout. Thus, be prepared that some elements are no
     // longer there when we want to print them.
     const uint32_t cachedReadPointer = readPointer_;
@@ -268,23 +268,23 @@ namespace evb {
 
     *out << "<div class=\"queuedetail\">" << std::endl;
     *out << "<table>" << std::endl;
-    
-    *out << "<tr>" << std::endl;
-    
-    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
-    {
-      uint32_t pos = i % cachedSize;
-      *out << "  <th>" << pos << "</th>" << std::endl;
-    }
-    
-    *out << "</tr>" << std::endl;
-    
+
     *out << "<tr>" << std::endl;
 
     for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
     {
       uint32_t pos = i % cachedSize;
-      
+      *out << "  <th>" << pos << "</th>" << std::endl;
+    }
+
+    *out << "</tr>" << std::endl;
+
+    *out << "<tr>" << std::endl;
+
+    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
+    {
+      uint32_t pos = i % cachedSize;
+
       if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
            ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
       {
@@ -304,13 +304,13 @@ namespace evb {
         *out << "  <td>&nbsp;</td>" << std::endl;
       }
     }
-    
+
     *out << "</tr>" << std::endl;
     *out << "</table>" << std::endl;
     *out << "</div>" << std::endl;
   }
 
-  
+
   template <class T>
   void OneToOneQueue<T>::printVerticalHtml
   (
@@ -319,8 +319,8 @@ namespace evb {
   {
     printVerticalHtml( out, size() );
   }
-  
-  
+
+
   template <class T>
   void OneToOneQueue<T>::printVerticalHtml
   (
@@ -329,7 +329,7 @@ namespace evb {
   )
   {
     // cache values which might change during the printout
-    // Note: we do not want to lock the queue for the debug 
+    // Note: we do not want to lock the queue for the debug
     // printout. Thus, be prepared that some elements are no
     // longer there when we want to print them.
     const uint32_t cachedReadPointer = readPointer_;
@@ -337,10 +337,10 @@ namespace evb {
     const uint32_t cachedElements = elements();
     const uint32_t cachedSize = size();
     const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
-    
+
     *out << "<div class=\"queuedetail\">" << std::endl;
     *out << "<table>" << std::endl;
-    
+
     *out << "<tr>" << std::endl;
     *out << "  <th colspan=\"2\">";
     *out << name_;
@@ -355,10 +355,10 @@ namespace evb {
     for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
     {
       uint32_t pos = i % cachedSize;
-      
+
       *out << "<tr>" << std::endl;
       *out << "  <th>" << pos << "</th>" << std::endl;
-      
+
       if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
            ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
       {
@@ -377,22 +377,22 @@ namespace evb {
       {
         *out << "  <td>&nbsp;</td>" << std::endl;
       }
-      
+
       *out << "</tr>" << std::endl;
     }
-    
+
     *out << "</table>" << std::endl;
     *out << "</div>" << std::endl;
   }
-  
-  
+
+
   template <class T>
   inline void OneToOneQueue<T>::formatter(T element, std::ostringstream* out)
   {
     *out << element;
   }
-  
-  
+
+
 } // namespace evb
 
 #endif // _evb_OneToOneQueue_h_
