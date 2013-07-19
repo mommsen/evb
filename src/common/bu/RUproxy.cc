@@ -3,6 +3,7 @@
 #include "interface/shared/i2ogevb2g.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/BU.h"
+#include "evb/bu/EventBuilder.h"
 #include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/Constants.h"
@@ -18,17 +19,18 @@
 evb::bu::RUproxy::RUproxy
 (
   BU* bu,
+  boost::shared_ptr<EventBuilder> eventBuilder,
   boost::shared_ptr<ResourceManager> resourceManager,
   toolbox::mem::Pool* fastCtrlMsgPool
 ) :
 bu_(bu),
+eventBuilder_(eventBuilder),
 resourceManager_(resourceManager),
 fastCtrlMsgPool_(fastCtrlMsgPool),
 configuration_(bu->getConfiguration()),
 doProcessing_(false),
 requestFragmentsActive_(false),
-tid_(0),
-superFragmentFIFO_("superFragmentFIFO")
+tid_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -103,21 +105,12 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
     if ( dataBlockPos->second->isComplete() )
     {
-      while ( ! superFragmentFIFO_.enq(dataBlockPos->second) ) ::usleep(1000);
+      eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
       dataBlockMap_.erase(dataBlockPos);
     }
 
     bufRef = bufRef->getNextReference();
   }
-}
-
-
-bool evb::bu::RUproxy::getData
-(
-  FragmentChainPtr& superFragment
-)
-{
-  return superFragmentFIFO_.deq(superFragment);
 }
 
 
@@ -284,8 +277,6 @@ void evb::bu::RUproxy::configure()
 {
   clear();
 
-  superFragmentFIFO_.resize(configuration_->superFragmentFIFOCapacity.value_);
-
   getApplicationDescriptors();
 }
 
@@ -372,9 +363,6 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
 
 void evb::bu::RUproxy::clear()
 {
-  FragmentChainPtr superFragment;
-  while ( superFragmentFIFO_.deq(superFragment) ) {}
-
   dataBlockMap_.clear();
 }
 
@@ -434,12 +422,6 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
     *out << "<td>" << requestMonitoring_.i2oCount << "</td>"        << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
-
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  superFragmentFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
 
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);

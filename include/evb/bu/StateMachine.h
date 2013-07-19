@@ -6,7 +6,6 @@
 
 #include "evb/Exception.h"
 #include "evb/EvBStateMachine.h"
-#include "evb/bu/Configuration.h"
 #include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"

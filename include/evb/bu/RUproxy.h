@@ -11,7 +11,6 @@
 #include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
-#include "evb/OneToOneQueue.h"
 #include "evb/bu/Configuration.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Pool.h"
@@ -30,6 +29,7 @@ namespace evb {
 
   namespace bu { // namespace evb::bu
 
+    class EventBuilder;
     class ResourceManager;
     class StateMachine;
 
@@ -49,6 +49,7 @@ namespace evb {
       RUproxy
       (
         BU*,
+        boost::shared_ptr<EventBuilder>,
         boost::shared_ptr<ResourceManager>,
         toolbox::mem::Pool*
       );
@@ -59,13 +60,6 @@ namespace evb {
        * Callback for I2O message containing a super fragment
        */
       void superFragmentCallback(toolbox::mem::Reference*);
-
-      /**
-       * Fill the next available data fragment
-       * into the passed buffer reference.
-       * Return false if no data is available
-       */
-      bool getData(FragmentChainPtr&);
 
       /**
        * Send request for N trigger data fragments to the RUs
@@ -122,12 +116,6 @@ namespace evb {
        */
       void printHtml(xgi::Output*);
 
-      /**
-       * Print the content of the super-fragment FIFO as HTML snipped
-       */
-      inline void printSuperFragmentFIFO(xgi::Output* out)
-      { superFragmentFIFO_.printVerticalHtml(out); }
-
 
     private:
 
@@ -137,6 +125,7 @@ namespace evb {
       void getApplicationDescriptorForEVM();
 
       BU* bu_;
+      boost::shared_ptr<EventBuilder> eventBuilder_;
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
 
@@ -151,9 +140,6 @@ namespace evb {
 
       I2O_TID tid_;
       ApplicationDescriptorAndTid evm_;
-
-      typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
-      SuperFragmentFIFO superFragmentFIFO_;
 
       // Lookup table of data blocks, indexed by RU tid and BU resource id
       struct Index
@@ -194,19 +180,6 @@ namespace evb {
 
 
   } //namespace evb::bu
-
-  template <>
-  inline void OneToOneQueue<evb::bu::FragmentChainPtr>::formatter(evb::bu::FragmentChainPtr fragmentChain, std::ostringstream* out)
-  {
-    if ( fragmentChain.get() )
-    {
-      toolbox::mem::Reference* bufRef = fragmentChain->head();
-      if ( bufRef )
-        *out << *(msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-    }
-    else
-      *out << "n/a";
-  }
 
 
 } //namespace evb

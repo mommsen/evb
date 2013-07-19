@@ -25,6 +25,7 @@ namespace evb {
       xdata::UnsignedInteger32 eventsPerRequest;
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;
       xdata::Boolean dropEventData;
+      xdata::UnsignedInteger32 numberOfBuilders;
       xdata::UnsignedInteger32 numberOfWriters;
       xdata::String rawDataDir;
       xdata::String metaDataDir;
@@ -42,6 +43,7 @@ namespace evb {
         eventsPerRequest(1),
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
+        numberOfBuilders(6),
         numberOfWriters(8),
         rawDataDir("/tmp/raw"),
         metaDataDir("/tmp/meta"),
@@ -61,6 +63,7 @@ namespace evb {
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);
+        params.add("numberOfBuilders", &numberOfBuilders);
         params.add("numberOfWriters", &numberOfWriters);
         params.add("rawDataDir", &rawDataDir);
         params.add("metaDataDir", &metaDataDir);

@@ -6,12 +6,15 @@
 
 #include <map>
 #include <stdint.h>
+#include <vector>
 
-#include "evb/bu/Event.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
+#include "evb/bu/Configuration.h"
+#include "evb/bu/Event.h"
+#include "evb/bu/RUproxy.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/Action.h"
@@ -29,7 +32,6 @@ namespace evb {
   namespace bu {
 
     class DiskWriter;
-    class RUproxy;
     class ResourceManager;
     class StateMachine;
 
@@ -49,6 +51,16 @@ namespace evb {
         boost::shared_ptr<DiskWriter>,
         boost::shared_ptr<ResourceManager>
       );
+
+      /**
+       * Add the super fragment received for the BU resource id
+       */
+      void addSuperFragment(const uint32_t buResourceId, FragmentChainPtr&);
+
+      /**
+       * Configure
+       */
+      void configure();
 
       /**
        * Remove all data
@@ -71,17 +83,24 @@ namespace evb {
        */
       void stopProcessing();
 
+      /**
+       * Print the content of the super-fragment FIFOs as HTML snipped
+       */
+      void printSuperFragmentFIFOs(xgi::Output*);
+
 
     private:
 
       // Lookup table of events, indexed by evb id
       typedef std::map<EvBid,EventPtr> EventMap;
-      EventMap eventMap_;
+      typedef boost::shared_ptr<EventMap> EventMapPtr;
+      typedef std::map<uint16_t,EventMapPtr> EventMaps;
+      EventMaps eventMaps_;
 
-      void startProcessingWorkLoop();
+      void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      bool buildEvents();
-      EventMap::iterator getEventPos(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
+      void buildEvent(FragmentChainPtr&, EventMapPtr&);
+      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
 
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
@@ -89,10 +108,17 @@ namespace evb {
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
 
+      const ConfigurationPtr configuration_;
       uint32_t runNumber_;
 
-      toolbox::task::WorkLoop* processingWL_;
-      toolbox::task::ActionSignature* processingAction_;
+      typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
+      typedef boost::shared_ptr<SuperFragmentFIFO> SuperFragmentFIFOPtr;
+      typedef std::map<uint16_t,SuperFragmentFIFOPtr> SuperFragmentFIFOs;
+      SuperFragmentFIFOs superFragmentFIFOs_;
+
+      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
+      WorkLoops builderWorkLoops_;
+      toolbox::task::ActionSignature* builderAction_;
 
       volatile bool doProcessing_;
       volatile bool processActive_;
