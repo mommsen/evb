@@ -55,12 +55,12 @@ Sources=\
 	bu/StateMachine.cc \
 	version.cc
 
-# TestSources = \
-# 	DummyFEROL.cc \
-# 	dummyFEROL/StateMachine.cc
+TestSources = \
+	DummyFEROL.cc \
+	dummyFEROL/StateMachine.cc
 
-TestExecutables = \
-	Pipe.cxx
+#TestExecutables = \
+#	Pipe.cxx
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \
