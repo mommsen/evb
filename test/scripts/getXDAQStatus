@@ -19,9 +19,9 @@ while(<SYMBOL_MAP_FILE>) {
   } elsif(m/^[A-Za-z0-9_]+SOAP_HOST_NAME\s+([A-Za-z0-9_.\-\/:][ ()A-Za-z0-9_.\-\/:]+)/) {
     my $host = $1;
     $host =~ s/localhost/$hostname/;
-    
+
     system "sendCmdToLauncher $host $port GETXDAQSTATUS";
-    
+
     $port++;
   }
 }

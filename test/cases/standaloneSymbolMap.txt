@@ -12,14 +12,14 @@ EVM0_SOAP_HOST_NAME localhost
 EVM0_I2O_HOST_NAME localhost
 EVM0_FRL_HOST_NAME localhost
 
-RU0_SOAP_HOST_NAME  localhost
-RU0_I2O_HOST_NAME  localhost
-RU0_FRL_HOST_NAME  localhost 
-RU1_SOAP_HOST_NAME  localhost
-RU1_I2O_HOST_NAME  localhost
-RU1_FRL_HOST_NAME  localhost
+RU0_SOAP_HOST_NAME localhost
+RU0_I2O_HOST_NAME localhost
+RU0_FRL_HOST_NAME localhost
+RU1_SOAP_HOST_NAME localhost
+RU1_I2O_HOST_NAME localhost
+RU1_FRL_HOST_NAME localhost
 
-BU0_SOAP_HOST_NAME  localhost
-BU0_I2O_HOST_NAME  localhost
-BU1_SOAP_HOST_NAME  localhost
-BU1_I2O_HOST_NAME  localhost
+BU0_SOAP_HOST_NAME localhost
+BU0_I2O_HOST_NAME localhost
+BU1_SOAP_HOST_NAME localhost
+BU1_I2O_HOST_NAME localhost
