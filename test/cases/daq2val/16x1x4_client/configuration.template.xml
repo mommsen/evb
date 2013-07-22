@@ -12,8 +12,8 @@
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="2" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/FEROL0_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/FEROL0_FRL_HOST_NAME/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:frl2g-0/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
