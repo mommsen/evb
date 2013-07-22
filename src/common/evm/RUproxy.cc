@@ -329,8 +329,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
 
 void evb::evm::RUproxy::clear()
 {
-  readoutunit::FragmentRequestPtr fragmentRequest;
-  while( allocateFIFO_.deq(fragmentRequest) ) {};
+  allocateFIFO_.clear();
 }
 
 

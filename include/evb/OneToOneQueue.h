@@ -62,6 +62,11 @@ namespace evb {
     void resize(const uint32_t size);
 
     /**
+     * Remove all elements from the queue
+     */
+    void clear();
+
+    /**
      * Print summary icon as HTML.
      */
     void printHtml(xgi::Output*, const toolbox::net::URN& urn);
@@ -194,6 +199,14 @@ namespace evb {
     container_[readPointer_] = T();
     readPointer_ = nextElement;
     return true;
+  }
+
+
+  template <class T>
+  void OneToOneQueue<T>::clear()
+  {
+    T element;
+    while ( deq(element) ) {};
   }
 
 

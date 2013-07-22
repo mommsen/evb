@@ -737,14 +737,13 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
 {
-  FragmentChainPtr superFragment;
-  while ( superFragmentFIFO_.deq(superFragment) ) {};
+  superFragmentFIFO_.clear();
 
   FragmentChain::FragmentPtr fragment;
   for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    while ( it->second->deq(fragment) ) {};
+    it->second->clear();
   }
 }
 

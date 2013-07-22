@@ -644,8 +644,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::clear()
 {
-  FragmentRequestPtr fragmentRequest;
-  while ( fragmentRequestFIFO_.deq(fragmentRequest) ) {};
+  fragmentRequestFIFO_.clear();
 }
 
 

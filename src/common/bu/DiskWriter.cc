@@ -513,14 +513,9 @@ void evb::bu::DiskWriter::createWritingWorkLoops()
 
 void evb::bu::DiskWriter::clear()
 {
-  EventPtr event;
-  while ( eventFIFO_.deq(event) ) { event.reset(); }
-
-  uint32_t lumiSection;
-  while ( eolsFIFO_.deq(lumiSection) ) {}
-
-  FileHandlerAndEventPtr fileHandlerAndEvent;
-  while ( fileHandlerAndEventFIFO_.deq(fileHandlerAndEvent) ) { fileHandlerAndEvent.reset(); }
+  eventFIFO_.clear();
+  eolsFIFO_.clear();
+  fileHandlerAndEventFIFO_.clear();
 }
 
 

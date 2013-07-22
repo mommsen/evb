@@ -184,9 +184,8 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
 void evb::bu::ResourceManager::configure()
 {
-  uint32_t buResourceId;
-  while ( freeResourceFIFO_.deq(buResourceId) ) {};
-  while ( blockedResourceFIFO_.deq(buResourceId) ) {};
+  freeResourceFIFO_.clear();
+  blockedResourceFIFO_.clear();
 
   const uint32_t nbResources = std::max(1U,
     bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
@@ -194,7 +193,7 @@ void evb::bu::ResourceManager::configure()
   freeResourceFIFO_.resize(nbResources);
   blockedResourceFIFO_.resize(nbResources);
 
-  for (buResourceId = 0; buResourceId < nbResources; ++buResourceId)
+  for (uint32_t buResourceId = 0; buResourceId < nbResources; ++buResourceId)
   {
     freeResourceFIFO_.enq(buResourceId);
   }

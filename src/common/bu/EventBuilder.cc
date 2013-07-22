@@ -99,7 +99,7 @@ void evb::bu::EventBuilder::clear()
   for (SuperFragmentFIFOs::iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    while ( it->second->deq(superFragments) ) {};
+    it->second->clear();
   }
 
   for (EventMaps::iterator it = eventMaps_.begin(), itEnd = eventMaps_.end();
