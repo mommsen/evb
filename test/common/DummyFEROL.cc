@@ -299,30 +299,25 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
   toolbox::mem::Reference* bufRef = 0;
 
-  //fix affinity to core 0
-  cpu_set_t cpuset;
-  CPU_ZERO(&cpuset);
-  CPU_SET(0, &cpuset);
-  const int status = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-  if ( status != 0  )
+  try
   {
-    std::ostringstream oss;
-    oss << "Failed to set affinity for workloop 'Generating': "
-      << strerror(status);
-    XCEPT_RAISE(exception::DummyData, oss.str());
-  }
-
-  while ( doProcessing_ )
-  {
-    if ( fragmentGenerator_.getData(bufRef) )
+    while ( doProcessing_ )
     {
-      #ifdef DOUBLE_WORKLOOPS
-      while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) { ::usleep(1000); }
-      #else
-      updateCounters(bufRef);
-      sendData(bufRef);
-      #endif
+      if ( fragmentGenerator_.getData(bufRef) )
+      {
+        #ifdef DOUBLE_WORKLOOPS
+        while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) { ::usleep(1000); }
+        #else
+        updateCounters(bufRef);
+        sendData(bufRef);
+        #endif
+      }
     }
+  }
+  catch(xcept::Exception &e)
+  {
+    generatingActive_ = false;
+    stateMachine_->processFSMEvent( Fail(e) );
   }
 
   generatingActive_ = false;
@@ -337,30 +332,25 @@ bool evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 
   toolbox::mem::Reference* bufRef = 0;
 
-  //fix affinity to core 1
-  cpu_set_t cpuset;
-  CPU_ZERO(&cpuset);
-  CPU_SET(1, &cpuset);
-  const int status = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-  if ( status != 0  )
+  try
   {
-    std::ostringstream oss;
-    oss << "Failed to set affinity for workloop 'Sending': "
-      << strerror(status);
-    XCEPT_RAISE(exception::DummyData, oss.str());
+    while ( doProcessing_ )
+    {
+      if ( fragmentFIFO_.deq(bufRef) )
+      {
+        updateCounters(bufRef);
+        sendData(bufRef);
+      }
+      else
+      {
+        ::usleep(10);
+      }
+    }
   }
-
-  while ( doProcessing_ )
+  catch(xcept::Exception &e)
   {
-    if ( fragmentFIFO_.deq(bufRef) )
-    {
-      updateCounters(bufRef);
-      sendData(bufRef);
-    }
-    else
-    {
-      ::usleep(10);
-    }
+    sendingActive_ = false;
+    stateMachine_->processFSMEvent( Fail(e) );
   }
 
   sendingActive_ = false;
