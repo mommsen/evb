@@ -59,8 +59,8 @@ TestSources = \
 	DummyFEROL.cc \
 	dummyFEROL/StateMachine.cc
 
-#TestExecutables = \
-#	Pipe.cxx
+TestExecutables = \
+	OneToOneQueue.cxx
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \
@@ -105,6 +105,7 @@ TestLibraries = \
 	peer \
 	pttcp \
 	ptutcp \
+	tcpla \
 	toolbox \
 	asyncresolv \
 	uuid \
@@ -139,7 +140,7 @@ TestLibraryDirs = \
         $(XGI_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Wno-long-long -Werror
+UserCCFlags = -O3 -funroll-loops -Wno-long-long -Werror -fno-omit-frame-pointer
 
 # These libraries can be platform specific and
 # potentially need conditional processing
