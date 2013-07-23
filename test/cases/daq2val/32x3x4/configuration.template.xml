@@ -14,9 +14,10 @@
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -51,9 +52,10 @@
   <xc:Context url="http://FEROL1_SOAP_HOST_NAME:FEROL1_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -88,9 +90,10 @@
   <xc:Context url="http://FEROL2_SOAP_HOST_NAME:FEROL2_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -125,9 +128,10 @@
   <xc:Context url="http://FEROL3_SOAP_HOST_NAME:FEROL3_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -162,9 +166,10 @@
   <xc:Context url="http://FEROL4_SOAP_HOST_NAME:FEROL4_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -199,9 +204,10 @@
   <xc:Context url="http://FEROL5_SOAP_HOST_NAME:FEROL5_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -236,9 +242,10 @@
   <xc:Context url="http://FEROL6_SOAP_HOST_NAME:FEROL6_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -273,9 +280,10 @@
   <xc:Context url="http://FEROL7_SOAP_HOST_NAME:FEROL7_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -310,9 +318,10 @@
   <xc:Context url="http://FEROL8_SOAP_HOST_NAME:FEROL8_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -347,9 +356,10 @@
   <xc:Context url="http://FEROL9_SOAP_HOST_NAME:FEROL9_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -384,9 +394,10 @@
   <xc:Context url="http://FEROL10_SOAP_HOST_NAME:FEROL10_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -421,9 +432,10 @@
   <xc:Context url="http://FEROL11_SOAP_HOST_NAME:FEROL11_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -458,9 +470,10 @@
   <xc:Context url="http://FEROL12_SOAP_HOST_NAME:FEROL12_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -495,9 +508,10 @@
   <xc:Context url="http://FEROL13_SOAP_HOST_NAME:FEROL13_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -532,9 +546,10 @@
   <xc:Context url="http://FEROL14_SOAP_HOST_NAME:FEROL14_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -569,9 +584,10 @@
   <xc:Context url="http://FEROL15_SOAP_HOST_NAME:FEROL15_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -606,9 +622,10 @@
   <xc:Context url="http://FEROL16_SOAP_HOST_NAME:FEROL16_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -643,9 +660,10 @@
   <xc:Context url="http://FEROL17_SOAP_HOST_NAME:FEROL17_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -680,9 +698,10 @@
   <xc:Context url="http://FEROL18_SOAP_HOST_NAME:FEROL18_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -717,9 +736,10 @@
   <xc:Context url="http://FEROL19_SOAP_HOST_NAME:FEROL19_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -754,9 +774,10 @@
   <xc:Context url="http://FEROL20_SOAP_HOST_NAME:FEROL20_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -791,9 +812,10 @@
   <xc:Context url="http://FEROL21_SOAP_HOST_NAME:FEROL21_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -828,9 +850,10 @@
   <xc:Context url="http://FEROL22_SOAP_HOST_NAME:FEROL22_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -865,9 +888,10 @@
   <xc:Context url="http://FEROL23_SOAP_HOST_NAME:FEROL23_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -903,9 +927,10 @@
   <xc:Context url="http://FEROL24_SOAP_HOST_NAME:FEROL24_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -940,10 +965,11 @@
   <xc:Context url="http://FEROL25_SOAP_HOST_NAME:FEROL25_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
-     <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
+      <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL25_FRL_HOST_NAME" port="FEROL25_FRL_PORT" network="ferol25" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W:*,SND:P:3,DSR:W:*,DSS:W:*" singleThread="true" pollingCycle="1" smode="poll"/>
@@ -977,9 +1003,10 @@
   <xc:Context url="http://FEROL26_SOAP_HOST_NAME:FEROL26_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1014,9 +1041,10 @@
   <xc:Context url="http://FEROL27_SOAP_HOST_NAME:FEROL27_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1052,9 +1080,10 @@
   <xc:Context url="http://FEROL28_SOAP_HOST_NAME:FEROL28_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1089,9 +1118,10 @@
   <xc:Context url="http://FEROL29_SOAP_HOST_NAME:FEROL29_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1126,9 +1156,10 @@
   <xc:Context url="http://FEROL30_SOAP_HOST_NAME:FEROL30_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1163,9 +1194,10 @@
   <xc:Context url="http://FEROL31_SOAP_HOST_NAME:FEROL31_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-ia/.*" type="thread" package="numa" mempolicy="local" affinity="2" />
+      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/generating/waiting" type="thread" package="numa" mempolicy="local" affinity="0" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::test::DummyFEROL.*/sending/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
-      <pol:element pattern="urn:toolbox-task-workloop:tcpla-sender-dispatcher/.*/waiting" type="thread" package="numa" mempolicy="local" affinity="*" />
       <pol:element pattern="urn:toolbox-mem-allocator:CommittedHeapAllocator" type="alloc" package="numa" mempolicy="interleaved" />
     </pol:policy>
 
@@ -1210,6 +1242,7 @@
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="9" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="13" />
       <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="29" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/assignEvents/waiting" type="thread" package="numa" mempolicy="onnode" memnode="0" cpunodes="1" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:RU0_FRL_PORT/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="3" />
       <pol:element pattern="urn:toolbox-task-workloop:tcpla-psp/RU0_FRL_HOST_NAME:60600/polling" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="5" />
       <pol:element pattern="urn:toolbox-task-workloop:pt-frl-CopyWorker-1-0" type="thread" package="numa" mempolicy="onnode" memnode="0" affinity="15" />
@@ -1329,7 +1362,7 @@
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
         <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
-        <numberOfResponders xsi:type="xsd:unsignedInt">4</numberOfResponders>
+        <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
       </properties>
    </xc:Application>
 
@@ -1784,9 +1817,13 @@
   <xc:Context url="http://BU0_SOAP_HOST_NAME:BU0_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting" type="thread" package="numa" mempolicy="local" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting" type="thread" package="numa" mempolicy="local" affinity="14" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting" type="thread" package="numa" mempolicy="local" affinity="15" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting" type="thread" package="numa" mempolicy="local" affinity="5" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
@@ -1832,9 +1869,13 @@
   <xc:Context url="http://BU1_SOAP_HOST_NAME:BU1_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting" type="thread" package="numa" mempolicy="local" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting" type="thread" package="numa" mempolicy="local" affinity="14" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting" type="thread" package="numa" mempolicy="local" affinity="15" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting" type="thread" package="numa" mempolicy="local" affinity="5" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
@@ -1880,9 +1921,13 @@
   <xc:Context url="http://BU2_SOAP_HOST_NAME:BU2_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting" type="thread" package="numa" mempolicy="local" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting" type="thread" package="numa" mempolicy="local" affinity="14" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting" type="thread" package="numa" mempolicy="local" affinity="15" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting" type="thread" package="numa" mempolicy="local" affinity="5" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
@@ -1928,9 +1973,13 @@
   <xc:Context url="http://BU3_SOAP_HOST_NAME:BU3_SOAP_PORT">
 
     <pol:policy xmlns:pol="http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10">
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/EventTableProcessing/waiting" type="thread" package="numa" mempolicy="local" affinity="27" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestTriggers/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
-      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/RUproxyRequestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting" type="thread" package="numa" mempolicy="local" affinity="9" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting" type="thread" package="numa" mempolicy="local" affinity="14" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting" type="thread" package="numa" mempolicy="local" affinity="15" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting" type="thread" package="numa" mempolicy="local" affinity="1" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting" type="thread" package="numa" mempolicy="local" affinity="3" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting" type="thread" package="numa" mempolicy="local" affinity="5" />
+      <pol:element pattern="urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting" type="thread" package="numa" mempolicy="local" affinity="11" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-i2o-dispatcher-loop/polling" type="thread" package="numa" mempolicy="local" affinity="8" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-receiver/polling" type="thread" package="numa" mempolicy="local" affinity="12" />
       <pol:element pattern="urn:toolbox-task-workloop:udapl-sender/polling" type="thread" package="numa" mempolicy="local" affinity="10" />
