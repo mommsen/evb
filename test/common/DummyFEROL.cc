@@ -326,7 +326,8 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 }
 
 
-bool evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
+bool __attribute__((optimize("O0")))  // Optimization causes segfaults as bufRef is null
+evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 {
   sendingActive_ = true;
 
