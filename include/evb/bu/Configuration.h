@@ -43,7 +43,7 @@ namespace evb {
         eventsPerRequest(1),
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
-        numberOfBuilders(6),
+        numberOfBuilders(3),
         numberOfWriters(8),
         rawDataDir("/tmp/raw"),
         metaDataDir("/tmp/meta"),
