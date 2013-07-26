@@ -134,7 +134,7 @@ void evb::bu::FileHandler::close()
       writeJSON();
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     stateMachine_->fail(e);
   }

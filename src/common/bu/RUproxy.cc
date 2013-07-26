@@ -114,7 +114,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       bufRef = bufRef->getNextReference();
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     stateMachine_->processFSMEvent( Fail(e) );
   }
@@ -207,7 +207,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
             //it->descriptor
           );
       }
-      catch(xcept::Exception &e)
+      catch(xcept::Exception& e)
       {
         std::stringstream oss;
 
@@ -224,7 +224,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       ++requestMonitoring_.i2oCount;
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     requestFragmentsActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
@@ -295,7 +295,7 @@ void evb::bu::RUproxy::getApplicationDescriptors()
     tid_ = i2o::utils::getAddressMap()->
       getTid(bu_->getApplicationDescriptor());
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);
@@ -321,7 +321,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
         getDefaultZone()->
         getApplicationDescriptors("evb::EVM");
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       XCEPT_RETHROW(exception::Configuration,
         "Failed to get EVM application descriptor", e);
@@ -345,7 +345,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
         getApplicationDescriptor("evb::EVM",
           configuration_->evmInstance.value_);
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       std::ostringstream oss;
 
@@ -360,7 +360,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
   {
     evm_.tid = i2o::utils::getAddressMap()->getTid(evm_.descriptor);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get the I2O TID of the EVM", e);

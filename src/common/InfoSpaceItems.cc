@@ -58,7 +58,7 @@ void evb::InfoSpaceItems::putIntoInfoSpace(xdata::InfoSpace* s, xdata::ActionLis
           break;
       }
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       std::stringstream oss;
 

@@ -179,7 +179,7 @@ bool evb::bu::DiskWriter::process(toolbox::task::WorkLoop*)
       )
     ) {};
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     processActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
@@ -322,7 +322,7 @@ bool evb::bu::DiskWriter::writing(toolbox::task::WorkLoop*)
     }
     while (gotEvent);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     writingActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
