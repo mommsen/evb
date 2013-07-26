@@ -17,20 +17,10 @@ sendCmdToLauncher FEROL12_SOAP_HOST_NAME FEROL12_LAUNCHER_PORT STARTXDAQFEROL12_
 sendCmdToLauncher FEROL13_SOAP_HOST_NAME FEROL13_LAUNCHER_PORT STARTXDAQFEROL13_SOAP_PORT
 sendCmdToLauncher FEROL14_SOAP_HOST_NAME FEROL14_LAUNCHER_PORT STARTXDAQFEROL14_SOAP_PORT
 sendCmdToLauncher FEROL15_SOAP_HOST_NAME FEROL15_LAUNCHER_PORT STARTXDAQFEROL15_SOAP_PORT
-sendCmdToLauncher FEROL16_SOAP_HOST_NAME FEROL16_LAUNCHER_PORT STARTXDAQFEROL16_SOAP_PORT
-sendCmdToLauncher FEROL17_SOAP_HOST_NAME FEROL17_LAUNCHER_PORT STARTXDAQFEROL17_SOAP_PORT
-sendCmdToLauncher FEROL18_SOAP_HOST_NAME FEROL18_LAUNCHER_PORT STARTXDAQFEROL18_SOAP_PORT
-sendCmdToLauncher FEROL19_SOAP_HOST_NAME FEROL19_LAUNCHER_PORT STARTXDAQFEROL19_SOAP_PORT
-sendCmdToLauncher FEROL20_SOAP_HOST_NAME FEROL20_LAUNCHER_PORT STARTXDAQFEROL20_SOAP_PORT
-sendCmdToLauncher FEROL21_SOAP_HOST_NAME FEROL21_LAUNCHER_PORT STARTXDAQFEROL21_SOAP_PORT
-sendCmdToLauncher FEROL22_SOAP_HOST_NAME FEROL22_LAUNCHER_PORT STARTXDAQFEROL22_SOAP_PORT
-sendCmdToLauncher FEROL23_SOAP_HOST_NAME FEROL23_LAUNCHER_PORT STARTXDAQFEROL23_SOAP_PORT
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
 sendCmdToLauncher RU1_SOAP_HOST_NAME RU1_LAUNCHER_PORT STARTXDAQRU1_SOAP_PORT
 sendCmdToLauncher BU0_SOAP_HOST_NAME BU0_LAUNCHER_PORT STARTXDAQBU0_SOAP_PORT
 sendCmdToLauncher BU1_SOAP_HOST_NAME BU1_LAUNCHER_PORT STARTXDAQBU1_SOAP_PORT
-sendCmdToLauncher BU2_SOAP_HOST_NAME BU2_LAUNCHER_PORT STARTXDAQBU2_SOAP_PORT
-sendCmdToLauncher BU3_SOAP_HOST_NAME BU3_LAUNCHER_PORT STARTXDAQBU3_SOAP_PORT
 
 # Check that executives are listening
 if ! webPingXDAQ FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT 5
@@ -113,75 +103,25 @@ then
   echo "Test failed"
   exit 1
 fi
-if ! webPingXDAQ FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
-if ! webPingXDAQ FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT 5
-then
-  echo "Test failed"
-  exit 1
-fi
 if ! webPingXDAQ RU0_SOAP_HOST_NAME RU0_SOAP_PORT 5
 then
- echo "Test failed"
- exit 1
+  echo "Test failed"
+  exit 1
 fi
 if ! webPingXDAQ RU1_SOAP_HOST_NAME RU1_SOAP_PORT 5
 then
- echo "Test failed"
- exit 1
+  echo "Test failed"
+  exit 1
 fi
 if ! webPingXDAQ BU0_SOAP_HOST_NAME BU0_SOAP_PORT 5
 then
- echo "Test failed"
- exit 1
+  echo "Test failed"
+  exit 1
 fi
 if ! webPingXDAQ BU1_SOAP_HOST_NAME BU1_SOAP_PORT 5
 then
- echo "Test failed"
- exit 1
-fi
-if ! webPingXDAQ BU2_SOAP_HOST_NAME BU2_SOAP_PORT 5
-then
- echo "Test failed"
- exit 1
-fi
-if ! webPingXDAQ BU3_SOAP_HOST_NAME BU3_SOAP_PORT 5
-then
- echo "Test failed"
- exit 1
+  echo "Test failed"
+  exit 1
 fi
 
 # Configure all executives
@@ -201,21 +141,11 @@ sendCmdToExecutive FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT configure.cmd.xml
 
 sendCmdToExecutive RU0_SOAP_HOST_NAME RU0_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive RU1_SOAP_HOST_NAME RU1_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive BU0_SOAP_HOST_NAME BU0_SOAP_PORT configure.cmd.xml
 sendCmdToExecutive BU1_SOAP_HOST_NAME BU1_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive BU2_SOAP_HOST_NAME BU2_SOAP_PORT configure.cmd.xml
-sendCmdToExecutive BU3_SOAP_HOST_NAME BU3_SOAP_PORT configure.cmd.xml
 
 # Configure and enable ptutcp
 sendSimpleCmdToApp FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT pt::frl::Application 0 Configure
@@ -234,14 +164,6 @@ sendSimpleCmdToApp FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT pt::frl::Application
 sendSimpleCmdToApp FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT pt::frl::Application 13 Configure
 sendSimpleCmdToApp FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT pt::frl::Application 14 Configure
 sendSimpleCmdToApp FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT pt::frl::Application 15 Configure
-sendSimpleCmdToApp FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT pt::frl::Application 16 Configure
-sendSimpleCmdToApp FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT pt::frl::Application 17 Configure
-sendSimpleCmdToApp FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT pt::frl::Application 18 Configure
-sendSimpleCmdToApp FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT pt::frl::Application 19 Configure
-sendSimpleCmdToApp FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT pt::frl::Application 20 Configure
-sendSimpleCmdToApp FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT pt::frl::Application 21 Configure
-sendSimpleCmdToApp FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT pt::frl::Application 22 Configure
-sendSimpleCmdToApp FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT pt::frl::Application 23 Configure
 sendSimpleCmdToApp FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT pt::frl::Application 0 Enable
 sendSimpleCmdToApp FEROL1_SOAP_HOST_NAME FEROL1_SOAP_PORT pt::frl::Application 1 Enable
 sendSimpleCmdToApp FEROL2_SOAP_HOST_NAME FEROL2_SOAP_PORT pt::frl::Application 2 Enable
@@ -258,14 +180,6 @@ sendSimpleCmdToApp FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT pt::frl::Application
 sendSimpleCmdToApp FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT pt::frl::Application 13 Enable
 sendSimpleCmdToApp FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT pt::frl::Application 14 Enable
 sendSimpleCmdToApp FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT pt::frl::Application 15 Enable
-sendSimpleCmdToApp FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT pt::frl::Application 16 Enable
-sendSimpleCmdToApp FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT pt::frl::Application 17 Enable
-sendSimpleCmdToApp FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT pt::frl::Application 18 Enable
-sendSimpleCmdToApp FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT pt::frl::Application 19 Enable
-sendSimpleCmdToApp FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT pt::frl::Application 20 Enable
-sendSimpleCmdToApp FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT pt::frl::Application 21 Enable
-sendSimpleCmdToApp FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT pt::frl::Application 22 Enable
-sendSimpleCmdToApp FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT pt::frl::Application 23 Enable
 
 #Set parameter
 sleep 2
@@ -286,14 +200,6 @@ setParam FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT evb::test::DummyFEROL 12 fedSi
 setParam FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT evb::test::DummyFEROL 13 fedSize unsignedInt $fragmentSize
 setParam FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT evb::test::DummyFEROL 14 fedSize unsignedInt $fragmentSize
 setParam FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT evb::test::DummyFEROL 15 fedSize unsignedInt $fragmentSize
-setParam FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT evb::test::DummyFEROL 16 fedSize unsignedInt $fragmentSize
-setParam FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT evb::test::DummyFEROL 17 fedSize unsignedInt $fragmentSize
-setParam FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT evb::test::DummyFEROL 18 fedSize unsignedInt $fragmentSize
-setParam FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT evb::test::DummyFEROL 19 fedSize unsignedInt $fragmentSize
-setParam FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT evb::test::DummyFEROL 20 fedSize unsignedInt $fragmentSize
-setParam FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT evb::test::DummyFEROL 21 fedSize unsignedInt $fragmentSize
-setParam FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT evb::test::DummyFEROL 22 fedSize unsignedInt $fragmentSize
-setParam FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT evb::test::DummyFEROL 23 fedSize unsignedInt $fragmentSize
 
 dummyFedPayloadSizeFEROL0=`getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 fedSize xsd:unsignedInt`
 dummyFedPayloadSizeFEROL1=`getParam FEROL1_SOAP_HOST_NAME FEROL1_SOAP_PORT evb::test::DummyFEROL 1 fedSize xsd:unsignedInt`
@@ -311,14 +217,6 @@ dummyFedPayloadSizeFEROL12=`getParam FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT ev
 dummyFedPayloadSizeFEROL13=`getParam FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT evb::test::DummyFEROL 13 fedSize xsd:unsignedInt`
 dummyFedPayloadSizeFEROL14=`getParam FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT evb::test::DummyFEROL 14 fedSize xsd:unsignedInt`
 dummyFedPayloadSizeFEROL15=`getParam FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT evb::test::DummyFEROL 15 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL16=`getParam FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT evb::test::DummyFEROL 16 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL17=`getParam FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT evb::test::DummyFEROL 17 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL18=`getParam FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT evb::test::DummyFEROL 18 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL19=`getParam FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT evb::test::DummyFEROL 19 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL20=`getParam FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT evb::test::DummyFEROL 20 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL21=`getParam FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT evb::test::DummyFEROL 21 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL22=`getParam FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT evb::test::DummyFEROL 22 fedSize xsd:unsignedInt`
-dummyFedPayloadSizeFEROL23=`getParam FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT evb::test::DummyFEROL 23 fedSize xsd:unsignedInt`
 
 echo "DummyFEROL0 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL0"
 echo "DummyFEROL1 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL1"
@@ -336,14 +234,6 @@ echo "DummyFEROL12 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL12"
 echo "DummyFEROL13 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL13"
 echo "DummyFEROL14 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL14"
 echo "DummyFEROL15 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL15"
-echo "DummyFEROL16 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL16"
-echo "DummyFEROL17 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL17"
-echo "DummyFEROL18 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL18"
-echo "DummyFEROL19 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL19"
-echo "DummyFEROL20 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL20"
-echo "DummyFEROL21 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL21"
-echo "DummyFEROL22 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL22"
-echo "DummyFEROL23 dummyFedPayloadSize: $dummyFedPayloadSizeFEROL23"
 
 #Configure
 sendSimpleCmdToApp FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 Configure
@@ -362,22 +252,12 @@ sendSimpleCmdToApp FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT evb::test::DummyFERO
 sendSimpleCmdToApp FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT evb::test::DummyFEROL 13 Configure
 sendSimpleCmdToApp FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT evb::test::DummyFEROL 14 Configure
 sendSimpleCmdToApp FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT evb::test::DummyFEROL 15 Configure
-sendSimpleCmdToApp FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT evb::test::DummyFEROL 16 Configure
-sendSimpleCmdToApp FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT evb::test::DummyFEROL 17 Configure
-sendSimpleCmdToApp FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT evb::test::DummyFEROL 18 Configure
-sendSimpleCmdToApp FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT evb::test::DummyFEROL 19 Configure
-sendSimpleCmdToApp FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT evb::test::DummyFEROL 20 Configure
-sendSimpleCmdToApp FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT evb::test::DummyFEROL 21 Configure
-sendSimpleCmdToApp FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT evb::test::DummyFEROL 22 Configure
-sendSimpleCmdToApp FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT evb::test::DummyFEROL 23 Configure
 
 sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Configure
 sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 Configure
 
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Configure
 sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Configure
-sendSimpleCmdToApp BU2_SOAP_HOST_NAME BU2_SOAP_PORT evb::BU 2 Configure
-sendSimpleCmdToApp BU3_SOAP_HOST_NAME BU3_SOAP_PORT evb::BU 3 Configure
 
 sleep 1
 
@@ -388,8 +268,6 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 Enable
 #Enable BUs
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable
-sendSimpleCmdToApp BU2_SOAP_HOST_NAME BU2_SOAP_PORT evb::BU 2 Enable
-sendSimpleCmdToApp BU3_SOAP_HOST_NAME BU3_SOAP_PORT evb::BU 3 Enable
 
 #enable generator
 sendSimpleCmdToApp FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 Enable
@@ -408,19 +286,11 @@ sendSimpleCmdToApp FEROL12_SOAP_HOST_NAME FEROL12_SOAP_PORT evb::test::DummyFERO
 sendSimpleCmdToApp FEROL13_SOAP_HOST_NAME FEROL13_SOAP_PORT evb::test::DummyFEROL 13 Enable
 sendSimpleCmdToApp FEROL14_SOAP_HOST_NAME FEROL14_SOAP_PORT evb::test::DummyFEROL 14 Enable
 sendSimpleCmdToApp FEROL15_SOAP_HOST_NAME FEROL15_SOAP_PORT evb::test::DummyFEROL 15 Enable
-sendSimpleCmdToApp FEROL16_SOAP_HOST_NAME FEROL16_SOAP_PORT evb::test::DummyFEROL 16 Enable
-sendSimpleCmdToApp FEROL17_SOAP_HOST_NAME FEROL17_SOAP_PORT evb::test::DummyFEROL 17 Enable
-sendSimpleCmdToApp FEROL18_SOAP_HOST_NAME FEROL18_SOAP_PORT evb::test::DummyFEROL 18 Enable
-sendSimpleCmdToApp FEROL19_SOAP_HOST_NAME FEROL19_SOAP_PORT evb::test::DummyFEROL 19 Enable
-sendSimpleCmdToApp FEROL20_SOAP_HOST_NAME FEROL20_SOAP_PORT evb::test::DummyFEROL 20 Enable
-sendSimpleCmdToApp FEROL21_SOAP_HOST_NAME FEROL21_SOAP_PORT evb::test::DummyFEROL 21 Enable
-sendSimpleCmdToApp FEROL22_SOAP_HOST_NAME FEROL22_SOAP_PORT evb::test::DummyFEROL 22 Enable
-sendSimpleCmdToApp FEROL23_SOAP_HOST_NAME FEROL23_SOAP_PORT evb::test::DummyFEROL 23 Enable
 
 echo "Sending data for 10 seconds"
 sleep 10
 
-expectedEventSize=$((12*($fragmentSize+16))) #add FEROL header size
+expectedEventSize=$((8*($fragmentSize+16))) #add FEROL header size
 
 superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
 superFragmentSizeRU1=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt`
@@ -443,7 +313,7 @@ fi
 eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
 echo "EVM eventRate: $eventRateEVM"
 
-if [[ $eventRateEVM -lt 150000 ]]
+if [[ $eventRateEVM -lt 200000 ]]
 then
   echo "Test failed"
   exit 1
@@ -451,13 +321,9 @@ fi
 
 nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
 nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU2=`getParam BU2_SOAP_HOST_NAME BU2_SOAP_PORT evb::BU 2 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU3=`getParam BU3_SOAP_HOST_NAME BU3_SOAP_PORT evb::BU 3 nbEventsBuilt xsd:unsignedInt`
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
-echo "BU2 nbEventsBuilt: $nbEventsBuiltBU2"
-echo "BU3 nbEventsBuilt: $nbEventsBuiltBU3"
 
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
@@ -465,16 +331,6 @@ then
   exit 1
 fi
 if [[ $nbEventsBuiltBU1 -lt 1000 ]]
-then
-  echo "Test failed"
-  exit 1
-fi
-if [[ $nbEventsBuiltBU2 -lt 1000 ]]
-then
-  echo "Test failed"
-  exit 1
-fi
-if [[ $nbEventsBuiltBU3 -lt 1000 ]]
 then
   echo "Test failed"
   exit 1
