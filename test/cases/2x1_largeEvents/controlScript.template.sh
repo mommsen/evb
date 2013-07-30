@@ -63,7 +63,7 @@ then
 fi
 
 superFragmentSizeRU0=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt`
-echo "RU1 superFragmentSize: $superFragmentSizeRU0"
+echo "RU0 superFragmentSize: $superFragmentSizeRU0"
 if [[ $superFragmentSizeRU0 -ne 131072 ]]
 then
   echo "Test failed: expected 131072"
