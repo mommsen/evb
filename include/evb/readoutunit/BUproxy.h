@@ -347,6 +347,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   assert( blockHeaderSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
+  assert( remainingPayloadSize > sizeof(msg::SuperFragment) );
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
@@ -547,7 +548,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   const uint32_t currentFragmentSize
 ) const
 {
-  assert( remainingPayloadSize >= sizeof(msg::SuperFragment) );
+  if ( remainingPayloadSize < sizeof(msg::SuperFragment) )
+  {
+    remainingPayloadSize = 0;
+    return;
+  }
 
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
 

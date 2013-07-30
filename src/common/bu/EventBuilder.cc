@@ -218,6 +218,8 @@ void evb::bu::EventBuilder::buildEvent
 
       payload += superFragmentMsg->partSize;
       remainingBufferSize -= superFragmentMsg->partSize;
+      if ( remainingBufferSize < sizeof(msg::SuperFragment) )
+        remainingBufferSize = 0;
     }
 
     bufRef->release();
