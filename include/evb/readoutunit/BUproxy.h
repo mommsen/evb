@@ -360,40 +360,60 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
     while ( currentFragment )
     {
-      const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
-        + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+      ferolh_t* ferolHeader;
+      uint32_t ferolOffset = 0;
 
-      const ferolh_t* ferolHeader = (ferolh_t*)ferolData;
-      assert( ferolHeader->signature() == FEROL_SIGNATURE );
-
-      const fedh_t* fedHeader = (fedh_t*)(ferolData + sizeof(ferolh_t));
-      assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
-
-      uint32_t currentFragmentSize = ferolHeader->data_length();
-      uint32_t copiedSize = sizeof(ferolh_t); // skip the ferol header
-
-      while ( currentFragmentSize > remainingPayloadSize )
+      do
       {
-        // fill the remaining block
-        memcpy(payload, ferolData + copiedSize, remainingPayloadSize);
-        copiedSize += remainingPayloadSize;
-        currentFragmentSize -= remainingPayloadSize;
-        remainingSuperFragmentSize -= remainingPayloadSize;
+        // TODO: handle case that fragment is split over several bufRefs
+        assert( currentFragment->getDataSize() > sizeof(I2O_DATA_READY_MESSAGE_FRAME)+ferolOffset );
 
-        // get a new block
-        toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-        payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
-        remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
-        fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
-        tail->setNextReference(nextBlock);
-        tail = nextBlock;
+        const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
+          + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + ferolOffset;
+
+        ferolHeader = (ferolh_t*)ferolData;
+        assert( ferolHeader->signature() == FEROL_SIGNATURE );
+
+        // std::cout << "FEROL " << ferolHeader->event_number() << "\t" <<
+        //   ferolHeader->packet_number() << "\t" <<
+        //   ferolHeader->is_first_packet() << "\t" <<
+        //   ferolHeader->is_last_packet() << "\t" <<
+        //   ferolHeader->data_length() << std::endl;
+
+        if ( ferolHeader->is_first_packet() )
+        {
+          const fedh_t* fedHeader = (fedh_t*)(ferolData + sizeof(ferolh_t));
+          assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
+        }
+
+        uint32_t currentFragmentSize = ferolHeader->data_length();
+        ferolOffset += currentFragmentSize + sizeof(ferolh_t);
+        uint32_t copiedSize = sizeof(ferolh_t); // skip the ferol header
+
+        while ( currentFragmentSize > remainingPayloadSize )
+        {
+          // fill the remaining block
+          memcpy(payload, ferolData + copiedSize, remainingPayloadSize);
+          copiedSize += remainingPayloadSize;
+          currentFragmentSize -= remainingPayloadSize;
+          remainingSuperFragmentSize -= remainingPayloadSize;
+
+          // get a new block
+          toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
+          payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
+          remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
+          fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
+          tail->setNextReference(nextBlock);
+          tail = nextBlock;
+        }
+
+        // fill the remaining fragment into the block
+        memcpy(payload, ferolData + copiedSize, currentFragmentSize);
+        payload += currentFragmentSize;
+        remainingPayloadSize -= currentFragmentSize;
+        remainingSuperFragmentSize -= currentFragmentSize;
       }
-
-      // fill the remaining fragment into the block
-      memcpy(payload, ferolData + copiedSize, currentFragmentSize);
-      payload += currentFragmentSize;
-      remainingPayloadSize -= currentFragmentSize;
-      remainingSuperFragmentSize -= currentFragmentSize;
+      while( ! ferolHeader->is_last_packet() );
 
       const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );

@@ -234,6 +234,7 @@ namespace evb {
         typedef std::map<uint16_t,FragmentTracker> FragmentTrackers;
         FragmentTrackers fragmentTrackers_;
         toolbox::mem::Pool* fragmentPool_;
+        uint32_t frameSize_;
       };
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
@@ -329,21 +330,56 @@ void evb::readoutunit::Input<Configuration>::rawDataAvailable(toolbox::mem::Refe
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::Reference* bufRef)
 {
+  const unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+  const I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
+  const uint32_t payloadSize = frame->partLength;
+  const uint16_t fedId = frame->fedid;
+  const uint32_t eventNumber = frame->triggerno;
+
+  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+
+  uint32_t fedSize = 0;
+  uint32_t ferolOffset = 0;
+  ferolh_t* ferolHeader;
+
+  do
+  {
+    ferolHeader = (ferolh_t*)(payload + ferolOffset);
+
+    if( ferolHeader->signature() != FEROL_SIGNATURE )
+    {
+      std::ostringstream msg;
+      msg << "Expected FEROL header signature " << FEROL_SIGNATURE;
+      msg << ", but found " << ferolHeader->signature();
+      msg << " for event " << eventNumber;
+      msg << " received from " << frame->PvtMessageFrame.StdMessageFrame.InitiatorAddress;
+      XCEPT_RAISE(exception::FEROL, msg.str());
+    }
+
+    if ( eventNumber != ferolHeader->event_number() )
+    {
+      std::ostringstream msg;
+      msg << "Mismatch of event number in FEROL header: ";
+      msg << " expected " << eventNumber << ", but got " << ferolHeader->event_number();
+      XCEPT_RAISE(exception::FEROL, msg.str());
+    }
+    if ( fedId != ferolHeader->fed_id() )
+    {
+      std::ostringstream msg;
+      msg << "Mismatch of FED id in FEROL header: ";
+      msg << " expected " << fedId << ", but got " << ferolHeader->fed_id();
+      msg << " for event " << eventNumber;
+      XCEPT_RAISE(exception::FEROL, msg.str());
+    }
+
+    const uint32_t dataLength = ferolHeader->data_length();
+    fedSize += dataLength;
+    ferolOffset += dataLength + sizeof(ferolh_t);
+  }
+  while( !ferolHeader->is_last_packet() && ferolOffset < payloadSize );
+
+
   boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-
-  const unsigned char* payload = (unsigned char*)bufRef->getDataLocation()
-    + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  const ferolh_t* ferolHeader = (ferolh_t*)payload;
-  assert( ferolHeader->signature() == FEROL_SIGNATURE );
-  const uint16_t fedId = ferolHeader->fed_id();
-  const uint32_t eventNumber = ferolHeader->event_number();
-  const uint32_t fedSize = ferolHeader->data_length();
-
-  // I2O_DATA_READY_MESSAGE_FRAME* frame =
-  //   (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  // const uint16_t fedId = frame->fedid;
-  // const uint32_t eventNumber = frame->triggerno;
-  // const uint32_t fedSize = frame->totalLength;
 
   typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
   if ( pos == inputMonitors_.end() )
@@ -357,12 +393,13 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
-  pos->second.lastEventNumber = eventNumber;
+  ++(pos->second.perf.i2oCount);
   pos->second.perf.sumOfSizes += fedSize;
   pos->second.perf.sumOfSquares += fedSize*fedSize;
-  ++(pos->second.perf.i2oCount);
-  //if ( ferolHeader->is_last_packet() )
-  ++(pos->second.perf.logicalCount);
+  pos->second.lastEventNumber = eventNumber;
+  
+  if ( ferolHeader->is_last_packet() )
+    ++(pos->second.perf.logicalCount);
 }
 
 
@@ -805,6 +842,8 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
       "Failed to create memory pool for dummy fragments.", e);
   }
 
+  frameSize_ = configuration->frameSize;
+
   fragmentTrackers_.clear();
 
   xdata::Vector<xdata::UnsignedInteger32>::const_iterator it, itEnd;
@@ -841,20 +880,19 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
         it != itEnd; ++it)
   {
     uint32_t remainingFedSize = it->second.startFragment(evbId.eventNumber());
-    const uint32_t frameSize = remainingFedSize+sizeof(I2O_DATA_READY_MESSAGE_FRAME)+sizeof(ferolh_t);
     uint32_t packetNumber = 0;
 
     try
     {
       bufRef = toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fragmentPool_,frameSize);
+        getFrame(fragmentPool_,frameSize_);
     }
     catch(xcept::Exception& e)
     {
       return false;
     }
 
-    bufRef->setDataSize(frameSize);
+    bufRef->setDataSize(frameSize_);
     bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
     I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
       (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -922,11 +960,26 @@ namespace evb
   template<>
   inline uint32_t FragmentChain<I2O_DATA_READY_MESSAGE_FRAME>::calculateSize(toolbox::mem::Reference* bufRef) const
   {
-    const unsigned char* ferolData = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-    const ferolh_t* ferolHeader = (ferolh_t*)ferolData;
-    assert( ferolHeader->signature() == FEROL_SIGNATURE );
+    const unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+    const uint32_t payloadSize = ((I2O_DATA_READY_MESSAGE_FRAME*)payload)->partLength;
+    payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
-    return ferolHeader->data_length();
+    uint32_t fedSize = 0;
+    uint32_t ferolOffset = 0;
+    ferolh_t* ferolHeader;
+
+    do
+    {
+      ferolHeader = (ferolh_t*)(payload + ferolOffset);
+      assert( ferolHeader->signature() == FEROL_SIGNATURE );
+
+      const uint32_t dataLength = ferolHeader->data_length();
+      fedSize += dataLength;
+      ferolOffset += dataLength + sizeof(ferolh_t);
+    }
+    while( !ferolHeader->is_last_packet() && ferolOffset < payloadSize );
+
+    return fedSize;
   }
 
 
