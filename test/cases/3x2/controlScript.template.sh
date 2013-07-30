@@ -76,18 +76,48 @@ sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable
 echo "Sending data for 5 seconds"
 sleep 5
 
+superFragmentSizeEVM=`getParam EVM0_SOAP_HOST_NAME EVM0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+echo "EVM superFragmentSize: $superFragmentSizeEVM"
+if [[ $superFragmentSizeEVM -ne 2048 ]]
+then
+  echo "Test failed: expected 2048"
+  exit 1
+fi
+
+superFragmentSizeRU0=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt`
+echo "RU1 superFragmentSize: $superFragmentSizeRU0"
+if [[ $superFragmentSizeRU0 -ne 16384 ]]
+then
+  echo "Test failed: expected 16384"
+  exit 1
+fi
+
+superFragmentSizeRU1=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt`
+echo "RU1 superFragmentSize: $superFragmentSizeRU1"
+if [[ $superFragmentSizeRU1 -ne 16384 ]]
+then
+  echo "Test failed: expected 16384"
+  exit 1
+fi
+
+eventRateEVM=`getParam EVM0_SOAP_HOST_NAME EVM0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+echo "EVM eventRate: $eventRateEVM"
+if [[ $eventRateEVM -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
-
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
-echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
-
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
   echo "Test failed"
   exit 1
 fi
 
+nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
+echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
 if [[ $nbEventsBuiltBU1 -lt 1000 ]]
 then
   echo "Test failed"
