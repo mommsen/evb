@@ -9,7 +9,7 @@
 #include <iterator>
 #include <map>
 #include <stdint.h>
-#include <string>
+#include <string.h>
 
 #include "evb/Constants.h"
 #include "evb/DumpUtility.h"
@@ -531,6 +531,11 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::configure()
 {
+  if ( configuration_->blockSize % 8 != 0 )
+  {
+    XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits.");
+  }
+
   handler_->configure(configuration_);
 }
 
@@ -692,9 +697,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  I2O_DATA_READY_MESSAGE_FRAME* frame =
-    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   ferolh_t* ferolHeader = (ferolh_t*)payload;
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
   const uint16_t fedId = ferolHeader->fed_id();
@@ -832,7 +835,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
   superFragment.reset( new FragmentChain(evbId) );
 
   toolbox::mem::Reference* bufRef = 0;
-  const uint32_t ferolBlockSize = 4*1024;
+  const uint32_t ferolBlockSize = 4*1024 - sizeof(ferolh_t);
 
   for ( FragmentTrackers::iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
         it != itEnd; ++it)
@@ -916,6 +919,17 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
 
 namespace evb
 {
+  template<>
+  inline uint32_t FragmentChain<I2O_DATA_READY_MESSAGE_FRAME>::calculateSize(toolbox::mem::Reference* bufRef) const
+  {
+    const unsigned char* ferolData = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+    const ferolh_t* ferolHeader = (ferolh_t*)ferolData;
+    assert( ferolHeader->signature() == FEROL_SIGNATURE );
+
+    return ferolHeader->data_length();
+  }
+
+
   template <>
   inline void OneToOneQueue<readoutunit::FragmentChainPtr>::formatter(readoutunit::FragmentChainPtr fragmentChain, std::ostringstream* out)
   {

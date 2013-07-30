@@ -50,7 +50,6 @@ void evb::bu::EventBuilder::configure()
   clear();
 
   superFragmentFIFOs_.clear();
-  eventMaps_.clear();
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -59,9 +58,6 @@ void evb::bu::EventBuilder::configure()
     SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(fifoName.str()) );
     superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
-
-    EventMapPtr eventMap( new EventMap() );
-    eventMaps_.insert( EventMaps::value_type(i,eventMap) );
   }
 
   createProcessingWorkLoops();
@@ -101,12 +97,6 @@ void evb::bu::EventBuilder::clear()
   {
     it->second->clear();
   }
-
-  for (EventMaps::iterator it = eventMaps_.begin(), itEnd = eventMaps_.end();
-       it != itEnd; ++it)
-  {
-    it->second->clear();
-  }
 }
 
 
@@ -140,7 +130,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
 
-  EventMapPtr eventMap = eventMaps_[builderId];
+  EventMapPtr eventMap(new EventMap);
 
   try
   {
@@ -149,10 +139,10 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       if ( superFragmentFIFO->deq(superFragments) )
         buildEvent(superFragments,eventMap);
       else
-        ::usleep(1000);
+        ::usleep(10);
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     processActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
@@ -187,7 +177,7 @@ void evb::bu::EventBuilder::buildEvent
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
     bufRef->setNextReference(0);
 
-    const unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + blockHeaderSize;
+    unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + blockHeaderSize;
     uint32_t remainingBufferSize = bufRef->getDataSize() - blockHeaderSize;
 
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
@@ -195,6 +185,9 @@ void evb::bu::EventBuilder::buildEvent
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
+
+      // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
+      // std::cout << *superFragmentMsg << std::endl;
 
       if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
           payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )
@@ -206,6 +199,7 @@ void evb::bu::EventBuilder::buildEvent
         if ( event->isComplete() )
         {
           // the event is complete
+          event->checkEvent();
           resourceManager_->eventCompleted(event);
 
           if ( configuration_->dropEventData )
@@ -224,9 +218,6 @@ void evb::bu::EventBuilder::buildEvent
 
       payload += superFragmentMsg->partSize;
       remainingBufferSize -= superFragmentMsg->partSize;
-
-      // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
-      // std::cout << *superFragmentMsg << std::endl;
     }
 
     bufRef->release();

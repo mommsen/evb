@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <limits>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sstream>
@@ -6,7 +7,7 @@
 //#include <boost/crc.hpp>
 
 #include "interface/evb/i2oEVBMsgs.h"
-#include "interface/shared/frl_header.h"
+#include "interface/shared/ferol_header.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
 #include "evb/CRC16.h"
@@ -29,7 +30,7 @@ buResourceId_(dataBlockMsg->buResourceId)
   dataBlockMsg->getRUtids(ruTids);
   for (uint32_t i = 0; i < dataBlockMsg->nbRUtids; ++i)
   {
-    ruSizes_.insert(RUsizes::value_type(ruTids[i],0));
+    ruSizes_.insert( RUsizes::value_type(ruTids[i],std::numeric_limits<uint32_t>::max()) );
   }
 }
 
@@ -60,15 +61,20 @@ bool evb::bu::Event::appendSuperFragment
   if ( pos == ruSizes_.end() )
   {
     std::ostringstream oss;
-    oss << "Received a duplicated or unexpected super fragment for event " << eventInfo_->eventNumber;
-    oss << " from RU TID " << ruTid << ".";
+    oss << "Received a duplicated or unexpected super fragment";
+    oss << " from RU TID " << ruTid;
+    oss << " for EvB id " << evbId_;
     oss << " Outstanding messages from RU TIDs:";
     for (RUsizes::const_iterator it = ruSizes_.begin(), itEnd = ruSizes_.end();
          it != itEnd; ++it)
       oss << " " << it->first;
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
-  if ( pos->second == 0 ) pos->second = totalSize;
+  if ( pos->second == std::numeric_limits<uint32_t>::max() )
+  {
+    pos->second = totalSize;
+    eventInfo_->eventSize += totalSize;
+  }
 
   myBufRefs_.push_back(bufRef);
   DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
@@ -132,51 +138,80 @@ void evb::bu::Event::checkEvent()
 
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
   const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
+  uint32_t chunk = dataLocations_.size() - 1;
 
-  uint32_t remainingLength = (*rit)->length;
+  try
+  {
+    uint32_t remainingLength = (*rit)->length;
 
-  do {
-    FedInfo fedInfo;
-    checkFedTrailer((*rit)->location, remainingLength, fedInfo);
+    do {
 
-    uint32_t remainingFedSize = fedInfo.fedSize();
+      FedInfo fedInfo;
+      checkFedTrailer((*rit)->location, remainingLength, fedInfo);
+      uint32_t remainingFedSize = fedInfo.fedSize();
 
-    // now start the odyssee to the fragment header
-    // advance to the data section where we expect the header
-    while ( remainingFedSize > (*rit)->length )
-    {
-      // advance to the next block
-      remainingFedSize -= (*rit)->length;
-      ++rit;
-      if ( rit == ritEnd )
+      // now start the odyssee to the fragment header
+      // advance to the data section where we expect the header
+      while ( remainingFedSize > remainingLength )
       {
-        XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered.");
+        // advance to the next block
+        remainingFedSize -= remainingLength;
+        ++rit;
+        if ( rit == ritEnd )
+        {
+          XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered.");
+        }
+        remainingLength = (*rit)->length;
+        --chunk;
       }
-      remainingLength = (*rit)->length;
-    }
+      remainingLength -= remainingFedSize;
+      //fedInfo.crc = updateCRC(fedLocations_.size()-1, lastFragment);
 
-    remainingLength -= remainingFedSize;
-    //fedInfo.crc = updateCRC(fedLocations_.size()-1, lastFragment);
+      checkFedHeader((*rit)->location, remainingLength, fedInfo);
 
-    checkFedHeader((*rit)->location, remainingLength, fedInfo);
-    if ( !eventInfo_->addFedSize(fedInfo) )
+      if ( !eventInfo_->addFedSize(fedInfo) )
+      {
+        std::stringstream oss;
+
+        oss << "Found a duplicated FED id " << fedInfo.fedId;
+
+        XCEPT_RAISE(exception::SuperFragment, oss.str());
+      }
+
+      if ( remainingLength == 0 )
+      {
+        // the next trailer is in the next data chunk
+        if ( ++rit != ritEnd )
+        {
+          remainingLength = (*rit)->length;
+          --chunk;
+        }
+      }
+
+    } while ( rit != ritEnd );
+  }
+  catch(xcept::Exception& e)
+  {
+    std::stringstream oss;
+
+    oss << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
+    for ( uint32_t i = 0; i < dataLocations_.size(); ++i )
     {
-      std::stringstream oss;
-
-      oss << "Duplicated FED id " << fedInfo.fedId;
-      oss << " found in event " << eventInfo_->eventNumber;
-
-      XCEPT_RAISE(exception::SuperFragment, oss.str());
+      if ( i == chunk )
+      {
+        oss << toolbox::toString("Bad chunk %2d: ", i);
+        oss << std::string(112,'*') << std::endl;
+      }
+      else
+      {
+        oss << toolbox::toString("Chunk %2d : ",i);
+        oss << std::string(115,'-') << std::endl;
+      }
+      DumpUtility::dumpBlockData(oss,dataLocations_[i]->location,dataLocations_[i]->length);
     }
 
-    if ( fedInfo.fedId == 512 /* TRIGGER_FED_ID */ )
-    {
-      // extract L1 information
-    }
-
-    if ( remainingLength == 0 ) ++rit; // the next trailer is in the next data chunk
-
-  } while ( rit != ritEnd );
+    XCEPT_RETHROW(exception::SuperFragment, oss.str(), e);
+  }
 }
 
 
@@ -221,9 +256,10 @@ void evb::bu::Event::checkFedHeader
   {
     std::stringstream oss;
 
-    oss << "Expected FED header of event " << eventInfo_->eventNumber;
+    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
     oss << " but got event id 0x" << std::hex << fedHeader->eventid;
     oss << " and source id 0x" << std::hex << fedHeader->sourceid;
+    oss << " at offset 0x" << std::hex << offset;
 
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
@@ -246,7 +282,6 @@ void evb::bu::Event::checkFedHeader
     std::stringstream oss;
 
     oss << "The FED id " << fedInfo.fedId << " is larger than the maximum " << FED_COUNT;
-    oss << " in event " << eventid;
 
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
@@ -268,9 +303,10 @@ void evb::bu::Event::checkFedTrailer
   {
     std::stringstream oss;
 
-    oss << "Expected FED trailer for event " << eventInfo_->eventNumber;
+    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
     oss << " but got event size 0x" << std::hex << fedInfo.trailer->eventsize;
     oss << " and conscheck 0x" << std::hex << fedInfo.trailer->conscheck;
+    oss << " at postion 0x" << std::hex << offset-sizeof(fedt_t);
 
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
@@ -295,8 +331,7 @@ void evb::bu::Event::checkCRC
   {
     std::stringstream oss;
 
-    oss << "Wrong CRC checksum in FED trailer of event " << eventNumber;
-    oss << " for FED " << fedInfo.fedId;
+    oss << "Wrong CRC checksum in FED trailer for FED " << fedInfo.fedId;
     oss << ": found 0x" << std::hex << trailerCRC;
     oss << ", but calculated 0x" << std::hex << fedInfo.crc;
 
@@ -320,8 +355,6 @@ eventSize(0)
 {
   for (uint16_t i=0; i<FED_COUNT; ++i)
     fedSizes[i] = 0;
-
-  updatePaddingSize();
 }
 
 
@@ -333,17 +366,16 @@ bool evb::bu::Event::EventInfo::addFedSize(const FedInfo& fedInfo)
   const uint32_t fedSize = fedInfo.fedSize();
   fedSizes[fedInfo.fedId] = fedSize;
 
-  updatePaddingSize();
-
   return true;
 }
 
 
 inline
-void evb::bu::Event::EventInfo::updatePaddingSize()
+size_t evb::bu::Event::EventInfo::getBufferSize()
 {
   const size_t pageSize = sysconf(_SC_PAGE_SIZE);
   paddingSize = pageSize - (headerSize + eventSize) % pageSize;
+  return ( headerSize + eventSize + paddingSize );
 }
 
 

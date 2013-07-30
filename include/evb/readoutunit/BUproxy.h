@@ -19,6 +19,8 @@
 #include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
+#include "interface/shared/fed_header.h"
+#include "interface/shared/fed_trailer.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "toolbox/lang/Class.h"
@@ -307,7 +309,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
       }
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     processActive_ = false;
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
@@ -327,7 +329,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 )
 {
   uint32_t blockNb = 1;
-  uint32_t superFragmentNb = 1;
   const uint16_t nbSuperFragments = superFragments.size();
   assert( nbSuperFragments == fragmentRequest->evbIds.size() );
   const uint16_t nbRUtids = fragmentRequest->ruTids.size();
@@ -338,6 +339,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid)
     + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignement
+
+  // std::cout << "***** " << sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) << "\t" << nbSuperFragments * sizeof(EvBid) << "\t" <<
+  //   ((nbRUtids+1)&~1) << "\t" << ((nbRUtids+1)&~1) * sizeof(I2O_TID) << std::endl;
+
+  assert( blockHeaderSize % 8 == 0 );
   assert( blockHeaderSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
@@ -348,24 +354,28 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     const uint32_t superFragmentSize = superFragment->getSize();
     uint32_t remainingSuperFragmentSize = superFragmentSize;
 
-    if ( remainingPayloadSize > sizeof(msg::SuperFragment) )
-      fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,superFragmentSize,remainingSuperFragmentSize);
-    else
-      remainingPayloadSize = 0;
+    fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
 
     toolbox::mem::Reference* currentFragment = superFragment->head();
 
     while ( currentFragment )
     {
-      uint32_t currentFragmentSize =
-        ((I2O_DATA_READY_MESSAGE_FRAME*)currentFragment->getDataLocation())->totalLength;
-      uint32_t copiedSize = 0;
+      const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
+        + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+
+      const ferolh_t* ferolHeader = (ferolh_t*)ferolData;
+      assert( ferolHeader->signature() == FEROL_SIGNATURE );
+
+      const fedh_t* fedHeader = (fedh_t*)(ferolData + sizeof(ferolh_t));
+      assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
+
+      uint32_t currentFragmentSize = ferolHeader->data_length();
+      uint32_t copiedSize = sizeof(ferolh_t); // skip the ferol header
 
       while ( currentFragmentSize > remainingPayloadSize )
       {
         // fill the remaining block
-        memcpy(payload, (char*)currentFragment->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + copiedSize,
-          remainingPayloadSize);
+        memcpy(payload, ferolData + copiedSize, remainingPayloadSize);
         copiedSize += remainingPayloadSize;
         currentFragmentSize -= remainingPayloadSize;
         remainingSuperFragmentSize -= remainingPayloadSize;
@@ -374,17 +384,19 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
         payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
         remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
-        fillSuperFragmentHeader(payload,remainingPayloadSize,superFragmentNb,superFragmentSize,remainingSuperFragmentSize);
+        fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
         tail->setNextReference(nextBlock);
         tail = nextBlock;
       }
 
       // fill the remaining fragment into the block
-      memcpy(payload, (char*)currentFragment->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + copiedSize,
-        currentFragmentSize);
+      memcpy(payload, ferolData + copiedSize, currentFragmentSize);
       payload += currentFragmentSize;
       remainingPayloadSize -= currentFragmentSize;
       remainingSuperFragmentSize -= currentFragmentSize;
+
+      const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
+      assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
 
       currentFragment = currentFragment->getNextReference();
     }
@@ -396,7 +408,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   {
     bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest->buTid);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     std::stringstream oss;
 
@@ -463,7 +475,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
           //bu
         );
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       std::stringstream oss;
 
@@ -515,6 +527,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   const uint32_t currentFragmentSize
 ) const
 {
+  assert( remainingPayloadSize >= sizeof(msg::SuperFragment) );
+
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
 
   payload += sizeof(msg::SuperFragment);
@@ -522,6 +536,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 
   superFragmentMsg->superFragmentNb = superFragmentNb;
   superFragmentMsg->totalSize = superFragmentSize;
+
   superFragmentMsg->partSize = currentFragmentSize > remainingPayloadSize ? remainingPayloadSize : currentFragmentSize;
 }
 
@@ -540,7 +555,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
     tid_ = i2o::utils::getAddressMap()->
       getTid(readoutUnit_->getApplicationDescriptor());
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);

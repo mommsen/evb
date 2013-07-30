@@ -91,11 +91,8 @@ namespace evb {
 
     private:
 
-      // Lookup table of events, indexed by evb id
       typedef std::map<EvBid,EventPtr> EventMap;
       typedef boost::shared_ptr<EventMap> EventMapPtr;
-      typedef std::map<uint16_t,EventMapPtr> EventMaps;
-      EventMaps eventMaps_;
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);

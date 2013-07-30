@@ -69,13 +69,12 @@ void evb::DumpUtility::dumpBlockData
     // avoid to write beyond the buffer:
     if (ic + 2 >= len)
     {
-      s << toolbox::toString("%04d %08x %08x", ic*4, d[ic+1], d[ic]);
+      s << toolbox::toString("%08x : %08x %08x %12s         |    human readable swapped : %08x %08x %12s      : %08x", ic*4, d[ic], d[ic+1], "", d[ic+1], d[ic], "", ic*4);
       s << std::endl;
     }
     else
     {
-      s << toolbox::toString("%04d %08x %08x %08x %08x",
-        ic*4, d[ic+1], d[ic], d[ic+3], d[ic+2]);
+      s << toolbox::toString("%08x : %08x %08x %08x %08x    |    human readable swapped : %08x %08x %08x %08x : %08x", ic*4, d[ic], d[ic+1], d[ic+2], d[ic+3],  d[ic+1], d[ic], d[ic+3], d[ic+2], ic*4);
       s << std::endl;
     }
   }

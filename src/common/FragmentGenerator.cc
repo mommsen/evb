@@ -152,7 +152,7 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
 
   uint32_t usedFrameSize = 0;
   uint32_t remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
-  const uint32_t ferolBlockSize = 4*1024;
+  const uint32_t ferolBlockSize = 4*1024 - sizeof(ferolh_t);
 
   while ( (usedFrameSize + remainingFedSize + sizeof(ferolh_t)) <= bufRef->getBuffer()->getSize() )
   {
