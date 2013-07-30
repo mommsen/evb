@@ -40,7 +40,7 @@ namespace evb {
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
         maxEvtsUnderConstruction(64),
-        eventsPerRequest(1),
+        eventsPerRequest(8),
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
         numberOfBuilders(3),
