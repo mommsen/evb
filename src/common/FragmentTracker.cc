@@ -19,20 +19,13 @@ evb::FragmentTracker::FragmentTracker
 ) :
 fedId_(fedId),
 fedSize_(fedSize),
-logNormalGen_(0),
 fedCRC_(0),
 typeOfNextComponent_(FED_HEADER)
 {
   if (fedSizeStdDev > 0)
   {
-    logNormalGen_ = new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev);
+    logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev) );
   }
-}
-
-
-evb::FragmentTracker::~FragmentTracker()
-{
-  if (logNormalGen_) delete logNormalGen_;
 }
 
 

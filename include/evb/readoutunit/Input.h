@@ -231,7 +231,7 @@ namespace evb {
       private:
 
         Input<Configuration>* input_;
-        typedef std::map<uint16_t,FragmentTracker> FragmentTrackers;
+        typedef std::map<uint16_t,FragmentTrackerPtr> FragmentTrackers;
         FragmentTrackers fragmentTrackers_;
         toolbox::mem::Pool* fragmentPool_;
       };
@@ -820,8 +820,8 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 
-    fragmentTrackers_.insert(FragmentTrackers::value_type(fedId,
-        FragmentTracker(fedId,configuration->dummyFedSize.value_,configuration->dummyFedSizeStdDev.value_)));
+    FragmentTrackerPtr fragmentTracker( new FragmentTracker(fedId,configuration->dummyFedSize.value_,configuration->dummyFedSizeStdDev.value_) );
+    fragmentTrackers_.insert( FragmentTrackers::value_type(fedId,fragmentTracker) );
   }
 }
 
@@ -837,7 +837,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
   for ( FragmentTrackers::iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
         it != itEnd; ++it)
   {
-    uint32_t remainingFedSize = it->second.startFragment(evbId.eventNumber());
+    uint32_t remainingFedSize = it->second->startFragment(evbId.eventNumber());
     const uint32_t frameSize = remainingFedSize+sizeof(I2O_DATA_READY_MESSAGE_FRAME)+sizeof(ferolh_t);
     uint32_t packetNumber = 0;
 
@@ -887,7 +887,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       remainingFedSize -= length;
       frame += sizeof(ferolh_t);
 
-      const size_t filledBytes = it->second.fillData(frame, length);
+      const size_t filledBytes = it->second->fillData(frame, length);
 
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(it->first);
