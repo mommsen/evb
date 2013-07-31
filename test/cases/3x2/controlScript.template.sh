@@ -116,11 +116,27 @@ then
   exit 1
 fi
 
+eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+echo "BU0 eventSize: $eventSizeBU0"
+if [[ $eventSizeBU0 -ne 34816 ]]
+then
+  echo "Test failed: expected 34816"
+  exit 1
+fi
+
 nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
 if [[ $nbEventsBuiltBU1 -lt 1000 ]]
 then
   echo "Test failed"
+  exit 1
+fi
+
+eventSizeBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 eventSize xsd:unsignedInt`
+echo "BU1 eventSize: $eventSizeBU1"
+if [[ $eventSizeBU1 -ne 34816 ]]
+then
+  echo "Test failed: expected 34816"
   exit 1
 fi
 

@@ -86,5 +86,13 @@ then
   exit 1
 fi
 
+eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+echo "BU0 eventSize: $eventSizeBU0"
+if [[ $eventSizeBU0 -ne 28672 ]]
+then
+  echo "Test failed: expected 28672"
+  exit 1
+fi
+
 echo "Test launched successfully"
 exit 0
