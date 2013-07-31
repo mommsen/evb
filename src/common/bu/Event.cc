@@ -76,6 +76,8 @@ bool evb::bu::Event::appendSuperFragment
     eventInfo_->eventSize += totalSize;
   }
 
+  if (partSize == 0) return false;
+
   myBufRefs_.push_back(bufRef);
   DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
   dataLocations_.push_back(dataLocation);

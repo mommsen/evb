@@ -4,6 +4,9 @@
 #include <ostream>
 #include <stdint.h>
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+
 #include "toolbox/math/random.h"
 
 
@@ -22,8 +25,6 @@ namespace evb {
       const uint32_t fedSize,
       const uint32_t fedSizeStdDev
     );
-
-    ~FragmentTracker();
 
     /**
      * Starts a new FED fragment with the specified event number.
@@ -56,13 +57,15 @@ namespace evb {
 
     const uint32_t fedId_;
     const uint32_t fedSize_;
-    toolbox::math::LogNormalGen* logNormalGen_;
+    boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
     uint16_t fedCRC_;
     FedComponent typeOfNextComponent_;
     uint32_t currentFedSize_;
     uint32_t remainingFedSize_;
     uint32_t eventNumber_;
   };
+
+  typedef boost::shared_ptr<FragmentTracker> FragmentTrackerPtr;
 
 } // namespace evb
 
