@@ -39,11 +39,13 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   InfoSpaceItems& appInfoSpaceParams
 )
 {
+  eventSize_ = 0;
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
   nbEvtsCorrupted_ = 0;
   nbFilesWritten_ = 0;
 
+  appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEvtsCorrupted", &nbEvtsCorrupted_, InfoSpaceItems::retrieve);
@@ -74,7 +76,18 @@ void evb::BU::do_updateMonitoringInfo()
 
 void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
 {
-  if (item == "nbEventsInBU")
+  if (item == "eventSize")
+  {
+    try
+    {
+      eventSize_.setValue( *(monitoringInfoSpace_->find("eventSize")) );
+    }
+    catch(xdata::exception::Exception& e)
+    {
+      eventSize_ = 0;
+    }
+  }
+  else if (item == "nbEventsInBU")
   {
     try
     {

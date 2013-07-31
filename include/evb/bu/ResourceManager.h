@@ -134,10 +134,10 @@ namespace evb {
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;
-      xdata::Double rate_;
-      xdata::Double bandwidth_;
-      xdata::Double eventSize_;
-      xdata::Double eventSizeStdDev_;
+      xdata::UnsignedInteger32 rate_;
+      xdata::UnsignedInteger32 bandwidth_;
+      xdata::UnsignedInteger32 eventSize_;
+      xdata::UnsignedInteger32 eventSizeStdDev_;
 
     };
 
