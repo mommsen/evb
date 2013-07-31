@@ -1,8 +1,11 @@
 #ifndef _evb_bu_configuration_h_
 #define _evb_bu_configuration_h_
 
+#include <stdint.h>
+
 #include <boost/shared_ptr.hpp>
 
+#include "evb/InfoSpaceItems.h"
 #include "xdata/Boolean.h"
 #include "xdata/Double.h"
 #include "xdata/String.h"
