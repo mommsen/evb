@@ -887,7 +887,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
   {
     const uint32_t fedSize = it->second.startFragment(evbId.eventNumber());
     const uint16_t ferolBlocks = ceil( static_cast<double>(fedSize) / ferolPayloadSize );
-    const uint16_t frameCount = (ferolBlocks*FEROL_BLOCK_SIZE) / frameSize_;
+    const uint16_t frameCount = ceil( static_cast<double>(ferolBlocks*FEROL_BLOCK_SIZE) / frameSize_ );
     uint32_t packetNumber = 0;
     uint32_t remainingFedSize = fedSize;
 
