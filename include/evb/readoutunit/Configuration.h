@@ -32,6 +32,8 @@ namespace evb {
       xdata::String playbackDataFile;
       xdata::UnsignedInteger32 dummyFedSize;
       xdata::UnsignedInteger32 dummyFedSizeStdDev;
+      xdata::UnsignedInteger32 dummyFedSizeMin;
+      xdata::UnsignedInteger32 dummyFedSizeMax;
       xdata::UnsignedInteger32 fragmentPoolSize;
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
       xdata::UnsignedInteger32 maxTriggerAgeMSec;
@@ -48,6 +50,8 @@ namespace evb {
         playbackDataFile(""),
         dummyFedSize(2048),
         dummyFedSizeStdDev(0),
+        dummyFedSizeMin(8), // minimum is 8 Bytes
+        dummyFedSizeMax(0), // no limitation
         fragmentPoolSize(1638400),
         maxTriggerAgeMSec(1000)
       {};
@@ -74,6 +78,8 @@ namespace evb {
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSize", &dummyFedSize);
         params.add("dummyFedSizeStdDev", &dummyFedSizeStdDev);
+        params.add("dummyFedSizeMin", &dummyFedSizeMin);
+        params.add("dummyFedSizeMax", &dummyFedSizeMax);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);

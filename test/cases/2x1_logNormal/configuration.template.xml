@@ -37,6 +37,8 @@
         </fedSourceIds>
         <dummyFedSize xsi:type="xsd:unsignedInt">2048</dummyFedSize>
         <dummyFedSizeStdDev xsi:type="xsd:unsignedInt">1024</dummyFedSizeStdDev>
+        <dummyFedSizeMin xsi:type="xsd:unsignedInt">512</dummyFedSizeMin>
+        <dummyFedSizeMax xsi:type="xsd:unsignedInt">2048</dummyFedSizeMax>
       </properties>
     </xc:Application>
 
