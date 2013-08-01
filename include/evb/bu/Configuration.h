@@ -29,7 +29,6 @@ namespace evb {
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;
       xdata::Boolean dropEventData;
       xdata::UnsignedInteger32 numberOfBuilders;
-      xdata::UnsignedInteger32 numberOfWriters;
       xdata::String rawDataDir;
       xdata::String metaDataDir;
       xdata::Double rawDataHighWaterMark;
@@ -37,8 +36,6 @@ namespace evb {
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
       xdata::UnsignedInteger32 maxEventsPerFile;
-      xdata::UnsignedInteger32 eolsFIFOCapacity;
-      xdata::Boolean tolerateCorruptedEvents;
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
@@ -47,16 +44,13 @@ namespace evb {
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
         numberOfBuilders(3),
-        numberOfWriters(8),
-        rawDataDir("/tmp/raw"),
-        metaDataDir("/tmp/meta"),
+        rawDataDir("/tmp/fff"),
+        metaDataDir("/tmp/fff"),
         rawDataHighWaterMark(0.7),
         rawDataLowWaterMark(0.5),
         metaDataHighWaterMark(0.9),
         metaDataLowWaterMark(0.5),
-        maxEventsPerFile(2000),
-        eolsFIFOCapacity(1028),
-        tolerateCorruptedEvents(false)
+        maxEventsPerFile(2000)
       {};
 
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
@@ -67,7 +61,6 @@ namespace evb {
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);
         params.add("numberOfBuilders", &numberOfBuilders);
-        params.add("numberOfWriters", &numberOfWriters);
         params.add("rawDataDir", &rawDataDir);
         params.add("metaDataDir", &metaDataDir);
         params.add("rawDataHighWaterMark", &rawDataHighWaterMark);
@@ -75,8 +68,6 @@ namespace evb {
         params.add("metaDataHighWaterMark", &metaDataHighWaterMark);
         params.add("metaDataLowWaterMark", &metaDataLowWaterMark);
         params.add("maxEventsPerFile", &maxEventsPerFile);
-        params.add("eolsFIFOCapacity", &eolsFIFOCapacity);
-        params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
       }
     };
 

@@ -11,6 +11,7 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/PerformanceMonitor.h"
 #include "evb/bu/Event.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xgi/Output.h"

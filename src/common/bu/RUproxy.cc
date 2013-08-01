@@ -132,6 +132,8 @@ void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
   while (requestFragmentsActive_) ::usleep(1000);
+
+  while ( ! dataBlockMap_.empty() ) ::usleep(1000);
 }
 
 
@@ -170,7 +172,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
     uint32_t buResourceId;
     const uint32_t msgSize = sizeof(msg::ReadoutMsg)+sizeof(I2O_TID);
 
-    while ( doProcessing_ && resourceManager_->getResourceId(buResourceId) )
+    while ( resourceManager_->getResourceId(buResourceId) )
     {
       toolbox::mem::Reference* rqstBufRef =
         toolbox::mem::getMemoryPoolFactory()->

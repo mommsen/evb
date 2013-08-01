@@ -25,8 +25,7 @@ ruProxy_(ruProxy),
 diskWriter_(diskWriter),
 resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
-doProcessing_(false),
-processActive_(false)
+doProcessing_(false)
 {
   builderAction_ =
     toolbox::task::bind(this, &evb::bu::EventBuilder::process,
@@ -51,6 +50,9 @@ void evb::bu::EventBuilder::configure()
 
   superFragmentFIFOs_.clear();
 
+  processesActive_.clear();
+  processesActive_.reserve(configuration_->numberOfBuilders);
+
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
     std::ostringstream fifoName;
@@ -58,6 +60,8 @@ void evb::bu::EventBuilder::configure()
     SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(fifoName.str()) );
     superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
+
+    processesActive_[i] = false;
   }
 
   createProcessingWorkLoops();
@@ -91,7 +95,6 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
 
 void evb::bu::EventBuilder::clear()
 {
-  FragmentChainPtr superFragments;
   for (SuperFragmentFIFOs::iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
   {
@@ -113,51 +116,66 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 
 void evb::bu::EventBuilder::stopProcessing()
 {
+  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    while ( ! it->second->empty() ) ::usleep(1000);
+  }
+
   doProcessing_ = false;
-  while (processActive_) ::usleep(1000);
+
+  for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
+  {
+    while ( processesActive_[i] ) ::usleep(1000);
+  }
 }
 
 
 bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 {
-  processActive_ = true;
-
   const std::string wlName =  wl->getName();
   const size_t startPos = wlName.find_last_of("_") + 1;
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
+
+  processesActive_[builderId] = true;
 
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
 
   EventMapPtr eventMap(new EventMap);
 
+  StreamHandlerPtr streamHandler;
+  if ( ! configuration_->dropEventData )
+    streamHandler = diskWriter_->getStreamHandler(builderId);
+
   try
   {
     while ( doProcessing_ )
     {
       if ( superFragmentFIFO->deq(superFragments) )
-        buildEvent(superFragments,eventMap);
+        buildEvent(superFragments,eventMap,streamHandler);
       else
         ::usleep(10);
     }
   }
   catch(xcept::Exception& e)
   {
-    processActive_ = false;
+    processesActive_[builderId] = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }
 
-  processActive_ = false;
+  processesActive_[builderId] = false;
 
-  return doProcessing_;
+  return false;
 }
 
 
 void evb::bu::EventBuilder::buildEvent
 (
   FragmentChainPtr& superFragments,
-  EventMapPtr& eventMap
+  EventMapPtr& eventMap,
+  StreamHandlerPtr& streamHandler
 )
 {
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
@@ -202,11 +220,10 @@ void evb::bu::EventBuilder::buildEvent
           event->checkEvent();
           resourceManager_->eventCompleted(event);
 
-          if ( configuration_->dropEventData )
-            resourceManager_->discardEvent(event);
-          else
-            diskWriter_->writeEvent(event);
+          if ( ! configuration_->dropEventData )
+            streamHandler->writeEvent(event);
 
+          resourceManager_->discardEvent(event);
           eventMap->erase(eventPos++);
         }
 
