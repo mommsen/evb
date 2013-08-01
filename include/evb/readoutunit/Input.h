@@ -868,7 +868,10 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 
-    FragmentTrackerPtr fragmentTracker( new FragmentTracker(fedId,configuration->dummyFedSize.value_,configuration->dummyFedSizeStdDev.value_) );
+    FragmentTrackerPtr fragmentTracker(
+      new FragmentTracker(fedId,configuration->dummyFedSize,configuration->dummyFedSizeStdDev,
+        configuration->dummyFedSizeMin,configuration->dummyFedSizeMax)
+    );
     fragmentTrackers_.insert( FragmentTrackers::value_type(fedId,fragmentTracker) );
   }
 }

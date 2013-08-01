@@ -25,6 +25,8 @@ namespace evb {
         xdata::UnsignedInteger32 fedId;
         xdata::UnsignedInteger32 fedSize;
         xdata::UnsignedInteger32 fedSizeStdDev;
+        xdata::UnsignedInteger32 minFedSize;
+        xdata::UnsignedInteger32 maxFedSize;
         xdata::Boolean usePlayback;
         xdata::String playbackDataFile;
         xdata::UnsignedInteger32 frameSize;
@@ -34,6 +36,8 @@ namespace evb {
         : destinationClass("evb::RU"),
           fedSize(2048),
           fedSizeStdDev(0),
+          minFedSize(8), // minimum is 8 Bytes
+          maxFedSize(0), // no limitiation
           usePlayback(false),
           playbackDataFile(""),
           frameSize(0x40000),
@@ -50,6 +54,8 @@ namespace evb {
           params.add("fedId", &fedId);
           params.add("fedSize", &fedSize);
           params.add("fedSizeStdDev", &fedSizeStdDev);
+          params.add("minFedSize", &minFedSize);
+          params.add("maxFedSize", &maxFedSize);
           params.add("usePlayback", &usePlayback);
           params.add("playbackDataFile", &playbackDataFile);
           params.add("frameSize", &frameSize);

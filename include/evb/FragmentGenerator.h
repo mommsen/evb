@@ -46,6 +46,8 @@ namespace evb {
       const uint32_t frameSize,
       const uint32_t fedSize,
       const uint32_t fedSizeStdDev,
+      const uint32_t minFedSize,
+      const uint32_t maxFedSize,
       const size_t fragmentPoolSize
     );
 

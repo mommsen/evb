@@ -15,10 +15,14 @@ evb::FragmentTracker::FragmentTracker
 (
   const uint32_t fedId,
   const uint32_t fedSize,
-  const uint32_t fedSizeStdDev
+  const uint32_t fedSizeStdDev,
+  const uint32_t minFedSize,
+  const uint32_t maxFedSize
 ) :
 fedId_(fedId),
 fedSize_(fedSize),
+minFedSize_(minFedSize),
+maxFedSize_(maxFedSize),
 fedCRC_(0),
 typeOfNextComponent_(FED_HEADER)
 {
@@ -51,10 +55,13 @@ uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
 
 uint32_t evb::FragmentTracker::getFedSize()
 {
+  uint32_t fedSize = fedSize_;
   if ( logNormalGen_ )
-    return std::max(logNormalGen_->getRawRandomSize() & ~0x7,8UL);
-  else
-    return fedSize_;
+  {
+    fedSize = std::max((uint32_t)logNormalGen_->getRawRandomSize(), minFedSize_);
+    if ( maxFedSize_ > 0 && fedSize > maxFedSize_ ) fedSize = maxFedSize_;
+  }
+  return fedSize & ~0x7;
 }
 
 
