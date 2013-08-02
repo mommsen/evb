@@ -169,7 +169,7 @@ then
     exit 1
 fi
 
-if [[ ! -s $testDir/BU-000/run$runNumber/EoLS_0000.jsn ]]
+if [[ ! -s $testDir/BU-000/run$runNumber/EoLS_0001.jsn ]]
 then
     echo "Test failed: $testDir/BU-000/run$runNumber/EoLS_0000.jsn does not exist"
     exit 1

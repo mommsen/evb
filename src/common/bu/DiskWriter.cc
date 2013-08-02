@@ -103,14 +103,10 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
   LumiMonitors::const_reverse_iterator rit = lumiMonitors_.rbegin();
   const LumiMonitors::const_reverse_iterator ritEnd = lumiMonitors_.rend();
 
-  for (LumiMonitors::const_iterator it = lumiMonitors_.begin(); it != lumiMonitors_.end(); ++it)
-    std::cout << (*it)->updates << "\t" << (*it)->lumiSection << std::endl;
-
   while ( rit != ritEnd && (*rit)->updates != streamCount ) ++rit;
 
-  while( rit != ritEnd)
+  while ( rit != ritEnd )
   {
-    std::cout << (*rit)->updates << "\t" << (*rit)->lumiSection << std::endl;
     writeEoLS( (*rit)->lumiSection, (*rit)->nbFiles, (*rit)->nbEventsWritten );
     lumiMonitors_.erase( (++rit).base() );
   }

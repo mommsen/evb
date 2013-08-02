@@ -28,7 +28,6 @@ runMetaDataDir_(runMetaDataDir),
 maxEventsPerFile_(configuration->maxEventsPerFile),
 numberOfBuilders_(configuration->numberOfBuilders),
 index_(builderId),
-currentLumiMonitor_(new LumiMonitor(0)),
 lumiMonitorFIFO_("lumiMonitorFIFO")
 {
   lumiMonitorFIFO_.resize(configuration->lumiMonitorFIFOCapacity);
@@ -45,7 +44,8 @@ void evb::bu::StreamHandler::close()
 {
   fileHandler_.reset();
 
-  while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
+  if ( currentLumiMonitor_.get() )
+    while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
 }
 
 
@@ -53,7 +53,11 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
   const uint32_t lumiSection = event->lumiSection();
 
-  if ( lumiSection > currentLumiMonitor_->lumiSection )
+  if ( ! currentLumiMonitor_.get() )
+  {
+    currentLumiMonitor_.reset( new LumiMonitor(lumiSection) );
+  }
+  else if ( lumiSection > currentLumiMonitor_->lumiSection )
   {
     closeLumiSection(lumiSection);
     index_ = builderId_;
