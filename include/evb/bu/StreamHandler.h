@@ -2,13 +2,15 @@
 #define _evb_bu_StreamHandler_h_
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <stdint.h>
 
+#include "evb/OneToOneQueue.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
+#include "evb/bu/LumiMonitor.h"
 
 
 namespace evb {
@@ -46,10 +48,16 @@ namespace evb {
        */
       void close();
 
+      /**
+       * Get the next available lumi monitor.
+       * Return false if no lumi monitor is available
+       */
+      bool getLumiMonitor(LumiMonitorPtr&);
+
 
     private:
 
-      void closeLumiSection();
+      void closeLumiSection(const uint32_t lumiSection);
 
       const uint32_t buInstance_;
       const uint32_t builderId_;
@@ -60,10 +68,13 @@ namespace evb {
       const uint32_t maxEventsPerFile_;
       const uint32_t numberOfBuilders_;
 
-      uint32_t currentLumiSection_;
       uint32_t index_;
 
       FileHandlerPtr fileHandler_;
+
+      LumiMonitorPtr currentLumiMonitor_;
+      typedef OneToOneQueue<LumiMonitorPtr> LumiMonitorFIFO;
+      LumiMonitorFIFO lumiMonitorFIFO_;
 
     };
 

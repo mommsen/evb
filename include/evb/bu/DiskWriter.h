@@ -92,8 +92,16 @@ namespace evb {
 
     private:
 
-      void writeJSON();
-      void defineJSON(const boost::filesystem::path&) const;
+      void gatherLumiStatistics();
+      void writeEoLS
+      (
+        const uint32_t lumiSection,
+        const uint32_t fileCount,
+        const uint32_t eventCount
+      ) const;
+      void writeEoR() const;
+      void defineEoLSjson();
+      void defineEoRjson();
 
       BU* bu_;
       const ConfigurationPtr configuration_;
@@ -105,9 +113,14 @@ namespace evb {
       boost::filesystem::path buMetaDataDir_;
       boost::filesystem::path runRawDataDir_;
       boost::filesystem::path runMetaDataDir_;
+      boost::filesystem::path eolsDefFile_;
+      boost::filesystem::path eorDefFile_;
 
       typedef std::map<uint16_t,StreamHandlerPtr > StreamHandlers;
       StreamHandlers streamHandlers_;
+
+      typedef std::set<LumiMonitorPtr> LumiMonitors;
+      LumiMonitors lumiMonitors_;
 
       struct DiskWriterMonitoring
       {
@@ -116,7 +129,6 @@ namespace evb {
         uint32_t nbLumiSections;
         uint32_t lastEventNumberWritten;
         uint32_t currentLumiSection;
-        uint32_t lastEoLS;
       } diskWriterMonitoring_;
       boost::mutex diskWriterMonitoringMutex_;
 

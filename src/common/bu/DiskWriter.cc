@@ -42,6 +42,9 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     );
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
+
+  defineEoLSjson();
+  defineEoRjson();
 }
 
 
@@ -54,66 +57,63 @@ void evb::bu::DiskWriter::stopProcessing()
   {
     it->second->close();
   }
-  streamHandlers_.clear();
 
-  writeJSON();
+  {
+    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+    gatherLumiStatistics();
+    writeEoR();
+  }
+
+  streamHandlers_.clear();
 
   removeDir(runRawDataDir_);
 }
 
 
-void evb::bu::DiskWriter::writeJSON()
+void evb::bu::DiskWriter::gatherLumiStatistics()
 {
-  const boost::filesystem::path jsonDefFile = runMetaDataDir_ / "EoR.jsd";
-  defineJSON(jsonDefFile);
+  LumiMonitorPtr lumiMonitor;
+  std::pair<LumiMonitors::iterator,bool> result;
 
-  std::ostringstream fileNameStream;
-  fileNameStream
-    << "EoR_" << std::setfill('0') << std::setw(8) << runNumber_ << ".jsn";
-  const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
-
-  if ( boost::filesystem::exists(jsonFile) )
+  for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
+       it != itEnd; ++it)
   {
-    std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists.";
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    while ( it->second->getLumiMonitor(lumiMonitor) )
+    {
+      result = lumiMonitors_.insert(lumiMonitor);
+
+      if ( result.second == true) // a new lumisection
+        ++diskWriterMonitoring_.nbLumiSections;
+      else
+        *(*result.first) += *lumiMonitor; // add values and see the stars
+
+      diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
+      diskWriterMonitoring_.nbEventsWritten += lumiMonitor->nbEventsWritten;
+      if ( diskWriterMonitoring_.lastEventNumberWritten < lumiMonitor->lastEventNumberWritten )
+        diskWriterMonitoring_.lastEventNumberWritten = lumiMonitor->lastEventNumberWritten;
+      if ( diskWriterMonitoring_.currentLumiSection < lumiMonitor->lumiSection )
+        diskWriterMonitoring_.currentLumiSection = lumiMonitor->lumiSection;
+    }
   }
 
-  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  // Find the highest lumi section where all streams reported the EoLS
+  LumiMonitors::iterator lastCompleteMonitor = lumiMonitors_.end();
+  const uint32_t streamCount = streamHandlers_.size();
 
-  std::ofstream json(jsonFile.string().c_str());
-  json << "{"                                                                           << std::endl;
-  json << "   \"Data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
-                                   << diskWriterMonitoring_.nbFiles         << "\", \""
-                                   << diskWriterMonitoring_.nbLumiSections  << "\" ],"  << std::endl;
-  json << "   \"Definition\" : \"" << jsonDefFile.string()  << "\","                    << std::endl;
-  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
-  json << "}"                                                                           << std::endl;
-  json.close();
-}
+  LumiMonitors::const_reverse_iterator rit = lumiMonitors_.rbegin();
+  const LumiMonitors::const_reverse_iterator ritEnd = lumiMonitors_.rend();
 
+  for (LumiMonitors::const_iterator it = lumiMonitors_.begin(); it != lumiMonitors_.end(); ++it)
+    std::cout << (*it)->updates << "\t" << (*it)->lumiSection << std::endl;
 
-void evb::bu::DiskWriter::defineJSON(const boost::filesystem::path& jsonDefFile) const
-{
-  std::ofstream json(jsonDefFile.string().c_str());
-  json << "{"                                                 << std::endl;
-  json << "   \"legend\" : ["                                 << std::endl;
-  json << "      {"                                           << std::endl;
-  json << "         \"name\" : \"NEvents\","                  << std::endl;
-  json << "         \"operation\" : \"sum\""                  << std::endl;
-  json << "      },"                                          << std::endl;
-  json << "      {"                                           << std::endl;
-  json << "         \"name\" : \"NFiles\","                   << std::endl;
-  json << "         \"operation\" : \"sum\""                  << std::endl;
-  json << "      },"                                          << std::endl;
-  json << "      {"                                           << std::endl;
-  json << "         \"name\" : \"NLumis\","                   << std::endl;
-  json << "         \"operation\" : \"sum\""                  << std::endl;
-  json << "      }"                                           << std::endl;
-  json << "   ],"                                             << std::endl;
-  json << "   \"file\" : \"" << jsonDefFile.string() << "\""  << std::endl;
-  json << "}"                                                 << std::endl;
-  json.close();
+  while ( rit != ritEnd && (*rit)->updates != streamCount ) ++rit;
+
+  while( rit != ritEnd)
+  {
+    std::cout << (*rit)->updates << "\t" << (*rit)->lumiSection << std::endl;
+    writeEoLS( (*rit)->lumiSection, (*rit)->nbFiles, (*rit)->nbEventsWritten );
+    lumiMonitors_.erase( (++rit).base() );
+  }
 }
 
 
@@ -131,6 +131,8 @@ void evb::bu::DiskWriter::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
+  gatherLumiStatistics();
+
   nbEvtsWritten_ = diskWriterMonitoring_.nbEventsWritten;
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
 }
@@ -145,7 +147,6 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
   diskWriterMonitoring_.nbLumiSections = 0;
   diskWriterMonitoring_.lastEventNumberWritten = 0;
   diskWriterMonitoring_.currentLumiSection = 0;
-  diskWriterMonitoring_.lastEoLS = 0;
 }
 
 
@@ -171,7 +172,10 @@ void evb::bu::DiskWriter::configure()
 
 
 void evb::bu::DiskWriter::clear()
-{}
+{
+  streamHandlers_.clear();
+  lumiMonitors_.clear();
+}
 
 
 void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path)
@@ -227,14 +231,114 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>current lumi section</td>"                         << std::endl;
     *out << "<td>" << diskWriterMonitoring_.currentLumiSection << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last EoLS signal</td>"                             << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.lastEoLS << "</td>"     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
   }
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
+}
+
+
+void evb::bu::DiskWriter::writeEoLS
+(
+  const uint32_t lumiSection,
+  const uint32_t fileCount,
+  const uint32_t eventCount
+) const
+{
+  std::ostringstream fileNameStream;
+  fileNameStream
+    << "EoLS_" << std::setfill('0') << std::setw(4) << lumiSection << ".jsn";
+  const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
+
+  if ( boost::filesystem::exists(jsonFile) )
+  {
+    std::ostringstream oss;
+    oss << "The JSON file " << jsonFile.string() << " already exists.";
+    XCEPT_RAISE(exception::DiskWriting, oss.str());
+  }
+
+  std::ofstream json(jsonFile.string().c_str());
+  json << "{"                                                         << std::endl;
+  json << "   \"Data\" : [ \""     << eventCount  << "\", \""
+                                   << fileCount   << "\" ],"          << std::endl;
+  json << "   \"Definition\" : \"" << eolsDefFile_.string()  << "\"," << std::endl;
+  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
+  json << "}"                                                         << std::endl;
+  json.close();
+}
+
+
+void evb::bu::DiskWriter::writeEoR() const
+{
+  std::ostringstream fileNameStream;
+  fileNameStream
+    << "EoR_" << std::setfill('0') << std::setw(6) << runNumber_ << ".jsn";
+  const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
+
+  if ( boost::filesystem::exists(jsonFile) )
+  {
+    std::ostringstream oss;
+    oss << "The JSON file " << jsonFile.string() << " already exists.";
+    XCEPT_RAISE(exception::DiskWriting, oss.str());
+  }
+
+  std::ofstream json(jsonFile.string().c_str());
+  json << "{"                                                                           << std::endl;
+  json << "   \"Data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
+                                   << diskWriterMonitoring_.nbFiles         << "\", \""
+                                   << diskWriterMonitoring_.nbLumiSections  << "\" ],"  << std::endl;
+  json << "   \"Definition\" : \"" << eorDefFile_.string()  << "\","                    << std::endl;
+  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
+  json << "}"                                                                           << std::endl;
+  json.close();
+}
+
+
+void evb::bu::DiskWriter::defineEoLSjson()
+{
+  eolsDefFile_ = runMetaDataDir_ / "EoLS.jsd";
+
+  std::ofstream json(eolsDefFile_.string().c_str());
+  json << "{"                                                 << std::endl;
+  json << "   \"legend\" : ["                                 << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NEvents\","                  << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NFiles\","                   << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      }"                                           << std::endl;
+  json << "   ],"                                             << std::endl;
+  json << "   \"file\" : \"" << eolsDefFile_.string() << "\"" << std::endl;
+  json << "}"                                                 << std::endl;
+  json.close();
+}
+
+
+void evb::bu::DiskWriter::defineEoRjson()
+{
+  eorDefFile_ = runMetaDataDir_ / "EoR.jsd";
+
+  std::ofstream json(eorDefFile_.string().c_str());
+  json << "{"                                                 << std::endl;
+  json << "   \"legend\" : ["                                 << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NEvents\","                  << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NFiles\","                   << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NLumis\","                   << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      }"                                           << std::endl;
+  json << "   ],"                                             << std::endl;
+  json << "   \"file\" : \"" << eorDefFile_.string() << "\""  << std::endl;
+  json << "}"                                                 << std::endl;
+  json.close();
 }
 
 
