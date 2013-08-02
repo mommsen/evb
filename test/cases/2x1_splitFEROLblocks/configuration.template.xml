@@ -32,7 +32,8 @@
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
-        <blockSize xsi:type="xsd:unsignedInt">1024</blockSize>
+        <dummyFedSize xsi:type="xsd:unsignedInt">16384</dummyFedSize>
+        <frameSize xsi:type="xsd:unsignedInt">4096</frameSize>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
         </fedSourceIds>
@@ -74,7 +75,8 @@
     <xc:Application class="evb::RU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
-        <blockSize xsi:type="xsd:unsignedInt">1024</blockSize>
+        <dummyFedSize xsi:type="xsd:unsignedInt">16384</dummyFedSize>
+        <frameSize xsi:type="xsd:unsignedInt">4096</frameSize>
       </properties>
     </xc:Application>
 
@@ -113,7 +115,7 @@
     <xc:Application class="evb::BU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
-      </properties>
+       </properties>
     </xc:Application>
 
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>

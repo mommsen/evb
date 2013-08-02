@@ -146,7 +146,7 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
       allocateMonitoring_.i2oCount += participatingRUs_.size();
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     assignEventsActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
@@ -205,7 +205,7 @@ void evb::evm::RUproxy::sendToAllRUs
           //it->descriptor
         );
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       std::stringstream oss;
 
@@ -251,7 +251,7 @@ void evb::evm::RUproxy::configure()
     tid_ = i2o::utils::getAddressMap()->
       getTid(evm_->getApplicationDescriptor());
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get I2O TID for this application.", e);
@@ -277,7 +277,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
       getDefaultZone()->
       getApplicationDescriptors("evb::RU");
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::Configuration,
       "Failed to get RU application descriptor", e);
@@ -302,7 +302,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
     {
       ru.tid = i2o::utils::getAddressMap()->getTid(*it);
     }
-    catch(xcept::Exception &e)
+    catch(xcept::Exception& e)
     {
       std::stringstream oss;
 

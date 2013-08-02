@@ -15,6 +15,7 @@
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/RUproxy.h"
+#include "evb/bu/StreamHandler.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/Action.h"
@@ -91,15 +92,12 @@ namespace evb {
 
     private:
 
-      // Lookup table of events, indexed by evb id
       typedef std::map<EvBid,EventPtr> EventMap;
       typedef boost::shared_ptr<EventMap> EventMapPtr;
-      typedef std::map<uint16_t,EventMapPtr> EventMaps;
-      EventMaps eventMaps_;
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      void buildEvent(FragmentChainPtr&, EventMapPtr&);
+      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&);
       EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
 
       BU* bu_;
@@ -121,7 +119,7 @@ namespace evb {
       toolbox::task::ActionSignature* builderAction_;
 
       volatile bool doProcessing_;
-      volatile bool processActive_;
+      std::vector<bool> processesActive_;
 
     }; // EventBuilder
 

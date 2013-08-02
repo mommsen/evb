@@ -24,10 +24,9 @@ namespace evb {
 
       FileHandler
       (
-        boost::shared_ptr<StateMachine>,
         const uint32_t buInstance,
-        const boost::filesystem::path& rawDataDir,
-        const boost::filesystem::path& metaDataDir,
+        const boost::filesystem::path& runRawDataDir,
+        const boost::filesystem::path& runMetaDataDir,
         const uint32_t lumiSection,
         const uint32_t index
       );
@@ -41,17 +40,10 @@ namespace evb {
       { ++eventCount_; }
 
       /**
-       * Increment the number of allocated events
+       * Get the number of events written
        */
-      void incrementAllocatedEventCount()
-      { ++allocatedEventCount_; }
-
-      /**
-       * Increment the number of events allocated to this handler
-       * Return true if maximum events reached
-       */
-      uint32_t getAllocatedEventCount()
-      { return allocatedEventCount_; }
+      uint32_t getEventCount() const
+      { return eventCount_; }
 
       /**
        * Return a memory mapped portion of the file with
@@ -72,15 +64,13 @@ namespace evb {
       void defineJSON(const boost::filesystem::path&) const;
       void calcAdler32(const unsigned char* address, size_t length);
 
-      boost::shared_ptr<StateMachine> stateMachine_;
-      uint32_t buInstance_;
-      const boost::filesystem::path rawDataDir_;
-      const boost::filesystem::path metaDataDir_;
+      const uint32_t buInstance_;
+      const boost::filesystem::path runRawDataDir_;
+      const boost::filesystem::path runMetaDataDir_;
       boost::filesystem::path fileName_;
       int fileDescriptor_;
       uint64_t fileSize_;
       uint32_t eventCount_;
-      uint32_t allocatedEventCount_;
       uint32_t adlerA_;
       uint32_t adlerB_;
 

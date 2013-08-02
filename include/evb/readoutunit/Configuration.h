@@ -1,6 +1,8 @@
 #ifndef _evb_readoutunit_configuration_h_
 #define _evb_readoutunit_configuration_h_
 
+#include <stdint.h>
+
 #include <boost/shared_ptr.hpp>
 
 #include "evb/InfoSpaceItems.h"
@@ -35,6 +37,7 @@ namespace evb {
       xdata::UnsignedInteger32 dummyFedSizeMin;
       xdata::UnsignedInteger32 dummyFedSizeMax;
       xdata::UnsignedInteger32 fragmentPoolSize;
+      xdata::UnsignedInteger32 frameSize;
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
       xdata::UnsignedInteger32 maxTriggerAgeMSec;
 
@@ -52,7 +55,8 @@ namespace evb {
         dummyFedSizeStdDev(0),
         dummyFedSizeMin(8), // minimum is 8 Bytes
         dummyFedSizeMax(0), // no limitation
-        fragmentPoolSize(1638400),
+        fragmentPoolSize(10000000),
+        frameSize(32768),
         maxTriggerAgeMSec(1000)
       {};
 
@@ -81,6 +85,7 @@ namespace evb {
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
         params.add("fragmentPoolSize", &fragmentPoolSize);
+        params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
       }

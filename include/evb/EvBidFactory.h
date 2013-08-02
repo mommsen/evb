@@ -14,9 +14,14 @@ namespace evb {
     EvBidFactory();
 
     /**
-     * Return EvBid for given eventNumber
+     * Return EvBid for given eventNumber and a fake lumi section
      */
-    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lsNumber=0);
+    EvBid getEvBid(const uint32_t eventNumber);
+
+    /**
+     * Return EvBid for given eventNumber and lumi section
+     */
+    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lsNumber);
 
     /**
      * Reset the counters for a new run
@@ -28,6 +33,7 @@ namespace evb {
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
+    uint32_t fakeLumiSection_;
 
   };
 

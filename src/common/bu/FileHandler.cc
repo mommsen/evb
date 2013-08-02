@@ -1,48 +1,43 @@
-#ifdef RUBUILDER_BOOST
-#include "evb/boost/filesystem/convenience.hpp"
-#else
 #include <boost/filesystem/convenience.hpp>
-#endif
 
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <fstream>
 #include <sstream>
+#include <string.h>
 #include <iomanip>
 #include <unistd.h>
 
-#include "evb/bu/FileHandler.h"
-#include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
+#include "evb/bu/FileHandler.h"
+#include "xcept/tools.h"
 
 
 evb::bu::FileHandler::FileHandler
 (
-  boost::shared_ptr<StateMachine> stateMachine,
   const uint32_t buInstance,
-  const boost::filesystem::path& rawDataDir,
-  const boost::filesystem::path& metaDataDir,
+  const boost::filesystem::path& runRawDataDir,
+  const boost::filesystem::path& runMetaDataDir,
   const uint32_t lumiSection,
   const uint32_t index
 ) :
-stateMachine_(stateMachine),
 buInstance_(buInstance),
-rawDataDir_(rawDataDir),
-metaDataDir_(metaDataDir),
+runRawDataDir_(runRawDataDir),
+runMetaDataDir_(runMetaDataDir),
 fileDescriptor_(0),
 fileSize_(0),
 eventCount_(0),
-allocatedEventCount_(0),
 adlerA_(1),
 adlerB_(0)
 {
   std::ostringstream fileNameStream;
   fileNameStream
     << "ls" << std::setfill('0') << std::setw(4) << lumiSection
-      << "_" << std::setw(6) << index << ".raw";
+      << "_index" << std::setw(6) << index << ".raw";
   fileName_ = fileNameStream.str();
-  const boost::filesystem::path rawFile = rawDataDir_ / fileName_;
+  const boost::filesystem::path rawFile = runRawDataDir_ / fileName_;
 
   if ( boost::filesystem::exists(rawFile) )
   {
@@ -125,48 +120,32 @@ void evb::bu::FileHandler::close()
       }
       fileDescriptor_ = 0;
 
-      #ifdef RUBUILDER_BOOST
-      boost::filesystem::rename(rawDataDir_ / fileName_, rawDataDir_.branch_path() / fileName_);
-      #else
-      boost::filesystem::rename(rawDataDir_ / fileName_, rawDataDir_.parent_path() / fileName_);
-      #endif
+      boost::filesystem::rename(runRawDataDir_ / fileName_, runRawDataDir_.parent_path() / fileName_);
 
       writeJSON();
     }
-  }
-  catch(xcept::Exception &e)
-  {
-    stateMachine_->fail(e);
   }
   catch( std::exception& e )
   {
     msg += ": ";
     msg += e.what();
-    XCEPT_DECLARE(exception::DiskWriting, sentinelException, msg);
-    stateMachine_->fail(sentinelException);
+    XCEPT_RAISE(exception::DiskWriting, msg);
   }
   catch(...)
   {
     msg += ": unknown exception";
-    XCEPT_DECLARE(exception::DiskWriting, sentinelException, msg);
-    stateMachine_->fail(sentinelException);
+    XCEPT_RAISE(exception::DiskWriting, msg);
   }
 }
 
 
 void evb::bu::FileHandler::writeJSON() const
 {
-  const boost::filesystem::path jsonDefFile = metaDataDir_ / "rawData.jsd";
+  const boost::filesystem::path jsonDefFile = runMetaDataDir_ / "rawData.jsd";
   defineJSON(jsonDefFile);
 
-  #ifdef RUBUILDER_BOOST
-  std::string newFilename = fileName_.string();
-  newFilename.replace(newFilename.length()-3,3,"jsn");
-  boost::filesystem::path jsonFile = metaDataDir_ / newFilename;
-  #else
-  boost::filesystem::path jsonFile = metaDataDir_ / fileName_;
+  boost::filesystem::path jsonFile = runMetaDataDir_ / fileName_;
   jsonFile.replace_extension("jsn");
-  #endif
 
   if ( boost::filesystem::exists(jsonFile) )
   {

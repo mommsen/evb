@@ -41,13 +41,35 @@ sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 echo "Sending data for 5 seconds"
 sleep 5
 
+superFragmentSizeEVM=`getParam EVM0_SOAP_HOST_NAME EVM0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+echo "EVM superFragmentSize: $superFragmentSizeEVM"
+if [[ $superFragmentSizeEVM -ne 2048 ]]
+then
+  echo "Test failed: expected 2048"
+  exit 1
+fi
+
+eventRateEVM=`getParam EVM0_SOAP_HOST_NAME EVM0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+echo "EVM eventRate: $eventRateEVM"
+if [[ $eventRateEVM -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
-
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
-
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
   echo "Test failed"
+  exit 1
+fi
+
+eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+echo "BU0 eventSize: $eventSizeBU0"
+if [[ $eventSizeBU0 -ne 2048 ]]
+then
+  echo "Test failed: expected 2048"
   exit 1
 fi
 

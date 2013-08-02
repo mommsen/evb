@@ -32,9 +32,13 @@
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
-        <blockSize xsi:type="xsd:unsignedInt">1024</blockSize>
-        <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
-          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
+        <fedSourceIds soapenc:arrayType="xsd:ur-type[6]" xsi:type="soapenc:Array">
+          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">12</item>
+          <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">55</item>
+          <item soapenc:position="[2]" xsi:type="xsd:unsignedInt">512</item>
+          <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">689</item>
+          <item soapenc:position="[4]" xsi:type="xsd:unsignedInt">789</item>
+          <item soapenc:position="[5]" xsi:type="xsd:unsignedInt">800</item>
         </fedSourceIds>
       </properties>
     </xc:Application>
@@ -74,7 +78,6 @@
     <xc:Application class="evb::RU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
-        <blockSize xsi:type="xsd:unsignedInt">1024</blockSize>
       </properties>
     </xc:Application>
 

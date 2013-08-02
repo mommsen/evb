@@ -1,6 +1,6 @@
-#include "interface/evb/i2oEVBMsgs.h"
 #include "interface/shared/frl_header.h"
 #include "evb/DumpUtility.h"
+#include "evb/I2OMessages.h"
 
 
 void evb::DumpUtility::dump
@@ -36,28 +36,20 @@ void evb::DumpUtility::dumpBlock
 {
   const uint32_t dataSize = bufRef->getDataSize();
   const unsigned char* data = (unsigned char*)bufRef->getDataLocation();
-  const I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME* block =
-    (I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME*)data;
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* block =
+    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)data;
   const unsigned char* payloadPointer = data +
-    sizeof(I2O_EVENT_DATA_BLOCK_MESSAGE_FRAME);
+    sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
 
   s << "Buffer counter       (dec): ";
-  s << bufferCnt << "\n";
+  s << bufferCnt << std::endl;
   s << "Buffer data location (hex): ";
-  s << toolbox::toString("%x", data) << "\n";
+  s << toolbox::toString("%x", data) << std::endl;
   s << "Buffer data size     (dec): ";
-  s << dataSize << "\n";
+  s << dataSize << std::endl;
   s << "Pointer to payload   (hex): ";
-  s << toolbox::toString("%x", payloadPointer) << "\n";
-  s << "totalBlocks          (dec): ";
-  s << (uint32_t)(block->nbBlocksInSuperFragment) << "\n";
-  s << "CurrentBlock         (dec): ";
-  s << (uint32_t)(block->blockNb) << "\n";
-  s << "Trigger              (dec): ";
-  s << (uint32_t)(block->eventNumber) << "\n";
-  s << "Resync count         (dec): ";
-  s << toolbox::toString("%x", (uint32_t)(block->resyncCount)) << "\n";
-
+  s << toolbox::toString("%x", payloadPointer) << std::endl;
+  s << *block << std::endl;
   dumpBlockData(s, data, dataSize);
 }
 
@@ -77,14 +69,13 @@ void evb::DumpUtility::dumpBlockData
     // avoid to write beyond the buffer:
     if (ic + 2 >= len)
     {
-      s << toolbox::toString("%04d %08x %08x", ic*4, d[ic+1], d[ic]);
-      s << "\n";
+      s << toolbox::toString("%08x : %08x %08x %12s         |    human readable swapped : %08x %08x %12s      : %08x", ic*4, d[ic], d[ic+1], "", d[ic+1], d[ic], "", ic*4);
+      s << std::endl;
     }
     else
     {
-      s << toolbox::toString("%04d %08x %08x %08x %08x",
-        ic*4, d[ic+1], d[ic], d[ic+3], d[ic+2]);
-      s << "\n";
+      s << toolbox::toString("%08x : %08x %08x %08x %08x    |    human readable swapped : %08x %08x %08x %08x : %08x", ic*4, d[ic], d[ic+1], d[ic+2], d[ic+3],  d[ic+1], d[ic], d[ic+3], d[ic+2], ic*4);
+      s << std::endl;
     }
   }
 }

@@ -205,7 +205,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
 
     appInfoSpaceParams.putIntoInfoSpace(appInfoSpace, this);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to put parameters into application info space";
     LOG4CPLUS_ERROR(logger_,
@@ -254,7 +254,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
 
     monitoringParams.putIntoInfoSpace(monitoringInfoSpace_, this);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to put parameters into monitoring info space";
     LOG4CPLUS_ERROR(logger_,
@@ -296,7 +296,7 @@ void evb::EvBApplication<Configuration,StateMachine>::actionPerformed(xdata::Eve
       handleItemRetrieveEvent(item);
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     std::ostringstream msg;
     msg << "Failed to perform action for " << ispaceEvent.type();
@@ -368,7 +368,7 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processS
   {
     event = soapParameterExtractor_.extractParameters(msg);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     std::ostringstream errorMsg;
     errorMsg << "Failed to extract FSM event and parameters from SOAP message: ";
@@ -390,7 +390,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
   {
     startMonitoringWorkloop();
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to start monitoring work loop";
     XCEPT_DECLARE_NESTED(exception::Monitoring,
@@ -425,7 +425,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
   {
     monitoringWorkLoop->submit(monitoringActionSignature);
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::WorkLoop,
       "Failed to submit action to work loop: " + monitoringWorkLoopName,
@@ -436,7 +436,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
   {
     monitoringWorkLoop->activate();
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::WorkLoop,
       "Failed to activate work loop: " + monitoringWorkLoopName, e);
@@ -460,7 +460,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 
     monitoringInfoSpace_->unlock();
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     monitoringInfoSpace_->unlock();
 
@@ -682,7 +682,7 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFs
 
     return message;
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::SOAP,
       "Failed to create FSM SOAP response message for event:" +

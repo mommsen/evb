@@ -79,6 +79,11 @@ XCEPT_DEFINE_EXCEPTION(evb, OutOfMemory)
 XCEPT_DEFINE_EXCEPTION(evb, SOAP)
 
 /**
+ * Exception raised when receiving a corrupt FEROL fragment
+ */
+XCEPT_DEFINE_EXCEPTION(evb, FEROL)
+
+/**
  * Exception raised when a super-fragment problem occured
  */
 XCEPT_DEFINE_EXCEPTION(evb, SuperFragment)

@@ -11,6 +11,7 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/PerformanceMonitor.h"
 #include "evb/bu/Event.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xgi/Output.h"
@@ -134,10 +135,10 @@ namespace evb {
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;
-      xdata::Double rate_;
-      xdata::Double bandwidth_;
-      xdata::Double eventSize_;
-      xdata::Double eventSizeStdDev_;
+      xdata::UnsignedInteger32 rate_;
+      xdata::UnsignedInteger32 bandwidth_;
+      xdata::UnsignedInteger32 eventSize_;
+      xdata::UnsignedInteger32 eventSizeStdDev_;
 
     };
 

@@ -119,9 +119,7 @@ namespace evb {
         );
 
         bool addFedSize(const FedInfo&);
-        void updatePaddingSize();
-        inline size_t getBufferSize()
-        { return ( headerSize + eventSize + paddingSize ); }
+        size_t getBufferSize();
       };
       EventInfo* eventInfo_;
 

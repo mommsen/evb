@@ -95,6 +95,7 @@ namespace evb {
 
   private:
 
+    uint32_t calculateSize(toolbox::mem::Reference*) const;
     bool checkResourceId(const uint32_t resourceId);
 
     EvBid evbId_;
@@ -145,7 +146,7 @@ head_(0),tail_(0)
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference* bufRef) :
 evbId_(evbId),
-size_(bufRef->getDataSize() - sizeof(T)),
+size_(calculateSize(bufRef)),
 head_(bufRef),tail_(bufRef)
 {}
 
@@ -153,7 +154,7 @@ head_(bufRef),tail_(bufRef)
 template<class T>
 evb::FragmentChain<T>::FragmentChain(FragmentPtr& fragment) :
 evbId_(fragment->evbId),
-size_(fragment->bufRef->getDataSize() - sizeof(T)),
+size_(calculateSize(fragment->bufRef)),
 head_(fragment->bufRef),tail_(fragment->bufRef)
 {
   fragments_.push_back(fragment);
@@ -166,6 +167,16 @@ evb::FragmentChain<T>::~FragmentChain()
   if ( fragments_.empty() && head_ ) head_->release();
 
   fragments_.clear();
+}
+
+
+template<class T>
+uint32_t evb::FragmentChain<T>::calculateSize
+(
+  toolbox::mem::Reference* bufRef
+) const
+{
+  return bufRef->getDataSize() - sizeof(T);
 }
 
 
@@ -201,7 +212,7 @@ void evb::FragmentChain<T>::append
     tail_ = bufRef;
   }
 
-  size_ += bufRef->getDataSize() - sizeof(T);
+  size_ += calculateSize(bufRef);
 }
 
 

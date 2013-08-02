@@ -18,6 +18,12 @@ public:
     toolbox::mem::Reference*
   );
 
+  static void dumpBlockData
+  (
+    std::ostream&,
+    const unsigned char* data,
+    uint32_t len
+  );
 
 private:
 
@@ -26,13 +32,6 @@ private:
     std::ostream&,
     toolbox::mem::Reference*,
     const uint32_t bufferCnt
-  );
-
-  static void dumpBlockData
-  (
-    std::ostream&,
-    const unsigned char* data,
-    uint32_t len
   );
 
 }; // class DumpUtility

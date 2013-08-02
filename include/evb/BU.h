@@ -14,9 +14,7 @@
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
-#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
-#include "xdata/UnsignedInteger64.h"
 #include "xgi/Output.h"
 
 
@@ -62,16 +60,15 @@ namespace evb {
     virtual void do_defaultWebPage(xgi::Output*);
 
     void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
-    void eventFIFOWebPage(xgi::Input*, xgi::Output*);
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
-    void eolsFIFOWebPage(xgi::Input*, xgi::Output*);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;
     boost::shared_ptr<bu::EventBuilder> eventBuilder_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
 
+    xdata::UnsignedInteger32 eventSize_;
     xdata::UnsignedInteger32 nbEventsInBU_;
     xdata::UnsignedInteger32 nbEventsBuilt_;
     xdata::UnsignedInteger32 nbEvtsCorrupted_;

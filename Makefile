@@ -49,10 +49,10 @@ Sources=\
 	bu/Event.cc \
 	bu/EventBuilder.cc \
 	bu/FileHandler.cc \
-	bu/LumiHandler.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
+	bu/StreamHandler.cc \
 	version.cc
 
 TestSources = \
