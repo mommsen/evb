@@ -36,6 +36,7 @@
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
         </fedSourceIds>
         <dummyFedSize xsi:type="xsd:unsignedInt">2048</dummyFedSize>
+        <useLogNormal xsi:type="xsd:boolean">true</useLogNormal>
         <dummyFedSizeStdDev xsi:type="xsd:unsignedInt">1024</dummyFedSizeStdDev>
         <dummyFedSizeMin xsi:type="xsd:unsignedInt">512</dummyFedSizeMin>
         <dummyFedSizeMax xsi:type="xsd:unsignedInt">2048</dummyFedSizeMax>
@@ -79,6 +80,7 @@
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dummyFedSize xsi:type="xsd:unsignedInt">2048</dummyFedSize>
         <dummyFedSizeStdDev xsi:type="xsd:unsignedInt">1024</dummyFedSizeStdDev>
+        <useLogNormal xsi:type="xsd:boolean">true</useLogNormal>
       </properties>
     </xc:Application>
 

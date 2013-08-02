@@ -4,9 +4,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "xdata/Boolean.h"
-#include "xdata/Double.h"
 #include "xdata/String.h"
-#include "xdata/Integer32.h"
 #include "xdata/UnsignedInteger32.h"
 
 
@@ -24,6 +22,7 @@ namespace evb {
         xdata::UnsignedInteger32 destinationInstance;
         xdata::UnsignedInteger32 fedId;
         xdata::UnsignedInteger32 fedSize;
+        xdata::Boolean useLogNormal;
         xdata::UnsignedInteger32 fedSizeStdDev;
         xdata::UnsignedInteger32 minFedSize;
         xdata::UnsignedInteger32 maxFedSize;
@@ -35,6 +34,7 @@ namespace evb {
         Configuration()
         : destinationClass("evb::RU"),
           fedSize(2048),
+          useLogNormal(false),
           fedSizeStdDev(0),
           minFedSize(8), // minimum is 8 Bytes
           maxFedSize(0), // no limitiation
@@ -53,6 +53,7 @@ namespace evb {
           params.add("destinationInstance", &destinationInstance);
           params.add("fedId", &fedId);
           params.add("fedSize", &fedSize);
+          params.add("useLogNormal", &useLogNormal);
           params.add("fedSizeStdDev", &fedSizeStdDev);
           params.add("minFedSize", &minFedSize);
           params.add("maxFedSize", &maxFedSize);
