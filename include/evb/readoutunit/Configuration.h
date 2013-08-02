@@ -9,7 +9,6 @@
 #include "xdata/Boolean.h"
 #include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
-#include "xdata/UnsignedInteger64.h"
 #include "xdata/Vector.h"
 
 
@@ -33,6 +32,7 @@ namespace evb {
       xdata::Boolean usePlayback;
       xdata::String playbackDataFile;
       xdata::UnsignedInteger32 dummyFedSize;
+      xdata::Boolean useLogNormal;
       xdata::UnsignedInteger32 dummyFedSizeStdDev;
       xdata::UnsignedInteger32 dummyFedSizeMin;
       xdata::UnsignedInteger32 dummyFedSizeMax;
@@ -52,6 +52,7 @@ namespace evb {
         usePlayback(false),
         playbackDataFile(""),
         dummyFedSize(2048),
+        useLogNormal(false),
         dummyFedSizeStdDev(0),
         dummyFedSizeMin(8), // minimum is 8 Bytes
         dummyFedSizeMax(0), // no limitation
@@ -81,6 +82,7 @@ namespace evb {
         params.add("usePlayback", &usePlayback);
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSize", &dummyFedSize);
+        params.add("useLogNormal", &useLogNormal);
         params.add("dummyFedSizeStdDev", &dummyFedSizeStdDev);
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);

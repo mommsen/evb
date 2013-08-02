@@ -15,6 +15,7 @@ evb::FragmentTracker::FragmentTracker
 (
   const uint32_t fedId,
   const uint32_t fedSize,
+  const bool useLogNormal,
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize
@@ -26,7 +27,7 @@ maxFedSize_(maxFedSize),
 fedCRC_(0),
 typeOfNextComponent_(FED_HEADER)
 {
-  if (fedSizeStdDev > 0)
+  if (useLogNormal)
   {
     logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev) );
   }

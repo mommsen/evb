@@ -377,7 +377,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
           }
         }
         // TODO: handle case that fragment is split over several bufRefs
-        assert( currentFragment->getDataSize() > sizeof(I2O_DATA_READY_MESSAGE_FRAME)+ferolOffset );
+        //assert( currentFragment->getDataSize() > sizeof(I2O_DATA_READY_MESSAGE_FRAME)+ferolOffset );
 
         const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
           + ferolOffset;

@@ -23,6 +23,7 @@ namespace evb {
     (
       const uint32_t fedId,
       const uint32_t fedSize,
+      const bool useLogNormal,
       const uint32_t fedSizeStdDev,
       const uint32_t minFedSize,
       const uint32_t maxFedSize

@@ -37,6 +37,7 @@ void evb::FragmentGenerator::configure
   const std::string& playbackDataFile,
   const uint32_t frameSize,
   const uint32_t fedSize,
+  const bool useLogNormal,
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
@@ -91,7 +92,7 @@ void evb::FragmentGenerator::configure
   }
 
   fragmentTracker_.reset(
-    new FragmentTracker(fedId,fedSize,fedSizeStdDev,minFedSize,maxFedSize)
+    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize)
   );
 
   playbackData_.clear();
