@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Cleanup
-testDir=/tmp/rubuilder_test
+testDir=/tmp/evb_test
 rm -rf $testDir
 
 # Launch executive processes
@@ -63,8 +63,8 @@ sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::RU 0 Enable
 setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 
-echo "Sending data for 5 seconds"
-sleep 5
+echo "Sending data for 15 seconds"
+sleep 15
 
 superFragmentSizeEVM=`getParam EVM0_SOAP_HOST_NAME EVM0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
 echo "EVM superFragmentSize: $superFragmentSizeEVM"
