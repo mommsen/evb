@@ -6,6 +6,7 @@
 #include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/CRC16.h"
+#include "evb/Constants.h"
 #include "evb/EventUtils.h"
 #include "evb/Exception.h"
 #include "evb/FragmentGenerator.h"
@@ -153,11 +154,12 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
   unsigned char* frame = (unsigned char*)bufRef->getDataLocation();
   bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
 
+  const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   uint32_t usedFrameSize = 0;
   uint32_t remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
-  const uint32_t ferolBlockSize = 4*1024 - sizeof(ferolh_t);
+  uint16_t ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
 
-  while ( (usedFrameSize + remainingFedSize + sizeof(ferolh_t)) <= bufRef->getBuffer()->getSize() )
+  while ( (usedFrameSize + remainingFedSize + ferolBlocks*sizeof(ferolh_t)) <= bufRef->getBuffer()->getSize() )
   {
     uint32_t packetNumber = 0;
 
@@ -173,9 +175,9 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
       if (packetNumber == 0)
         ferolHeader->set_first_packet();
 
-      if ( remainingFedSize > ferolBlockSize )
+      if ( remainingFedSize > ferolPayloadSize )
       {
-        length = ferolBlockSize;
+        length = ferolPayloadSize;
       }
       else
       {
@@ -198,6 +200,7 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
       // assert( ferolHeader->data_length() == length );
       // assert( ferolHeader->fed_id() == fedId_ );
       // assert( ferolHeader->event_number() == eventNumber_ );
+      assert( ferolHeader->data_length() < 32696 );
 
       frame += filledBytes;
       usedFrameSize += filledBytes + sizeof(ferolh_t);
@@ -205,11 +208,14 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
       ++packetNumber;
       assert(packetNumber < 2048);
     }
+    assert( packetNumber == ferolBlocks );
 
     if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
     remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
+    ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
   }
 
+  assert( usedFrameSize <= bufRef->getBuffer()->getSize() );
   bufRef->setDataSize(usedFrameSize);
 
   return true;
