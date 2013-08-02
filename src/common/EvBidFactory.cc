@@ -5,7 +5,8 @@
 evb::EvBidFactory::EvBidFactory() :
 runNumber_(0),
 previousEventNumber_(0),
-resyncCount_(0)
+resyncCount_(0),
+fakeLumiSection_(1)
 {}
 
 
@@ -14,6 +15,14 @@ void evb::EvBidFactory::reset(const uint32_t runNumber)
   runNumber_ = runNumber;
   previousEventNumber_ = 0;
   resyncCount_ = 0;
+  fakeLumiSection_ = 1;
+}
+
+
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
+{
+  if ( eventNumber%10000 == 0 ) ++fakeLumiSection_;
+  return getEvBid(eventNumber,fakeLumiSection_);
 }
 
 
