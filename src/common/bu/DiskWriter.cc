@@ -220,11 +220,11 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>" << diskWriterMonitoring_.nbEventsWritten << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td># lumi sections</td>"                              << std::endl;
+    *out << "<td># lumi sections closed</td>"                       << std::endl;
     *out << "<td>" << diskWriterMonitoring_.nbLumiSections << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>current lumi section</td>"                         << std::endl;
+    *out << "<td>last lumi section closed</td>"                     << std::endl;
     *out << "<td>" << diskWriterMonitoring_.currentLumiSection << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
