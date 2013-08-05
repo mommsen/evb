@@ -10,6 +10,9 @@
 #include "evb/bu/Configuration.h"
 #include "evb/bu/StreamHandler.h"
 #include "evb/InfoSpaceItems.h"
+#include "toolbox/lang/Class.h"
+#include "toolbox/task/Action.h"
+#include "toolbox/task/WorkLoop.h"
 #include "xdata/UnsignedInteger32.h"
 
 
@@ -24,7 +27,7 @@ namespace evb {
      * \brief Write events to disk
      */
 
-    class DiskWriter
+    class DiskWriter : public toolbox::lang::Class
     {
     public:
 
@@ -65,6 +68,12 @@ namespace evb {
       void clear();
 
       /**
+       * Register the state machine
+       */
+      void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
+      { stateMachine_ = stateMachine; }
+
+      /**
        * Start processing messages
        */
       void startProcessing(const uint32_t runNumber);
@@ -102,8 +111,11 @@ namespace evb {
       void writeEoR() const;
       void defineEoLSjson();
       void defineEoRjson();
+      void startLumiMonitoring();
+      bool updateLumiMonitoring(toolbox::task::WorkLoop*);
 
       BU* bu_;
+      boost::shared_ptr<StateMachine> stateMachine_;
       const ConfigurationPtr configuration_;
 
       const uint32_t buInstance_;
@@ -118,6 +130,11 @@ namespace evb {
 
       typedef std::map<uint16_t,StreamHandlerPtr > StreamHandlers;
       StreamHandlers streamHandlers_;
+
+      toolbox::task::WorkLoop* lumiMonitoringWorkLoop_;
+      toolbox::task::ActionSignature* lumiMonitoringAction_;
+      bool doProcessing_;
+      bool processActive_;
 
       typedef std::set<LumiMonitorPtr> LumiMonitors;
       LumiMonitors lumiMonitors_;

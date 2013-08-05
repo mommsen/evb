@@ -3,6 +3,7 @@
 
 #include <boost/filesystem/convenience.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <stdint.h>
 
@@ -29,7 +30,6 @@ namespace evb {
       StreamHandler
       (
         const uint32_t buInstance,
-        const uint32_t builderId,
         const uint32_t runNumber,
         const boost::filesystem::path& buRawDataDir,
         const boost::filesystem::path& buMetaDataDir,
@@ -60,19 +60,16 @@ namespace evb {
       void closeLumiSection(const uint32_t lumiSection);
 
       const uint32_t buInstance_;
-      const uint32_t builderId_;
       const uint32_t runNumber_;
 
       const boost::filesystem::path runRawDataDir_;
       const boost::filesystem::path runMetaDataDir_;
-      const uint32_t maxEventsPerFile_;
-      const uint32_t numberOfBuilders_;
-
-      uint32_t index_;
+      const ConfigurationPtr configuration_;
 
       FileHandlerPtr fileHandler_;
 
       LumiMonitorPtr currentLumiMonitor_;
+      boost::mutex currentLumiMonitorMutex_;
       typedef OneToOneQueue<LumiMonitorPtr> LumiMonitorFIFO;
       LumiMonitorFIFO lumiMonitorFIFO_;
 

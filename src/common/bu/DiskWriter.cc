@@ -4,13 +4,18 @@
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/Exception.h"
+#include "toolbox/task/WorkLoopFactory.h"
 
 
 evb::bu::DiskWriter::DiskWriter(BU* bu) :
+bu_(bu),
 configuration_(bu->getConfiguration()),
-buInstance_( bu->getApplicationDescriptor()->getInstance() )
+buInstance_( bu->getApplicationDescriptor()->getInstance() ),
+doProcessing_(false),
+processActive_(false)
 {
   resetMonitoringCounters();
+  startLumiMonitoring();
 }
 
 
@@ -38,19 +43,25 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
     StreamHandlerPtr streamHandler(
-      new StreamHandler(buInstance_,i,runNumber_,runRawDataDir_,runMetaDataDir_,configuration_)
+      new StreamHandler(buInstance_,runNumber_,runRawDataDir_,runMetaDataDir_,configuration_)
     );
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
   defineEoLSjson();
   defineEoRjson();
+
+  doProcessing_ = true;
+  lumiMonitoringWorkLoop_->submit(lumiMonitoringAction_);
 }
 
 
 void evb::bu::DiskWriter::stopProcessing()
 {
   if ( configuration_->dropEventData ) return;
+
+  doProcessing_ = false;
+  while ( processActive_ ) ::usleep(1000);
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
@@ -70,10 +81,57 @@ void evb::bu::DiskWriter::stopProcessing()
 }
 
 
+void evb::bu::DiskWriter::startLumiMonitoring()
+{
+  try
+  {
+    lumiMonitoringWorkLoop_ =
+      toolbox::task::getWorkLoopFactory()->getWorkLoop(bu_->getIdentifier("lumiMonitoring"), "waiting");
+
+    if ( !lumiMonitoringWorkLoop_->isActive() )
+      lumiMonitoringWorkLoop_->activate();
+
+    lumiMonitoringAction_ =
+      toolbox::task::bind(this,
+        &evb::bu::DiskWriter::updateLumiMonitoring,
+        bu_->getIdentifier("lumiMonitoringAction"));
+  }
+  catch (xcept::Exception& e)
+  {
+    std::string msg = "Failed to start lumi monitoring workloop.";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
+}
+
+
+bool evb::bu::DiskWriter::updateLumiMonitoring(toolbox::task::WorkLoop* wl)
+{
+  processActive_ = true;
+
+  try
+  {
+    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+    gatherLumiStatistics();
+  }
+  catch(xcept::Exception& e)
+  {
+    processActive_ = false;
+    stateMachine_->processFSMEvent( Fail(e) );
+  }
+
+  processActive_ = false;
+
+  ::sleep(5);
+
+  return doProcessing_;
+}
+
+
 void evb::bu::DiskWriter::gatherLumiStatistics()
 {
   LumiMonitorPtr lumiMonitor;
   std::pair<LumiMonitors::iterator,bool> result;
+  const uint32_t streamCount = streamHandlers_.size();
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
@@ -82,9 +140,7 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
     {
       result = lumiMonitors_.insert(lumiMonitor);
 
-      if ( result.second == true) // a new lumisection
-        ++diskWriterMonitoring_.nbLumiSections;
-      else
+      if ( result.second == false)        // lumisection exists
         *(*result.first) += *lumiMonitor; // add values and see the stars
 
       diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
@@ -93,22 +149,16 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
         diskWriterMonitoring_.lastEventNumberWritten = lumiMonitor->lastEventNumberWritten;
       if ( diskWriterMonitoring_.currentLumiSection < lumiMonitor->lumiSection )
         diskWriterMonitoring_.currentLumiSection = lumiMonitor->lumiSection;
+
+      if ( (*result.first)->updates == streamCount )
+      {
+        if ( (*result.first)->nbFiles > 0 )
+          ++diskWriterMonitoring_.nbLumiSections;
+
+        writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
+        lumiMonitors_.erase(result.first);
+      }
     }
-  }
-
-  // Find the highest lumi section where all streams reported the EoLS
-  LumiMonitors::iterator lastCompleteMonitor = lumiMonitors_.end();
-  const uint32_t streamCount = streamHandlers_.size();
-
-  LumiMonitors::const_reverse_iterator rit = lumiMonitors_.rbegin();
-  const LumiMonitors::const_reverse_iterator ritEnd = lumiMonitors_.rend();
-
-  while ( rit != ritEnd && (*rit)->updates != streamCount ) ++rit;
-
-  while ( rit != ritEnd )
-  {
-    writeEoLS( (*rit)->lumiSection, (*rit)->nbFiles, (*rit)->nbEventsWritten );
-    lumiMonitors_.erase( (++rit).base() );
   }
 }
 
@@ -126,8 +176,6 @@ void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::DiskWriter::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-
-  gatherLumiStatistics();
 
   nbEvtsWritten_ = diskWriterMonitoring_.nbEventsWritten;
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
@@ -220,7 +268,7 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>" << diskWriterMonitoring_.nbEventsWritten << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td># lumi sections closed</td>"                       << std::endl;
+    *out << "<td># lumi sections with files</td>"                   << std::endl;
     *out << "<td>" << diskWriterMonitoring_.nbLumiSections << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;

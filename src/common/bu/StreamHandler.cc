@@ -14,20 +14,17 @@
 evb::bu::StreamHandler::StreamHandler
 (
   const uint32_t buInstance,
-  const uint32_t builderId,
   const uint32_t runNumber,
   const boost::filesystem::path& runRawDataDir,
   const boost::filesystem::path& runMetaDataDir,
   ConfigurationPtr configuration
 ) :
 buInstance_(buInstance),
-builderId_(builderId),
 runNumber_(runNumber),
 runRawDataDir_(runRawDataDir),
 runMetaDataDir_(runMetaDataDir),
-maxEventsPerFile_(configuration->maxEventsPerFile),
-numberOfBuilders_(configuration->numberOfBuilders),
-index_(builderId),
+configuration_(configuration),
+currentLumiMonitor_( new LumiMonitor(1) ),
 lumiMonitorFIFO_("lumiMonitorFIFO")
 {
   lumiMonitorFIFO_.resize(configuration->lumiMonitorFIFOCapacity);
@@ -44,6 +41,7 @@ void evb::bu::StreamHandler::close()
 {
   fileHandler_.reset();
 
+  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
   if ( currentLumiMonitor_.get() )
     while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
 }
@@ -51,16 +49,13 @@ void evb::bu::StreamHandler::close()
 
 void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
+  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
+
   const uint32_t lumiSection = event->lumiSection();
 
-  if ( ! currentLumiMonitor_.get() )
-  {
-    currentLumiMonitor_.reset( new LumiMonitor(lumiSection) );
-  }
-  else if ( lumiSection > currentLumiMonitor_->lumiSection )
+  if ( lumiSection > currentLumiMonitor_->lumiSection )
   {
     closeLumiSection(lumiSection);
-    index_ = builderId_;
   }
   else if ( lumiSection < currentLumiMonitor_->lumiSection )
   {
@@ -73,8 +68,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   if ( fileHandler_.get() == 0 )
   {
-    fileHandler_.reset( new FileHandler(buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection, index_) );
-    index_ += numberOfBuilders_;
+    fileHandler_.reset( new FileHandler(buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection) );
     ++(currentLumiMonitor_->nbFiles);
   }
 
@@ -83,7 +77,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
   ++(currentLumiMonitor_->nbEventsWritten);
   currentLumiMonitor_->lastEventNumberWritten = event->getEvBid().eventNumber();
 
-  if ( fileHandler_->getEventCount() >= maxEventsPerFile_ )
+  if ( fileHandler_->getEventCount() >= configuration_->maxEventsPerFile )
   {
     fileHandler_.reset();
   }
@@ -92,7 +86,13 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
 void evb::bu::StreamHandler::closeLumiSection(const uint32_t lumiSection)
 {
+  fileHandler_.reset();
+
   while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
+
+  // Create empty lumiMonitors for skipped lumi sections
+  for (uint32_t ls = currentLumiMonitor_->lumiSection+1; ls < lumiSection; ++ls)
+    while ( ! lumiMonitorFIFO_.enq( LumiMonitorPtr(new LumiMonitor(ls)) ) ) ::usleep(1000);
 
   currentLumiMonitor_.reset( new LumiMonitor(lumiSection) );
 }
@@ -100,7 +100,20 @@ void evb::bu::StreamHandler::closeLumiSection(const uint32_t lumiSection)
 
 bool evb::bu::StreamHandler::getLumiMonitor(LumiMonitorPtr& lumiMonitor)
 {
-  return lumiMonitorFIFO_.deq(lumiMonitor);
+  if ( lumiMonitorFIFO_.deq(lumiMonitor) ) return true;
+
+  // Check for old lumi sections
+  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
+
+  if ( time(0) > (currentLumiMonitor_->creationTime + configuration_->lumiSectionTimeout) )
+  {
+    fileHandler_.reset();
+    lumiMonitor = currentLumiMonitor_;
+    currentLumiMonitor_.reset( new LumiMonitor(lumiMonitor->lumiSection+1) );
+    return true;
+  }
+
+  return false;
 }
 
 

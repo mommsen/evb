@@ -37,6 +37,7 @@ namespace evb {
       xdata::Double metaDataLowWaterMark;
       xdata::UnsignedInteger32 maxEventsPerFile;
       xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;
+      xdata::UnsignedInteger32 lumiSectionTimeout;
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
@@ -52,7 +53,8 @@ namespace evb {
         metaDataHighWaterMark(0.9),
         metaDataLowWaterMark(0.5),
         maxEventsPerFile(2000),
-        lumiMonitorFIFOCapacity(128)
+        lumiMonitorFIFOCapacity(128),
+        lumiSectionTimeout(25)
       {};
 
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
@@ -71,6 +73,7 @@ namespace evb {
         params.add("metaDataLowWaterMark", &metaDataLowWaterMark);
         params.add("maxEventsPerFile", &maxEventsPerFile);
         params.add("lumiMonitorFIFOCapacity", &lumiMonitorFIFOCapacity);
+        params.add("lumiSectionTimeout", &lumiSectionTimeout);
       }
     };
 
