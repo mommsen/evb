@@ -142,7 +142,7 @@ void evb::bu::FileHandler::close()
 void evb::bu::FileHandler::writeJSON() const
 {
   const boost::filesystem::path jsonDefFile = runMetaDataDir_ / "rawData.jsd";
-  defineJSON(jsonDefFile);
+  if ( ! boost::filesystem::exists(jsonDefFile) ) defineJSON(jsonDefFile);
 
   boost::filesystem::path jsonFile = runMetaDataDir_ / fileName_;
   jsonFile.replace_extension("jsn");
