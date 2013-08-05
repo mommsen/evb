@@ -3,6 +3,7 @@
 
 #include <boost/filesystem/convenience.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <stdint.h>
 
@@ -65,14 +66,14 @@ namespace evb {
 
       const boost::filesystem::path runRawDataDir_;
       const boost::filesystem::path runMetaDataDir_;
-      const uint32_t maxEventsPerFile_;
-      const uint32_t numberOfBuilders_;
+      const ConfigurationPtr configuration_;
 
       uint32_t index_;
 
       FileHandlerPtr fileHandler_;
 
       LumiMonitorPtr currentLumiMonitor_;
+      boost::mutex currentLumiMonitorMutex_;
       typedef OneToOneQueue<LumiMonitorPtr> LumiMonitorFIFO;
       LumiMonitorFIFO lumiMonitorFIFO_;
 

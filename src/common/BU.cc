@@ -24,6 +24,7 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
   stateMachine_.reset( new bu::StateMachine(this,
       ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
+  diskWriter_->registerStateMachine(stateMachine_);
   eventBuilder_->registerStateMachine(stateMachine_);
   ruProxy_->registerStateMachine(stateMachine_);
 

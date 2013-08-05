@@ -4,7 +4,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <stdint.h>
-
+#include <time.h>
 
 namespace evb {
 
@@ -17,9 +17,11 @@ namespace evb {
       uint32_t nbEventsWritten;
       uint32_t lastEventNumberWritten;
       uint32_t updates;
+      time_t creationTime;
 
       LumiMonitor(uint32_t ls) :
-      lumiSection(ls),nbFiles(0),nbEventsWritten(0),updates(1) {};
+      lumiSection(ls),nbFiles(0),nbEventsWritten(0),updates(1),
+      creationTime( time(0) ) {};
 
       inline LumiMonitor& operator+= (const LumiMonitor& other)
       {
