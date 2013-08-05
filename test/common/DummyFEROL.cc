@@ -193,6 +193,7 @@ void evb::test::DummyFEROL::configure()
     configuration_->playbackDataFile,
     configuration_->frameSize,
     configuration_->fedSize,
+    configuration_->useLogNormal,
     configuration_->fedSizeStdDev,
     configuration_->minFedSize,
     configuration_->maxFedSize,
