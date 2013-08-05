@@ -20,8 +20,7 @@ evb::bu::FileHandler::FileHandler
   const uint32_t buInstance,
   const boost::filesystem::path& runRawDataDir,
   const boost::filesystem::path& runMetaDataDir,
-  const uint32_t lumiSection,
-  const uint32_t index
+  const uint32_t lumiSection
 ) :
 buInstance_(buInstance),
 runRawDataDir_(runRawDataDir),
@@ -35,7 +34,8 @@ adlerB_(0)
   std::ostringstream fileNameStream;
   fileNameStream
     << "ls" << std::setfill('0') << std::setw(4) << lumiSection
-      << "_index" << std::setw(6) << index << ".raw";
+      << "_index" << std::setw(6) << getNextIndex(lumiSection)
+      << ".raw";
   fileName_ = fileNameStream.str();
   const boost::filesystem::path rawFile = runRawDataDir_ / fileName_;
 
@@ -198,6 +198,32 @@ void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
 
   #undef MOD_ADLER
 }
+
+
+uint16_t evb::bu::FileHandler::getNextIndex(uint32_t lumiSection)
+{
+  boost::mutex::scoped_lock sl(indexMutex_);
+
+  if ( lumiSection > lastLumiSection_ )
+  {
+    index_ = 0;
+    lastLumiSection_ = lumiSection;
+  }
+  else if ( lumiSection < lastLumiSection_ )
+  {
+    std::ostringstream oss;
+    oss << "Received an event from an earlier lumi section " << lumiSection;
+    oss << " while processing lumi section " << lastLumiSection_;
+    XCEPT_RAISE(exception::EventOrder, oss.str());
+  }
+
+  return index_++;
+}
+
+
+boost::mutex evb::bu::FileHandler::indexMutex_;
+uint16_t evb::bu::FileHandler::index_(0);
+uint32_t evb::bu::FileHandler::lastLumiSection_(0);
 
 
 /// emacs configuration

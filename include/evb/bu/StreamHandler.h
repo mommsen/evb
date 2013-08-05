@@ -30,7 +30,6 @@ namespace evb {
       StreamHandler
       (
         const uint32_t buInstance,
-        const uint32_t builderId,
         const uint32_t runNumber,
         const boost::filesystem::path& buRawDataDir,
         const boost::filesystem::path& buMetaDataDir,
@@ -61,14 +60,11 @@ namespace evb {
       void closeLumiSection(const uint32_t lumiSection);
 
       const uint32_t buInstance_;
-      const uint32_t builderId_;
       const uint32_t runNumber_;
 
       const boost::filesystem::path runRawDataDir_;
       const boost::filesystem::path runMetaDataDir_;
       const ConfigurationPtr configuration_;
-
-      uint32_t index_;
 
       FileHandlerPtr fileHandler_;
 

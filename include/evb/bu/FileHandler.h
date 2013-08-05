@@ -27,8 +27,7 @@ namespace evb {
         const uint32_t buInstance,
         const boost::filesystem::path& runRawDataDir,
         const boost::filesystem::path& runMetaDataDir,
-        const uint32_t lumiSection,
-        const uint32_t index
+        const uint32_t lumiSection
       );
 
       ~FileHandler();
@@ -64,11 +63,17 @@ namespace evb {
       void defineJSON(const boost::filesystem::path&) const;
       void calcAdler32(const unsigned char* address, size_t length);
 
+      static uint16_t getNextIndex(const uint32_t lumiSection);
+      static boost::mutex indexMutex_;
+      static uint16_t index_;
+      static uint32_t lastLumiSection_;
+
       const uint32_t buInstance_;
       const boost::filesystem::path runRawDataDir_;
       const boost::filesystem::path runMetaDataDir_;
       boost::filesystem::path fileName_;
       int fileDescriptor_;
+
       uint64_t fileSize_;
       uint32_t eventCount_;
       uint32_t adlerA_;

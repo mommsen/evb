@@ -43,7 +43,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
     StreamHandlerPtr streamHandler(
-      new StreamHandler(buInstance_,i,runNumber_,runRawDataDir_,runMetaDataDir_,configuration_)
+      new StreamHandler(buInstance_,runNumber_,runRawDataDir_,runMetaDataDir_,configuration_)
     );
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }

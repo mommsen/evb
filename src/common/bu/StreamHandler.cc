@@ -14,19 +14,16 @@
 evb::bu::StreamHandler::StreamHandler
 (
   const uint32_t buInstance,
-  const uint32_t builderId,
   const uint32_t runNumber,
   const boost::filesystem::path& runRawDataDir,
   const boost::filesystem::path& runMetaDataDir,
   ConfigurationPtr configuration
 ) :
 buInstance_(buInstance),
-builderId_(builderId),
 runNumber_(runNumber),
 runRawDataDir_(runRawDataDir),
 runMetaDataDir_(runMetaDataDir),
 configuration_(configuration),
-index_(builderId),
 currentLumiMonitor_( new LumiMonitor(1) ),
 lumiMonitorFIFO_("lumiMonitorFIFO")
 {
@@ -59,7 +56,6 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
   if ( lumiSection > currentLumiMonitor_->lumiSection )
   {
     closeLumiSection(lumiSection);
-    index_ = builderId_;
   }
   else if ( lumiSection < currentLumiMonitor_->lumiSection )
   {
@@ -72,8 +68,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   if ( fileHandler_.get() == 0 )
   {
-    fileHandler_.reset( new FileHandler(buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection, index_) );
-    index_ += configuration_->numberOfBuilders;
+    fileHandler_.reset( new FileHandler(buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection) );
     ++(currentLumiMonitor_->nbFiles);
   }
 
