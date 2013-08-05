@@ -140,9 +140,7 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
     {
       result = lumiMonitors_.insert(lumiMonitor);
 
-      if ( result.second == true) // a new lumisection
-        ++diskWriterMonitoring_.nbLumiSections;
-      else
+      if ( result.second == false)        // lumisection exists
         *(*result.first) += *lumiMonitor; // add values and see the stars
 
       diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
@@ -154,6 +152,9 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
 
       if ( (*result.first)->updates == streamCount )
       {
+        if ( (*result.first)->nbFiles > 0 )
+          ++diskWriterMonitoring_.nbLumiSections;
+
         writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
         lumiMonitors_.erase(result.first);
       }
@@ -267,7 +268,7 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out)
     *out << "<td>" << diskWriterMonitoring_.nbEventsWritten << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td># lumi sections closed</td>"                       << std::endl;
+    *out << "<td># lumi sections with files</td>"                   << std::endl;
     *out << "<td>" << diskWriterMonitoring_.nbLumiSections << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
