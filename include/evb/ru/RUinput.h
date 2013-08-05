@@ -2,7 +2,6 @@
 #define _evb_ru_RUinput_h_
 
 #include <boost/scoped_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <stdint.h>

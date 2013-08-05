@@ -2,7 +2,6 @@
 #define _evb_bu_h_
 
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <string>
 

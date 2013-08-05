@@ -1,7 +1,6 @@
 #ifndef _evb_bu_EventBuilder_h_
 #define _evb_bu_EventBuilder_h_
 
-#include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <map>
