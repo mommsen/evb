@@ -34,7 +34,7 @@
         <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -74,7 +74,7 @@
         <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -114,7 +114,7 @@
         <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -154,7 +154,7 @@
         <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -194,7 +194,7 @@
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">1</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -234,7 +234,7 @@
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">1</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -274,7 +274,7 @@
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">1</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -314,7 +314,7 @@
         <destinationClass xsi:type="xsd:string">evb::RU</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">1</destinationInstance>
         <minFedSize xsi:type="xsd:unsignedInt">32</minFedSize>
-        <maxFedSize xsi:type="xsd:unsignedInt">32000</maxFedSize>
+        <maxFedSize xsi:type="xsd:unsignedInt">64000</maxFedSize>
       </properties>
     </xc:Application>
 
@@ -438,8 +438,8 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
         <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[4]" xsi:type="soapenc:Array">
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">0</item>
           <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">1</item>
@@ -568,8 +568,8 @@
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
         <blockSize xsi:type="xsd:unsignedInt">65536</blockSize>
-        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
         <numberOfResponders xsi:type="xsd:unsignedInt">3</numberOfResponders>
+        <fragmentFIFOCapacity xsi:type="xsd:unsignedInt">128</fragmentFIFOCapacity>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[4]" xsi:type="soapenc:Array">
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">4</item>
           <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">5</item>
