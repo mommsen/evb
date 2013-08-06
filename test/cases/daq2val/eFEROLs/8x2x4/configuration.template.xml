@@ -505,7 +505,7 @@
     <xc:Application class="pt::udapl::Application" id="10" network="local">
       <properties xmlns="urn:xdaq-application:pt::udapl::Application" xsi:type="soapenc:Struct">
         <iaName xsi:type="xsd:string">ofa-v2-ib0</iaName>
-        <senderPoolSize xsi:type="xsd:unsignedInt">0x3E800000</senderPoolSize>
+        <senderPoolSize xsi:type="xsd:unsignedInt">0x1F400000</senderPoolSize>
         <receiverPoolSize xsi:type="xsd:unsignedInt">0x40000000</receiverPoolSize>
       </properties>
     </xc:Application>
