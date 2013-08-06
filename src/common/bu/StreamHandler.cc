@@ -68,7 +68,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   if ( fileHandler_.get() == 0 )
   {
-    fileHandler_.reset( new FileHandler(buInstance_, runRawDataDir_, runMetaDataDir_, lumiSection) );
+    fileHandler_.reset( new FileHandler(buInstance_, runNumber_, runRawDataDir_, runMetaDataDir_, lumiSection) );
     ++(currentLumiMonitor_->nbFiles);
   }
 

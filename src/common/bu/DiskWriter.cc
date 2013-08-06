@@ -290,8 +290,9 @@ void evb::bu::DiskWriter::writeEoLS
 ) const
 {
   std::ostringstream fileNameStream;
-  fileNameStream
-    << "EoLS_" << std::setfill('0') << std::setw(4) << lumiSection << ".jsn";
+  fileNameStream << std::setfill('0') <<
+    "EoLS_"  << std::setw(4) << lumiSection <<
+    ".jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
 
   if ( boost::filesystem::exists(jsonFile) )
@@ -303,10 +304,10 @@ void evb::bu::DiskWriter::writeEoLS
 
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                         << std::endl;
-  json << "   \"Data\" : [ \""     << eventCount  << "\", \""
+  json << "   \"data\" : [ \""     << eventCount  << "\", \""
                                    << fileCount   << "\" ],"          << std::endl;
-  json << "   \"Definition\" : \"" << eolsDefFile_.string()  << "\"," << std::endl;
-  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
+  json << "   \"definition\" : \"" << eolsDefFile_.string()  << "\"," << std::endl;
+  json << "   \"source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
   json << "}"                                                         << std::endl;
   json.close();
 }
@@ -315,8 +316,9 @@ void evb::bu::DiskWriter::writeEoLS
 void evb::bu::DiskWriter::writeEoR() const
 {
   std::ostringstream fileNameStream;
-  fileNameStream
-    << "EoR_" << std::setfill('0') << std::setw(6) << runNumber_ << ".jsn";
+  fileNameStream << std::setfill('0') <<
+    "EoR_" << std::setw(6) << runNumber_ <<
+    ".jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
 
   if ( boost::filesystem::exists(jsonFile) )
@@ -328,11 +330,11 @@ void evb::bu::DiskWriter::writeEoR() const
 
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                                           << std::endl;
-  json << "   \"Data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
+  json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
                                    << diskWriterMonitoring_.nbFiles         << "\", \""
                                    << diskWriterMonitoring_.nbLumiSections  << "\" ],"  << std::endl;
-  json << "   \"Definition\" : \"" << eorDefFile_.string()  << "\","                    << std::endl;
-  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
+  json << "   \"definition\" : \"" << eorDefFile_.string()  << "\","                    << std::endl;
+  json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
   json.close();
 }

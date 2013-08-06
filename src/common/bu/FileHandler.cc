@@ -18,6 +18,7 @@
 evb::bu::FileHandler::FileHandler
 (
   const uint32_t buInstance,
+  const uint32_t runNumber,
   const boost::filesystem::path& runRawDataDir,
   const boost::filesystem::path& runMetaDataDir,
   const uint32_t lumiSection
@@ -32,10 +33,11 @@ adlerA_(1),
 adlerB_(0)
 {
   std::ostringstream fileNameStream;
-  fileNameStream
-    << "ls" << std::setfill('0') << std::setw(4) << lumiSection
-      << "_index" << std::setw(6) << getNextIndex(lumiSection)
-      << ".raw";
+  fileNameStream << std::setfill('0') <<
+    "run"<< std::setw(6) << runNumber <<
+    "_ls" << std::setw(4) << lumiSection <<
+    "_index" << std::setw(6) << getNextIndex(lumiSection) <<
+    ".raw";
   fileName_ = fileNameStream.str();
   const boost::filesystem::path rawFile = runRawDataDir_ / fileName_;
 
@@ -156,9 +158,9 @@ void evb::bu::FileHandler::writeJSON() const
 
   std::ofstream json(jsonFile.string().c_str());
   json << "{"                                                         << std::endl;
-  json << "   \"Data\" : [ \""     << eventCount_   << "\" ],"        << std::endl;
-  json << "   \"Definition\" : \"" << jsonDefFile.string()  << "\","  << std::endl;
-  json << "   \"Source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
+  json << "   \"data\" : [ \""     << eventCount_   << "\" ],"        << std::endl;
+  json << "   \"definition\" : \"" << jsonDefFile.string()  << "\","  << std::endl;
+  json << "   \"source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
   json << "}"                                                         << std::endl;
   json.close();
 }

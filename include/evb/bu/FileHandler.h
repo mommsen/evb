@@ -25,6 +25,7 @@ namespace evb {
       FileHandler
       (
         const uint32_t buInstance,
+        const uint32_t runNumber,
         const boost::filesystem::path& runRawDataDir,
         const boost::filesystem::path& runMetaDataDir,
         const uint32_t lumiSection
