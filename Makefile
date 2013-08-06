@@ -153,7 +153,22 @@ DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX)
 DynamicLibrary=evb
 TestDynamicLibrary=evbtest
 
-all: _installall
+TestDynamicLibraryName = $(TestDynamicLibrary:%=$(PackageLibDir)/$(LibraryPrefix)%$(DynamicSuffix))
+
+all: _buildall test install
+
+test: _buildall
+	@make tests
+
+testinstall: test
+	$(Copy) -p $(TestDynamicLibraryName)* $(LibInstallDir)/
+
+clean: _cleanall
+	@make testsclean
+
+install: _installall testinstall
+
+rpm: _buildall test _rpmall
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules
