@@ -9,8 +9,6 @@
 #include "evb/FragmentTracker.h"
 
 
-//#define CALCULATE_CRC
-
 evb::FragmentTracker::FragmentTracker
 (
   const uint32_t fedId,

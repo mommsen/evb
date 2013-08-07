@@ -376,8 +376,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
             XCEPT_RAISE(exception::FEROL, "The FEROL data overruns the end of the fragment buffer.");
           }
         }
-        // TODO: handle case that fragment is split over several bufRefs
-        //assert( currentFragment->getDataSize() > sizeof(I2O_DATA_READY_MESSAGE_FRAME)+ferolOffset );
 
         const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
           + ferolOffset;

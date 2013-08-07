@@ -7,7 +7,6 @@
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/CRC16.h"
 #include "evb/Constants.h"
-#include "evb/EventUtils.h"
 #include "evb/Exception.h"
 #include "evb/FragmentGenerator.h"
 #include "evb/FragmentTracker.h"
@@ -357,6 +356,47 @@ void evb::FragmentGenerator::updateCRC
   unsigned short crc = compute_crc(fedPtr,fedSize_);
   fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
 }
+
+
+evb::L1Information::L1Information()
+{
+  reset();
+}
+
+
+void evb::L1Information::reset()
+{
+  strncpy(reason, "none", sizeof(reason));
+  isValid           = false;
+  runNumber         = 0UL;
+  lsNumber          = 0UL;
+  bunchCrossing     = 0UL;
+  orbitNumber       = 0UL;
+  eventType         = 0U;
+  l1Technical       = 0ULL;
+  l1Decision_0_63   = 0ULL;
+  l1Decision_64_127 = 0ULL;
+}
+
+
+const evb::L1Information& evb::L1Information::operator=
+(
+  const L1Information& l1Info
+)
+{
+  strncpy(reason, l1Info.reason, sizeof(reason));
+  isValid           = l1Info.isValid;
+  runNumber         = l1Info.runNumber;
+  lsNumber          = l1Info.lsNumber;
+  bunchCrossing     = l1Info.bunchCrossing;
+  orbitNumber       = l1Info.orbitNumber;
+  eventType         = l1Info.eventType;
+  l1Technical       = l1Info.l1Technical;
+  l1Decision_0_63   = l1Info.l1Decision_0_63;
+  l1Decision_64_127 = l1Info.l1Decision_64_127;
+  return *this;
+}
+
 
 
 

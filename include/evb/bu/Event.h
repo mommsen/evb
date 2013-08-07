@@ -6,11 +6,12 @@
 #include <map>
 #include <stdint.h>
 
-#include "evb/bu/FileHandler.h"
+#include "evb/Constants.h"
 #include "evb/EvBid.h"
-#include "evb/EventUtils.h"
 #include "evb/I2OMessages.h"
+#include "evb/bu/FileHandler.h"
 #include "i2o/i2oDdmLib.h"
+#include "interface/shared/fed_trailer.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -98,6 +99,17 @@ namespace evb {
 
 
     private:
+
+      struct FedInfo
+      {
+        uint16_t fedId;
+        uint16_t crc;
+        uint32_t conscheck;
+        fedt_t* trailer;
+
+        FedInfo() : fedId(FED_COUNT), crc(0xffff), conscheck(0), trailer(0) {};
+        uint32_t fedSize() const { return ( trailer?FED_EVSZ_EXTRACT(trailer->eventsize)<<3:0 ); }
+      };
 
       struct EventInfo
       {

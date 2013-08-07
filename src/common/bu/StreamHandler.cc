@@ -5,7 +5,6 @@
 #include "evb/bu/StreamHandler.h"
 #include "evb/bu/FileHandler.h"
 #include "evb/bu/ResourceManager.h"
-#include "evb/bu/LumiHandler.h"
 #include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"

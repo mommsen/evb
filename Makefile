@@ -33,7 +33,6 @@ Package=evb
 Sources=\
 	DumpUtility.cc \
 	EvBidFactory.cc \
-	EventUtils.cc \
 	FragmentGenerator.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \

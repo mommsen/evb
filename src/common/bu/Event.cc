@@ -4,9 +4,10 @@
 #include <sys/mman.h>
 #include <sstream>
 
-//#include <boost/crc.hpp>
+#include <boost/crc.hpp>
 
 #include "interface/evb/i2oEVBMsgs.h"
+#include "interface/shared/fed_header.h"
 #include "interface/shared/ferol_header.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"

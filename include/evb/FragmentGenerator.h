@@ -16,7 +16,27 @@
 
 namespace evb {
 
-  class L1Information;
+  /**
+   * struct for lumi section and L1 trigger bit information
+   */
+  struct L1Information
+  {
+    bool isValid;
+    char reason[100];
+    uint32_t runNumber;
+    uint32_t lsNumber;
+    uint32_t bunchCrossing;
+    uint32_t orbitNumber;
+    uint16_t eventType;
+    uint64_t l1Technical;
+    uint64_t l1Decision_0_63;
+    uint64_t l1Decision_64_127;
+
+    L1Information();
+    void reset();
+    const L1Information& operator=(const L1Information&);
+  };
+
 
   /**
    * \ingroup xdaqApps
