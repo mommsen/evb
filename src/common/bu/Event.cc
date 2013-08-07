@@ -7,7 +7,6 @@
 #include <boost/crc.hpp>
 
 #include "interface/evb/i2oEVBMsgs.h"
-#include "interface/shared/fed_header.h"
 #include "interface/shared/ferol_header.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
@@ -76,8 +75,6 @@ bool evb::bu::Event::appendSuperFragment
     pos->second = totalSize;
     eventInfo_->eventSize += totalSize;
   }
-
-  if (partSize == 0) return false;
 
   if (partSize == 0) return false;
 
@@ -151,16 +148,10 @@ void evb::bu::Event::checkEvent()
 
     do {
 
-      FedInfo fedInfo;
-      checkFedTrailer((*rit)->location, remainingLength, fedInfo);
-      uint32_t remainingFedSize = fedInfo.fedSize();
+      FedInfo fedInfo((*rit)->location, remainingLength);
 
-      // now start the odyssee to the fragment header
-      // advance to the data section where we expect the header
-      while ( remainingFedSize > remainingLength )
+      while ( ! fedInfo.complete() )
       {
-        // advance to the next block
-        remainingFedSize -= remainingLength;
         ++rit;
         if ( rit == ritEnd )
         {
@@ -168,18 +159,15 @@ void evb::bu::Event::checkEvent()
         }
         remainingLength = (*rit)->length;
         --chunk;
+        fedInfo.addDataChunk((*rit)->location, remainingLength);
       }
-      remainingLength -= remainingFedSize;
-      //fedInfo.crc = updateCRC(fedLocations_.size()-1, lastFragment);
 
-      checkFedHeader((*rit)->location, remainingLength, fedInfo);
+      fedInfo.checkData( evbId_.eventNumber() );
 
       if ( !eventInfo_->addFedSize(fedInfo) )
       {
         std::stringstream oss;
-
-        oss << "Found a duplicated FED id " << fedInfo.fedId;
-
+        oss << "Found a duplicated FED id " << fedInfo.fedId();
         XCEPT_RAISE(exception::SuperFragment, oss.str());
       }
 
@@ -248,80 +236,6 @@ uint16_t evb::bu::Event::updateCRC
   return crc; //.checksum();
 }
 
-void evb::bu::Event::checkFedHeader
-(
-  const unsigned char* pos,
-  const uint32_t offset,
-  FedInfo& fedInfo
-) const
-{
-  const fedh_t* fedHeader = (fedh_t*)(pos + offset);
-
-  if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
-  {
-    std::stringstream oss;
-
-    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-    oss << " but got event id 0x" << std::hex << fedHeader->eventid;
-    oss << " and source id 0x" << std::hex << fedHeader->sourceid;
-    oss << " at offset 0x" << std::hex << offset;
-
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
-  }
-
-  const uint32_t eventid = FED_LVL1_EXTRACT(fedHeader->eventid);
-  fedInfo.fedId = FED_SOID_EXTRACT(fedHeader->sourceid);
-
-  if (eventid != eventInfo_->eventNumber)
-  {
-    std::stringstream oss;
-
-    oss << "FED header \"eventid\" " << eventid << " does not match";
-    oss << " expected eventNumber " << eventInfo_->eventNumber;
-
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
-  }
-
-  if ( fedInfo.fedId >= FED_COUNT )
-  {
-    std::stringstream oss;
-
-    oss << "The FED id " << fedInfo.fedId << " is larger than the maximum " << FED_COUNT;
-
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
-  }
-
-  checkCRC(fedInfo, eventid);
-}
-
-
-void evb::bu::Event::checkFedTrailer
-(
-  const unsigned char* pos,
-  const uint32_t offset,
-  FedInfo& fedInfo
-) const
-{
-  fedInfo.trailer = (fedt_t*)(pos + offset - sizeof(fedt_t));
-
-  if ( FED_TCTRLID_EXTRACT(fedInfo.trailer->eventsize) != FED_SLINK_END_MARKER )
-  {
-    std::stringstream oss;
-
-    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << std::hex << fedInfo.trailer->eventsize;
-    oss << " and conscheck 0x" << std::hex << fedInfo.trailer->conscheck;
-    oss << " at postion 0x" << std::hex << offset-sizeof(fedt_t);
-
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
-  }
-
-  // Force CRC field to zero before re-computing the CRC.
-  // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
-  fedInfo.conscheck = fedInfo.trailer->conscheck;
-  fedInfo.trailer->conscheck = 0;
-}
-
 
 void evb::bu::Event::checkCRC
 (
@@ -329,19 +243,113 @@ void evb::bu::Event::checkCRC
   const uint32_t eventNumber
 ) const
 {
-  const uint16_t trailerCRC = FED_CRCS_EXTRACT(fedInfo.conscheck);
-  fedInfo.trailer->conscheck = fedInfo.conscheck;
+  // const uint16_t trailerCRC = FED_CRCS_EXTRACT(fedInfo.conscheck);
+  // fedInfo.trailer->conscheck = fedInfo.conscheck;
 
-  if ( fedInfo.crc != 0xffff && trailerCRC != fedInfo.crc )
+  // #ifdef EVB_CALCULATE_CRC
+  // if ( trailerCRC != fedInfo.crc )
+  // {
+  //   std::stringstream oss;
+
+  //   oss << "Wrong CRC checksum in FED trailer for FED " << fedInfo.fedId;
+  //   oss << ": found 0x" << std::hex << trailerCRC;
+  //   oss << ", but calculated 0x" << std::hex << fedInfo.crc;
+
+  //   XCEPT_RAISE(exception::SuperFragment, oss.str());
+  // }
+  // #endif
+}
+
+
+evb::bu::Event::FedInfo::FedInfo(const unsigned char* pos, uint32_t& remainingLength)
+{
+  fedt_t* trailer = (fedt_t*)(pos + remainingLength - sizeof(fedt_t));
+
+  if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
   {
     std::stringstream oss;
-
-    oss << "Wrong CRC checksum in FED trailer for FED " << fedInfo.fedId;
-    oss << ": found 0x" << std::hex << trailerCRC;
-    oss << ", but calculated 0x" << std::hex << fedInfo.crc;
-
+    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
+    oss << " but got event size 0x" << std::hex << trailer->eventsize;
+    oss << " and conscheck 0x" << std::hex << trailer->conscheck;
+    oss << " at offset 0x" << std::hex << remainingLength;
     XCEPT_RAISE(exception::SuperFragment, oss.str());
   }
+
+  const uint32_t fedSize = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
+  const uint32_t length = std::min(fedSize,remainingLength);
+  remainingFedSize_ = fedSize - length;
+  remainingLength -= length;
+
+  fedData_.push_back(DataLocationPtr( new DataLocation(pos+remainingLength,length) ));
+}
+
+
+void evb::bu::Event::FedInfo::addDataChunk(const unsigned char* pos, uint32_t& remainingLength)
+{
+  const uint32_t length = std::min(remainingFedSize_,remainingLength);
+  remainingFedSize_ -= length;
+  remainingLength -= length;
+  fedData_.push_back(DataLocationPtr( new DataLocation(pos+remainingLength,length) ));
+}
+
+
+void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
+{
+  if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
+  {
+    std::stringstream oss;
+    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
+    oss << " but got event id 0x" << std::hex << header()->eventid;
+    oss << " and source id 0x" << std::hex << header()->sourceid;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+
+  if (eventId() != eventNumber)
+  {
+    std::stringstream oss;
+    oss << "FED header \"eventid\" " << eventId() << " does not match";
+    oss << " expected eventNumber " << eventNumber;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+
+  if ( fedId() >= FED_COUNT )
+  {
+    std::stringstream oss;
+    oss << "The FED id " << fedId() << " is larger than the maximum " << FED_COUNT;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+
+  // recheck the trailer to assure that the fedData is correct
+  if ( FED_TCTRLID_EXTRACT(trailer()->eventsize) != FED_SLINK_END_MARKER )
+  {
+    std::stringstream oss;
+    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
+    oss << " but got event size 0x" << std::hex << trailer()->eventsize;
+    oss << " and conscheck 0x" << std::hex << trailer()->conscheck;
+    XCEPT_RAISE(exception::SuperFragment, oss.str());
+  }
+
+  #ifdef EVB_CALCULATE_CRC
+  // Force CRC field to zero before re-computing the CRC.
+  // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
+  const uint32_t conscheck = trailer()->conscheck;
+  trailer()->conscheck = 0;
+  #endif
+}
+
+
+inline
+fedh_t* evb::bu::Event::FedInfo::header() const
+{
+  return (fedh_t*)(fedData_.back()->location);
+}
+
+
+inline
+fedt_t* evb::bu::Event::FedInfo::trailer() const
+{
+  const DataLocationPtr loc = fedData_.front();
+  return (fedt_t*)(loc->location + loc->length - sizeof(fedt_t));
 }
 
 
@@ -366,10 +374,11 @@ eventSize(0)
 inline
 bool evb::bu::Event::EventInfo::addFedSize(const FedInfo& fedInfo)
 {
-  if ( fedSizes[fedInfo.fedId] > 0 ) return false;
+  const uint16_t fedId = fedInfo.fedId();
+  if ( fedSizes[fedId] > 0 ) return false;
 
   const uint32_t fedSize = fedInfo.fedSize();
-  fedSizes[fedInfo.fedId] = fedSize;
+  fedSizes[fedId] = fedSize;
 
   return true;
 }

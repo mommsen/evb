@@ -11,6 +11,7 @@
 #include "evb/I2OMessages.h"
 #include "evb/bu/FileHandler.h"
 #include "i2o/i2oDdmLib.h"
+#include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "toolbox/mem/Reference.h"
 
@@ -100,15 +101,38 @@ namespace evb {
 
     private:
 
-      struct FedInfo
+      struct DataLocation
       {
-        uint16_t fedId;
-        uint16_t crc;
-        uint32_t conscheck;
-        fedt_t* trailer;
+        const unsigned char* location;
+        const uint32_t length;
 
-        FedInfo() : fedId(FED_COUNT), crc(0xffff), conscheck(0), trailer(0) {};
-        uint32_t fedSize() const { return ( trailer?FED_EVSZ_EXTRACT(trailer->eventsize)<<3:0 ); }
+        DataLocation(const unsigned char* loc, const uint32_t len) :
+        location(loc),length(len) {};
+      };
+      typedef boost::shared_ptr<DataLocation> DataLocationPtr;
+      typedef std::vector<DataLocationPtr> DataLocations;
+      DataLocations dataLocations_;
+
+      class FedInfo
+      {
+      public:
+        FedInfo(const unsigned char* pos, uint32_t& remainingLength);
+        void addDataChunk(const unsigned char* pos, uint32_t& remainingLength);
+        void checkData(const uint32_t eventNumber);
+
+        bool complete() const { return (remainingFedSize_ == 0); }
+
+        uint32_t eventId()  const { return FED_LVL1_EXTRACT(header()->eventid); }
+        uint16_t fedId()    const { return FED_SOID_EXTRACT(header()->sourceid); }
+        uint32_t fedSize()  const { return FED_EVSZ_EXTRACT(trailer()->eventsize)<<3; }
+        uint16_t crc()      const { return FED_CRCS_EXTRACT(trailer()->conscheck); }
+
+      private:
+        fedh_t* header() const;
+        fedt_t* trailer() const;
+
+        DataLocations fedData_;
+        uint32_t remainingFedSize_;
       };
 
       struct EventInfo
@@ -134,32 +158,9 @@ namespace evb {
       };
       EventInfo* eventInfo_;
 
-      struct DataLocation
-      {
-        const unsigned char* location;
-        const uint32_t length;
-
-        DataLocation(const unsigned char* loc, const uint32_t len) :
-        location(loc),length(len) {};
-      };
-      typedef boost::shared_ptr<DataLocation> DataLocationPtr;
-      typedef std::vector<DataLocationPtr> DataLocations;
-      DataLocations dataLocations_;
       typedef std::vector<toolbox::mem::Reference*> BufferReferences;
       BufferReferences myBufRefs_;
 
-      void checkFedHeader
-      (
-        const unsigned char* pos,
-        const uint32_t offset,
-        FedInfo&
-      ) const;
-      void checkFedTrailer
-      (
-        const unsigned char* pos,
-        const uint32_t offset,
-        FedInfo&
-      ) const;
       void checkCRC
       (
         FedInfo&,

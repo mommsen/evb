@@ -87,7 +87,7 @@ size_t evb::FragmentTracker::fillData
         fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber_;
 
-        #ifdef CALCULATE_CRC
+        #ifdef EVB_CALCULATE_CRC
         fedCRC_ = compute_crc(payload,sizeof(fedh_t));
         #endif
         payload += sizeof(fedh_t);
@@ -112,7 +112,7 @@ size_t evb::FragmentTracker::fillData
           typeOfNextComponent_ = FED_TRAILER;
         }
 
-        #ifdef CALCULATE_CRC
+        #ifdef EVB_CALCULATE_CRC
         for (size_t i=0; i<payloadSize/8; ++i)
           fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
         #endif
@@ -136,7 +136,7 @@ size_t evb::FragmentTracker::fillData
         // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
         fedTrailer->conscheck = 0;
 
-        #ifdef CALCULATE_CRC
+        #ifdef EVB_CALCULATE_CRC
         for (size_t i=0; i<sizeof(fedt_t)/8; ++i)
           fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
         #endif
