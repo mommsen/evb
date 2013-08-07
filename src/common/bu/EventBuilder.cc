@@ -161,6 +161,9 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
   catch(xcept::Exception& e)
   {
+    // empty my queue
+    superFragmentFIFO->clear();
+
     processesActive_[builderId] = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }

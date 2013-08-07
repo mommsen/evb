@@ -134,6 +134,7 @@ namespace evb {
 
       bool doProcessing_;
       bool requestFragmentsActive_;
+      bool acceptI2Omessages_;
 
       toolbox::task::WorkLoop* requestFragmentsWL_;
       toolbox::task::ActionSignature* requestFragmentsAction_;
