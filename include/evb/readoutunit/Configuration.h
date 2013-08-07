@@ -22,24 +22,24 @@ namespace evb {
     */
     struct Configuration
     {
-      xdata::String inputSource;
-      xdata::UnsignedInteger32 numberOfResponders;
-      xdata::UnsignedInteger32 blockSize;
-      xdata::UnsignedInteger32 fragmentFIFOCapacity;
-      xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;
-      xdata::Boolean dumpFragmentsToLogger;
-      xdata::Boolean dropInputData;
-      xdata::Boolean usePlayback;
-      xdata::String playbackDataFile;
-      xdata::UnsignedInteger32 dummyFedSize;
-      xdata::Boolean useLogNormal;
-      xdata::UnsignedInteger32 dummyFedSizeStdDev;
-      xdata::UnsignedInteger32 dummyFedSizeMin;
-      xdata::UnsignedInteger32 dummyFedSizeMax;
-      xdata::UnsignedInteger32 fragmentPoolSize;
-      xdata::UnsignedInteger32 frameSize;
-      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;
-      xdata::UnsignedInteger32 maxTriggerAgeMSec;
+      xdata::String inputSource;                             // Input mode selection: FEROL or Local
+      xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
+      xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
+      xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
+      xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
+      xdata::Boolean dumpFragmentsToLogger;                  // If set to true, the incoming fragments are dumped to the logger
+      xdata::Boolean dropInputData;                          // If set to true, the input data is dropped
+      xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
+      xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
+      xdata::UnsignedInteger32 dummyFedSize;                 // Mean size in Bytes of the FED when running in Local mode
+      xdata::Boolean useLogNormal;                           // If set to true, use the log-normal generator for FED sizes
+      xdata::UnsignedInteger32 dummyFedSizeStdDev;           // Standard deviation of the FED sizes when using the log-normal distrubution
+      xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
+      xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
+      xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
+      xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
+      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
+      xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
 
       Configuration()
       : inputSource("FEROL"),
