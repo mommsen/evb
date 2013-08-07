@@ -23,21 +23,21 @@ namespace evb {
     */
     struct Configuration
     {
-      xdata::Integer32 evmInstance;
-      xdata::UnsignedInteger32 maxEvtsUnderConstruction;
-      xdata::UnsignedInteger32 eventsPerRequest;
-      xdata::UnsignedInteger32 superFragmentFIFOCapacity;
-      xdata::Boolean dropEventData;
-      xdata::UnsignedInteger32 numberOfBuilders;
-      xdata::String rawDataDir;
-      xdata::String metaDataDir;
-      xdata::Double rawDataHighWaterMark;
+      xdata::Integer32 evmInstance;                        // Instance of the EVM. If not set, discover the EVM over I2O.
+      xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
+      xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
+      xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
+      xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
+      xdata::UnsignedInteger32 numberOfBuilders;           // Number of threads used to build/write events
+      xdata::String rawDataDir;                            // Path to the top directory used to write the event data
+      xdata::String metaDataDir;                           // Path to the top directory used to write the meta data (JSON)
+      xdata::Double rawDataHighWaterMark;                  // Relative high-water mark for the event data directory
       xdata::Double rawDataLowWaterMark;
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
-      xdata::UnsignedInteger32 maxEventsPerFile;
-      xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;
-      xdata::UnsignedInteger32 lumiSectionTimeout;
+      xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
+      xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;    // Capacity of the FIFO used for lumi-section monitoring
+      xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
