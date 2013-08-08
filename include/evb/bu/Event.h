@@ -161,17 +161,6 @@ namespace evb {
       typedef std::vector<toolbox::mem::Reference*> BufferReferences;
       BufferReferences myBufRefs_;
 
-      void checkCRC
-      (
-        FedInfo&,
-        const uint32_t eventNumber
-      ) const;
-      uint16_t updateCRC
-      (
-        const size_t& first,
-        const size_t& last
-      ) const;
-
       const EvBid evbId_;
       const uint32_t buResourceId_;
       typedef std::map<I2O_TID,uint32_t> RUsizes;

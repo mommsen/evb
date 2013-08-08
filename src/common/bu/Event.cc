@@ -208,59 +208,6 @@ void evb::bu::Event::checkEvent()
 }
 
 
-uint16_t evb::bu::Event::updateCRC
-(
-  const size_t& first,
-  const size_t& last
-) const
-{
-  //boost::crc_optimal<16, 0x8005, 0xFFFF, 0, false, false> crc;
-  uint16_t crc(0xFFFF);
-
-  // for (size_t i = first; i != last; --i)
-  // {
-  //   const FedLocationPtr loc = fedLocations_[i];
-  //   const size_t wordCount = loc->length/8;
-  //   for (size_t w=0; w<wordCount; ++w)
-  //   {
-  //     //crc.process_block(&loc->location[w*8+7],&loc->location[w*8]);
-  //     for (int b=7; b >= 0; --b)
-  //     {
-  //       const unsigned char index = (crc >> 8) ^ loc->location[w*8+b];
-  //       crc <<= 8;
-  //       crc ^= crc_table[index];
-  //     }
-  //   }
-  // }
-
-  return crc; //.checksum();
-}
-
-
-void evb::bu::Event::checkCRC
-(
-  FedInfo& fedInfo,
-  const uint32_t eventNumber
-) const
-{
-  // const uint16_t trailerCRC = FED_CRCS_EXTRACT(fedInfo.conscheck);
-  // fedInfo.trailer->conscheck = fedInfo.conscheck;
-
-  // #ifdef EVB_CALCULATE_CRC
-  // if ( trailerCRC != fedInfo.crc )
-  // {
-  //   std::ostringstream oss;
-
-  //   oss << "Wrong CRC checksum in FED trailer for FED " << fedInfo.fedId;
-  //   oss << ": found 0x" << std::hex << trailerCRC;
-  //   oss << ", but calculated 0x" << std::hex << fedInfo.crc;
-
-  //   XCEPT_RAISE(exception::SuperFragment, oss.str());
-  // }
-  // #endif
-}
-
-
 evb::bu::Event::FedInfo::FedInfo(const unsigned char* pos, uint32_t& remainingLength)
 {
   fedt_t* trailer = (fedt_t*)(pos + remainingLength - sizeof(fedt_t));
@@ -334,6 +281,33 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
   // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
   const uint32_t conscheck = trailer()->conscheck;
   trailer()->conscheck = 0;
+
+  uint16_t crc(0xFFFF);
+  for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
+       rit != ritEnd; ++rit)
+  {
+    const uint32_t wordCount = (*rit)->length/8;
+    for (uint32_t w=0; w<wordCount; ++w)
+    {
+      for (int8_t b=7; b >= 0; --b)
+      {
+        const unsigned char index = (crc >> 8) ^ (*rit)->location[w*8+b];
+        crc <<= 8;
+        crc ^= crc_table[index];
+      }
+    }
+  }
+  trailer()->conscheck = conscheck;
+  const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+
+  if ( trailerCRC != crc )
+  {
+    std::ostringstream oss;
+    oss << "Wrong CRC checksum in FED trailer for FED " << fedId();
+    oss << ": found 0x" << std::hex << trailerCRC;
+    oss << ", but calculated 0x" << std::hex << crc;
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
+  }
   #endif
 }
 

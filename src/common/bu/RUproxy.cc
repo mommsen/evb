@@ -134,8 +134,6 @@ void evb::bu::RUproxy::stopProcessing()
   acceptI2Omessages_ = false;
   doProcessing_ = false;
   while (requestFragmentsActive_) ::usleep(1000);
-
-  while ( ! dataBlockMap_.empty() ) ::usleep(1000);
 }
 
 
