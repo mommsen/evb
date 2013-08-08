@@ -215,10 +215,8 @@ void evb::test::DummyFEROL::getApplicationDescriptors()
   }
   catch(xcept::Exception &e)
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "Failed to get application descriptor of the destination";
-
     XCEPT_RETHROW(exception::Configuration, oss.str(), e);
   }
 }
