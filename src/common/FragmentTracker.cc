@@ -37,10 +37,8 @@ uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
   if ( typeOfNextComponent_ != FED_HEADER )
   {
     std::ostringstream oss;
-
     oss << "Request to start a new dummy FED fragment for FED id " << fedId_;
     oss << " while the previous fragment is not yet complete";
-
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 

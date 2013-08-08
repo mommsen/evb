@@ -81,12 +81,12 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           // new data block
           if ( dataBlockMsg->blockNb != 1 )
           {
-            std::stringstream oss;
+            std::ostringstream oss;
             oss << "Received a first super-fragment block from RU tid " << index.ruTid;
             oss << " for BU resource id " << index.buResourceId;
             oss << " which is already block number " <<  dataBlockMsg->blockNb;
             oss << " of " << dataBlockMsg->nbBlocks;
-            XCEPT_RAISE(exception::EventOrder, oss.str());
+            XCEPT_RAISE(exception::SuperFragment, oss.str());
           }
 
           FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
@@ -95,11 +95,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
         if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
         {
-          std::stringstream oss;
+          std::ostringstream oss;
           oss << "Received a super-fragment block from RU tid " << index.ruTid;
           oss << " for BU resource id " << index.buResourceId;
           oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
-          XCEPT_RAISE(exception::EventOrder, oss.str());
+          XCEPT_RAISE(exception::SuperFragment, oss.str());
         }
 
         resourceManager_->underConstruction(dataBlockMsg);
@@ -213,11 +213,9 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       }
       catch(xcept::Exception& e)
       {
-        std::stringstream oss;
-
+        std::ostringstream oss;
         oss << "Failed to send message to EVM TID ";
         oss << evm_.tid;
-
         XCEPT_RETHROW(exception::I2O, oss.str(), e);
       }
 
@@ -302,7 +300,7 @@ void evb::bu::RUproxy::getApplicationDescriptors()
   }
   catch(xcept::Exception& e)
   {
-    XCEPT_RETHROW(exception::Configuration,
+    XCEPT_RETHROW(exception::I2O,
       "Failed to get I2O TID for this application.", e);
   }
 
@@ -353,10 +351,8 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     catch(xcept::Exception& e)
     {
       std::ostringstream oss;
-
       oss << "Failed to get application descriptor of EVM";
       oss << configuration_->evmInstance.toString();
-
       XCEPT_RETHROW(exception::Configuration, oss.str(), e);
     }
   }
@@ -367,7 +363,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
   }
   catch(xcept::Exception& e)
   {
-    XCEPT_RETHROW(exception::Configuration,
+    XCEPT_RETHROW(exception::I2O,
       "Failed to get the I2O TID of the EVM", e);
   }
 }

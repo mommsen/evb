@@ -8,12 +8,10 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
   {
     if ( superFragment->getEvBid() != evbId )
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Mismatch detected: expected evb id "
         << evbId << ", but found evb id "
         << superFragment->getEvBid() << " in data block.";
-
       XCEPT_RAISE(exception::MismatchDetected, oss.str());
     }
 
@@ -34,14 +32,12 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
     {
       if ( evbId != fragment->evbId )
       {
-        std::stringstream oss;
-
+        std::ostringstream oss;
         oss << "Mismatch detected: expected evb id "
           << evbId << ", but found evb id "
           << fragment->evbId
           << " in data block from FED "
           << it->first;
-
         XCEPT_RAISE(exception::MismatchDetected, oss.str());
       }
 

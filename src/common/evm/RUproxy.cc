@@ -207,11 +207,9 @@ void evb::evm::RUproxy::sendToAllRUs
     }
     catch(xcept::Exception& e)
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Failed to send message to RU TID ";
       oss << it->tid;
-
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
     }
   }
@@ -253,7 +251,7 @@ void evb::evm::RUproxy::configure()
   }
   catch(xcept::Exception& e)
   {
-    XCEPT_RETHROW(exception::Configuration,
+    XCEPT_RETHROW(exception::I2O,
       "Failed to get I2O TID for this application.", e);
   }
 
@@ -279,7 +277,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
   }
   catch(xcept::Exception& e)
   {
-    XCEPT_RETHROW(exception::Configuration,
+    XCEPT_RETHROW(exception::I2O,
       "Failed to get RU application descriptor", e);
   }
 
@@ -304,21 +302,17 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
     }
     catch(xcept::Exception& e)
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Failed to get I2O TID for RU ";
       oss << (*it)->getInstance();
-
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
     }
 
     if ( ! participatingRUs_.insert(ru).second )
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Participating RU instance is a duplicate.";
       oss << " Instance:" << (*it)->getInstance();
-
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 

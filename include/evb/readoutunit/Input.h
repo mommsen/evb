@@ -353,7 +353,7 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
       msg << ", but found " << std::hex << ferolHeader->signature();
       msg << " for event " << std::dec << eventNumber;
       msg << " received from " << frame->PvtMessageFrame.StdMessageFrame.InitiatorAddress;
-      XCEPT_RAISE(exception::FEROL, msg.str());
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
 
     if ( eventNumber != ferolHeader->event_number() )
@@ -361,7 +361,7 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
       std::ostringstream msg;
       msg << "Mismatch of event number in FEROL header: ";
       msg << " expected " << eventNumber << ", but got " << ferolHeader->event_number();
-      XCEPT_RAISE(exception::FEROL, msg.str());
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
     if ( fedId != ferolHeader->fed_id() )
     {
@@ -369,7 +369,7 @@ void evb::readoutunit::Input<Configuration>::updateInputCounters(toolbox::mem::R
       msg << "Mismatch of FED id in FEROL header: ";
       msg << " expected " << fedId << ", but got " << ferolHeader->fed_id();
       msg << " for event " << eventNumber;
-      XCEPT_RAISE(exception::FEROL, msg.str());
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
 
     const uint32_t dataLength = ferolHeader->data_length();
@@ -408,7 +408,7 @@ void evb::readoutunit::Input<Configuration>::dumpFragmentToLogger(toolbox::mem::
 {
   if ( ! configuration_->dumpFragmentsToLogger.value_ ) return;
 
-  std::stringstream oss;
+  std::ostringstream oss;
   DumpUtility::dump(oss, bufRef);
   LOG4CPLUS_INFO(app_->getContext()->getLogger(), oss.str());
 }
@@ -694,11 +694,9 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
     if (fedId > FED_SOID_WIDTH)
     {
       std::ostringstream oss;
-
       oss << "fedSourceId is too large.";
       oss << "Actual value: " << fedId;
       oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
-
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 

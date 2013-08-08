@@ -58,7 +58,7 @@ void evb::bu::Configuring::activity()
   }
   catch( xcept::Exception& e )
   {
-    XCEPT_DECLARE_NESTED(exception::Configuration,
+    XCEPT_DECLARE_NESTED(exception::FSM,
       sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
@@ -66,14 +66,14 @@ void evb::bu::Configuring::activity()
   {
     msg += ": ";
     msg += e.what();
-    XCEPT_DECLARE(exception::Configuration,
+    XCEPT_DECLARE(exception::FSM,
       sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
-    XCEPT_DECLARE(exception::Configuration,
+    XCEPT_DECLARE(exception::FSM,
       sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }

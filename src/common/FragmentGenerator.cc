@@ -46,23 +46,19 @@ void evb::FragmentGenerator::configure
 {
   if (fedId > FED_SOID_WIDTH)
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "fedSourceId is too large.";
     oss << "Actual value: " << fedId;
     oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
-
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   fedId_ = fedId;
 
   if ( fedSize % 8 != 0 )
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "The requested FED payload of " << fedSize << " bytes";
     oss << " is not a multiple of 8 bytes";
-
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 

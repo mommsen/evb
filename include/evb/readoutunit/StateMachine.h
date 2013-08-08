@@ -33,18 +33,6 @@ namespace evb {
       mutable xcept::Exception exception_;
     };
 
-    class TimedOut : public boost::statechart::event<TimedOut>
-    {
-    public:
-      TimedOut(exception::TimedOut& exception) : exception_(exception) {};
-      std::string getReason() const { return exception_.message(); }
-      std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
-      xcept::Exception& getException() const { return exception_; }
-
-    private:
-      mutable xcept::Exception exception_;
-    };
-
     ///////////////////////
     // The state machine //
     ///////////////////////
@@ -58,7 +46,6 @@ namespace evb {
       StateMachine(Owner*);
 
       void mismatchEvent(const MismatchDetected&);
-      void timedOutEvent(const TimedOut&);
 
       Owner* getOwner() const
       { return owner_; }
@@ -89,17 +76,6 @@ void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
 
   this->rcmsStateNotifier_.stateChanged("MismatchDetectedBackPressuring", evt.getReason());
-
-  this->app_->notifyQualified("error", evt.getException());
-}
-
-
-template<class Owner>
-void evb::readoutunit::StateMachine<Owner>::timedOutEvent(const TimedOut& evt)
-{
-  LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
-
-  this->rcmsStateNotifier_.stateChanged("TimedOutBackPressuring", evt.getReason());
 
   this->app_->notifyQualified("error", evt.getException());
 }

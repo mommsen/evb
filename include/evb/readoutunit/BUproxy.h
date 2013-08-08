@@ -373,7 +373,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
           if (currentFragment == 0)
           {
-            XCEPT_RAISE(exception::FEROL, "The FEROL data overruns the end of the fragment buffer.");
+            XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer.");
           }
         }
 
@@ -439,12 +439,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   }
   catch(xcept::Exception& e)
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "Failed to get application descriptor for BU with tid ";
     oss << fragmentRequest->buTid;
-
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    XCEPT_RAISE(exception::I2O, oss.str());
   }
 
   toolbox::mem::Reference* bufRef = head;
@@ -506,11 +504,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
     catch(xcept::Exception& e)
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Failed to send super fragment to BU TID ";
       oss << fragmentRequest->buTid;
-
       XCEPT_RETHROW(exception::I2O, oss.str(), e);
     }
 
@@ -590,7 +586,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   }
   catch(xcept::Exception& e)
   {
-    XCEPT_RETHROW(exception::Configuration,
+    XCEPT_RETHROW(exception::I2O,
       "Failed to get I2O TID for this application.", e);
   }
 

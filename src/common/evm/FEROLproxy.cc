@@ -25,14 +25,12 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
       {
         if ( evbId != fragment->evbId )
         {
-          std::stringstream oss;
-
+          std::ostringstream oss;
           oss << "Mismatch detected: expected evb id "
             << evbId << ", but found evb id "
             << fragment->evbId
             << " in data block from FED "
             << it->first;
-
           XCEPT_RAISE(exception::MismatchDetected, oss.str());
         }
 

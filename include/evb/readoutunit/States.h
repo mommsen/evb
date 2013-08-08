@@ -46,7 +46,6 @@ namespace evb {
     template<class> class Enabled;
     // Inner states of Enabled
     template<class> class MismatchDetectedBackPressuring;
-    template<class> class TimedOutBackPressuring;
 
     template<class> class StateMachine;
 
@@ -311,10 +310,7 @@ namespace evb {
       typedef boost::mpl::list<
         boost::statechart::transition<MismatchDetected,MismatchDetectedBackPressuring<Owner>,
                                       StateMachine<Owner>,
-                                      &StateMachine<Owner>::mismatchEvent>,
-        boost::statechart::transition<TimedOut,TimedOutBackPressuring<Owner>,
-                                      StateMachine<Owner>,
-                                      &StateMachine<Owner>::timedOutEvent>
+                                      &StateMachine<Owner>::mismatchEvent>
         > reactions;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
@@ -349,26 +345,6 @@ namespace evb {
       { this->safeExitAction(); }
 
     };
-
-
-    /**
-     * The TimedOutBackPressuring state of the outer-state Processing.
-     */
-    template<class Owner>
-    class TimedOutBackPressuring: public EvBState< TimedOutBackPressuring<Owner>,Processing<Owner> >
-    {
-
-    public:
-
-      typedef EvBState< TimedOutBackPressuring<Owner>,Processing<Owner> > my_state;
-
-      TimedOutBackPressuring(typename my_state::boost_state::my_context c) : my_state("TimedOutBackPressuring", c)
-      { this->safeEntryAction(); }
-      virtual ~TimedOutBackPressuring()
-      { this->safeExitAction(); }
-
-    };
-
 
   } } //namespace evb::readoutunit
 
@@ -405,7 +381,7 @@ void evb::readoutunit::Configuring<Owner>::activity()
   }
   catch( xcept::Exception& e )
   {
-    XCEPT_DECLARE_NESTED(exception::Configuration,
+    XCEPT_DECLARE_NESTED(exception::FSM,
       sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
@@ -413,14 +389,14 @@ void evb::readoutunit::Configuring<Owner>::activity()
   {
     msg += ": ";
     msg += e.what();
-    XCEPT_DECLARE(exception::Configuration,
+    XCEPT_DECLARE(exception::FSM,
       sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
-    XCEPT_DECLARE(exception::Configuration,
+    XCEPT_DECLARE(exception::FSM,
       sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }

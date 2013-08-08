@@ -32,12 +32,10 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
 
   if ( pos == allocatedResources_.end() )
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "The buResourceId " << dataBlockMsg->buResourceId;
     oss << " received from RU tid " << ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
     oss << " is not in the allocated resources." ;
-
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
@@ -55,13 +53,11 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     // check consistency
     if ( pos->second.size() != dataBlockMsg->nbSuperFragments )
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
       oss << " from RU tid " << ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
       oss << " with an inconsistent number of super fragments: expected " << pos->second.size();
       oss << ", but got " << dataBlockMsg->nbSuperFragments;
-
       XCEPT_RAISE(exception::SuperFragment, oss.str());
     }
   }
@@ -88,11 +84,9 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
 
   if ( pos == allocatedResources_.end() )
   {
-    std::stringstream oss;
-
+    std::ostringstream oss;
     oss << "The buResourceId " << event->buResourceId();
     oss << " is not in the allocated resources." ;
-
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
@@ -124,11 +118,9 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
     if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
     {
-      std::stringstream oss;
-
+      std::ostringstream oss;
       oss << "The buResourceId " << buResourceId;
       oss << " is already in the allocated resources, while it was also found in the free resources.";
-
       XCEPT_RAISE(exception::EventOrder, oss.str());
     }
 

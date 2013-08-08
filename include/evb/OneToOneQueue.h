@@ -163,7 +163,7 @@ namespace evb {
   {
     if ( !empty() )
     {
-      XCEPT_RAISE(evb::exception::FIFO,
+      XCEPT_RAISE(exception::FIFO,
         "Cannot resize the non-empty queue " + name_);
     }
     container_.clear();

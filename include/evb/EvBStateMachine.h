@@ -266,7 +266,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::do_processSoapEvent
     newStateName = processFSMEvent( Stop() );
   else if ( soapEvent == "Fail" )
   {
-    XCEPT_DECLARE(exception::SOAP,
+    XCEPT_DECLARE(exception::FSM,
       sentinelException, "Externally requested by SOAP command" );
     newStateName = processFSMEvent( Fail(sentinelException) );
   }

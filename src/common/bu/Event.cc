@@ -166,9 +166,9 @@ void evb::bu::Event::checkEvent()
 
       if ( !eventInfo_->addFedSize(fedInfo) )
       {
-        std::stringstream oss;
+        std::ostringstream oss;
         oss << "Found a duplicated FED id " << fedInfo.fedId();
-        XCEPT_RAISE(exception::SuperFragment, oss.str());
+        XCEPT_RAISE(exception::DataCorruption, oss.str());
       }
 
       if ( remainingLength == 0 )
@@ -185,7 +185,7 @@ void evb::bu::Event::checkEvent()
   }
   catch(xcept::Exception& e)
   {
-    std::stringstream oss;
+    std::ostringstream oss;
 
     oss << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
     for ( uint32_t i = 0; i < dataLocations_.size(); ++i )
@@ -203,7 +203,7 @@ void evb::bu::Event::checkEvent()
       DumpUtility::dumpBlockData(oss,dataLocations_[i]->location,dataLocations_[i]->length);
     }
 
-    XCEPT_RETHROW(exception::SuperFragment, oss.str(), e);
+    XCEPT_RETHROW(exception::DataCorruption, oss.str(), e);
   }
 }
 
@@ -249,7 +249,7 @@ void evb::bu::Event::checkCRC
   // #ifdef EVB_CALCULATE_CRC
   // if ( trailerCRC != fedInfo.crc )
   // {
-  //   std::stringstream oss;
+  //   std::ostringstream oss;
 
   //   oss << "Wrong CRC checksum in FED trailer for FED " << fedInfo.fedId;
   //   oss << ": found 0x" << std::hex << trailerCRC;
@@ -267,12 +267,12 @@ evb::bu::Event::FedInfo::FedInfo(const unsigned char* pos, uint32_t& remainingLe
 
   if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
   {
-    std::stringstream oss;
+    std::ostringstream oss;
     oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
     oss << " but got event size 0x" << std::hex << trailer->eventsize;
     oss << " and conscheck 0x" << std::hex << trailer->conscheck;
     oss << " at offset 0x" << std::hex << remainingLength;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   const uint32_t fedSize = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
@@ -297,36 +297,36 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
 {
   if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
   {
-    std::stringstream oss;
+    std::ostringstream oss;
     oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
     oss << " but got event id 0x" << std::hex << header()->eventid;
     oss << " and source id 0x" << std::hex << header()->sourceid;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   if (eventId() != eventNumber)
   {
-    std::stringstream oss;
+    std::ostringstream oss;
     oss << "FED header \"eventid\" " << eventId() << " does not match";
     oss << " expected eventNumber " << eventNumber;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   if ( fedId() >= FED_COUNT )
   {
-    std::stringstream oss;
+    std::ostringstream oss;
     oss << "The FED id " << fedId() << " is larger than the maximum " << FED_COUNT;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   // recheck the trailer to assure that the fedData is correct
   if ( FED_TCTRLID_EXTRACT(trailer()->eventsize) != FED_SLINK_END_MARKER )
   {
-    std::stringstream oss;
+    std::ostringstream oss;
     oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
     oss << " but got event size 0x" << std::hex << trailer()->eventsize;
     oss << " and conscheck 0x" << std::hex << trailer()->conscheck;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   #ifdef EVB_CALCULATE_CRC

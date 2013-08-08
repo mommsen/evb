@@ -393,7 +393,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
   catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to start monitoring work loop";
-    XCEPT_DECLARE_NESTED(exception::Monitoring,
+    XCEPT_DECLARE_NESTED(exception::FSM,
       sentinelException, msg, e);
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
