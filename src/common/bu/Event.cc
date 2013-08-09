@@ -282,21 +282,13 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
   const uint32_t conscheck = trailer()->conscheck;
   trailer()->conscheck = 0;
 
-  uint16_t crc(0xFFFF);
+  uint16_t crc(0xffff);
   for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
        rit != ritEnd; ++rit)
   {
-    const uint32_t wordCount = (*rit)->length/8;
-    for (uint32_t w=0; w<wordCount; ++w)
-    {
-      for (int8_t b=7; b >= 0; --b)
-      {
-        const unsigned char index = (crc >> 8) ^ (*rit)->location[w*8+b];
-        crc <<= 8;
-        crc ^= crc_table[index];
-      }
-    }
+    computeCRC(crc,(*rit)->location,(*rit)->length);
   }
+
   trailer()->conscheck = conscheck;
   const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
 

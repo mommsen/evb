@@ -22,7 +22,7 @@ fedId_(fedId),
 fedSize_(fedSize),
 minFedSize_(minFedSize),
 maxFedSize_(maxFedSize),
-fedCRC_(0),
+fedCRC_(0xffff),
 typeOfNextComponent_(FED_HEADER)
 {
   if (useLogNormal)
@@ -86,7 +86,7 @@ size_t evb::FragmentTracker::fillData
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber_;
 
         #ifdef EVB_CALCULATE_CRC
-        fedCRC_ = compute_crc(payload,sizeof(fedh_t));
+        fedCRC_ = computeCRC(payload,sizeof(fedh_t));
         #endif
         payload += sizeof(fedh_t);
         bytesFilled += sizeof(fedh_t);
@@ -111,8 +111,7 @@ size_t evb::FragmentTracker::fillData
         }
 
         #ifdef EVB_CALCULATE_CRC
-        for (size_t i=0; i<payloadSize/8; ++i)
-          fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
+        computeCRC(fedCRC_,payload,payloadSize);
         #endif
 
         payload += payloadSize;
@@ -135,8 +134,7 @@ size_t evb::FragmentTracker::fillData
         fedTrailer->conscheck = 0;
 
         #ifdef EVB_CALCULATE_CRC
-        for (size_t i=0; i<sizeof(fedt_t)/8; ++i)
-          fedCRC_ = compute_crc_64bit(fedCRC_,&payload[i*8]);
+        computeCRC(fedCRC_,payload,sizeof(fedt_t));
         #endif
 
         fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
