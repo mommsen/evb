@@ -23,49 +23,52 @@
 #include <stddef.h>
 #include <stdint.h>
 
+namespace evb {
 
-void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
-void computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
-uint16_t computeCRC(const uint8_t* buffer, size_t bufSize);
+  void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
+  void computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
+  uint16_t computeCRC(const uint8_t* buffer, size_t bufSize);
 
-extern const uint16_t crcTable[1024];
+  extern const uint16_t crcTable[1024];
 
-static inline void computeCRC_8bit(uint16_t& crc, const uint8_t data)
-{
-  crc = (crc << 8) ^ crcTable[((crc >> 8) & 0xff) ^ data];
-}
-
-
-static inline void computeCRC_32bit(uint16_t& crc, uint32_t data)
-{
-  crc ^= data >> 16;
-  crc =
-    crcTable[data & 0xff] ^
-    crcTable[((data >> 8) & 0xff) + 0x100] ^
-    crcTable[(crc & 0xff) + 0x200] ^
-    crcTable[((crc >> 8) & 0xff) + 0x300];
-}
+  static inline void computeCRC_8bit(uint16_t& crc, const uint8_t data)
+  {
+    crc = (crc << 8) ^ crcTable[((crc >> 8) & 0xff) ^ data];
+  }
 
 
-// Check if the CPU supports PCLMULQDQ
-// see e.g. http://stackoverflow.com/a/6491964/288875 or the Linux kernel
-// see http://en.wikipedia.org/wiki/CPUID#EAX.3D1:_Processor_Info_and_Feature_Bits
-// for the meaning of the bits
-static inline bool hasPCLMULQDQ()
-{
-  unsigned int ebx(0), ecx(0), edx(0);
-  unsigned int eax(1); // we want processor info and feature bits
+  static inline void computeCRC_32bit(uint16_t& crc, uint32_t data)
+  {
+    crc ^= data >> 16;
+    crc =
+      crcTable[data & 0xff] ^
+      crcTable[((data >> 8) & 0xff) + 0x100] ^
+      crcTable[(crc & 0xff) + 0x200] ^
+      crcTable[((crc >> 8) & 0xff) + 0x300];
+  }
 
-  // ecx is often an input as well as an output.
-  asm volatile("cpuid"
-    : "=a" (eax),
-      "=b" (ebx),
-      "=c" (ecx),
-      "=d" (edx)
-    : "0" (eax), "2" (ecx));
 
-  return (ecx & 2);
-}
+  // Check if the CPU supports PCLMULQDQ
+  // see e.g. http://stackoverflow.com/a/6491964/288875 or the Linux kernel
+  // see http://en.wikipedia.org/wiki/CPUID#EAX.3D1:_Processor_Info_and_Feature_Bits
+  // for the meaning of the bits
+  static inline bool hasPCLMULQDQ()
+  {
+    unsigned int ebx(0), ecx(0), edx(0);
+    unsigned int eax(1); // we want processor info and feature bits
+
+    // ecx is often an input as well as an output.
+    asm volatile("cpuid"
+      : "=a" (eax),
+        "=b" (ebx),
+        "=c" (ecx),
+        "=d" (edx)
+      : "0" (eax), "2" (ecx));
+
+    return (ecx & 2);
+  }
+
+} // namespace evb
 
 #endif // _evb_CRC16_h_
 

@@ -1,6 +1,6 @@
 #include "evb/CRC16.h"
 
-const uint16_t crcTable[1024] = {
+const uint16_t evb::crcTable[1024] = {
   0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011,
   0x8033, 0x0036, 0x003c, 0x8039, 0x0028, 0x802d, 0x8027, 0x0022,
   0x8063, 0x0066, 0x006c, 0x8069, 0x0078, 0x807d, 0x8077, 0x0072,
@@ -132,7 +132,7 @@ const uint16_t crcTable[1024] = {
 };
 
 
-void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
+void evb::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 {
   assert(0==bufSize%8);
   bufSize/=8;
@@ -144,7 +144,7 @@ void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 }
 
 
-void computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
+void evb::computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 {
   assert( bufSize%8 == 0 );
   assert( ! ((uintptr_t)buffer & 3) && bufSize );
@@ -167,7 +167,7 @@ void computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 }
 
 
-uint16_t computeCRC(const uint8_t* buffer, size_t bufSize)
+uint16_t evb::computeCRC(const uint8_t* buffer, size_t bufSize)
 {
   uint16_t crc(0xffff);
   computeCRC(crc,buffer,bufSize);
