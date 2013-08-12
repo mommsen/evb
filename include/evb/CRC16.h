@@ -25,6 +25,16 @@
 
 namespace evb {
 
+  extern "C"
+  {
+    uint16_t crc16_T10DIF_128x_extended
+    (
+      uint16_t init_crc,            // initial CRC value, 16 bits
+      const unsigned char *buffer,  // buffer pointer to calculate CRC on
+      size_t bufSize                // buffer length in bytes (64-bit data)
+    );
+  }
+
   void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
   void computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize);
   uint16_t computeCRC(const uint8_t* buffer, size_t bufSize);

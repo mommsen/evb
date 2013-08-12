@@ -135,11 +135,19 @@ const uint16_t evb::crcTable[1024] = {
 void evb::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 {
   assert(0==bufSize%8);
-  bufSize/=8;
-  for (size_t i=0; i<bufSize; ++i)
+
+  if ( hasPCLMULQDQ() )
   {
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[(i*2)+1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[i*2]);
+    crc = crc16_T10DIF_128x_extended(crc,buffer,bufSize);
+  }
+  else
+  {
+    bufSize/=8;
+    for (size_t i=0; i<bufSize; ++i)
+    {
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[(i*2)+1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[i*2]);
+    }
   }
 }
 
@@ -147,22 +155,30 @@ void evb::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 void evb::computeCRC2(uint16_t& crc, const uint8_t* buffer, size_t bufSize)
 {
   assert( bufSize%8 == 0 );
-  assert( ! ((uintptr_t)buffer & 3) && bufSize );
 
-  while (bufSize >= 16)
+  if ( hasPCLMULQDQ() )
   {
-    bufSize -= 16;
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[3]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[2]);
-    buffer += 16;
+    crc = crc16_T10DIF_128x_extended(crc,buffer,bufSize);
   }
-
-  if (bufSize == 8)
+  else
   {
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+    assert( ! ((uintptr_t)buffer & 3) && bufSize );
+
+    while (bufSize >= 16)
+    {
+      bufSize -= 16;
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[3]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[2]);
+      buffer += 16;
+    }
+
+    if (bufSize == 8)
+    {
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+    }
   }
 }
 

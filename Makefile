@@ -146,6 +146,7 @@ UserCCFlags = -O3 -funroll-loops -Wno-long-long -Werror -fno-omit-frame-pointer
 # potentially need conditional processing
 DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system
 DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX)
+UserDynamicLinkFlags = src/$(XDAQ_OS)/$(XDAQ_PLATFORM)/crc16_T10DIF_128x_extended.o
 
 #
 # Compile the source files and create a shared library
@@ -155,7 +156,7 @@ TestDynamicLibrary=evbtest
 
 TestDynamicLibraryName = $(TestDynamicLibrary:%=$(PackageLibDir)/$(LibraryPrefix)%$(DynamicSuffix))
 
-all: _buildall test install
+all: asm _buildall test install
 
 test: _buildall
 	@make tests
@@ -165,6 +166,7 @@ testinstall: test
 
 clean: _cleanall
 	@make testsclean
+	@rm -f $(PackageTargetDir)/crc16_T10DIF_128x_extended.o
 
 install: _installall testinstall
 
@@ -172,3 +174,6 @@ rpm: _buildall test _rpmall
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules
+
+asm: src/common/crc16_T10DIF_128x_extended.S
+	gcc -c -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
