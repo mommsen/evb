@@ -44,7 +44,7 @@ adlerB_(0)
   if ( boost::filesystem::exists(rawFile) )
   {
     std::ostringstream oss;
-    oss << "The output file " << rawFile.string() << " already exists.";
+    oss << "The output file " << rawFile.string() << " already exists";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
@@ -152,7 +152,7 @@ void evb::bu::FileHandler::writeJSON() const
   if ( boost::filesystem::exists(jsonFile) )
   {
     std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists.";
+    oss << "The JSON file " << jsonFile.string() << " already exists";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 

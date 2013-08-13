@@ -87,7 +87,7 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloops.";
+    std::string msg = "Failed to start workloops";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }

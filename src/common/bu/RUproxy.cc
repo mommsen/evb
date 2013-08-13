@@ -155,7 +155,7 @@ void evb::bu::RUproxy::startProcessingWorkLoop()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'requestFragments'.";
+    std::string msg = "Failed to start workloop 'requestFragments'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -299,7 +299,7 @@ void evb::bu::RUproxy::getApplicationDescriptors()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application.", e);
+      "Failed to get I2O TID for this application", e);
   }
 
   getApplicationDescriptorForEVM();

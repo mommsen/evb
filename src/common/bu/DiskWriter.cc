@@ -98,7 +98,7 @@ void evb::bu::DiskWriter::startLumiMonitoring()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start lumi monitoring workloop.";
+    std::string msg = "Failed to start lumi monitoring workloop";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -298,7 +298,7 @@ void evb::bu::DiskWriter::writeEoLS
   if ( boost::filesystem::exists(jsonFile) )
   {
     std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists.";
+    oss << "The JSON file " << jsonFile.string() << " already exists";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
@@ -324,7 +324,7 @@ void evb::bu::DiskWriter::writeEoR() const
   if ( boost::filesystem::exists(jsonFile) )
   {
     std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists.";
+    oss << "The JSON file " << jsonFile.string() << " already exists";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 

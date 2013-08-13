@@ -35,7 +35,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     std::ostringstream oss;
     oss << "The buResourceId " << dataBlockMsg->buResourceId;
     oss << " received from RU tid " << ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
-    oss << " is not in the allocated resources." ;
+    oss << " is not in the allocated resources" ;
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
@@ -86,7 +86,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
   {
     std::ostringstream oss;
     oss << "The buResourceId " << event->buResourceId();
-    oss << " is not in the allocated resources." ;
+    oss << " is not in the allocated resources" ;
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
@@ -120,7 +120,7 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
     {
       std::ostringstream oss;
       oss << "The buResourceId " << buResourceId;
-      oss << " is already in the allocated resources, while it was also found in the free resources.";
+      oss << " is already in the allocated resources, while it was also found in the free resources";
       XCEPT_RAISE(exception::EventOrder, oss.str());
     }
 

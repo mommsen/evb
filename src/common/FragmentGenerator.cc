@@ -47,9 +47,8 @@ void evb::FragmentGenerator::configure
   if (fedId > FED_SOID_WIDTH)
   {
     std::ostringstream oss;
-    oss << "fedSourceId is too large.";
-    oss << "Actual value: " << fedId;
-    oss << " Maximum value: FED_SOID_WIDTH=" << FED_SOID_WIDTH;
+    oss << "The fedSourceId " << fedId;
+    oss << " is larger than maximal value FED_SOID_WIDTH=" << FED_SOID_WIDTH;
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   fedId_ = fedId;
@@ -84,7 +83,7 @@ void evb::FragmentGenerator::configure
   catch (toolbox::mem::exception::Exception e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for dummy fragments.", e);
+      "Failed to create memory pool for dummy fragments", e);
   }
 
   fragmentTracker_.reset(

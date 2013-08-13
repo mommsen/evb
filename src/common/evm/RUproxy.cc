@@ -73,7 +73,7 @@ void evb::evm::RUproxy::startProcessingWorkLoop()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'assignEvents'.";
+    std::string msg = "Failed to start workloop 'assignEvents'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -252,7 +252,7 @@ void evb::evm::RUproxy::configure()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application.", e);
+      "Failed to get I2O TID for this application", e);
   }
 
   // Clear list of participating RUs
@@ -283,7 +283,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
 
   if ( ruDescriptors.empty() )
   {
-    LOG4CPLUS_WARN(evm_->getApplicationLogger(), "There are no RU application descriptors.");
+    LOG4CPLUS_WARN(evm_->getApplicationLogger(), "There are no RU application descriptors");
 
     return;
   }
@@ -311,8 +311,8 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
     if ( ! participatingRUs_.insert(ru).second )
     {
       std::ostringstream oss;
-      oss << "Participating RU instance is a duplicate.";
-      oss << " Instance:" << (*it)->getInstance();
+      oss << "Participating RU instance " << (*it)->getInstance();
+      oss << " is a duplicate";
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 

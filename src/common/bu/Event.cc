@@ -99,7 +99,7 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
 {
   if ( dataLocations_.empty() )
   {
-    XCEPT_RAISE(exception::EventOrder, "Cannot find any FED data.");
+    XCEPT_RAISE(exception::EventOrder, "Cannot find any FED data");
   }
 
   // Get the memory mapped file chunk
@@ -135,7 +135,7 @@ void evb::bu::Event::checkEvent()
 {
   if ( ! isComplete() )
   {
-    XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity.");
+    XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity");
   }
 
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
@@ -155,7 +155,7 @@ void evb::bu::Event::checkEvent()
         ++rit;
         if ( rit == ritEnd )
         {
-          XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered.");
+          XCEPT_RAISE(exception::SuperFragment,"Corrupted superfragment: Premature end of data encountered");
         }
         remainingLength = (*rit)->length;
         --chunk;
