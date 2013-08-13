@@ -129,9 +129,9 @@ size_t evb::FragmentTracker::fillData
         fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) |
           (currentFedSize_ >> 3);
 
-        // Force CRC field to zero before re-computing the CRC.
-        // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
-        fedTrailer->conscheck = 0;
+        // Force CRC & R field to zero before re-computing the CRC.
+        // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+        fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
 
         #ifdef EVB_CALCULATE_CRC
         computeCRC(fedCRC_,payload,sizeof(fedt_t));

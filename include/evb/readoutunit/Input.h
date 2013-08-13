@@ -494,10 +494,10 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
     }
 
     #ifdef EVB_CALCULATE_CRC
-    // Force CRC field to zero before re-computing the CRC.
-    // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
+    // Force CRC & R field to zero before re-computing the CRC.
+    // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
-    trailer->conscheck = 0;
+    trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
     computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
