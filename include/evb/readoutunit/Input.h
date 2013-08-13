@@ -344,18 +344,21 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
   uint32_t payloadSize = frame->partLength;
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
+  #ifdef EVB_CALCULATE_CRC
+  uint16_t crc = 0xffff;
+  #endif
 
   try
   {
     payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);;
 
     uint32_t fedSize = 0;
-    uint32_t ferolOffset = 0;
+    uint32_t usedSize = 0;
     ferolh_t* ferolHeader;
 
     do
     {
-      ferolHeader = (ferolh_t*)(payload + ferolOffset);
+      ferolHeader = (ferolh_t*)payload;
 
       if( ferolHeader->signature() != FEROL_SIGNATURE )
       {
@@ -382,9 +385,11 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
         XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
 
+      payload += sizeof(ferolh_t);
+
       if ( ferolHeader->is_first_packet() )
       {
-        const fedh_t* fedHeader = (fedh_t*)(payload + ferolOffset + sizeof(ferolh_t));
+        const fedh_t* fedHeader = (fedh_t*)payload;
 
         if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
         {
@@ -415,19 +420,28 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
       }
 
       const uint32_t dataLength = ferolHeader->data_length();
-      fedSize += dataLength;
-      ferolOffset += dataLength + sizeof(ferolh_t);
 
-      if ( ferolOffset >= payloadSize && !ferolHeader->is_last_packet() )
+      #ifdef EVB_CALCULATE_CRC
+      if ( ferolHeader->is_last_packet() )
+        computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+      else
+        computeCRC(crc,payload,dataLength);
+      #endif
+
+      payload += dataLength;
+      fedSize += dataLength;
+      usedSize += dataLength + sizeof(ferolh_t);
+
+      if ( usedSize >= payloadSize && !ferolHeader->is_last_packet() )
       {
-        ferolOffset -= payloadSize;
+        usedSize -= payloadSize;
         bufRef = bufRef->getNextReference();
 
         if ( ! bufRef )
         {
           std::ostringstream msg;
           msg << "Premature end of FEROL data:";
-          msg << " expected " << ferolOffset << " more Bytes,";
+          msg << " expected " << usedSize << " more Bytes,";
           msg << " but toolbox::mem::Reference chain has ended";
           XCEPT_RAISE(exception::DataCorruption, msg.str());
         }
@@ -458,7 +472,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
     }
     while( !ferolHeader->is_last_packet() );
 
-    fedt_t* trailer = (fedt_t*)(payload + ferolOffset - sizeof(fedt_t));
+    fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
 
     if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
     {
@@ -473,13 +487,30 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
     if ( evsz != fedSize )
     {
       std::ostringstream oss;
-      oss << "Inconsistent event size: ";
+      oss << "Inconsistent event size:";
       oss << " FED trailer claims " << evsz << " Bytes,";
       oss << " while sum of FEROL headers yield " << fedSize;
       XCEPT_RAISE(exception::DataCorruption, oss.str());
     }
 
-    //const uint16_t trailerCRC = FED_CRCS_EXTRACT(trailer->conscheck);
+    #ifdef EVB_CALCULATE_CRC
+    // Force CRC field to zero before re-computing the CRC.
+    // See http://people.web.psi.ch/kotlinski/CMS/Manuals/DAQ_IF_guide.html
+    const uint32_t conscheck = trailer->conscheck;
+    trailer->conscheck = 0;
+    computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+    trailer->conscheck = conscheck;
+
+    const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+    if ( trailerCRC != crc )
+    {
+      std::ostringstream oss;
+      oss << "Wrong CRC checksum:" << std::hex;
+      oss << " FED trailer claims 0x" << trailerCRC;
+      oss << ", but caculcation gives 0x" << crc;
+      XCEPT_RAISE(exception::DataCorruption, oss.str());
+    }
+    #endif
 
     boost::mutex::scoped_lock sl(inputMonitorsMutex_);
 
