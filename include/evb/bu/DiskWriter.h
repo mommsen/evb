@@ -22,6 +22,9 @@ namespace evb {
 
   namespace bu { // namespace evb::bu
 
+    class ResourceManager;
+    class StateMachine;
+
     /**
      * \ingroup xdaqApps
      * \brief Write events to disk
@@ -31,7 +34,11 @@ namespace evb {
     {
     public:
 
-      DiskWriter(BU*);
+      DiskWriter
+      (
+        BU*,
+        boost::shared_ptr<ResourceManager>
+      );
 
       /**
        * Get a stream handler for the given builder id
@@ -115,6 +122,7 @@ namespace evb {
       bool updateLumiMonitoring(toolbox::task::WorkLoop*);
 
       BU* bu_;
+      boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       const ConfigurationPtr configuration_;
 

@@ -15,7 +15,6 @@ evb::bu::ResourceManager::ResourceManager
   BU* bu
 ) :
 bu_(bu),
-boost_(false),
 throttle_(false),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO")
@@ -113,7 +112,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
 
 bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 {
-  if ( freeResourceFIFO_.deq(buResourceId) || ( boost_ && blockedResourceFIFO_.deq(buResourceId) ) )
+  if ( freeResourceFIFO_.deq(buResourceId) || ( !throttle_ && blockedResourceFIFO_.deq(buResourceId) ) )
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
     if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
@@ -128,6 +127,27 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
   }
 
   return false;
+}
+
+
+void evb::bu::ResourceManager::monitorDiskUsage(DiskUsagePtr& diskUsage)
+{
+  diskUsageMonitors_.push_back(diskUsage);
+}
+
+
+void evb::bu::ResourceManager::getDiskUsages()
+{
+  for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+        it != itEnd; ++it)
+  {
+    (*it)->update();
+
+    if ( (*it)->tooHigh() )
+      throttle_ = true;
+    else
+      throttle_ = false;
+  }
 }
 
 
@@ -151,6 +171,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
+  getDiskUsages();
+
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
   nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
@@ -189,6 +211,8 @@ void evb::bu::ResourceManager::configure()
   {
     freeResourceFIFO_.enq(buResourceId);
   }
+
+  diskUsageMonitors_.clear();
 }
 
 

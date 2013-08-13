@@ -24,8 +24,8 @@ namespace evb {
       DiskUsage
       (
         const boost::filesystem::path& path,
-        const double highWaterMark,
-        const double lowWaterMark
+        const double lowWaterMark,
+        const double highWaterMark
       );
 
       ~DiskUsage();
@@ -59,8 +59,8 @@ namespace evb {
       void doStatFs();
 
       const boost::filesystem::path path_;
-      const double highWaterMark_;
       const double lowWaterMark_;
+      const double highWaterMark_;
 
       boost::mutex mutex_;
       int retVal_;

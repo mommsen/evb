@@ -3,12 +3,19 @@
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
+#include "evb/bu/DiskUsage.h"
+#include "evb/bu/ResourceManager.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"
 
 
-evb::bu::DiskWriter::DiskWriter(BU* bu) :
+evb::bu::DiskWriter::DiskWriter
+(
+  BU* bu,
+  boost::shared_ptr<ResourceManager> resourceManager
+) :
 bu_(bu),
+resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
 buInstance_( bu->getApplicationDescriptor()->getInstance() ),
 doProcessing_(false),
@@ -206,12 +213,30 @@ void evb::bu::DiskWriter::configure()
   buRawDataDir_ = configuration_->rawDataDir.value_;
   buRawDataDir_ /= buDir.str();
   createDir(buRawDataDir_);
-  //rawDataDiskUsage_.reset( new DiskUsage(buRawDataDir_, configuration_->rawDataHighWaterMark, configuration_->rawDataLowWaterMark) );
+  if ( configuration_->rawDataLowWaterMark > configuration_->rawDataHighWaterMark )
+  {
+    std::ostringstream oss;
+    oss << "The high water mark " << configuration_->rawDataHighWaterMark.value_;
+    oss << " for the raw data path " << configuration_->rawDataDir.value_;
+    oss << " is smaller than the low water mark " << configuration_->rawDataLowWaterMark.value_;
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+  DiskUsagePtr rawDiskUsage( new DiskUsage(buRawDataDir_, configuration_->rawDataLowWaterMark, configuration_->rawDataHighWaterMark) );
+  resourceManager_->monitorDiskUsage( rawDiskUsage );
 
   buMetaDataDir_ = configuration_->metaDataDir.value_;
   buMetaDataDir_ /= buDir.str();
   createDir(buMetaDataDir_);
-  //metaDataDiskUsage_.reset( new DiskUsage(buMetaDataDir_, configuration_->metaDataHighWaterMark, configuration_->metaDataLowWaterMark) );
+  if ( configuration_->metaDataLowWaterMark > configuration_->metaDataHighWaterMark )
+  {
+    std::ostringstream oss;
+    oss << "The high water mark " << configuration_->metaDataHighWaterMark.value_;
+    oss << " for the meta data path " << configuration_->metaDataDir.value_;
+    oss << " is smaller than the low water mark " << configuration_->metaDataLowWaterMark.value_;
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+  DiskUsagePtr metaDiskUsage( new DiskUsage(buMetaDataDir_, configuration_->metaDataLowWaterMark, configuration_->metaDataHighWaterMark) );
+  resourceManager_->monitorDiskUsage( metaDiskUsage );
 }
 
 

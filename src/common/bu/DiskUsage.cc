@@ -10,12 +10,12 @@
 evb::bu::DiskUsage::DiskUsage
 (
   const boost::filesystem::path& path,
-  const double highWaterMark,
-  const double lowWaterMark
+  const double lowWaterMark,
+  const double highWaterMark
 ) :
 path_(path),
-highWaterMark_(highWaterMark),
 lowWaterMark_(lowWaterMark),
+highWaterMark_(highWaterMark),
 retVal_(1),
 tooHigh_(true)
 {

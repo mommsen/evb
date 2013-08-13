@@ -49,10 +49,10 @@ void evb::bu::Configuring::activity()
   {
     outermost_context_type& stateMachine = outermost_context();
 
+    if (doConfiguring_) stateMachine.resourceManager()->configure();
     if (doConfiguring_) stateMachine.ruProxy()->configure();
     if (doConfiguring_) stateMachine.eventBuilder()->configure();
     if (doConfiguring_) stateMachine.diskWriter()->configure();
-    if (doConfiguring_) stateMachine.resourceManager()->configure();
 
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }

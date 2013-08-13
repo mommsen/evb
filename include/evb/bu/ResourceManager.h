@@ -12,6 +12,7 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
+#include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xgi/Output.h"
@@ -59,6 +60,11 @@ namespace evb {
        * Return false if no free resource id is available.
        */
       bool getResourceId(uint32_t& resourceId);
+
+      /**
+       * Add the DiskUsagePtr to the disks to be monitored
+       */
+      void monitorDiskUsage(DiskUsagePtr&);
 
       /**
        * Append the info space items to be published in the
@@ -110,10 +116,11 @@ namespace evb {
 
     private:
 
+      void getDiskUsages();
+
       BU* bu_;
       const ConfigurationPtr configuration_;
 
-      bool boost_;
       bool throttle_;
 
       typedef std::list<EvBid> EvBidList;
@@ -124,6 +131,9 @@ namespace evb {
       typedef OneToOneQueue<uint32_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
+
+      typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
+      DiskUsageMonitors diskUsageMonitors_;
 
       struct EventMonitoring
       {
