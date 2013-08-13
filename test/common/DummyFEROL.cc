@@ -266,7 +266,7 @@ void evb::test::DummyFEROL::startWorkLoops()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'Generating'.";
+    std::string msg = "Failed to start workloop 'Generating'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 
@@ -287,7 +287,7 @@ void evb::test::DummyFEROL::startWorkLoops()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'Sending'.";
+    std::string msg = "Failed to start workloop 'Sending'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
   #endif
