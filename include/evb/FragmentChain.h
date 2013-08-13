@@ -201,18 +201,18 @@ void evb::FragmentChain<T>::append
   toolbox::mem::Reference* bufRef
 )
 {
-  if (!head_)
-  {
+  if ( ! head_ )
     head_ = bufRef;
-    tail_ = bufRef;
-  }
   else
-  {
     tail_->setNextReference(bufRef);
-    tail_ = bufRef;
-  }
 
-  size_ += calculateSize(bufRef);
+  do
+  {
+    size_ += calculateSize(bufRef);
+    tail_ = bufRef;
+    bufRef = bufRef->getNextReference();
+  }
+  while (bufRef);
 }
 
 
