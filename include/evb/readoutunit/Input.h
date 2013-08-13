@@ -507,7 +507,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
       std::ostringstream oss;
       oss << "Wrong CRC checksum:" << std::hex;
       oss << " FED trailer claims 0x" << trailerCRC;
-      oss << ", but caculcation gives 0x" << crc;
+      oss << ", but recalculation gives 0x" << crc;
       XCEPT_RAISE(exception::DataCorruption, oss.str());
     }
     #endif
