@@ -1,6 +1,5 @@
-#include "interface/shared/frl_header.h"
 #include "evb/DumpUtility.h"
-#include "evb/I2OMessages.h"
+#include "interface/shared/i2ogevb2g.h"
 
 
 void evb::DumpUtility::dump
@@ -36,10 +35,10 @@ void evb::DumpUtility::dumpBlock
 {
   const uint32_t dataSize = bufRef->getDataSize();
   const unsigned char* data = (unsigned char*)bufRef->getDataLocation();
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* block =
-    (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)data;
+  const I2O_DATA_READY_MESSAGE_FRAME* block =
+    (I2O_DATA_READY_MESSAGE_FRAME*)data;
   const unsigned char* payloadPointer = data +
-    sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+    sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
   s << "Buffer counter       (dec): ";
   s << bufferCnt << std::endl;
@@ -49,7 +48,14 @@ void evb::DumpUtility::dumpBlock
   s << dataSize << std::endl;
   s << "Pointer to payload   (hex): ";
   s << toolbox::toString("%x", payloadPointer) << std::endl;
-  s << *block << std::endl;
+  s << "Total length         (dec): ";
+  s << block->totalLength << std::endl;
+  s << "Partial length       (dec): ";
+  s << block->partLength << std::endl;
+  s << "FED id               (dec): ";
+  s << block->fedid << std::endl;
+  s << "Trigger no           (dec): ";
+  s << block->triggerno << std::endl;
   dumpBlockData(s, data, dataSize);
 }
 

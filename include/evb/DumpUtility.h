@@ -1,9 +1,10 @@
 #ifndef _evb_DumpUtility_h_
 #define _evb_DumpUtility_h_
 
-#include "toolbox/mem/Reference.h"
-
+#include <stdint.h>
 #include <iostream>
+
+#include "toolbox/mem/Reference.h"
 
 
 namespace evb {
