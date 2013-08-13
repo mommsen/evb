@@ -156,9 +156,11 @@ TestDynamicLibrary=evbtest
 
 TestDynamicLibraryName = $(TestDynamicLibrary:%=$(PackageLibDir)/$(LibraryPrefix)%$(DynamicSuffix))
 
-all: asm _buildall test install
+all: buildall test install
 
-test: _buildall
+buildall: crc _buildall
+
+test: buildall
 	@make tests
 
 testinstall: test
@@ -170,10 +172,12 @@ clean: _cleanall
 
 install: _installall testinstall
 
-rpm: _buildall test _rpmall
+rpm: buildall test _rpmall
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules
 
-asm: src/common/crc16_T10DIF_128x_extended.S
-	gcc -c -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
+crc: src/common/crc16_T10DIF_128x_extended.S
+	gcc -fPIC -c -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
+#crc: src/common/crc16_T10DIF_128x_extended.asm
+#	~aholz/bin/yasm -f x64 -f elf64 -X gnu -g dwarf2  -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
