@@ -273,7 +273,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::do_processSoapEvent
   else
   {
     XCEPT_DECLARE(exception::FSM, sentinelException,
-      "Received an unknown state machine event '" + soapEvent + "'.");
+      "Received an unknown state machine event '" + soapEvent + "'");
     newStateName = processFSMEvent( Fail(sentinelException) );
   }
 }

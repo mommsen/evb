@@ -217,7 +217,7 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
   catch (toolbox::mem::exception::Exception e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for super-fragments.", e);
+      "Failed to create memory pool for super-fragments", e);
   }
 
   resetMonitoringCounters();
@@ -373,7 +373,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
           if (currentFragment == 0)
           {
-            XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer.");
+            XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer");
           }
         }
 
@@ -587,7 +587,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application.", e);
+      "Failed to get I2O TID for this application", e);
   }
 
   const std::string identifier = readoutUnit_->getIdentifier();
@@ -607,7 +607,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   }
   catch (xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloops.";
+    std::string msg = "Failed to start workloops";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
