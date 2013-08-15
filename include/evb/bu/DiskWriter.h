@@ -60,19 +60,9 @@ namespace evb {
       void updateMonitoringItems();
 
       /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
-
-      /**
        * Configure
        */
       void configure();
-
-      /**
-       * Remove all data
-       */
-      void clear();
 
       /**
        * Register the state machine
@@ -84,6 +74,11 @@ namespace evb {
        * Start processing messages
        */
       void startProcessing(const uint32_t runNumber);
+
+      /**
+       * Drain messages
+       */
+      void drain();
 
       /**
        * Stop processing messages
@@ -108,6 +103,7 @@ namespace evb {
 
     private:
 
+      void resetMonitoringCounters();
       void gatherLumiStatistics();
       void writeEoLS
       (

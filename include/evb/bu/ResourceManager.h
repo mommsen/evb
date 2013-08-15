@@ -91,11 +91,6 @@ namespace evb {
       void configure();
 
       /**
-       * Remove all data
-       */
-      void clear();
-
-      /**
        * Print monitoring/configuration as HTML snipped
        */
       void printHtml(xgi::Output*);

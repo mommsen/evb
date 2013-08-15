@@ -17,267 +17,250 @@
 #include <string>
 
 
-namespace evb { namespace bu {
+namespace evb {
 
+  namespace bu {
 
-  ///////////////////////////////////////////
-  // Forward declarations of state classes //
-  ///////////////////////////////////////////
 
-  class Outermost;
-  // Outer states:
-  class Failed;
-  class AllOk;
-  // Inner states of AllOk
-  class Halted;
-  class Active;
-  // Inner states of Active
-  class Configuring;
-  class Configured;
-  class Processing;
-  // Inner states of Configured
-  class Clearing;
-  class Ready;
-  // Inner states of Processing
-  class Enabled;
+    ///////////////////////////////////////////
+    // Forward declarations of state classes //
+    ///////////////////////////////////////////
 
+    class Outermost;
+    // Outer states:
+    class Failed;
+    class AllOk;
+    // Inner states of AllOk
+    class Halted;
+    class Active;
+    // Inner states of Active
+    class Configuring;
+    class Ready;
+    class Running;
+    // Inner states of Running
+    class Enabled;
+    class Draining;
 
-  ///////////////////
-  // State classes //
-  ///////////////////
 
-  /**
-   * The outermost state
-   */
-  class Outermost: public EvBState<Outermost,StateMachine,AllOk>
-  {
+    ///////////////////
+    // State classes //
+    ///////////////////
 
-  public:
+    /**
+     * The outermost state
+     */
+    class Outermost: public EvBState<Outermost,StateMachine,AllOk>
+    {
 
-    typedef boost::mpl::list<> reactions;
+    public:
 
-    Outermost(my_context c) : my_state("Outermost", c)
-    { safeEntryAction(); }
-    virtual ~Outermost()
-    { safeExitAction(); }
+      typedef boost::mpl::list<> reactions;
 
-  };
+      Outermost(my_context c) : my_state("Outermost", c)
+      { safeEntryAction(); }
+      virtual ~Outermost()
+      { safeExitAction(); }
 
+    };
 
-  /**
-   * Failed state
-   */
-  class Failed: public EvBState<Failed,Outermost>
-  {
 
-  public:
+    /**
+     * Failed state
+     */
+    class Failed: public EvBState<Failed,Outermost>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Fail,Failed>
-    > reactions;
+    public:
 
-    Failed(my_context c) : my_state("Failed", c)
-    { safeEntryAction(); }
-    virtual ~Failed()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<Fail,Failed>
+      > reactions;
 
-  };
+      Failed(my_context c) : my_state("Failed", c)
+      { safeEntryAction(); }
+      virtual ~Failed()
+      { safeExitAction(); }
 
-  /**
-   * The default state AllOk. Initial state of outer-state Outermost
-   */
-  class AllOk: public EvBState<AllOk,Outermost,Halted>
-  {
+    };
 
-  public:
+    /**
+     * The default state AllOk. Initial state of outer-state Outermost
+     */
+    class AllOk: public EvBState<AllOk,Outermost,Halted>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
-    > reactions;
+    public:
 
-    AllOk(my_context c) : my_state("AllOk", c)
-    { safeEntryAction(); }
-    virtual ~AllOk()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
+      > reactions;
 
-  };
+      AllOk(my_context c) : my_state("AllOk", c)
+      { safeEntryAction(); }
+      virtual ~AllOk()
+      { safeExitAction(); }
 
+    };
 
-  /**
-   * The Halted state. Initial state of outer-state AllOk.
-   */
-  class Halted: public EvBState<Halted,AllOk>
-  {
 
-  public:
+    /**
+     * The Halted state. Initial state of outer-state AllOk.
+     */
+    class Halted: public EvBState<Halted,AllOk>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Configure,Active>
-    > reactions;
+    public:
 
-    Halted(my_context c) : my_state("Halted", c)
-    { safeEntryAction(); }
-    virtual ~Halted()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<Configure,Active>
+      > reactions;
 
-  };
+      Halted(my_context c) : my_state("Halted", c)
+      { safeEntryAction(); }
+      virtual ~Halted()
+      { safeExitAction(); }
 
+    };
 
-  /**
-   * The Active state of outer-state AllOk.
-   */
-  class Active: public EvBState<Active,AllOk,Configuring>
-  {
 
-  public:
+    /**
+     * The Active state of outer-state AllOk.
+     */
+    class Active: public EvBState<Active,AllOk,Configuring>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Halt,Halted>
-    > reactions;
+    public:
 
-    Active(my_context c) : my_state("Active", c)
-    { safeEntryAction(); }
-    virtual ~Active()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<Halt,Halted>
+      > reactions;
 
-  };
+      Active(my_context c) : my_state("Active", c)
+      { safeEntryAction(); }
+      virtual ~Active()
+      { safeExitAction(); }
 
+    };
 
-  /**
-   * The Configuring state. Initial state of outer-state Active.
-   */
-  class Configuring: public EvBState<Configuring,Active>
-  {
 
-  public:
+    /**
+     * The Configuring state. Initial state of outer-state Active.
+     */
+    class Configuring: public EvBState<Configuring,Active>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<ConfigureDone,Configured>
-    > reactions;
+    public:
 
-    Configuring(my_context c) : my_state("Configuring", c)
-    { safeEntryAction(); }
-    virtual ~Configuring()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<ConfigureDone,Ready>
+      > reactions;
 
-    virtual void entryAction();
-    virtual void exitAction();
-    void activity();
+      Configuring(my_context c) : my_state("Configuring", c)
+      { safeEntryAction(); }
+      virtual ~Configuring()
+      { safeExitAction(); }
 
-  private:
-    boost::scoped_ptr<boost::thread> configuringThread_;
-    volatile bool doConfiguring_;
+      virtual void entryAction();
+      virtual void exitAction();
+      void activity();
 
-  };
+    private:
+      boost::scoped_ptr<boost::thread> configuringThread_;
+      volatile bool doConfiguring_;
 
+    };
 
-  /**
-   * The Configured state of the outer-state Active.
-   */
-  class Configured: public EvBState<Configured,Active,Clearing>
-  {
 
-  public:
+    /**
+    * The Ready state of outer-state Active.
+    */
+    class Ready: public EvBState<Ready,Active>
+    {
 
-    Configured(my_context c) : my_state("Configured", c)
-    { safeEntryAction(); }
-    virtual ~Configured()
-    { safeExitAction(); }
+    public:
 
-  };
+      typedef boost::mpl::list<
+      boost::statechart::transition<Enable,Enabled>
+      > reactions;
 
+      Ready(my_context c) : my_state("Ready", c)
+      { safeEntryAction(); }
+      virtual ~Ready()
+      { safeExitAction(); }
 
-  /**
-   * The Processing state of the outer-state Active.
-   */
-  class Processing: public EvBState<Processing,Active,Enabled>
-  {
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Ready"); }
 
-  public:
+    };
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Stop,Configured>
-    > reactions;
 
-    Processing(my_context c) : my_state("Processing", c)
-    { safeEntryAction(); }
-    virtual ~Processing()
-    { safeExitAction(); }
+    /**
+     * The Running state of the outer-state Active.
+     */
+    class Running: public EvBState<Running,Active,Enabled>
+    {
 
-    virtual void entryAction();
+    public:
 
-  };
+      typedef boost::mpl::list<> reactions;
 
+      Running(my_context c) : my_state("Running", c)
+      { safeEntryAction(); }
+      virtual ~Running()
+      { safeExitAction(); }
 
-  /**
-   * The Clearing state. Initial state of outer-state Configured.
-   */
-  class Clearing: public EvBState<Clearing,Configured>
-  {
+      virtual void entryAction();
+      virtual void exitAction();
 
-  public:
+    };
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<ClearDone,Ready>
-    > reactions;
 
-    Clearing(my_context c) : my_state("Clearing", c)
-    { safeEntryAction(); }
-    virtual ~Clearing()
-    { safeExitAction(); }
+    /**
+     * The Enabled state. Initial state of the outer-state Running.
+     */
+    class Enabled: public EvBState<Enabled,Running>
+    {
 
-    virtual void entryAction();
-    virtual void exitAction();
-    void activity();
+    public:
 
-  private:
-    boost::scoped_ptr<boost::thread> clearingThread_;
-    volatile bool doClearing_;
+      typedef boost::mpl::list<
+      boost::statechart::transition<Stop,Draining>
+      > reactions;
 
-  };
+      Enabled(my_context c) : my_state("Enabled", c)
+      { safeEntryAction(); }
+      virtual ~Enabled()
+      { safeExitAction(); }
 
+    };
 
-  /**
-   * The Ready state of outer-state Configured.
-   */
-  class Ready: public EvBState<Ready,Configured>
-  {
 
-  public:
+    /**
+     * The Draining state of outer-state Running.
+     */
+    class Draining: public EvBState<Draining,Running>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Enable,Processing>
-    > reactions;
+    public:
 
-    Ready(my_context c) : my_state("Ready", c)
-    { safeEntryAction(); }
-    virtual ~Ready()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<DrainingDone,Ready>
+      > reactions;
 
-    virtual void entryAction()
-    { outermost_context().notifyRCMS("Ready"); }
+      Draining(my_context c) : my_state("Draining", c)
+      { safeEntryAction(); }
+      virtual ~Draining()
+      { safeExitAction(); }
 
-  };
+      virtual void entryAction();
+      virtual void exitAction();
+      void activity();
 
+    private:
+      boost::scoped_ptr<boost::thread> drainingThread_;
+      volatile bool doDraining_;
 
-  /**
-   * The Enabled state. Initial state of the outer-state Processing.
-   */
-  class Enabled: public EvBState<Enabled,Processing>
-  {
-
-  public:
-
-    Enabled(my_context c) : my_state("Enabled", c)
-    { safeEntryAction(); }
-    virtual ~Enabled()
-    { safeExitAction(); }
-
-    virtual void entryAction();
-    virtual void exitAction();
-
-  };
-
+    };
 
 } } //namespace evb::bu
 

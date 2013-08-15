@@ -81,19 +81,9 @@ namespace evb {
       void updateMonitoringItems();
 
       /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
-
-      /**
        * Configure
        */
       void configure();
-
-      /**
-       * Remove all data
-       */
-      void clear();
 
       /**
        * Register the state machine
@@ -102,12 +92,17 @@ namespace evb {
       { stateMachine_ = stateMachine; }
 
       /**
-       * Start processing messages
+       * Start processing events
        */
       void startProcessing();
 
       /**
-       * Stop processing messages
+       * Drain events
+       */
+      void drain();
+
+      /**
+       * Stop processing events
        */
       void stopProcessing();
 
@@ -119,6 +114,7 @@ namespace evb {
 
     private:
 
+      void resetMonitoringCounters();
       void getApplicationDescriptors();
       void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
@@ -134,7 +130,6 @@ namespace evb {
 
       bool doProcessing_;
       bool requestFragmentsActive_;
-      bool acceptI2Omessages_;
 
       toolbox::task::WorkLoop* requestFragmentsWL_;
       toolbox::task::ActionSignature* requestFragmentsAction_;

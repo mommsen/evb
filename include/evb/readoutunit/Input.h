@@ -111,29 +111,24 @@ namespace evb {
       void updateMonitoringItems();
 
       /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
-
-      /**
        * Configure
        */
       void configure();
 
       /**
-       * Start processing messages
+       * Start processing events
        */
       void startProcessing(const uint32_t runNumber);
 
       /**
-       * Stop processing messages
+       * Drain the remainig events
        */
-      void stopProcessing();
+      void drain();
 
       /**
-       * Remove all data
+       * Stop processing events
        */
-      void clear();
+      void stopProcessing();
 
       /**
        * Print monitoring information as HTML snipped
@@ -166,8 +161,8 @@ namespace evb {
 
         virtual void configure(boost::shared_ptr<Configuration>) {};
         virtual void startProcessing(const uint32_t runNumber) {};
+        virtual void drain() {};
         virtual void stopProcessing() {};
-        virtual void clear() {};
         virtual void printSuperFragmentFIFO(xgi::Output*) {};
         virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) {};
 
@@ -183,8 +178,8 @@ namespace evb {
         virtual void superFragmentReady(toolbox::mem::Reference*);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
+        virtual void drain();
         virtual void stopProcessing();
-        virtual void clear();
         virtual void printSuperFragmentFIFO(xgi::Output*);
         virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&);
 
@@ -220,9 +215,12 @@ namespace evb {
       {
       public:
 
-        DummyInputData(Input<Configuration>* input) : input_(input) {};
+        DummyInputData(Input<Configuration>* input)
+        : input_(input),doProcessing_(false) {};
+
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
+        virtual void stopProcessing();
 
       protected:
 
@@ -238,6 +236,7 @@ namespace evb {
         FragmentTrackers fragmentTrackers_;
         toolbox::mem::Pool* fragmentPool_;
         uint32_t frameSize_;
+        bool doProcessing_;
       };
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
@@ -247,6 +246,7 @@ namespace evb {
 
     private:
 
+      void resetMonitoringCounters();
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
       void checkEventFragment(toolbox::mem::Reference*);
       void updateSuperFragmentCounters(const FragmentChainPtr&);
@@ -270,7 +270,6 @@ namespace evb {
       InputMonitoring superFragmentMonitor_;
       boost::mutex superFragmentMonitorMutex_;
 
-      bool acceptI2Omessages_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 lastEventNumberFromFEROLs_;
@@ -293,8 +292,7 @@ evb::readoutunit::Input<Configuration>::Input
 ) :
 configuration_(configuration),
 app_(app),
-handler_(new Handler()),
-acceptI2Omessages_(false)
+handler_(new Handler())
 {}
 
 
@@ -303,36 +301,31 @@ void evb::readoutunit::Input<Configuration>::inputSourceChanged()
 {
   getHandlerForInputSource(handler_);
   handler_->configure(configuration_);
+  resetMonitoringCounters();
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::superFragmentReady(toolbox::mem::Reference* bufRef)
 {
-  if ( acceptI2Omessages_ )
-  {
-    checkEventFragment(bufRef);
+  checkEventFragment(bufRef);
 
-    if ( configuration_->dumpFragmentsToLogger )
-      dumpFragmentToLogger(bufRef);
+  if ( configuration_->dumpFragmentsToLogger )
+    dumpFragmentToLogger(bufRef);
 
-    handler_->superFragmentReady(bufRef);
-  }
+  handler_->superFragmentReady(bufRef);
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  if ( acceptI2Omessages_ )
-  {
-    checkEventFragment(bufRef);
+  checkEventFragment(bufRef);
 
-    if ( configuration_->dumpFragmentsToLogger )
-      dumpFragmentToLogger(bufRef);
+  if ( configuration_->dumpFragmentsToLogger )
+    dumpFragmentToLogger(bufRef);
 
-    handler_->rawDataAvailable(bufRef,cache);
-  }
+  handler_->rawDataAvailable(bufRef,cache);
 }
 
 
@@ -360,7 +353,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
     {
       ferolHeader = (ferolh_t*)payload;
 
-      if( ferolHeader->signature() != FEROL_SIGNATURE )
+      if ( ferolHeader->signature() != FEROL_SIGNATURE )
       {
         std::ostringstream msg;
         msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
@@ -470,7 +463,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
         }
       }
     }
-    while( !ferolHeader->is_last_packet() );
+    while ( !ferolHeader->is_last_packet() );
 
     fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
 
@@ -592,24 +585,22 @@ void evb::readoutunit::Input<Configuration>::updateSuperFragmentCounters(const F
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::startProcessing(const uint32_t runNumber)
 {
+  resetMonitoringCounters();
   handler_->startProcessing(runNumber);
-  acceptI2Omessages_ = true;
+}
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::drain()
+{
+  handler_->drain();
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::stopProcessing()
 {
-  acceptI2Omessages_ = false;
   handler_->stopProcessing();
-}
-
-
-template<class Configuration>
-void evb::readoutunit::Input<Configuration>::clear()
-{
-  acceptI2Omessages_ = false;
-  handler_->clear();
 }
 
 
@@ -697,6 +688,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
+    superFragmentMonitor_.lastEventNumber = 0;
     superFragmentMonitor_.rate = 0;
     superFragmentMonitor_.bandwidth = 0;
     superFragmentMonitor_.eventSize = 0;
@@ -714,6 +706,8 @@ void evb::readoutunit::Input<Configuration>::configure()
   }
 
   handler_->configure(configuration_);
+
+  resetMonitoringCounters();
 }
 
 
@@ -817,10 +811,10 @@ superFragmentFIFO_("superFragmentFIFO")
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
+  doProcessing_ = false;
   dropInputData_ = configuration->dropInputData;
 
-  clear();
-
+  superFragmentFIFO_.clear();
   superFragmentFIFO_.resize(configuration->fragmentFIFOCapacity);
 
   evbIdFactories_.clear();
@@ -864,7 +858,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
 
   if ( ! dropInputData_ )
-    while( ! superFragmentFIFO_.enq(superFragment) ) ::usleep(1000);
+    while ( ! superFragmentFIFO_.enq(superFragment) ) ::usleep(1000);
 }
 
 
@@ -905,18 +899,36 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::startProcessing(const u
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
+void evb::readoutunit::Input<Configuration>::FEROLproxy::drain()
 {
-  doProcessing_ = false;
+  while ( ! superFragmentFIFO_.empty() ) ::usleep(1000);
+
+  bool workDone;
+
+  do
+  {
+    workDone = false;
+
+    for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+         it != itEnd; ++it)
+    {
+      if ( ! it->second->empty() )
+      {
+        workDone = true;
+        ::usleep(1000);
+      }
+    }
+  } while ( workDone );
 }
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::clear()
+void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
 {
+  doProcessing_ = false;
+
   superFragmentFIFO_.clear();
 
-  FragmentChain::FragmentPtr fragment;
   for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
@@ -956,7 +968,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs(xgi:
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
 {
-  clear();
+  doProcessing_ = false;
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -1015,6 +1027,8 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
 template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
+  if ( ! doProcessing_ ) return false;
+
   superFragment.reset( new FragmentChain(evbId) );
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
@@ -1105,7 +1119,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     superFragment->append(fragmentHead);
   }
 
-  return true;
+  return superFragment->isValid();
 }
 
 
@@ -1114,7 +1128,16 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
 {
   eventNumber_ = 0;
   evbIdFactory_.reset(runNumber);
+  doProcessing_ = true;
 }
+
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::DummyInputData::stopProcessing()
+{
+  doProcessing_ = false;
+}
+
 
 namespace evb
 {
@@ -1138,7 +1161,7 @@ namespace evb
       fedSize += dataLength;
       ferolOffset += dataLength + sizeof(ferolh_t);
     }
-    while( !ferolHeader->is_last_packet() && ferolOffset < payloadSize );
+    while ( !ferolHeader->is_last_packet() && ferolOffset < payloadSize );
 
     return fedSize;
   }

@@ -63,23 +63,23 @@ namespace evb {
       void configure();
 
       /**
-       * Remove all data
-       */
-      void clear();
-
-      /**
        * Register the state machine
        */
       void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
 
       /**
-       * Start processing messages
+       * Start processing events
        */
       void startProcessing(const uint32_t runNumber);
 
       /**
-       * Stop processing messages
+       * Drain events
+       */
+      void drain();
+
+      /**
+       * Stop processing events
        */
       void stopProcessing();
 

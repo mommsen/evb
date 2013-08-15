@@ -35,7 +35,7 @@ namespace evb {
   ////////////////////////////////
 
   class ConfigureDone: public boost::statechart::event<ConfigureDone> {};
-  class ClearDone: public boost::statechart::event<ClearDone> {};
+  class DrainingDone: public boost::statechart::event<DrainingDone> {};
 
   class Fail : public boost::statechart::event<Fail>
   {
