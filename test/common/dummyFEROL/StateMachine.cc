@@ -67,25 +67,39 @@ void evb::test::dummyFEROL::Configuring::exitAction()
 }
 
 
-void evb::test::dummyFEROL::Clearing::entryAction()
+void evb::test::dummyFEROL::Running::entryAction()
 {
-  doClearing_ = true;
-  clearingThread_.reset(
-    new boost::thread( boost::bind( &evb::test::dummyFEROL::Clearing::activity, this) )
-  );
-  clearingThread_->detach();
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.dummyFEROL()->startProcessing();
 }
 
 
-void evb::test::dummyFEROL::Clearing::activity()
+void evb::test::dummyFEROL::Running::exitAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.dummyFEROL()->stopProcessing();
+}
+
+
+void evb::test::dummyFEROL::Draining::entryAction()
+{
+  doDraining_ = true;
+  drainingThread_.reset(
+    new boost::thread( boost::bind( &evb::test::dummyFEROL::Draining::activity, this) )
+  );
+  drainingThread_->detach();
+}
+
+
+void evb::test::dummyFEROL::Draining::activity()
 {
   outermost_context_type& stateMachine = outermost_context();
 
-  std::string msg = "Failed to clear the components";
+  std::string msg = "Failed to drain the components";
   try
   {
-    if (doClearing_) stateMachine.dummyFEROL()->clear();
-    if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
+    if (doDraining_) stateMachine.dummyFEROL()->drain();
+    if (doDraining_) stateMachine.processFSMEvent( DrainingDone() );
   }
   catch( xcept::Exception& e )
   {
@@ -111,31 +125,10 @@ void evb::test::dummyFEROL::Clearing::activity()
 }
 
 
-void evb::test::dummyFEROL::Clearing::exitAction()
+void evb::test::dummyFEROL::Draining::exitAction()
 {
-  doClearing_ = false;
-  clearingThread_->join();
-}
-
-
-void evb::test::dummyFEROL::Processing::entryAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-  stateMachine.dummyFEROL()->resetMonitoringCounters();
-}
-
-
-void evb::test::dummyFEROL::Enabled::entryAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-  stateMachine.dummyFEROL()->startProcessing();
-}
-
-
-void evb::test::dummyFEROL::Enabled::exitAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-  stateMachine.dummyFEROL()->stopProcessing();
+  doDraining_ = false;
+  drainingThread_->join();
 }
 
 

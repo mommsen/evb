@@ -183,8 +183,7 @@ void evb::test::DummyFEROL::resetMonitoringCounters()
 
 void evb::test::DummyFEROL::configure()
 {
-  clear();
-
+  fragmentFIFO_.clear();
   fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
 
   fragmentGenerator_.configure(
@@ -201,6 +200,8 @@ void evb::test::DummyFEROL::configure()
   );
 
   getApplicationDescriptors();
+
+  resetMonitoringCounters();
 }
 
 
@@ -222,15 +223,9 @@ void evb::test::DummyFEROL::getApplicationDescriptors()
 }
 
 
-void evb::test::DummyFEROL::clear()
-{
-  toolbox::mem::Reference* bufRef;
-  while ( fragmentFIFO_.deq(bufRef) ) { bufRef->release(); }
-}
-
-
 void evb::test::DummyFEROL::startProcessing()
 {
+  resetMonitoringCounters();
   doProcessing_ = true;
   fragmentGenerator_.reset();
   generatingWL_->submit(generatingAction_);
@@ -240,11 +235,16 @@ void evb::test::DummyFEROL::startProcessing()
 }
 
 
+void evb::test::DummyFEROL::drain()
+{
+  doProcessing_ = false;
+  while ( generatingActive_ || !fragmentFIFO_.empty() || sendingActive_ ) ::usleep(1000);
+}
+
+
 void evb::test::DummyFEROL::stopProcessing()
 {
   doProcessing_ = false;
-  while (generatingActive_) ::usleep(1000);
-  while (sendingActive_) ::usleep(1000);
 }
 
 
@@ -298,16 +298,16 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 {
   generatingActive_ = true;
 
-  toolbox::mem::Reference* bufRef = 0;
-
   try
   {
     while ( doProcessing_ )
     {
+      toolbox::mem::Reference* bufRef = 0;
+
       if ( fragmentGenerator_.getData(bufRef) )
       {
         #ifdef DOUBLE_WORKLOOPS
-        while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) { ::usleep(1000); }
+        while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
         #else
         updateCounters(bufRef);
         sendData(bufRef);
@@ -332,21 +332,14 @@ evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 {
   sendingActive_ = true;
 
-  toolbox::mem::Reference* bufRef = 0;
-
   try
   {
-    while ( doProcessing_ )
+    toolbox::mem::Reference* bufRef = 0;
+
+    while ( fragmentFIFO_.deq(bufRef) )
     {
-      if ( fragmentFIFO_.deq(bufRef) )
-      {
-        updateCounters(bufRef);
-        sendData(bufRef);
-      }
-      else
-      {
-        ::usleep(10);
-      }
+      updateCounters(bufRef);
+      sendData(bufRef);
     }
   }
   catch(xcept::Exception &e)
@@ -356,6 +349,8 @@ evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
   }
 
   sendingActive_ = false;
+
+  ::usleep(10);
 
   return doProcessing_;
 }

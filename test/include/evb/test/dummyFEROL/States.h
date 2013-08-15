@@ -35,13 +35,11 @@ namespace evb {
       class Active;
       // Inner states of Active
       class Configuring;
-      class Configured;
-      class Processing;
-      // Inner states of Configured
-      class Clearing;
       class Ready;
-      // Inner states of Processing
+      class Running;
+      // Inner states of Running
       class Enabled;
+      class Draining;
 
 
       ///////////////////
@@ -152,7 +150,7 @@ namespace evb {
       public:
 
         typedef boost::mpl::list<
-        boost::statechart::transition<ConfigureDone,Configured>
+        boost::statechart::transition<ConfigureDone,Ready>
         > reactions;
 
         Configuring(my_context c) : my_state("Configuring", c)
@@ -172,81 +170,15 @@ namespace evb {
 
 
       /**
-       * The Configured state of the outer-state Active.
+       * The Ready state of outer-state Active.
        */
-      class Configured: public EvBState<Configured,Active,Clearing>
-      {
-
-      public:
-
-        Configured(my_context c) : my_state("Configured", c)
-        { safeEntryAction(); }
-        virtual ~Configured()
-        { safeExitAction(); }
-
-      };
-
-
-      /**
-       * The Processing state of the outer-state Active.
-       */
-      class Processing: public EvBState<Processing,Active,Enabled>
+      class Ready: public EvBState<Ready,Active>
       {
 
       public:
 
         typedef boost::mpl::list<
-        boost::statechart::transition<Stop,Configured>
-        > reactions;
-
-        Processing(my_context c) : my_state("Processing", c)
-        { safeEntryAction(); }
-        virtual ~Processing()
-        { safeExitAction(); }
-
-        virtual void entryAction();
-
-      };
-
-
-      /**
-       * The Clearing state. Initial state of outer-state Configured.
-       */
-      class Clearing: public EvBState<Clearing,Configured>
-      {
-
-      public:
-
-        typedef boost::mpl::list<
-        boost::statechart::transition<ClearDone,Ready>
-        > reactions;
-
-        Clearing(my_context c) : my_state("Clearing", c)
-        { safeEntryAction(); }
-        virtual ~Clearing()
-        { safeExitAction(); }
-
-        virtual void entryAction();
-        virtual void exitAction();
-        void activity();
-
-      private:
-        boost::scoped_ptr<boost::thread> clearingThread_;
-        volatile bool doClearing_;
-
-      };
-
-
-      /**
-       * The Ready state of outer-state Configured.
-       */
-      class Ready: public EvBState<Ready,Configured>
-      {
-
-      public:
-
-        typedef boost::mpl::list<
-        boost::statechart::transition<Enable,Processing>
+        boost::statechart::transition<Enable,Enabled>
         > reactions;
 
         Ready(my_context c) : my_state("Ready", c)
@@ -261,20 +193,70 @@ namespace evb {
 
 
       /**
-       * The Enabled state. Initial state of the outer-state Processing.
+       * The Running state of the outer-state Active.
        */
-      class Enabled: public EvBState<Enabled,Processing>
+      class Running: public EvBState<Running,Active,Enabled>
       {
 
       public:
+
+        typedef boost::mpl::list<> reactions;
+
+        Running(my_context c) : my_state("Running", c)
+        { safeEntryAction(); }
+        virtual ~Running()
+        { safeExitAction(); }
+
+        virtual void entryAction();
+        virtual void exitAction();
+
+      };
+
+
+      /**
+       * The Enabled state. Initial state of the outer-state Running.
+       */
+      class Enabled: public EvBState<Enabled,Running>
+      {
+
+      public:
+
+        typedef boost::mpl::list<
+        boost::statechart::transition<Stop,Draining>
+        > reactions;
 
         Enabled(my_context c) : my_state("Enabled", c)
         { safeEntryAction(); }
         virtual ~Enabled()
         { safeExitAction(); }
 
+      };
+
+
+      /**
+       * The Draining state of outer-state Running.
+       */
+      class Draining: public EvBState<Draining,Running>
+      {
+
+      public:
+
+        typedef boost::mpl::list<
+        boost::statechart::transition<DrainingDone,Ready>
+        > reactions;
+
+        Draining(my_context c) : my_state("Draining", c)
+        { safeEntryAction(); }
+        virtual ~Draining()
+        { safeExitAction(); }
+
         virtual void entryAction();
         virtual void exitAction();
+        void activity();
+
+      private:
+        boost::scoped_ptr<boost::thread> drainingThread_;
+        volatile bool doDraining_;
 
       };
 

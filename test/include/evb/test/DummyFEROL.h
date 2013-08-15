@@ -40,27 +40,22 @@ namespace evb {
       XDAQ_INSTANTIATOR();
 
       /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
-
-      /**
        * Configure
        */
       void configure();
 
       /**
-       * Remove all data
-       */
-      void clear();
-
-      /**
-       * Start triggers and send messages
+       * Start triggers and send events
        */
       void startProcessing();
 
       /**
-       * Stop triggers and sending messages
+       * Stop triggers and drain events
+       */
+      void drain();
+
+      /**
+       * Stop sending events
        */
       void stopProcessing();
 
@@ -75,6 +70,7 @@ namespace evb {
       virtual void do_defaultWebPage(xgi::Output*);
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
 
+      void resetMonitoringCounters();
       void getApplicationDescriptors();
       void startWorkLoops();
       bool generating(toolbox::task::WorkLoop*);
