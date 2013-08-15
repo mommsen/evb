@@ -216,7 +216,7 @@ namespace evb {
       public:
 
         DummyInputData(Input<Configuration>* input)
-        : input_(input),doProcessing_(false) {};
+        : doProcessing_(false),input_(input) {};
 
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
@@ -228,6 +228,7 @@ namespace evb {
 
         EvBidFactory evbIdFactory_;
         uint32_t eventNumber_;
+        bool doProcessing_;
 
       private:
 
@@ -236,7 +237,6 @@ namespace evb {
         FragmentTrackers fragmentTrackers_;
         toolbox::mem::Pool* fragmentPool_;
         uint32_t frameSize_;
-        bool doProcessing_;
       };
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
@@ -1027,8 +1027,6 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
 template<class Configuration>
 bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
-  if ( ! doProcessing_ ) return false;
-
   superFragment.reset( new FragmentChain(evbId) );
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);

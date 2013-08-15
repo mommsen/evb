@@ -75,6 +75,8 @@ namespace evb {
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
         {
+          if ( ! doProcessing_ ) return false;
+
           if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
           const EvBid evbId = evbIdFactory_.getEvBid(eventNumber_);
 
