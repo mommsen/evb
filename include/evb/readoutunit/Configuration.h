@@ -43,7 +43,7 @@ namespace evb {
 
       Configuration()
       : inputSource("FEROL"),
-        numberOfResponders(1),
+        numberOfResponders(3),
         blockSize(32768),
         fragmentFIFOCapacity(128),
         fragmentRequestFIFOCapacity(80*8), // 80 BUs with max 8 request
