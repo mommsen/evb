@@ -30,7 +30,6 @@ fastCtrlMsgPool_(fastCtrlMsgPool),
 configuration_(bu->getConfiguration()),
 doProcessing_(false),
 requestFragmentsActive_(false),
-acceptI2Omessages_(false),
 tid_(0)
 {
   resetMonitoringCounters();
@@ -40,100 +39,104 @@ tid_(0)
 
 void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
-  if ( acceptI2Omessages_ )
+  try
   {
-    try
+    while (bufRef)
     {
-      while (bufRef)
+      const I2O_MESSAGE_FRAME* stdMsg =
+        (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+      const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+        (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
+      const uint32_t payload = (stdMsg->MessageSize << 2) -
+        dataBlockMsg->getHeaderSize();
+
+      Index index;
+      index.ruTid = stdMsg->InitiatorAddress;
+      index.buResourceId = dataBlockMsg->buResourceId;
+
       {
-        const I2O_MESSAGE_FRAME* stdMsg =
-          (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-        const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-          (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-        const uint32_t payload = (stdMsg->MessageSize << 2) -
-          dataBlockMsg->getHeaderSize();
+        boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
-        Index index;
-        index.ruTid = stdMsg->InitiatorAddress;
-        index.buResourceId = dataBlockMsg->buResourceId;
-
+        const uint32_t lastEventNumber = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
+        if ( index.ruTid == evm_.tid )
+          fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+        else
+          fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+        fragmentMonitoring_.payload += payload;
+        fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
+        ++fragmentMonitoring_.i2oCount;
+        if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
         {
-          boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-
-          const uint32_t lastEventNumber = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
-          if ( index.ruTid == evm_.tid )
-            fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
-          else
-            fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
-          fragmentMonitoring_.payload += payload;
-          fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
-          ++fragmentMonitoring_.i2oCount;
-          if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
-          {
-            ++fragmentMonitoring_.logicalCount;
-            ++fragmentMonitoring_.logicalCountPerRU[index.ruTid];
-          }
+          ++fragmentMonitoring_.logicalCount;
+          ++fragmentMonitoring_.logicalCountPerRU[index.ruTid];
         }
+      }
 
-        DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
-        if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
-        {
-          // new data block
-          if ( dataBlockMsg->blockNb != 1 )
-          {
-            std::ostringstream oss;
-            oss << "Received a first super-fragment block from RU tid " << index.ruTid;
-            oss << " for BU resource id " << index.buResourceId;
-            oss << " which is already block number " <<  dataBlockMsg->blockNb;
-            oss << " of " << dataBlockMsg->nbBlocks;
-            XCEPT_RAISE(exception::SuperFragment, oss.str());
-          }
-
-          FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
-          dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
-        }
-
-        if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
+      DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
+      if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
+      {
+        // new data block
+        if ( dataBlockMsg->blockNb != 1 )
         {
           std::ostringstream oss;
-          oss << "Received a super-fragment block from RU tid " << index.ruTid;
+          oss << "Received a first super-fragment block from RU tid " << index.ruTid;
           oss << " for BU resource id " << index.buResourceId;
-          oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
+          oss << " which is already block number " <<  dataBlockMsg->blockNb;
+          oss << " of " << dataBlockMsg->nbBlocks;
           XCEPT_RAISE(exception::SuperFragment, oss.str());
         }
 
-        resourceManager_->underConstruction(dataBlockMsg);
-
-        if ( dataBlockPos->second->isComplete() )
-        {
-          eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
-          dataBlockMap_.erase(dataBlockPos);
-        }
-
-        bufRef = bufRef->getNextReference();
+        FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
+        dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
       }
+
+      if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
+      {
+        std::ostringstream oss;
+        oss << "Received a super-fragment block from RU tid " << index.ruTid;
+        oss << " for BU resource id " << index.buResourceId;
+        oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
+        XCEPT_RAISE(exception::SuperFragment, oss.str());
+      }
+
+      resourceManager_->underConstruction(dataBlockMsg);
+
+      if ( dataBlockPos->second->isComplete() )
+      {
+        eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
+        dataBlockMap_.erase(dataBlockPos);
+      }
+
+      bufRef = bufRef->getNextReference();
     }
-    catch(xcept::Exception& e)
-    {
-      stateMachine_->processFSMEvent( Fail(e) );
-    }
+  }
+  catch(xcept::Exception& e)
+  {
+    stateMachine_->processFSMEvent( Fail(e) );
   }
 }
 
 
 void evb::bu::RUproxy::startProcessing()
 {
+  resetMonitoringCounters();
+
   doProcessing_ = true;
   requestFragmentsWL_->submit(requestFragmentsAction_);
-  acceptI2Omessages_ = true;
+}
+
+
+void evb::bu::RUproxy::drain()
+{
+  while ( requestFragmentsActive_ || !dataBlockMap_.empty() ) ::usleep(1000);
 }
 
 
 void evb::bu::RUproxy::stopProcessing()
 {
-  acceptI2Omessages_ = false;
   doProcessing_ = false;
-  while (requestFragmentsActive_) ::usleep(1000);
+  while ( requestFragmentsActive_ ) ::usleep(1000);
+  dataBlockMap_.clear();
 }
 
 
@@ -282,10 +285,11 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 
 void evb::bu::RUproxy::configure()
 {
-  acceptI2Omessages_ = false;
-  clear();
+  dataBlockMap_.clear();
 
   getApplicationDescriptors();
+
+  resetMonitoringCounters();
 }
 
 
@@ -364,12 +368,6 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     XCEPT_RETHROW(exception::I2O,
       "Failed to get the I2O TID of the EVM", e);
   }
-}
-
-
-void evb::bu::RUproxy::clear()
-{
-  dataBlockMap_.clear();
 }
 
 

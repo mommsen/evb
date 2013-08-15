@@ -46,8 +46,6 @@ void evb::bu::EventBuilder::addSuperFragment
 
 void evb::bu::EventBuilder::configure()
 {
-  clear();
-
   superFragmentFIFOs_.clear();
 
   processesActive_.clear();
@@ -93,16 +91,6 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
 }
 
 
-void evb::bu::EventBuilder::clear()
-{
-  for (SuperFragmentFIFOs::iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    it->second->clear();
-  }
-}
-
-
 void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
@@ -114,19 +102,56 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 }
 
 
+void evb::bu::EventBuilder::drain()
+{
+  bool workDone;
+
+  do
+  {
+    workDone = false;
+
+    for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+         it != itEnd; ++it)
+    {
+      if ( ! it->second->empty() )
+      {
+        workDone = true;
+        ::usleep(1000);
+      }
+    }
+  } while ( workDone );
+
+  doProcessing_ = false;
+
+  do
+  {
+    workDone = false;
+
+    for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
+    {
+      if ( processesActive_[i] )
+      {
+        workDone = true;
+        ::usleep(1000);
+      }
+    }
+  } while ( workDone );
+}
+
+
 void evb::bu::EventBuilder::stopProcessing()
 {
-  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    while ( ! it->second->empty() ) ::usleep(1000);
-  }
-
   doProcessing_ = false;
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
     while ( processesActive_[i] ) ::usleep(1000);
+  }
+
+  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    it->second->clear();
   }
 }
 
@@ -161,9 +186,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
   catch(xcept::Exception& e)
   {
-    // empty my queue
-    superFragmentFIFO->clear();
-
     processesActive_[builderId] = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }

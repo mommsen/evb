@@ -36,6 +36,8 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
   if ( configuration_->dropEventData ) return;
 
+  resetMonitoringCounters();
+
   runNumber_ = runNumber;
 
   std::ostringstream runDir;
@@ -63,11 +65,10 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 }
 
 
-void evb::bu::DiskWriter::stopProcessing()
+void evb::bu::DiskWriter::drain()
 {
   if ( configuration_->dropEventData ) return;
 
-  doProcessing_ = false;
   while ( processActive_ ) ::usleep(1000);
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
@@ -85,6 +86,14 @@ void evb::bu::DiskWriter::stopProcessing()
   streamHandlers_.clear();
 
   removeDir(runRawDataDir_);
+}
+
+
+void evb::bu::DiskWriter::stopProcessing()
+{
+  doProcessing_ = false;
+
+  // TODO: close files and write EoR
 }
 
 
@@ -139,34 +148,41 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
   LumiMonitorPtr lumiMonitor;
   std::pair<LumiMonitors::iterator,bool> result;
   const uint32_t streamCount = streamHandlers_.size();
+  bool workDone;
 
-  for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
-       it != itEnd; ++it)
+  do
   {
-    while ( it->second->getLumiMonitor(lumiMonitor) )
+    workDone = false;
+
+    for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
+         it != itEnd; ++it)
     {
-      result = lumiMonitors_.insert(lumiMonitor);
-
-      if ( result.second == false)        // lumisection exists
-        *(*result.first) += *lumiMonitor; // add values and see the stars
-
-      diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
-      diskWriterMonitoring_.nbEventsWritten += lumiMonitor->nbEventsWritten;
-      if ( diskWriterMonitoring_.lastEventNumberWritten < lumiMonitor->lastEventNumberWritten )
-        diskWriterMonitoring_.lastEventNumberWritten = lumiMonitor->lastEventNumberWritten;
-      if ( diskWriterMonitoring_.currentLumiSection < lumiMonitor->lumiSection )
-        diskWriterMonitoring_.currentLumiSection = lumiMonitor->lumiSection;
-
-      if ( (*result.first)->updates == streamCount )
+      while ( it->second->getLumiMonitor(lumiMonitor) )
       {
-        if ( (*result.first)->nbFiles > 0 )
-          ++diskWriterMonitoring_.nbLumiSections;
+        workDone = true;
+        result = lumiMonitors_.insert(lumiMonitor);
 
-        writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
-        lumiMonitors_.erase(result.first);
+        if ( result.second == false)        // lumisection exists
+          *(*result.first) += *lumiMonitor; // add values and see the stars
+
+        diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
+        diskWriterMonitoring_.nbEventsWritten += lumiMonitor->nbEventsWritten;
+        if ( diskWriterMonitoring_.lastEventNumberWritten < lumiMonitor->lastEventNumberWritten )
+          diskWriterMonitoring_.lastEventNumberWritten = lumiMonitor->lastEventNumberWritten;
+        if ( diskWriterMonitoring_.currentLumiSection < lumiMonitor->lumiSection )
+          diskWriterMonitoring_.currentLumiSection = lumiMonitor->lumiSection;
+
+        if ( (*result.first)->updates == streamCount )
+        {
+          if ( (*result.first)->nbFiles > 0 )
+            ++diskWriterMonitoring_.nbLumiSections;
+
+          writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
+          lumiMonitors_.erase(result.first);
+        }
       }
     }
-  }
+  } while ( workDone );
 }
 
 
@@ -203,7 +219,8 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
 
 void evb::bu::DiskWriter::configure()
 {
-  clear();
+  streamHandlers_.clear();
+  lumiMonitors_.clear();
 
   if ( configuration_->dropEventData ) return;
 
@@ -237,13 +254,8 @@ void evb::bu::DiskWriter::configure()
   }
   DiskUsagePtr metaDiskUsage( new DiskUsage(buMetaDataDir_, configuration_->metaDataLowWaterMark, configuration_->metaDataHighWaterMark) );
   resourceManager_->monitorDiskUsage( metaDiskUsage );
-}
 
-
-void evb::bu::DiskWriter::clear()
-{
-  streamHandlers_.clear();
-  lumiMonitors_.clear();
+  resetMonitoringCounters();
 }
 
 

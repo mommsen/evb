@@ -66,22 +66,20 @@ namespace evb {
     {
       boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
 
-      if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
+      // Only get a request if we also have data to go with it.
+      // Otherwise, we consume a request at the end of the run which gets lost
+      FragmentChainPtr superFragment;
+      if ( fragmentRequestFIFO_.empty() || !input_->getNextAvailableSuperFragment(superFragment) ) return false;
+
+      assert( fragmentRequestFIFO_.deq(fragmentRequest) );
 
       fragmentRequest->evbIds.clear();
       fragmentRequest->evbIds.reserve(fragmentRequest->nbRequests);
 
-      FragmentChainPtr superFragment;
+      superFragments.push_back(superFragment);
+      fragmentRequest->evbIds.push_back( superFragment->getEvBid() );
+
       uint32_t tries = 0;
-
-      while ( doProcessing_ && !input_->getNextAvailableSuperFragment(superFragment) ) ::usleep(10);
-
-      if ( superFragment->isValid() )
-      {
-        superFragments.push_back(superFragment);
-        fragmentRequest->evbIds.push_back( superFragment->getEvBid() );
-      }
-
       while ( doProcessing_ && fragmentRequest->evbIds.size() < fragmentRequest->nbRequests && tries < configuration_->maxTriggerAgeMSec*100 )
       {
         if ( input_->getNextAvailableSuperFragment(superFragment) )
@@ -92,8 +90,8 @@ namespace evb {
         else
         {
           ::usleep(10);
+          ++tries;
         }
-        ++tries;
       }
 
       fragmentRequest->nbRequests = fragmentRequest->evbIds.size();
@@ -111,32 +109,28 @@ namespace evb {
       stateMachine.getOwner()->getRUproxy()->configure();
     }
 
-    template<>
-    void Processing<EVM>::doResetMonitoringCounters()
-    {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->resetMonitoringCounters();
-    }
 
     template<>
-    void Clearing<EVM>::doClearing()
-    {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->clear();
-    }
-
-    template<>
-    void Enabled<EVM>::doStartProcessing(const uint32_t runNumber)
+    void Running<EVM>::doStartProcessing(const uint32_t runNumber)
     {
       my_state::outermost_context_type& stateMachine = this->outermost_context();
       stateMachine.getOwner()->getRUproxy()->startProcessing();
     }
 
+
     template<>
-    void Enabled<EVM>::doStopProcessing()
+    void Running<EVM>::doStopProcessing()
     {
       my_state::outermost_context_type& stateMachine = this->outermost_context();
       stateMachine.getOwner()->getRUproxy()->stopProcessing();
+    }
+
+
+    template<>
+    void Draining<EVM>::doDraining()
+    {
+      my_state::outermost_context_type& stateMachine = this->outermost_context();
+      stateMachine.getOwner()->getRUproxy()->drain();
     }
 
 

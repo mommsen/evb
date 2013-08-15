@@ -89,12 +89,6 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  // std::cout << "removing " << event->getEvBid() << " from ";
-  // for (EvBids::const_iterator it = pos->second.begin(), itEnd = pos->second.end();
-  //      it != itEnd; ++it)
-  //   std::cout << *it << " ";
-  // std::cout << std::endl;
-
   pos->second.remove(event->getEvBid());
   --eventMonitoring_.nbEventsInBU;
 
@@ -103,9 +97,9 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
     allocatedResources_.erase(pos);
 
     if ( throttle_ )
-      while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) { ::usleep(1000); }
+      while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
     else
-      while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) { ::usleep(1000); }
+      while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
   }
 }
 
@@ -200,6 +194,7 @@ void evb::bu::ResourceManager::configure()
 {
   freeResourceFIFO_.clear();
   blockedResourceFIFO_.clear();
+  allocatedResources_.clear();
 
   const uint32_t nbResources = std::max(1U,
     bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
@@ -213,17 +208,8 @@ void evb::bu::ResourceManager::configure()
   }
 
   diskUsageMonitors_.clear();
-}
 
-
-void evb::bu::ResourceManager::clear()
-{
-  for (AllocatedResources::const_iterator it = allocatedResources_.begin(), itEnd = allocatedResources_.end();
-       it != itEnd; ++it)
-  {
-    freeResourceFIFO_.enq(it->first);
-  }
-  allocatedResources_.clear();
+  resetMonitoringCounters();
 }
 
 

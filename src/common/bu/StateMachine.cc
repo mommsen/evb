@@ -87,29 +87,51 @@ void evb::bu::Configuring::exitAction()
 }
 
 
-void evb::bu::Clearing::entryAction()
+void evb::bu::Running::entryAction()
 {
-  doClearing_ = true;
-  clearingThread_.reset(
-    new boost::thread( boost::bind( &evb::bu::Clearing::activity, this) )
-  );
-  clearingThread_->detach();
+  outermost_context_type& stateMachine = outermost_context();
+  const uint32_t runNumber = stateMachine.getRunNumber();
+
+  stateMachine.resourceManager()->resetMonitoringCounters();
+
+  stateMachine.diskWriter()->startProcessing(runNumber);
+  stateMachine.eventBuilder()->startProcessing(runNumber);
+  stateMachine.ruProxy()->startProcessing();
 }
 
 
-void evb::bu::Clearing::activity()
+void evb::bu::Running::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
 
-  std::string msg = "Failed to clear the components";
+  stateMachine.ruProxy()->stopProcessing();
+  stateMachine.eventBuilder()->stopProcessing();
+  stateMachine.diskWriter()->stopProcessing();
+}
+
+
+void evb::bu::Draining::entryAction()
+{
+  doDraining_ = true;
+  drainingThread_.reset(
+    new boost::thread( boost::bind( &evb::bu::Draining::activity, this) )
+  );
+  drainingThread_->detach();
+}
+
+
+void evb::bu::Draining::activity()
+{
+  outermost_context_type& stateMachine = outermost_context();
+
+  std::string msg = "Failed to drain the components";
   try
   {
-    if (doClearing_) stateMachine.ruProxy()->clear();
-    if (doClearing_) stateMachine.diskWriter()->clear();
-    if (doClearing_) stateMachine.eventBuilder()->clear();
-    if (doClearing_) stateMachine.resourceManager()->clear();
+    if (doDraining_) stateMachine.ruProxy()->drain();
+    if (doDraining_) stateMachine.eventBuilder()->drain();
+    if (doDraining_) stateMachine.diskWriter()->drain();
 
-    if (doClearing_) stateMachine.processFSMEvent( ClearDone() );
+    if (doDraining_) stateMachine.processFSMEvent( DrainingDone() );
   }
   catch( xcept::Exception& e )
   {
@@ -135,41 +157,10 @@ void evb::bu::Clearing::activity()
 }
 
 
-void evb::bu::Clearing::exitAction()
+void evb::bu::Draining::exitAction()
 {
-  doClearing_ = false;
-  clearingThread_->join();
-}
-
-
-void evb::bu::Processing::entryAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-
-  stateMachine.ruProxy()->resetMonitoringCounters();
-  stateMachine.diskWriter()->resetMonitoringCounters();
-  stateMachine.resourceManager()->resetMonitoringCounters();
-}
-
-
-void evb::bu::Enabled::entryAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-
-  const uint32_t runNumber = stateMachine.getRunNumber();
-
-  stateMachine.diskWriter()->startProcessing(runNumber);
-  stateMachine.eventBuilder()->startProcessing(runNumber);
-  stateMachine.ruProxy()->startProcessing();
-}
-
-
-void evb::bu::Enabled::exitAction()
-{
-  outermost_context_type& stateMachine = outermost_context();
-  stateMachine.ruProxy()->stopProcessing();
-  stateMachine.eventBuilder()->stopProcessing();
-  stateMachine.diskWriter()->stopProcessing();
+  doDraining_ = false;
+  drainingThread_->join();
 }
 
 

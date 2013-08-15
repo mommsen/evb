@@ -26,24 +26,20 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    while ( doProcessing_ && ! it->second->deq(fragment) ) ::usleep(10);
+    while ( ! it->second->deq(fragment) ) ::usleep(10);
 
-    if (doProcessing_)
+    if ( evbId != fragment->evbId )
     {
-      if ( evbId != fragment->evbId )
-      {
-        std::ostringstream oss;
-        oss << "Mismatch detected: expected evb id "
-          << evbId << ", but found evb id "
-          << fragment->evbId
-          << " in data block from FED "
-          << it->first;
-        XCEPT_RAISE(exception::MismatchDetected, oss.str());
-      }
-
-      superFragment->append(fragment);
-
+      std::ostringstream oss;
+      oss << "Mismatch detected: expected evb id "
+        << evbId << ", but found evb id "
+        << fragment->evbId
+        << " in data block from FED "
+        << it->first;
+      XCEPT_RAISE(exception::MismatchDetected, oss.str());
     }
+
+    superFragment->append(fragment);
   }
 
   return doProcessing_;

@@ -41,6 +41,8 @@ void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr fragme
 
 void evb::evm::RUproxy::startProcessing()
 {
+  resetMonitoringCounters();
+
   doProcessing_ = true;
 
   if ( ! participatingRUs_.empty() )
@@ -48,10 +50,17 @@ void evb::evm::RUproxy::startProcessing()
 }
 
 
+void evb::evm::RUproxy::drain()
+{
+  while ( !allocateFIFO_.empty() || assignEventsActive_ ) ::usleep(1000);
+}
+
+
 void evb::evm::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
-  while (assignEventsActive_) ::usleep(1000);
+  while ( assignEventsActive_ ) ::usleep(1000);
+  allocateFIFO_.clear();
 }
 
 
@@ -88,7 +97,7 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
   try
   {
     readoutunit::FragmentRequestPtr fragmentRequest;
-    while ( allocateFIFO_.deq(fragmentRequest)  )
+    while ( allocateFIFO_.deq(fragmentRequest) )
     {
       const uint16_t requestsCount = fragmentRequest->nbRequests;
       const uint16_t ruCount = fragmentRequest->ruTids.size();
@@ -240,8 +249,7 @@ void evb::evm::RUproxy::resetMonitoringCounters()
 
 void evb::evm::RUproxy::configure()
 {
-  clear();
-
+  allocateFIFO_.clear();
   allocateFIFO_.resize(evm_->getConfiguration()->fragmentRequestFIFOCapacity);
 
   try
@@ -261,6 +269,8 @@ void evb::evm::RUproxy::configure()
   ruTids_.push_back(tid_);
 
   getApplicationDescriptorsForRUs();
+
+  resetMonitoringCounters();
 }
 
 
@@ -318,12 +328,6 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
 
     ruTids_.push_back(ru.tid);
   }
-}
-
-
-void evb::evm::RUproxy::clear()
-{
-  allocateFIFO_.clear();
 }
 
 

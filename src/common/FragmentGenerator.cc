@@ -80,7 +80,7 @@ void evb::FragmentGenerator::configure
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(fragmentPoolSize);
     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
   }
-  catch (toolbox::mem::exception::Exception e)
+  catch (toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for dummy fragments", e);
@@ -146,7 +146,7 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
   }
 
   unsigned char* frame = (unsigned char*)bufRef->getDataLocation();
-  bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
+  memset(bufRef->getDataLocation(), 0, bufRef->getBuffer()->getSize());
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   uint32_t usedFrameSize = 0;
