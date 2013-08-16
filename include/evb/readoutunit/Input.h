@@ -343,7 +343,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
 
   try
   {
-    payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);;
+    payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
     uint32_t fedSize = 0;
     uint32_t usedSize = 0;
@@ -532,7 +532,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
 
     std::ostringstream msg;
     msg << "Received a corrupted event " << eventNumber;
-    msg << " received from " << frame->PvtMessageFrame.StdMessageFrame.InitiatorAddress;
+    msg << " from " << frame->PvtMessageFrame.StdMessageFrame.InitiatorAddress;
     XCEPT_RETHROW(exception::DataCorruption,msg.str(),e);
   }
 }
@@ -991,14 +991,21 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
       "Failed to create memory pool for dummy fragments", e);
   }
 
-  if ( configuration->frameSize % FEROL_BLOCK_SIZE != 0 )
+  frameSize_ = configuration->frameSize;
+  if ( frameSize_ < FEROL_BLOCK_SIZE )
   {
     std::ostringstream oss;
-    oss << "The  frame size " << configuration->frameSize;
+    oss << "The frame size " << frameSize_ ;
+    oss << " must at least hold one FEROL block of " << FEROL_BLOCK_SIZE << " Bytes";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+  if ( frameSize_ % FEROL_BLOCK_SIZE != 0 )
+  {
+    std::ostringstream oss;
+    oss << "The frame size " << frameSize_ ;
     oss << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
     XCEPT_RAISE(exception::Configuration, oss.str());
    }
-  frameSize_ = configuration->frameSize;
 
   fragmentTrackers_.clear();
 
@@ -1046,19 +1053,20 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     for (uint16_t frame = 0; frame < frameCount; ++frame)
     {
       toolbox::mem::Reference* bufRef = 0;
+      const uint32_t bufSize = frameSize_+sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
       try
       {
         bufRef = toolbox::mem::getMemoryPoolFactory()->
-          getFrame(fragmentPool_,frameSize_);
+          getFrame(fragmentPool_,bufSize);
       }
       catch(xcept::Exception& e)
       {
         return false;
       }
 
-      bufRef->setDataSize(frameSize_);
-      bzero(bufRef->getDataLocation(), bufRef->getBuffer()->getSize());
+      bufRef->setDataSize(bufSize);
+      memset(bufRef->getDataLocation(), 0, bufSize);
       I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
         (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
       dataReadyMsg->totalLength = fedSize + ferolBlocks*sizeof(ferolh_t);
@@ -1069,7 +1077,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       unsigned char* frame = (unsigned char*)dataReadyMsg
         + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
-      while ( remainingFedSize > 0 && partLength+sizeof(ferolh_t) < frameSize_ )
+      while ( remainingFedSize > 0 && partLength+FEROL_BLOCK_SIZE <= frameSize_ )
       {
         assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
         uint32_t length;
@@ -1112,6 +1120,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       else
         fragmentTail->setNextReference(bufRef);
       fragmentTail = bufRef;
+
     }
     input_->checkEventFragment(fragmentHead);
     superFragment->append(fragmentHead);

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <sstream>
+#include <string.h>
 #include <time.h>
 
 #include "interface/shared/fed_header.h"
@@ -109,6 +110,8 @@ size_t evb::FragmentTracker::fillData
           payloadSize = remainingFedSize_ - sizeof(fedt_t);
           typeOfNextComponent_ = FED_TRAILER;
         }
+
+        memset(payload, 0xCA, payloadSize);
 
         #ifdef EVB_CALCULATE_CRC
         computeCRC(fedCRC_,payload,payloadSize);

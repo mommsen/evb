@@ -391,7 +391,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
       do
       {
-        if ( ferolOffset > currentFragment->getDataSize() )
+        if ( ferolOffset > (currentFragment->getDataSize()-sizeof(I2O_DATA_READY_MESSAGE_FRAME)) )
         {
           currentFragment = currentFragment->getNextReference();
           ferolOffset = sizeof(I2O_DATA_READY_MESSAGE_FRAME);

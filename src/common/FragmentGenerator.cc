@@ -53,16 +53,31 @@ void evb::FragmentGenerator::configure
   }
   fedId_ = fedId;
 
-  if ( fedSize % 8 != 0 )
+  fedSize_ = fedSize;
+  if ( fedSize_ % 8 != 0 )
   {
     std::ostringstream oss;
-    oss << "The requested FED payload of " << fedSize << " bytes";
+    oss << "The requested FED payload of " << fedSize_ << " bytes";
     oss << " is not a multiple of 8 bytes";
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
   frameSize_ = frameSize;
-  fedSize_ = fedSize;
+  if ( frameSize_ < FEROL_BLOCK_SIZE )
+  {
+    std::ostringstream oss;
+    oss << "The frame size " << frameSize_ ;
+    oss << " must at least hold one FEROL block of " << FEROL_BLOCK_SIZE << " Bytes";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+  if ( frameSize_ % FEROL_BLOCK_SIZE != 0 )
+  {
+    std::ostringstream oss;
+    oss << "The frame size " << frameSize_ ;
+    oss << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+
   usePlayback_ = usePlayback;
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
