@@ -56,13 +56,13 @@ void evb::bu::Configuring::activity()
 
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
-  catch( xcept::Exception& e )
+  catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
       sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
-  catch( std::exception& e )
+  catch(std::exception& e)
   {
     msg += ": ";
     msg += e.what();
@@ -133,13 +133,13 @@ void evb::bu::Draining::activity()
 
     if (doDraining_) stateMachine.processFSMEvent( DrainingDone() );
   }
-  catch( xcept::Exception& e )
+  catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
       sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
-  catch( std::exception& e )
+  catch(std::exception& e)
   {
     msg += ": ";
     msg += e.what();

@@ -264,7 +264,7 @@ void evb::test::DummyFEROL::startWorkLoops()
       generatingWL_->activate();
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start workloop 'Generating'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
@@ -285,7 +285,7 @@ void evb::test::DummyFEROL::startWorkLoops()
       sendingWL_->activate();
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start workloop 'Sending'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
@@ -319,6 +319,20 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
   {
     generatingActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    generatingActive_ = false;
+    XCEPT_DECLARE(exception::DummyData,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    generatingActive_ = false;
+    XCEPT_DECLARE(exception::DummyData,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
   generatingActive_ = false;

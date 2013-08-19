@@ -80,7 +80,7 @@ void evb::evm::RUproxy::startProcessingWorkLoop()
       assignEventsWL_->activate();
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start workloop 'assignEvents'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
@@ -159,6 +159,20 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
   {
     assignEventsActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    assignEventsActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    assignEventsActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
   assignEventsActive_ = false;

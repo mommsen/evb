@@ -5,8 +5,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <stdint.h>
+#include <bitset>
 #include <set>
+#include <stdint.h>
 #include <vector>
 
 #include "evb/EvBid.h"
@@ -140,7 +141,7 @@ namespace evb {
       WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
       volatile bool doProcessing_;
-      std::vector<bool> processesActive_;
+      std::bitset<MAX_WORKER_THREADS> processesActive_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
@@ -193,7 +194,7 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
     toolbox::net::URN urn("toolbox-mem-pool", "sudapl");
     superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
-  catch (toolbox::mem::exception::MemoryPoolNotFound)
+  catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
     toolbox::net::URN poolURN("toolbox-mem-pool",readoutUnit_->getApplicationDescriptor()->getURN());
     try
@@ -201,7 +202,7 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
       superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->
         createPool(poolURN, new toolbox::mem::HeapAllocator());
     }
-    catch (toolbox::mem::exception::DuplicateMemoryPool)
+    catch(toolbox::mem::exception::DuplicateMemoryPool)
     {
       // Pool already exists from a previous construction of this class
       // Note that destroying the pool in the destructor is not working
@@ -211,7 +212,7 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
         findPool(poolURN);
     }
   }
-  catch (toolbox::mem::exception::Exception e)
+  catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for super-fragments", e);
@@ -247,21 +248,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
-  bool workDone;
-
-  do
-  {
-    workDone = false;
-
-    for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
-    {
-      if ( processesActive_[i] )
-      {
-        workDone = true;
-        ::usleep(1000);
-      }
-    }
-  } while ( workDone );
+  while ( processesActive_.any() ) ::usleep(1000);
 }
 
 
@@ -270,10 +257,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
 
-  for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
-  {
-    while ( processesActive_[i] ) ::usleep(1000);
-  }
+  while ( processesActive_.any() ) ::usleep(1000);
 }
 
 
@@ -319,9 +303,9 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   const std::string wlName =  wl->getName();
   const size_t startPos = wlName.find_last_of("_") + 1;
   const size_t endPos = wlName.find("/",startPos);
-  const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
+  const uint16_t responderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_[builderId] = true;
+  processesActive_.set(responderId);
 
   try
   {
@@ -336,11 +320,25 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   }
   catch(xcept::Exception& e)
   {
-    processesActive_[builderId] = false;
+    processesActive_.reset(responderId);
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
+  catch(std::exception& e)
+  {
+    processesActive_.reset(responderId);
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, e.what());
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    processesActive_.reset(responderId);
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, "unkown exception");
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
 
-  processesActive_[builderId] = false;
+  processesActive_.reset(responderId);
 
   ::usleep(10);
 
@@ -611,12 +609,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
-  processesActive_.clear();
-  processesActive_.reserve(configuration_->numberOfResponders);
+  processesActive_.reset();
 
-  for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
+  if ( configuration_->numberOfResponders.value_ > MAX_WORKER_THREADS )
   {
-    processesActive_[i] = false;
+    std::ostringstream oss;
+    oss << "The number of responder threads " << configuration_->numberOfResponders;
+    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
+    XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
   const std::string identifier = readoutUnit_->getIdentifier();
@@ -634,10 +634,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
       workLoops_.push_back(wl);
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloops";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+    XCEPT_RETHROW(exception::WorkLoop, "Failed to start workloops", e);
   }
 }
 

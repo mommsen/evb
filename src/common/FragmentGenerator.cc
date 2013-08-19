@@ -85,7 +85,7 @@ void evb::FragmentGenerator::configure
   {
     toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
   }
-  catch (toolbox::mem::exception::MemoryPoolNotFound)
+  catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
     // don't care
   }
@@ -95,7 +95,7 @@ void evb::FragmentGenerator::configure
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(fragmentPoolSize);
     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
   }
-  catch (toolbox::mem::exception::Exception& e)
+  catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for dummy fragments", e);

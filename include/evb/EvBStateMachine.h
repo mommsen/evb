@@ -145,13 +145,13 @@ namespace evb {
       {
         entryAction();
       }
-      catch( xcept::Exception& e )
+      catch(xcept::Exception& e)
       {
         XCEPT_DECLARE_NESTED(exception::FSM,
-          sentinelException, msg, e );
+          sentinelException, msg, e);
         this->post_event( Fail(sentinelException) );
       }
-      catch( std::exception& e )
+      catch(std::exception& e)
       {
         msg += ": ";
         msg += e.what();
@@ -175,13 +175,13 @@ namespace evb {
       {
         exitAction();
       }
-      catch( xcept::Exception& e )
+      catch(xcept::Exception& e)
       {
         XCEPT_DECLARE_NESTED(exception::FSM,
-          sentinelException, msg, e );
+          sentinelException, msg, e);
         this->post_event( Fail(sentinelException) );
       }
-      catch( std::exception& e )
+      catch(std::exception& e)
       {
         msg += ": ";
         msg += e.what();

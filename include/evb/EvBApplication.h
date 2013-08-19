@@ -281,6 +281,9 @@ void evb::EvBApplication<Configuration,StateMachine>::appendMonitoringInfoSpaceI
 template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::actionPerformed(xdata::Event& ispaceEvent)
 {
+  std::ostringstream msg;
+  msg << "Failed to perform action for " << ispaceEvent.type();
+
   try
   {
     if (ispaceEvent.type() == "ItemChangedEvent")
@@ -298,11 +301,22 @@ void evb::EvBApplication<Configuration,StateMachine>::actionPerformed(xdata::Eve
   }
   catch(xcept::Exception& e)
   {
-    std::ostringstream msg;
-    msg << "Failed to perform action for " << ispaceEvent.type();
     XCEPT_DECLARE_NESTED(exception::Monitoring,
       sentinelException, msg.str(), e);
-
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(std::exception& e)
+  {
+    msg << ": " << e.what();
+    XCEPT_DECLARE(exception::Monitoring,
+      sentinelException, msg.str());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    msg << ": unknown exception";
+    XCEPT_DECLARE(exception::Monitoring,
+      sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -364,16 +378,30 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processS
   std::string event = "";
   std::string newState = "unknown";
 
+  std::ostringstream errorMsg;
+  errorMsg << "Failed to extract FSM event and parameters from SOAP message: ";
+
   try
   {
     event = soapParameterExtractor_.extractParameters(msg);
   }
   catch(xcept::Exception& e)
   {
-    std::ostringstream errorMsg;
-    errorMsg << "Failed to extract FSM event and parameters from SOAP message: ";
     msg->writeTo(errorMsg);
-    XCEPT_DECLARE_NESTED(exception::FSM, sentinelException, errorMsg.str(), e);
+    XCEPT_DECLARE_NESTED(exception::SOAP, sentinelException, errorMsg.str(), e);
+    newState = stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(std::exception& e)
+  {
+    errorMsg << e.what() << ": ";
+    msg->writeTo(errorMsg);
+    XCEPT_DECLARE(exception::SOAP, sentinelException, errorMsg.str());
+    newState = stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    msg->writeTo(errorMsg);
+    XCEPT_DECLARE(exception::SOAP, sentinelException, errorMsg.str());
     newState = stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -386,15 +414,31 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processS
 template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
 {
+  std::ostringstream msg;
+  msg << "Failed to start monitoring work loop";
+
   try
   {
     startMonitoringWorkloop();
   }
   catch(xcept::Exception& e)
   {
-    const std::string msg = "Failed to start monitoring work loop";
-    XCEPT_DECLARE_NESTED(exception::FSM,
-      sentinelException, msg, e);
+    XCEPT_DECLARE_NESTED(exception::WorkLoop,
+      sentinelException, msg.str(), e);
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(std::exception& e)
+  {
+    msg << ": " << e.what();
+    XCEPT_DECLARE(exception::WorkLoop,
+      sentinelException, msg.str());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    msg << ": unknown exception";
+    XCEPT_DECLARE(exception::WorkLoop,
+      sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -701,7 +745,7 @@ toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastCont
     toolbox::net::URN urn("toolbox-mem-pool", "sudapl");
     fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
-  catch (toolbox::mem::exception::MemoryPoolNotFound)
+  catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
     const std::string fastCtrlMsgPoolName( getIdentifier(" fast control message pool") );
 
@@ -710,7 +754,7 @@ toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastCont
 
     fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->createPool(urn, a);
   }
-  catch (toolbox::mem::exception::Exception e)
+  catch(toolbox::mem::exception::Exception e)
   {
     XCEPT_RETHROW(exception::OutOfMemory, "Failed to create fast control message memory pool", e);
   }

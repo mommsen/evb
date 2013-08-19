@@ -975,7 +975,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
   {
     toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
   }
-  catch (toolbox::mem::exception::MemoryPoolNotFound)
+  catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
     // don't care
   }
@@ -985,7 +985,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(configuration->fragmentPoolSize.value_);
     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
   }
-  catch (toolbox::mem::exception::Exception e)
+  catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
       "Failed to create memory pool for dummy fragments", e);
@@ -1060,7 +1060,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
         bufRef = toolbox::mem::getMemoryPoolFactory()->
           getFrame(fragmentPool_,bufSize);
       }
-      catch(xcept::Exception& e)
+      catch(xcept::Exception)
       {
         return false;
       }

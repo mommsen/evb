@@ -114,6 +114,18 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
   {
     stateMachine_->processFSMEvent( Fail(e) );
   }
+  catch(std::exception& e)
+  {
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
 }
 
 
@@ -156,7 +168,7 @@ void evb::bu::RUproxy::startProcessingWorkLoop()
       requestFragmentsWL_->activate();
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start workloop 'requestFragments'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
@@ -231,6 +243,20 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   {
     requestFragmentsActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    requestFragmentsActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    requestFragmentsActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
   requestFragmentsActive_ = false;

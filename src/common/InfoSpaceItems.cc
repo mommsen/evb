@@ -86,7 +86,7 @@ void evb::InfoSpaceItems::printHtml(const std::string& title, xgi::Output* out) 
     {
       *out << it->second.first->toString()                        << std::endl;
     }
-    catch (xdata::exception::Exception)
+    catch(xdata::exception::Exception)
     {
       *out << "n/a"                                               << std::endl;
     }

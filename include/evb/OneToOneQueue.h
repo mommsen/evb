@@ -306,7 +306,7 @@ namespace evb {
         {
           formatter( container_.at(pos), out );
         }
-        catch (std::out_of_range&)
+        catch(std::out_of_range&)
         {
           *out << "n/a";
         }
@@ -380,7 +380,7 @@ namespace evb {
         {
           formatter( container_.at(pos), out );
         }
-        catch (std::out_of_range&)
+        catch(std::out_of_range&)
         {
           *out << "n/a";
         }

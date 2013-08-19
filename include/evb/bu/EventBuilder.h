@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <bitset>
 #include <map>
 #include <stdint.h>
 #include <vector>
@@ -118,7 +119,7 @@ namespace evb {
       toolbox::task::ActionSignature* builderAction_;
 
       volatile bool doProcessing_;
-      std::vector<bool> processesActive_;
+      std::bitset<MAX_WORKER_THREADS> processesActive_;
 
     }; // EventBuilder
 

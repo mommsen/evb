@@ -127,7 +127,7 @@ void evb::bu::FileHandler::close()
       writeJSON();
     }
   }
-  catch( std::exception& e )
+  catch(std::exception& e)
   {
     msg += ": ";
     msg += e.what();

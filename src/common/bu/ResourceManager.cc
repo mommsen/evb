@@ -45,6 +45,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     {
       pos->second.push_back(dataBlockMsg->evbIds[i]);
     }
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
   }
   else
@@ -77,25 +78,36 @@ void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
 
 void evb::bu::ResourceManager::discardEvent(const EventPtr event)
 {
-  boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+  bool resourceFreed = false;
 
-  const AllocatedResources::iterator pos = allocatedResources_.find(event->buResourceId());
-
-  if ( pos == allocatedResources_.end() )
   {
-    std::ostringstream oss;
-    oss << "The buResourceId " << event->buResourceId();
-    oss << " is not in the allocated resources" ;
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+
+    const AllocatedResources::iterator pos = allocatedResources_.find(event->buResourceId());
+
+    if ( pos == allocatedResources_.end() )
+    {
+      std::ostringstream oss;
+      oss << "The buResourceId " << event->buResourceId();
+      oss << " is not in the allocated resources" ;
+      XCEPT_RAISE(exception::EventOrder, oss.str());
+    }
+
+    pos->second.remove(event->getEvBid());
+    if ( pos->second.empty() )
+    {
+      allocatedResources_.erase(pos);
+      resourceFreed = true;
+    }
   }
 
-  pos->second.remove(event->getEvBid());
-  --eventMonitoring_.nbEventsInBU;
-
-  if ( pos->second.empty() )
   {
-    allocatedResources_.erase(pos);
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    --eventMonitoring_.nbEventsInBU;
+  }
 
+  if ( resourceFreed )
+  {
     if ( throttle_ )
       while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
     else

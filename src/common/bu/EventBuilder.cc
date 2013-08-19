@@ -48,8 +48,15 @@ void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
 
-  processesActive_.clear();
-  processesActive_.reserve(configuration_->numberOfBuilders);
+  processesActive_.reset();
+
+  if ( configuration_->numberOfBuilders.value_ > MAX_WORKER_THREADS )
+  {
+    std::ostringstream oss;
+    oss << "The number of builder threads " << configuration_->numberOfBuilders;
+    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -58,8 +65,6 @@ void evb::bu::EventBuilder::configure()
     SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(fifoName.str()) );
     superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
-
-    processesActive_[i] = false;
   }
 
   createProcessingWorkLoops();
@@ -83,10 +88,9 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
       builderWorkLoops_.push_back(wl);
     }
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloops";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+    XCEPT_RETHROW(exception::WorkLoop, "Failed to start workloops", e);
   }
 }
 
@@ -123,19 +127,7 @@ void evb::bu::EventBuilder::drain()
 
   doProcessing_ = false;
 
-  do
-  {
-    workDone = false;
-
-    for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
-    {
-      if ( processesActive_[i] )
-      {
-        workDone = true;
-        ::usleep(1000);
-      }
-    }
-  } while ( workDone );
+  while ( processesActive_.any() ) ::usleep(1000);
 }
 
 
@@ -143,10 +135,7 @@ void evb::bu::EventBuilder::stopProcessing()
 {
   doProcessing_ = false;
 
-  for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
-  {
-    while ( processesActive_[i] ) ::usleep(1000);
-  }
+  while ( processesActive_.any() ) ::usleep(1000);
 
   for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
@@ -163,7 +152,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_[builderId] = true;
+  processesActive_.set(builderId);
 
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
@@ -186,11 +175,25 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
   catch(xcept::Exception& e)
   {
-    processesActive_[builderId] = false;
+    processesActive_.reset(builderId);
     stateMachine_->processFSMEvent( Fail(e) );
   }
+  catch(std::exception& e)
+  {
+    processesActive_.reset(builderId);
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    processesActive_.reset(builderId);
+    XCEPT_DECLARE(exception::SuperFragment,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
 
-  processesActive_[builderId] = false;
+  processesActive_.reset(builderId);
 
   return false;
 }
@@ -228,9 +231,6 @@ void evb::bu::EventBuilder::buildEvent
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
-
-      // std::cout << remainingBufferSize << "\t" << superFragmentCount << std::endl;
-      // std::cout << *superFragmentMsg << std::endl;
 
       if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
           payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )

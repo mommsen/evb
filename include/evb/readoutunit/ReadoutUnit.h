@@ -154,7 +154,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
     {
       eventRate_.setValue( *(this->monitoringInfoSpace_->find("eventRate")) );
     }
-    catch(xdata::exception::Exception& e)
+    catch(xdata::exception::Exception)
     {
       eventRate_ = 0;
     }
@@ -165,7 +165,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
     {
       superFragmentSize_.setValue( *(this->monitoringInfoSpace_->find("superFragmentSize")) );
     }
-    catch(xdata::exception::Exception& e)
+    catch(xdata::exception::Exception)
     {
       superFragmentSize_ = 0;
     }

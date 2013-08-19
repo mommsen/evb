@@ -112,7 +112,7 @@ void evb::bu::DiskWriter::startLumiMonitoring()
         &evb::bu::DiskWriter::updateLumiMonitoring,
         bu_->getIdentifier("lumiMonitoringAction"));
   }
-  catch (xcept::Exception& e)
+  catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start lumi monitoring workloop";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
@@ -133,6 +133,20 @@ bool evb::bu::DiskWriter::updateLumiMonitoring(toolbox::task::WorkLoop* wl)
   {
     processActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    processActive_ = false;
+    XCEPT_DECLARE(exception::L1Trigger,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    processActive_ = false;
+    XCEPT_DECLARE(exception::L1Trigger,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
   processActive_ = false;
