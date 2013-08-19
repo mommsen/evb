@@ -41,8 +41,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
   try
   {
-    while (bufRef)
+    do
     {
+      toolbox::mem::Reference* nextRef = bufRef->getNextReference();
+      bufRef->setNextReference(0);
+
       const I2O_MESSAGE_FRAME* stdMsg =
         (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
       const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
@@ -107,8 +110,9 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         dataBlockMap_.erase(dataBlockPos);
       }
 
-      bufRef = bufRef->getNextReference();
-    }
+      bufRef = nextRef;
+
+    } while ( bufRef );
   }
   catch(xcept::Exception& e)
   {
