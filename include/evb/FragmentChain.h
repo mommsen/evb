@@ -32,7 +32,12 @@ namespace evb {
       Fragment(EvBid evbId, toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
       : evbId(evbId),bufRef(bufRef),cache(cache) {};
 
-      ~Fragment() { cache->grantFrame(bufRef); }
+      ~Fragment()
+      {
+        // break any chain
+        bufRef->setNextReference(0);
+        cache->grantFrame(bufRef);
+      }
     };
     typedef boost::shared_ptr<Fragment> FragmentPtr;
 

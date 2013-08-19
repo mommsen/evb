@@ -1065,7 +1065,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
         return false;
       }
 
-      bufRef->setDataSize(bufSize);
+      bufRef->setDataSize(frameSize_);
       memset(bufRef->getDataLocation(), 0, bufSize);
       I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
         (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
