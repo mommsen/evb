@@ -57,6 +57,8 @@ bool evb::bu::Event::appendSuperFragment
   const uint32_t totalSize
 )
 {
+  myBufRefs_.push_back(bufRef);
+
   const RUsizes::iterator pos = ruSizes_.find(ruTid);
   if ( pos == ruSizes_.end() )
   {
@@ -78,7 +80,6 @@ bool evb::bu::Event::appendSuperFragment
 
   if (partSize == 0) return false;
 
-  myBufRefs_.push_back(bufRef);
   DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
   dataLocations_.push_back(dataLocation);
 
