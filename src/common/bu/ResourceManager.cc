@@ -216,7 +216,7 @@ void evb::bu::ResourceManager::configure()
 
   for (uint32_t buResourceId = 0; buResourceId < nbResources; ++buResourceId)
   {
-    freeResourceFIFO_.enq(buResourceId);
+    assert( freeResourceFIFO_.enq(buResourceId) );
   }
 
   diskUsageMonitors_.clear();
