@@ -30,6 +30,12 @@ usePlayback_(false)
 }
 
 
+uint32_t evb::FragmentGenerator::getLastEventNumber() const
+{
+  return ( eventNumber_ > 0 ? eventNumber_-1 : (1 << 24)-1 );
+}
+
+
 void evb::FragmentGenerator::configure
 (
   const uint32_t fedId,

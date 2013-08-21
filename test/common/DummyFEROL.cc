@@ -37,10 +37,10 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   InfoSpaceItems& appInfoSpaceParams
 )
 {
-  stopAtMsgCount_ = 0;
+  stopAtEvent_ = 0;
 
-  appInfoSpaceParams.add("msgCount", &msgCount_);
-  appInfoSpaceParams.add("stopAtMsgCount", &stopAtMsgCount_);
+  appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
+  appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
 }
 
 
@@ -49,14 +49,14 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
-  msgCount_ = 0;
+  lastEventNumber_ = 0;
   bandwidth_ = 0;
   frameRate_ = 0;
   fragmentRate_ = 0;
   fragmentSize_ = 0;
   fragmentSizeStdDev_ = 0;
 
-  monitoringParams.add("msgCount", &msgCount_);
+  monitoringParams.add("lastEventNumber", &lastEventNumber_);
   monitoringParams.add("bandwidth", &bandwidth_);
   monitoringParams.add("frameRate", &frameRate_);
   monitoringParams.add("fragmentRate", &fragmentRate_);
@@ -106,8 +106,8 @@ void evb::test::DummyFEROL::do_defaultWebPage
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>message count</td>"                                << std::endl;
-    *out << "<td>" << msgCount_.value_ << "</td>"                   << std::endl;
+    *out << "<td>last event number</td>"                            << std::endl;
+    *out << "<td>" << lastEventNumber_.value_ << "</td>"            << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     const std::_Ios_Fmtflags originalFlags=out->flags();
@@ -184,7 +184,7 @@ void evb::test::DummyFEROL::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
   dataMonitoring_.reset();
-  msgCount_ = 0;
+  lastEventNumber_ = 0;
 }
 
 
@@ -244,8 +244,7 @@ void evb::test::DummyFEROL::startProcessing()
 
 void evb::test::DummyFEROL::drain()
 {
-  while ( stopAtMsgCount_.value_ != 0 && msgCount_ < stopAtMsgCount_.value_ ) ::usleep(1000);
-  doProcessing_ = false;
+  if ( stopAtEvent_.value_ == 0 ) stopAtEvent_.value_ = lastEventNumber_;
   while ( generatingActive_ || !fragmentFIFO_.empty() || sendingActive_ ) ::usleep(1000);
 }
 
@@ -314,12 +313,21 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
       if ( fragmentGenerator_.getData(bufRef) )
       {
-        #ifdef DOUBLE_WORKLOOPS
-        while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
-        #else
-        updateCounters(bufRef);
-        sendData(bufRef);
-        #endif
+        lastEventNumber_ = fragmentGenerator_.getLastEventNumber();
+        if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
+        {
+          #ifdef DOUBLE_WORKLOOPS
+          while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
+          #else
+          updateCounters(bufRef);
+          sendData(bufRef);
+          #endif
+        }
+        else
+        {
+          bufRef->release();
+          doProcessing_ = false;
+        }
       }
     }
   }
@@ -360,15 +368,8 @@ evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 
     while ( fragmentFIFO_.deq(bufRef) )
     {
-      if (stopAtMsgCount_.value_ == 0 || msgCount_ < stopAtMsgCount_.value_)
-      {
-        updateCounters(bufRef);
-        sendData(bufRef);
-      }
-      else
-      {
-        bufRef->release();
-      }
+      updateCounters(bufRef);
+      sendData(bufRef);
     }
   }
   catch(xcept::Exception &e)
@@ -391,7 +392,6 @@ inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRe
 
   const uint32_t payload = bufRef->getDataSize();
 
-  ++msgCount_;
   ++dataMonitoring_.i2oCount;
   dataMonitoring_.logicalCount += configuration_->frameSize/(configuration_->fedSize+sizeof(ferolh_t));
   dataMonitoring_.sumOfSizes += payload;

@@ -16,7 +16,7 @@
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "xdaq/ApplicationStub.h"
-#include "xdata/UnsignedInteger64.h"
+#include "xdata/UnsignedInteger32.h"
 #include "xdata/Double.h"
 #include "xgi/Output.h"
 
@@ -99,8 +99,8 @@ namespace evb {
       PerformanceMonitor dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
 
-      xdata::UnsignedInteger64 stopAtMsgCount_;
-      xdata::UnsignedInteger64 msgCount_;
+      xdata::UnsignedInteger32 stopAtEvent_;
+      xdata::UnsignedInteger32 lastEventNumber_;
       xdata::Double bandwidth_;
       xdata::Double frameRate_;
       xdata::Double fragmentRate_;
