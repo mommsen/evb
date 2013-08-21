@@ -241,6 +241,10 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     *out << "<td># events in BU</td>"                               << std::endl;
     *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
     *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># outstanding requests</td>"                       << std::endl;
+    *out << "<td>" << allocatedResources_.size() << "</td>"         << std::endl;
+    *out << "</tr>"                                                 << std::endl;
 
     const std::_Ios_Fmtflags originalFlags=out->flags();
     const int originalPrecision=out->precision();
