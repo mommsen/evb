@@ -183,7 +183,7 @@ void evb::BU::bindNonDefaultXgiCallbacks()
 void evb::BU::do_defaultWebPage
 (
   xgi::Output *out
-)
+) const
 {
   *out << "<tr>"                                                << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;

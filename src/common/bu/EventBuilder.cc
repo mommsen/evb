@@ -204,7 +204,7 @@ void evb::bu::EventBuilder::buildEvent
   FragmentChainPtr& superFragments,
   EventMapPtr& eventMap,
   StreamHandlerPtr& streamHandler
-)
+) const
 {
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
   const I2O_MESSAGE_FRAME* stdMsg =
@@ -282,9 +282,9 @@ void evb::bu::EventBuilder::buildEvent
 evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 (
   EventMapPtr& eventMap,
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg,
-  const uint16_t superFragmentCount
-)
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg,
+  const uint16_t& superFragmentCount
+) const
 {
   const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
 
@@ -299,11 +299,11 @@ evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 }
 
 
-void evb::bu::EventBuilder::printSuperFragmentFIFOs(xgi::Output* out)
+void evb::bu::EventBuilder::printSuperFragmentFIFOs(xgi::Output* out) const
 {
-  const toolbox::net::URN urn = bu_->getApplicationDescriptor()->getURN();
+  const toolbox::net::URN urn = bu_->getURN();
 
-  for (SuperFragmentFIFOs::iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
   {
     it->second->printHtml(out, urn);

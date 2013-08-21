@@ -96,7 +96,7 @@ bool evb::bu::Event::appendSuperFragment
 }
 
 
-void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
+void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler) const
 {
   if ( dataLocations_.empty() )
   {
@@ -132,7 +132,7 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
 }
 
 
-void evb::bu::Event::checkEvent()
+void evb::bu::Event::checkEvent() const
 {
   if ( ! isComplete() )
   {
@@ -241,7 +241,7 @@ void evb::bu::Event::FedInfo::addDataChunk(const unsigned char* pos, uint32_t& r
 }
 
 
-void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
+void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber) const
 {
   if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
   {

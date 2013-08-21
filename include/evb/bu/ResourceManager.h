@@ -93,7 +93,7 @@ namespace evb {
       /**
        * Print monitoring/configuration as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
       /**
        * Print the content of the free resource FIFO as HTML snipped
@@ -136,7 +136,7 @@ namespace evb {
         uint32_t nbEventsInBU;
         PerformanceMonitor perf;
       } eventMonitoring_;
-      boost::mutex eventMonitoringMutex_;
+      mutable boost::mutex eventMonitoringMutex_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;

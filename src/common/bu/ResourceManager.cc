@@ -225,10 +225,10 @@ void evb::bu::ResourceManager::configure()
 }
 
 
-void evb::bu::ResourceManager::printHtml(xgi::Output *out)
+void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
-  *out << "<p>ResourceManager</p>"                                        << std::endl;
+  *out << "<p>ResourceManager</p>"                                << std::endl;
   *out << "<table>"                                               << std::endl;
 
   {
@@ -252,20 +252,20 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 1e6 << "</td>"                   << std::endl;
+    *out << "<td>" << bandwidth_.value_ / 1e6 << "</td>"            << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
     out->precision(4);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << rate_ << "</td>"                              << std::endl;
+    *out << "<td>" << rate_.value_ << "</td>"                       << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_ / 1e3 <<
-      " +/- " << eventSizeStdDev_ / 1e3 << "</td>"                  << std::endl;
+    *out << "<td>" << eventSize_.value_ / 1e3 <<
+      " +/- " << eventSizeStdDev_.value_ / 1e3 << "</td>"           << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -273,13 +273,13 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  freeResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  freeResourceFIFO_.printHtml(out, bu_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  blockedResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  blockedResourceFIFO_.printHtml(out, bu_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "</table>"                                              << std::endl;

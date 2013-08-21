@@ -22,32 +22,32 @@ namespace evb {
       reset();
     }
 
-    double deltaT()
+    double deltaT() const
     {
       struct timeval time;
       gettimeofday(&time,0);
       return ( time.tv_sec + static_cast<double>(time.tv_usec) / 1000000 - startTime );
     }
 
-    double logicalRate()
+    double logicalRate() const
     {
       const double delta = deltaT();
       return ( delta>0 ? logicalCount/delta : 0 );
     }
 
-    double i2oRate()
+    double i2oRate() const
     {
       const double delta = deltaT();
       return ( delta>0 ? i2oCount/delta : 0 );
     }
 
-    double bandwidth()
+    double bandwidth() const
     {
       const double delta = deltaT();
       return ( delta>0 ? sumOfSizes/delta : 0 );
     }
 
-    double bandwidthStdDev()
+    double bandwidthStdDev() const
     {
       const double delta = deltaT();
       if ( delta <= 0 ) return 0;
@@ -59,12 +59,12 @@ namespace evb {
       return ( variance>0 ? sqrt(variance) : 0 );
     }
 
-    double size()
+    double size() const
     {
       return ( logicalCount>0 ? static_cast<double>(sumOfSizes)/logicalCount : 0 );
     }
 
-    double sizeStdDev()
+    double sizeStdDev() const
     {
       if ( logicalCount == 0 ) return 0;
 

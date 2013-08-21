@@ -91,7 +91,7 @@ void evb::test::DummyFEROL::bindNonDefaultXgiCallbacks()
 void evb::test::DummyFEROL::do_defaultWebPage
 (
   xgi::Output *out
-)
+) const
 {
   *out << "<tr>"                                                  << std::endl;
   *out << "<td class=\"component\">"                              << std::endl;
@@ -116,23 +116,23 @@ void evb::test::DummyFEROL::do_defaultWebPage
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
+    *out << "<td>" << bandwidth_.value_ / 0x100000 << "</td>"       << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
     *out << "<td>rate (frame/s)</td>"                               << std::endl;
-    *out << "<td>" << frameRate_ << "</td>"                         << std::endl;
+    *out << "<td>" << frameRate_.value_ << "</td>"                  << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>rate (fragments/s)</td>"                           << std::endl;
-    *out << "<td>" << fragmentRate_ << "</td>"                      << std::endl;
+    *out << "<td>" << fragmentRate_.value_ << "</td>"               << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>FED size (kB)</td>"                                << std::endl;
-    *out << "<td>" << fragmentSize_ / 0x400 << " +/- "
-      << fragmentSizeStdDev_ / 0x400 << "</td>"                     << std::endl;
+    *out << "<td>" << fragmentSize_.value_ / 0x400 << " +/- "
+      << fragmentSizeStdDev_.value_ / 0x400 << "</td>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -140,14 +140,14 @@ void evb::test::DummyFEROL::do_defaultWebPage
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  fragmentFIFO_.printHtml(out, getApplicationDescriptor()->getURN());
+  fragmentFIFO_.printHtml(out, urn_);
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  *out << "</td>"                                                 << std::endl;
+  *out << "</tr>"                                                 << std::endl;
 }
 
 

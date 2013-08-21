@@ -87,7 +87,7 @@ namespace evb {
       /**
        * Print the content of the super-fragment FIFOs as HTML snipped
        */
-      void printSuperFragmentFIFOs(xgi::Output*);
+      void printSuperFragmentFIFOs(xgi::Output*) const;
 
 
     private:
@@ -97,8 +97,8 @@ namespace evb {
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&);
-      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
+      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&) const;
+      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
 
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;

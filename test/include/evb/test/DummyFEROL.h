@@ -68,7 +68,7 @@ namespace evb {
       virtual void do_updateMonitoringInfo();
 
       virtual void bindNonDefaultXgiCallbacks();
-      virtual void do_defaultWebPage(xgi::Output*);
+      virtual void do_defaultWebPage(xgi::Output*) const;
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
 
       void resetMonitoringCounters();

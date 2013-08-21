@@ -402,7 +402,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
 }
 
 
-void evb::bu::RUproxy::printHtml(xgi::Output *out)
+void evb::bu::RUproxy::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
   *out << "<p>RUproxy</p>"                                        << std::endl;
@@ -485,7 +485,7 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out)
         *out << "RU_" << it->first;
       *out << "</td>"                                               << std::endl;
       *out << "<td>" << it->second << "</td>"                       << std::endl;
-      *out << "<td>" << fragmentMonitoring_.payloadPerRU[it->first] / 1e6 << "</td>" << std::endl;
+      *out << "<td>" << fragmentMonitoring_.payloadPerRU.at(it->first) / 1e6 << "</td>" << std::endl;
       *out << "</tr>"                                               << std::endl;
     }
     *out << "</table>"                                              << std::endl;

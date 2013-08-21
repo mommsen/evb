@@ -51,7 +51,7 @@ uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
 }
 
 
-uint32_t evb::FragmentTracker::getFedSize()
+uint32_t evb::FragmentTracker::getFedSize() const
 {
   uint32_t fedSize = fedSize_;
   if ( logNormalGen_ )

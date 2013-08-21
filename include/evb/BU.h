@@ -56,7 +56,7 @@ namespace evb {
     virtual void do_handleItemRetrieveEvent(const std::string& item);
 
     virtual void bindNonDefaultXgiCallbacks();
-    virtual void do_defaultWebPage(xgi::Output*);
+    virtual void do_defaultWebPage(xgi::Output*) const;
 
     void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);

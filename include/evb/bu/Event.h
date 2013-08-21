@@ -61,12 +61,12 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent();
+      void checkEvent() const;
 
       /**
        * Write the event to disk using the handler passed
        */
-      void writeToDisk(FileHandlerPtr);
+      void writeToDisk(FileHandlerPtr) const;
 
       /**
        * Return the event-builder id of the event
@@ -118,7 +118,7 @@ namespace evb {
       public:
         FedInfo(const unsigned char* pos, uint32_t& remainingLength);
         void addDataChunk(const unsigned char* pos, uint32_t& remainingLength);
-        void checkData(const uint32_t eventNumber);
+        void checkData(const uint32_t eventNumber) const;
 
         bool complete() const { return (remainingFedSize_ == 0); }
 

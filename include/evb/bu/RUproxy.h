@@ -109,7 +109,7 @@ namespace evb {
       /**
        * Print monitoring/configuration as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
 
     private:
@@ -160,7 +160,7 @@ namespace evb {
         CountsPerRU logicalCountPerRU;
         CountsPerRU payloadPerRU;
       } fragmentMonitoring_;
-      boost::mutex fragmentMonitoringMutex_;
+      mutable boost::mutex fragmentMonitoringMutex_;
 
       struct RequestMonitoring
       {
@@ -168,7 +168,7 @@ namespace evb {
         uint64_t payload;
         uint64_t i2oCount;
       } requestMonitoring_;
-      boost::mutex requestMonitoringMutex_;
+      mutable boost::mutex requestMonitoringMutex_;
 
       xdata::UnsignedInteger64 i2oBUCacheCount_;
       xdata::UnsignedInteger64 i2oRUSendCount_;

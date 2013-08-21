@@ -69,27 +69,27 @@ namespace evb {
     /**
      * Print summary icon as HTML.
      */
-    void printHtml(xgi::Output*, const toolbox::net::URN& urn);
+    void printHtml(xgi::Output*, const toolbox::net::URN& urn) const;
 
     /**
      * Print horizontally all elements as HTML.
      */
-    void printHorizontalHtml(xgi::Output*);
+    void printHorizontalHtml(xgi::Output*) const;
 
     /**
      * Print horizontally upto nbElementsToPrint as HTML.
      */
-    void printHorizontalHtml(xgi::Output*, const uint32_t nbElementsToPrint);
+    void printHorizontalHtml(xgi::Output*, const uint32_t nbElementsToPrint) const;
 
     /**
      * Print vertically all elements as HTML.
      */
-    void printVerticalHtml(xgi::Output*);
+    void printVerticalHtml(xgi::Output*) const;
 
     /**
      * Print vertically upto nbElementsToPrint as HTML.
      */
-    void printVerticalHtml(xgi::Output*, const uint32_t nbElementsToPrint);
+    void printVerticalHtml(xgi::Output*, const uint32_t nbElementsToPrint) const;
 
 
   private:
@@ -97,7 +97,7 @@ namespace evb {
     /**
      * Format passed element information into the ostringstream.
      */
-    void formatter(T, std::ostringstream*);
+    void formatter(T, std::ostringstream*) const;
 
     const std::string name_;
     volatile uint32_t readPointer_;
@@ -211,7 +211,7 @@ namespace evb {
 
 
   template <class T>
-  void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn)
+  void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn) const
   {
     // cache values which might change during the printout
     const uint32_t cachedSize = size();
@@ -257,7 +257,7 @@ namespace evb {
   void OneToOneQueue<T>::printHorizontalHtml
   (
     xgi::Output *out
-  )
+  ) const
   {
     printHorizontalHtml( out, size() );
   }
@@ -266,9 +266,9 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::printHorizontalHtml
   (
-    xgi::Output  *out,
+    xgi::Output *out,
     const uint32_t nbElementsToPrint
-  )
+  ) const
   {
     // cache values which might change during the printout
     // Note: we do not want to lock the queue for the debug
@@ -328,7 +328,7 @@ namespace evb {
   void OneToOneQueue<T>::printVerticalHtml
   (
     xgi::Output *out
-  )
+  ) const
   {
     printVerticalHtml( out, size() );
   }
@@ -339,7 +339,7 @@ namespace evb {
   (
     xgi::Output  *out,
     const uint32_t nbElementsToPrint
-  )
+  ) const
   {
     // cache values which might change during the printout
     // Note: we do not want to lock the queue for the debug
@@ -400,7 +400,7 @@ namespace evb {
 
 
   template <class T>
-  inline void OneToOneQueue<T>::formatter(T element, std::ostringstream* out)
+  inline void OneToOneQueue<T>::formatter(T element, std::ostringstream* out) const
   {
     *out << element;
   }

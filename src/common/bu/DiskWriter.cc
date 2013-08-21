@@ -26,9 +26,9 @@ processActive_(false)
 }
 
 
-evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t builderId)
+evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t builderId) const
 {
-  return streamHandlers_[builderId];
+  return streamHandlers_.at(builderId);
 }
 
 
@@ -297,7 +297,7 @@ void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path)
 }
 
 
-void evb::bu::DiskWriter::printHtml(xgi::Output *out)
+void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
   *out << "<p>DiskWriter</p>"                                     << std::endl;

@@ -85,7 +85,7 @@ namespace evb {
     uint32_t getRunNumber() const { return runNumber_.value_; }
 
     typedef std::list<std::string> SoapFsmEvents;
-    SoapFsmEvents getSoapFsmEvents() { return soapFsmEvents_; }
+    SoapFsmEvents getSoapFsmEvents() const { return soapFsmEvents_; }
 
   protected:
 

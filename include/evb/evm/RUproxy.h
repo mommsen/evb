@@ -103,12 +103,12 @@ namespace evb {
       /**
        * Print monitoring/configuration as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
       /**
        * Print the content of the allocation FIFO as HTML snipped
        */
-      inline void printAllocateFIFO(xgi::Output* out)
+      inline void printAllocateFIFO(xgi::Output* out) const
       { allocateFIFO_.printVerticalHtml(out); }
 
 
@@ -145,7 +145,7 @@ namespace evb {
         uint64_t payload;
         uint64_t i2oCount;
       } allocateMonitoring_;
-      boost::mutex allocateMonitoringMutex_;
+      mutable boost::mutex allocateMonitoringMutex_;
 
     };
 

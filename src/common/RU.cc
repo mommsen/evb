@@ -21,7 +21,7 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    void BUproxy<RU>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
+    void BUproxy<RU>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest) const
     {
       readoutMsg->getEvBids(fragmentRequest->evbIds);
       readoutMsg->getRUtids(fragmentRequest->ruTids);

@@ -73,7 +73,7 @@ namespace evb {
       virtual void do_handleItemRetrieveEvent(const std::string& item);
 
       virtual void bindNonDefaultXgiCallbacks();
-      virtual void do_defaultWebPage(xgi::Output*);
+      virtual void do_defaultWebPage(xgi::Output*) const;
 
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
@@ -250,7 +250,7 @@ template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_defaultWebPage
 (
   xgi::Output *out
-)
+) const
 {
   *out << "<tr>"                                                << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;

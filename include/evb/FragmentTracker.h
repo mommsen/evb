@@ -49,7 +49,7 @@ namespace evb {
 
   private:
 
-    uint32_t getFedSize();
+    uint32_t getFedSize() const;
 
     enum FedComponent
     {
