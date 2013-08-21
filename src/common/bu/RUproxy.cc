@@ -60,7 +60,8 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       {
         boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
-        const uint32_t lastEventNumber = dataBlockMsg->evbIds[dataBlockMsg->nbSuperFragments-1].eventNumber();
+        const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+        const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
         if ( index.ruTid == evm_.tid )
           fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
         else
@@ -70,8 +71,8 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         ++fragmentMonitoring_.i2oCount;
         if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
         {
-          ++fragmentMonitoring_.logicalCount;
-          ++fragmentMonitoring_.logicalCountPerRU[index.ruTid];
+          fragmentMonitoring_.logicalCount += nbSuperFragments;
+          fragmentMonitoring_.logicalCountPerRU[index.ruTid] += nbSuperFragments;
         }
       }
 
