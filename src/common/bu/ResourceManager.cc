@@ -23,7 +23,7 @@ blockedResourceFIFO_("blockedResourceFIFO")
 }
 
 
-void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg)
+void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
 {
   boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
@@ -47,6 +47,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
+    --eventMonitoring_.outstandingRequests;
   }
   else
   {
@@ -64,7 +65,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
 }
 
 
-void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
+void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
@@ -76,10 +77,8 @@ void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
 }
 
 
-void evb::bu::ResourceManager::discardEvent(const EventPtr event)
+void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 {
-  bool resourceFreed = false;
-
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
@@ -97,21 +96,17 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
     if ( pos->second.empty() )
     {
       allocatedResources_.erase(pos);
-      resourceFreed = true;
+
+      if ( throttle_ )
+        while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
+      else
+        while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
     }
   }
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     --eventMonitoring_.nbEventsInBU;
-  }
-
-  if ( resourceFreed )
-  {
-    if ( throttle_ )
-      while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
-    else
-      while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
   }
 }
 
@@ -120,13 +115,21 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 {
   if ( freeResourceFIFO_.deq(buResourceId) || ( !throttle_ && blockedResourceFIFO_.deq(buResourceId) ) )
   {
-    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
-    if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
     {
-      std::ostringstream oss;
-      oss << "The buResourceId " << buResourceId;
-      oss << " is already in the allocated resources, while it was also found in the free resources";
-      XCEPT_RAISE(exception::EventOrder, oss.str());
+      boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+
+      if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
+      {
+        std::ostringstream oss;
+        oss << "The buResourceId " << buResourceId;
+        oss << " is already in the allocated resources, while it was also found in the free resources";
+        XCEPT_RAISE(exception::EventOrder, oss.str());
+      }
+    }
+
+    {
+      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+      ++eventMonitoring_.outstandingRequests;
     }
 
     return true;
@@ -243,7 +246,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td># outstanding requests</td>"                       << std::endl;
-    *out << "<td>" << allocatedResources_.size() << "</td>"         << std::endl;
+    *out << "<td>" << eventMonitoring_.outstandingRequests << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
 
     const std::_Ios_Fmtflags originalFlags=out->flags();

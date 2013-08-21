@@ -43,17 +43,17 @@ namespace evb {
       /**
        * Mark the resource contained in the passed data block as under construction
        */
-      void underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*);
+      void underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&);
 
       /**
        * Mark the resouces used by the event as complete
        */
-      void eventCompleted(const EventPtr);
+      void eventCompleted(const EventPtr&);
 
       /**
        * Discard the event
        */
-      void discardEvent(const EventPtr);
+      void discardEvent(const EventPtr&);
 
       /**
        * Get the next resource id for which to request trigger data.
@@ -134,6 +134,7 @@ namespace evb {
       {
         uint32_t nbEventsBuilt;
         uint32_t nbEventsInBU;
+        uint32_t outstandingRequests;
         PerformanceMonitor perf;
       } eventMonitoring_;
       mutable boost::mutex eventMonitoringMutex_;
