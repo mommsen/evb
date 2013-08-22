@@ -48,15 +48,8 @@ void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
 
-  processesActive_.reset();
-
-  if ( configuration_->numberOfBuilders.value_ > MAX_WORKER_THREADS )
-  {
-    std::ostringstream oss;
-    oss << "The number of builder threads " << configuration_->numberOfBuilders;
-    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
+  processesActive_.clear();
+  processesActive_.resize(configuration_->numberOfBuilders.value_);
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -152,7 +145,10 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_.set(builderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.set(builderId);
+  }
 
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
@@ -175,25 +171,37 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
   catch(xcept::Exception& e)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     stateMachine_->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
-  processesActive_.reset(builderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.reset(builderId);
+  }
 
   return false;
 }

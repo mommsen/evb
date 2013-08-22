@@ -1,9 +1,10 @@
 #ifndef _evb_bu_EventBuilder_h_
 #define _evb_bu_EventBuilder_h_
 
+#include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
-#include <bitset>
 #include <map>
 #include <stdint.h>
 #include <vector>
@@ -119,7 +120,8 @@ namespace evb {
       toolbox::task::ActionSignature* builderAction_;
 
       volatile bool doProcessing_;
-      std::bitset<MAX_WORKER_THREADS> processesActive_;
+      boost::dynamic_bitset<> processesActive_;
+      boost::mutex processesActiveMutex_;
 
     }; // EventBuilder
 

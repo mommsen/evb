@@ -1,11 +1,11 @@
 #ifndef _evb_readoutunit_BUproxy_h_
 #define _evb_readoutunit_BUproxy_h_
 
+#include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <bitset>
 #include <set>
 #include <stdint.h>
 #include <vector>
@@ -141,7 +141,8 @@ namespace evb {
       WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
       volatile bool doProcessing_;
-      std::bitset<MAX_WORKER_THREADS> processesActive_;
+      boost::dynamic_bitset<> processesActive_;
+      boost::mutex processesActiveMutex_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
@@ -305,7 +306,10 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t responderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_.set(responderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.set(responderId);
+  }
 
   try
   {
@@ -320,25 +324,37 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   }
   catch(xcept::Exception& e)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, e.what());
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, "unkown exception");
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  processesActive_.reset(responderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.reset(responderId);
+  }
 
   ::usleep(10);
 
@@ -610,15 +626,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
-  processesActive_.reset();
-
-  if ( configuration_->numberOfResponders.value_ > MAX_WORKER_THREADS )
-  {
-    std::ostringstream oss;
-    oss << "The number of responder threads " << configuration_->numberOfResponders;
-    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
+  processesActive_.clear();
+  processesActive_.resize(configuration_->numberOfResponders);
 
   const std::string identifier = readoutUnit_->getIdentifier();
 
