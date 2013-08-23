@@ -201,6 +201,7 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
   eventMonitoring_.nbEventsInBU = 0;
   eventMonitoring_.nbEventsBuilt = 0;
+  eventMonitoring_.outstandingRequests = 0;
   eventMonitoring_.perf.reset();
 }
 
