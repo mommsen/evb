@@ -135,6 +135,7 @@ size_t evb::FragmentTracker::fillData
         payload += sizeof(fedt_t);
         bytesFilled += sizeof(fedt_t);
         nbBytesAvailable -= sizeof(fedt_t);
+        remainingFedSize_ -= sizeof(fedt_t);
 
         typeOfNextComponent_ = FED_HEADER;
         break;

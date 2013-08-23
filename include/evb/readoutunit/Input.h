@@ -1138,6 +1138,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
       fragmentTail = bufRef;
 
     }
+    assert( remainingFedSize == 0 );
     input_->checkEventFragment(fragmentHead);
     superFragment->append(fragmentHead);
   }
