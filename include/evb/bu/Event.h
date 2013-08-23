@@ -6,6 +6,7 @@
 #include <map>
 #include <stdint.h>
 
+#include "evb/CRCCalculator.h"
 #include "evb/Constants.h"
 #include "evb/EvBid.h"
 #include "evb/I2OMessages.h"
@@ -133,6 +134,8 @@ namespace evb {
 
         DataLocations fedData_;
         uint32_t remainingFedSize_;
+
+        CRCCalculator crcCalculator_;
       };
 
       struct EventInfo

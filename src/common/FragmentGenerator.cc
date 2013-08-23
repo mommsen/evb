@@ -5,7 +5,6 @@
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/i2oXFunctionCodes.h"
-#include "evb/CRC16.h"
 #include "evb/Constants.h"
 #include "evb/Exception.h"
 #include "evb/FragmentGenerator.h"

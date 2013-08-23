@@ -5,7 +5,6 @@
 
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
-#include "evb/CRC16.h"
 #include "evb/Exception.h"
 #include "evb/FragmentTracker.h"
 
@@ -86,9 +85,7 @@ size_t evb::FragmentTracker::fillData
         fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber_;
 
-        #ifdef EVB_CALCULATE_CRC
-        fedCRC_ = computeCRC(payload,sizeof(fedh_t));
-        #endif
+        fedCRC_ = crcCalculator_.computeCRC(payload,sizeof(fedh_t));
         payload += sizeof(fedh_t);
         bytesFilled += sizeof(fedh_t);
         nbBytesAvailable -= sizeof(fedh_t);
@@ -112,10 +109,7 @@ size_t evb::FragmentTracker::fillData
         }
 
         memset(payload, 0xCA, payloadSize);
-
-        #ifdef EVB_CALCULATE_CRC
-        computeCRC(fedCRC_,payload,payloadSize);
-        #endif
+        crcCalculator_.computeCRC(fedCRC_,payload,payloadSize);
 
         payload += payloadSize;
         bytesFilled += payloadSize;
@@ -135,11 +129,7 @@ size_t evb::FragmentTracker::fillData
         // Force CRC & R field to zero before re-computing the CRC.
         // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
         fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-
-        #ifdef EVB_CALCULATE_CRC
-        computeCRC(fedCRC_,payload,sizeof(fedt_t));
-        #endif
-
+        crcCalculator_.computeCRC(fedCRC_,payload,sizeof(fedt_t));
         fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
 
         payload += sizeof(fedt_t);

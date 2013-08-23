@@ -7,6 +7,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "evb/CRCCalculator.h"
 #include "toolbox/math/random.h"
 
 
@@ -50,6 +51,8 @@ namespace evb {
   private:
 
     uint32_t getFedSize() const;
+
+    CRCCalculator crcCalculator_;
 
     enum FedComponent
     {

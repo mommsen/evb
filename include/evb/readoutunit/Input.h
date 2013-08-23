@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "evb/CRC16.h"
+#include "evb/CRCCalculator.h"
 #include "evb/Constants.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
@@ -249,6 +249,7 @@ namespace evb {
 
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
+      CRCCalculator crcCalculator_;
 
       struct InputMonitoring
       {
@@ -340,9 +341,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
   uint32_t payloadSize = frame->partLength;
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
-  #ifdef EVB_CALCULATE_CRC
   uint16_t crc = 0xffff;
-  #endif
 
   try
   {
@@ -417,12 +416,10 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
 
       const uint32_t dataLength = ferolHeader->data_length();
 
-      #ifdef EVB_CALCULATE_CRC
       if ( ferolHeader->is_last_packet() )
-        computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+        crcCalculator_.computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
       else
-        computeCRC(crc,payload,dataLength);
-      #endif
+        crcCalculator_.computeCRC(crc,payload,dataLength);
 
       payload += dataLength;
       fedSize += dataLength;
@@ -489,14 +486,14 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
       XCEPT_RAISE(exception::DataCorruption, oss.str());
     }
 
-    #ifdef EVB_CALCULATE_CRC
     // Force CRC & R field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
     trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-    computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+    crcCalculator_.computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
+    #ifdef EVB_CALCULATE_CRC
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
     if ( trailerCRC != crc )
     {
