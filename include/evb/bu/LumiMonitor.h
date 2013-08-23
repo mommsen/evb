@@ -17,11 +17,18 @@ namespace evb {
       uint32_t nbEventsWritten;
       uint32_t lastEventNumberWritten;
       uint32_t updates;
-      time_t creationTime;
+      time_t timeOfLastEvent;
 
       LumiMonitor(uint32_t ls) :
       lumiSection(ls),nbFiles(0),nbEventsWritten(0),updates(1),
-      creationTime( time(0) ) {};
+      timeOfLastEvent( time(0) ) {};
+
+      void update(uint32_t eventNumber)
+      {
+        ++nbEventsWritten;
+        lastEventNumberWritten = eventNumber;
+        timeOfLastEvent = time(0);
+      }
 
       inline LumiMonitor& operator+= (const LumiMonitor& other)
       {
@@ -30,6 +37,8 @@ namespace evb {
         this->updates += other.updates;
         if ( this->lastEventNumberWritten < other.lastEventNumberWritten )
           this->lastEventNumberWritten = other.lastEventNumberWritten;
+        if ( this->timeOfLastEvent < other.timeOfLastEvent )
+          this->timeOfLastEvent = other.timeOfLastEvent;
         return *this;
       }
     };

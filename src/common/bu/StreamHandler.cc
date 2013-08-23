@@ -42,7 +42,10 @@ void evb::bu::StreamHandler::close()
 
   boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
   if ( currentLumiMonitor_.get() )
+  {
     while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
+    currentLumiMonitor_.reset();
+  }
 }
 
 
@@ -73,8 +76,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   event->writeToDisk(fileHandler_);
 
-  ++(currentLumiMonitor_->nbEventsWritten);
-  currentLumiMonitor_->lastEventNumberWritten = event->getEvBid().eventNumber();
+  currentLumiMonitor_->update( event->getEvBid().eventNumber() );
 
   if ( fileHandler_->getEventCount() >= configuration_->maxEventsPerFile )
   {
@@ -104,7 +106,9 @@ bool evb::bu::StreamHandler::getLumiMonitor(LumiMonitorPtr& lumiMonitor)
   // Check for old lumi sections
   boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
 
-  if ( time(0) > (currentLumiMonitor_->creationTime + configuration_->lumiSectionTimeout) )
+  if ( ! currentLumiMonitor_.get() ) return false;
+
+  if ( time(0) > (currentLumiMonitor_->timeOfLastEvent + configuration_->lumiSectionTimeout) )
   {
     fileHandler_.reset();
     lumiMonitor = currentLumiMonitor_;
