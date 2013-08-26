@@ -140,12 +140,20 @@ namespace evb {
        */
       void printSuperFragmentFIFO(xgi::Output* out) const;
 
+      /**
+       * Check the consistency of the FED event fragment
+       */
+      void checkEventFragment(toolbox::mem::Reference*);
+
 
     protected:
 
       class Handler
       {
       public:
+
+        Handler(Input<Configuration>* input)
+        : input_(input), doProcessing_(false) {};
 
         virtual void superFragmentReady(toolbox::mem::Reference*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::superFragmentReady is not implemented"); }
@@ -166,13 +174,18 @@ namespace evb {
         virtual void printSuperFragmentFIFO(xgi::Output*) const {};
         virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) const {};
 
+      protected:
+
+        Input<Configuration>* input_;
+        bool doProcessing_;
+
       };
 
       class FEROLproxy : public Handler
       {
       public:
 
-        FEROLproxy();
+        FEROLproxy(Input<Configuration>*);
 
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void superFragmentReady(toolbox::mem::Reference*);
@@ -187,8 +200,6 @@ namespace evb {
 
         virtual uint32_t extractTriggerInformation(const unsigned char*) const
         { return 0; }
-
-        bool doProcessing_;
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
@@ -211,8 +222,7 @@ namespace evb {
       {
       public:
 
-        DummyInputData(Input<Configuration>* input)
-        : doProcessing_(false),input_(input) {};
+        DummyInputData(Input<Configuration>* input) : Handler(input) {};
 
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
@@ -224,11 +234,9 @@ namespace evb {
 
         EvBidFactory evbIdFactory_;
         uint32_t eventNumber_;
-        bool doProcessing_;
 
       private:
 
-        Input<Configuration>* input_;
         typedef std::map<uint16_t,FragmentTrackerPtr> FragmentTrackers;
         FragmentTrackers fragmentTrackers_;
         toolbox::mem::Pool* fragmentPool_;
@@ -236,7 +244,7 @@ namespace evb {
       };
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
-      { handler.reset(new Handler); }
+      { handler.reset( new Handler(this) ); }
 
       const boost::shared_ptr<Configuration> configuration_;
 
@@ -244,7 +252,6 @@ namespace evb {
 
       void resetMonitoringCounters();
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
-      void checkEventFragment(toolbox::mem::Reference*);
       void updateSuperFragmentCounters(const FragmentChainPtr&);
 
       xdaq::ApplicationStub* app_;
@@ -289,7 +296,7 @@ evb::readoutunit::Input<Configuration>::Input
 ) :
 configuration_(configuration),
 app_(app),
-handler_(new Handler())
+handler_(new Handler(this))
 {}
 
 
@@ -417,9 +424,9 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
       const uint32_t dataLength = ferolHeader->data_length();
 
       if ( ferolHeader->is_last_packet() )
-        crcCalculator_.computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+        crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
       else
-        crcCalculator_.computeCRC(crc,payload,dataLength);
+        crcCalculator_.compute(crc,payload,dataLength);
 
       payload += dataLength;
       fedSize += dataLength;
@@ -490,7 +497,7 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
     trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-    crcCalculator_.computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+    crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
     #ifdef EVB_CALCULATE_CRC
@@ -803,8 +810,8 @@ void evb::readoutunit::Input<Configuration>::printSuperFragmentFIFO(xgi::Output 
 
 
 template<class Configuration>
-evb::readoutunit::Input<Configuration>::FEROLproxy::FEROLproxy() :
-doProcessing_(false),
+evb::readoutunit::Input<Configuration>::FEROLproxy::FEROLproxy(Input<Configuration>* input) :
+Handler(input),
 superFragmentFIFO_("superFragmentFIFO")
 {}
 
@@ -812,7 +819,7 @@ superFragmentFIFO_("superFragmentFIFO")
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
-  doProcessing_ = false;
+  this->doProcessing_ = false;
   dropInputData_ = configuration->dropInputData;
 
   superFragmentFIFO_.clear();
@@ -902,7 +909,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::startProcessing(const u
         it != itEnd; ++it)
     it->second.reset(runNumber);
 
-  doProcessing_ = true;
+  this->doProcessing_ = true;
 }
 
 
@@ -933,7 +940,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::drain()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
 {
-  doProcessing_ = false;
+  this->doProcessing_ = false;
 
   superFragmentFIFO_.clear();
 
@@ -980,7 +987,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
 {
-  doProcessing_ = false;
+  this->doProcessing_ = false;
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -1139,7 +1146,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
 
     }
     assert( remainingFedSize == 0 );
-    input_->checkEventFragment(fragmentHead);
+    this->input_->checkEventFragment(fragmentHead);
     superFragment->append(fragmentHead);
   }
 
@@ -1152,14 +1159,14 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
 {
   eventNumber_ = 0;
   evbIdFactory_.reset(runNumber);
-  doProcessing_ = true;
+  this->doProcessing_ = true;
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::stopProcessing()
 {
-  doProcessing_ = false;
+  this->doProcessing_ = false;
 }
 
 

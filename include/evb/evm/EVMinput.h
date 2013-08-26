@@ -55,6 +55,9 @@ namespace evb {
       {
       public:
 
+        FEROLproxy(EVMinput* input)
+        : readoutunit::Input<readoutunit::Configuration>::FEROLproxy(input) {};
+
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
         virtual void configure(boost::shared_ptr<readoutunit::Configuration>);
 
@@ -91,7 +94,7 @@ namespace evb {
 
         if ( inputSource == "FEROL" )
         {
-          handler.reset( new FEROLproxy() );
+          handler.reset( new FEROLproxy(this) );
         }
         else if ( inputSource == "Local" )
         {
