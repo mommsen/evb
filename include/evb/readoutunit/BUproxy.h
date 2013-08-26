@@ -802,7 +802,15 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out) const
     *out << "<tr>"                                                << std::endl;
     *out << "<td>BU_" << buTID << "</td>"                         << std::endl;
     *out << "<td>" << requestMonitoring_.logicalCountPerBU.at(buTID) << "</td>" << std::endl;
-    *out << "<td>" << dataMonitoring_.payloadPerBU.at(buTID) / 1e6 << "</td>" << std::endl;
+    *out << "<td>";
+    try
+    {
+      *out << dataMonitoring_.payloadPerBU.at(buTID) / 1e6 << "</td>" << std::endl;
+    }
+    catch(std::out_of_range)
+    {
+      *out << "0</td>"                                            << std::endl;
+    }
     *out << "</tr>"                                               << std::endl;
   }
   *out << "</table>"                                              << std::endl;
