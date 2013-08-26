@@ -140,7 +140,7 @@ TestLibraryDirs = \
         $(XGI_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Wno-long-long -Werror -fno-omit-frame-pointer
+UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer
 
 # These libraries can be platform specific and
 # potentially need conditional processing
