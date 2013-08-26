@@ -39,57 +39,32 @@ namespace evb {
     /**
      * Return the CRC of the buffer
      */
-    uint16_t computeCRC(const uint8_t* buffer, size_t bufSize) const;
+    uint16_t compute(const uint8_t* buffer, size_t bufSize) const;
 
     /**
      * Compute the CRC of the buffer updating the passed CRC value
      */
-    void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const;
+    void compute(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const;
 
   private:
 
-    class Algorithm
+    static inline void computeCRC_8bit(uint16_t& crc, const uint8_t data)
     {
-    public:
+      crc = (crc << 8) ^ crcTable[((crc >> 8) & 0xff) ^ data];
+    }
 
-      virtual void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const = 0;
-    };
-
-    class TableAlgorithm : public Algorithm
+    static inline void computeCRC_32bit(uint16_t& crc, uint32_t data)
     {
-    public:
+      crc ^= data >> 16;
+      crc =
+        crcTable[data & 0xff] ^
+        crcTable[((data >> 8) & 0xff) + 0x100] ^
+        crcTable[(crc & 0xff) + 0x200] ^
+        crcTable[((crc >> 8) & 0xff) + 0x300];
+    }
 
-      virtual void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const;
+    const bool havePCLMULQDQ_;
 
-    private:
-
-      static inline void computeCRC_8bit(uint16_t& crc, const uint8_t data)
-      {
-        crc = (crc << 8) ^ crcTable[((crc >> 8) & 0xff) ^ data];
-      }
-
-      static inline void computeCRC_32bit(uint16_t& crc, uint32_t data)
-      {
-        crc ^= data >> 16;
-        crc =
-          crcTable[data & 0xff] ^
-          crcTable[((data >> 8) & 0xff) + 0x100] ^
-          crcTable[(crc & 0xff) + 0x200] ^
-          crcTable[((crc >> 8) & 0xff) + 0x300];
-      }
-    };
-
-    class AsmAlgorithm : public Algorithm
-    {
-    public:
-
-      virtual void computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const;
-
-    private:
-
-    };
-
-    boost::scoped_ptr<Algorithm> algorithm_;
   };
 
   extern "C"

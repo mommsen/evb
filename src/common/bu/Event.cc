@@ -13,6 +13,8 @@
 #include "interface/evb/i2oEVBMsgs.h"
 #include "xcept/tools.h"
 
+#undef EVB_CALCULATE_CRC
+
 evb::bu::Event::Event
 (
   const EvBid& evbId,
@@ -283,7 +285,7 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber) const
   for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
        rit != ritEnd; ++rit)
   {
-    crcCalculator_.computeCRC(crc,(*rit)->location,(*rit)->length);
+    crcCalculator_.compute(crc,(*rit)->location,(*rit)->length);
   }
 
   trailer()->conscheck = conscheck;

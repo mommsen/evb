@@ -153,64 +153,53 @@ static inline bool hasPCLMULQDQ()
 
 
 evb::CRCCalculator::CRCCalculator()
-{
-  if ( hasPCLMULQDQ() )
-    algorithm_.reset( new AsmAlgorithm );
-  else
-    algorithm_.reset( new TableAlgorithm );
-}
+: havePCLMULQDQ_( hasPCLMULQDQ() )
+{}
 
 
-uint16_t evb::CRCCalculator::computeCRC(const uint8_t* buffer, size_t bufSize) const
+uint16_t evb::CRCCalculator::compute(const uint8_t* buffer, size_t bufSize) const
 {
   uint16_t crc(0xffff);
-  computeCRC(crc,buffer,bufSize);
+  compute(crc,buffer,bufSize);
   return crc;
 }
 
 
-void evb::CRCCalculator::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const
+void evb::CRCCalculator::compute(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const
 {
   assert(0==bufSize%8);
   if ( bufSize == 0 ) return;
 
-  #ifdef EVB_CALCULATE_CRC
-  algorithm_->computeCRC(crc,buffer,bufSize);
-  #endif
-}
-
-
-void evb::CRCCalculator::TableAlgorithm::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const
-{
-  if (bufSize % 16 == 8)
+  if ( havePCLMULQDQ_ )
   {
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
-    bufSize -= 8;
-    buffer += 8;
+    crc = crc16_T10DIF_128x_extended(crc,buffer,bufSize);
   }
-
-  while (bufSize >= 16)
+  else
   {
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[3]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[2]);
-    bufSize -= 16;
-    buffer += 16;
+    if (bufSize % 16 == 8)
+    {
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+      bufSize -= 8;
+      buffer += 8;
+    }
+
+    while (bufSize >= 16)
+    {
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[3]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[2]);
+      bufSize -= 16;
+      buffer += 16;
+    }
+
+    if (bufSize == 8)
+    {
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
+      computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
+    }
   }
-
-  if (bufSize == 8)
-  {
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[1]);
-    computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
-  }
-}
-
-
-void evb::CRCCalculator::AsmAlgorithm::computeCRC(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const
-{
-  crc = crc16_T10DIF_128x_extended(crc,buffer,bufSize);
 }
 
 
