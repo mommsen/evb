@@ -66,10 +66,15 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
 
 void evb::bu::DiskWriter::drain()
+{}
+
+
+void evb::bu::DiskWriter::stopProcessing()
 {
   if ( configuration_->dropEventData ) return;
 
   while ( processActive_ ) ::usleep(1000);
+  doProcessing_ = false;
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
@@ -84,16 +89,7 @@ void evb::bu::DiskWriter::drain()
   }
 
   streamHandlers_.clear();
-
   removeDir(runRawDataDir_);
-}
-
-
-void evb::bu::DiskWriter::stopProcessing()
-{
-  doProcessing_ = false;
-
-  // TODO: close files and write EoR
 }
 
 
