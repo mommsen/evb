@@ -31,7 +31,7 @@ Project=daq
 Package=evb
 
 Sources=\
-	CRC16.cc \
+	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
 	FragmentGenerator.cc \

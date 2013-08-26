@@ -37,6 +37,10 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   InfoSpaceItems& appInfoSpaceParams
 )
 {
+  stopAtEvent_ = 0;
+
+  appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
+  appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
 }
 
 
@@ -45,12 +49,14 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
   InfoSpaceItems& monitoringParams
 )
 {
+  lastEventNumber_ = 0;
   bandwidth_ = 0;
   frameRate_ = 0;
   fragmentRate_ = 0;
   fragmentSize_ = 0;
   fragmentSizeStdDev_ = 0;
 
+  monitoringParams.add("lastEventNumber", &lastEventNumber_);
   monitoringParams.add("bandwidth", &bandwidth_);
   monitoringParams.add("frameRate", &frameRate_);
   monitoringParams.add("fragmentRate", &fragmentRate_);
@@ -85,7 +91,7 @@ void evb::test::DummyFEROL::bindNonDefaultXgiCallbacks()
 void evb::test::DummyFEROL::do_defaultWebPage
 (
   xgi::Output *out
-)
+) const
 {
   *out << "<tr>"                                                  << std::endl;
   *out << "<td class=\"component\">"                              << std::endl;
@@ -100,8 +106,8 @@ void evb::test::DummyFEROL::do_defaultWebPage
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>message count</td>"                                << std::endl;
-    *out << "<td>" << dataMonitoring_.i2oCount << "</td>"           << std::endl;
+    *out << "<td>last event number</td>"                            << std::endl;
+    *out << "<td>" << lastEventNumber_.value_ << "</td>"            << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     const std::_Ios_Fmtflags originalFlags=out->flags();
@@ -110,23 +116,23 @@ void evb::test::DummyFEROL::do_defaultWebPage
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 0x100000 << "</td>"              << std::endl;
+    *out << "<td>" << bandwidth_.value_ / 0x100000 << "</td>"       << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
     *out << "<td>rate (frame/s)</td>"                               << std::endl;
-    *out << "<td>" << frameRate_ << "</td>"                         << std::endl;
+    *out << "<td>" << frameRate_.value_ << "</td>"                  << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>rate (fragments/s)</td>"                           << std::endl;
-    *out << "<td>" << fragmentRate_ << "</td>"                      << std::endl;
+    *out << "<td>" << fragmentRate_.value_ << "</td>"               << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>FED size (kB)</td>"                                << std::endl;
-    *out << "<td>" << fragmentSize_ / 0x400 << " +/- "
-      << fragmentSizeStdDev_ / 0x400 << "</td>"                     << std::endl;
+    *out << "<td>" << fragmentSize_.value_ / 0x400 << " +/- "
+      << fragmentSizeStdDev_.value_ / 0x400 << "</td>"              << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -134,14 +140,14 @@ void evb::test::DummyFEROL::do_defaultWebPage
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  fragmentFIFO_.printHtml(out, getApplicationDescriptor()->getURN());
+  fragmentFIFO_.printHtml(out, urn_);
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  *out << "</td>"                                                 << std::endl;
+  *out << "</tr>"                                                 << std::endl;
 }
 
 
@@ -178,6 +184,7 @@ void evb::test::DummyFEROL::resetMonitoringCounters()
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
   dataMonitoring_.reset();
+  lastEventNumber_ = 0;
 }
 
 
@@ -237,7 +244,7 @@ void evb::test::DummyFEROL::startProcessing()
 
 void evb::test::DummyFEROL::drain()
 {
-  doProcessing_ = false;
+  if ( stopAtEvent_.value_ == 0 ) stopAtEvent_.value_ = lastEventNumber_;
   while ( generatingActive_ || !fragmentFIFO_.empty() || sendingActive_ ) ::usleep(1000);
 }
 
@@ -306,12 +313,21 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
       if ( fragmentGenerator_.getData(bufRef) )
       {
-        #ifdef DOUBLE_WORKLOOPS
-        while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
-        #else
-        updateCounters(bufRef);
-        sendData(bufRef);
-        #endif
+        lastEventNumber_ = fragmentGenerator_.getLastEventNumber();
+        if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
+        {
+          #ifdef DOUBLE_WORKLOOPS
+          while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
+          #else
+          updateCounters(bufRef);
+          sendData(bufRef);
+          #endif
+        }
+        else
+        {
+          bufRef->release();
+          doProcessing_ = false;
+        }
       }
     }
   }

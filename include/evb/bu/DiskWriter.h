@@ -43,7 +43,7 @@ namespace evb {
       /**
        * Get a stream handler for the given builder id
        */
-      StreamHandlerPtr getStreamHandler(const uint16_t builderId);
+      StreamHandlerPtr getStreamHandler(const uint16_t builderId) const;
 
       /**
        * Append the info space items to be published in the
@@ -88,7 +88,7 @@ namespace evb {
       /**
        * Print monitoring/configuration as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
       /**
        * Create the directory if it does not exist
@@ -151,7 +151,7 @@ namespace evb {
         uint32_t lastEventNumberWritten;
         uint32_t currentLumiSection;
       } diskWriterMonitoring_;
-      boost::mutex diskWriterMonitoringMutex_;
+      mutable boost::mutex diskWriterMonitoringMutex_;
 
       xdata::UnsignedInteger32 nbEvtsWritten_;
       xdata::UnsignedInteger32 nbFilesWritten_;

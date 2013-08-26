@@ -23,7 +23,7 @@ blockedResourceFIFO_("blockedResourceFIFO")
 }
 
 
-void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg)
+void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
 {
   boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
@@ -47,6 +47,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
+    --eventMonitoring_.outstandingRequests;
   }
   else
   {
@@ -64,7 +65,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
 }
 
 
-void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
+void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
@@ -76,10 +77,8 @@ void evb::bu::ResourceManager::eventCompleted(const EventPtr event)
 }
 
 
-void evb::bu::ResourceManager::discardEvent(const EventPtr event)
+void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 {
-  bool resourceFreed = false;
-
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
@@ -97,21 +96,17 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr event)
     if ( pos->second.empty() )
     {
       allocatedResources_.erase(pos);
-      resourceFreed = true;
+
+      if ( throttle_ )
+        while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
+      else
+        while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
     }
   }
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     --eventMonitoring_.nbEventsInBU;
-  }
-
-  if ( resourceFreed )
-  {
-    if ( throttle_ )
-      while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
-    else
-      while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
   }
 }
 
@@ -120,13 +115,21 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 {
   if ( freeResourceFIFO_.deq(buResourceId) || ( !throttle_ && blockedResourceFIFO_.deq(buResourceId) ) )
   {
-    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
-    if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
     {
-      std::ostringstream oss;
-      oss << "The buResourceId " << buResourceId;
-      oss << " is already in the allocated resources, while it was also found in the free resources";
-      XCEPT_RAISE(exception::EventOrder, oss.str());
+      boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+
+      if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
+      {
+        std::ostringstream oss;
+        oss << "The buResourceId " << buResourceId;
+        oss << " is already in the allocated resources, while it was also found in the free resources";
+        XCEPT_RAISE(exception::EventOrder, oss.str());
+      }
+    }
+
+    {
+      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+      ++eventMonitoring_.outstandingRequests;
     }
 
     return true;
@@ -198,6 +201,7 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
   eventMonitoring_.nbEventsInBU = 0;
   eventMonitoring_.nbEventsBuilt = 0;
+  eventMonitoring_.outstandingRequests = 0;
   eventMonitoring_.perf.reset();
 }
 
@@ -216,7 +220,7 @@ void evb::bu::ResourceManager::configure()
 
   for (uint32_t buResourceId = 0; buResourceId < nbResources; ++buResourceId)
   {
-    freeResourceFIFO_.enq(buResourceId);
+    assert( freeResourceFIFO_.enq(buResourceId) );
   }
 
   diskUsageMonitors_.clear();
@@ -225,10 +229,10 @@ void evb::bu::ResourceManager::configure()
 }
 
 
-void evb::bu::ResourceManager::printHtml(xgi::Output *out)
+void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
-  *out << "<p>ResourceManager</p>"                                        << std::endl;
+  *out << "<p>ResourceManager</p>"                                << std::endl;
   *out << "<table>"                                               << std::endl;
 
   {
@@ -241,6 +245,10 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     *out << "<td># events in BU</td>"                               << std::endl;
     *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
     *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># outstanding requests</td>"                       << std::endl;
+    *out << "<td>" << eventMonitoring_.outstandingRequests << "</td>" << std::endl;
+    *out << "</tr>"                                                 << std::endl;
 
     const std::_Ios_Fmtflags originalFlags=out->flags();
     const int originalPrecision=out->precision();
@@ -248,20 +256,20 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_ / 1e6 << "</td>"                   << std::endl;
+    *out << "<td>" << bandwidth_.value_ / 1e6 << "</td>"            << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     out->setf(std::ios::scientific);
     out->precision(4);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << rate_ << "</td>"                              << std::endl;
+    *out << "<td>" << rate_.value_ << "</td>"                       << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_ / 1e3 <<
-      " +/- " << eventSizeStdDev_ / 1e3 << "</td>"                  << std::endl;
+    *out << "<td>" << eventSize_.value_ / 1e3 <<
+      " +/- " << eventSizeStdDev_.value_ / 1e3 << "</td>"           << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->flags(originalFlags);
     out->precision(originalPrecision);
@@ -269,13 +277,13 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out)
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  freeResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  freeResourceFIFO_.printHtml(out, bu_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  blockedResourceFIFO_.printHtml(out, bu_->getApplicationDescriptor()->getURN());
+  blockedResourceFIFO_.printHtml(out, bu_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
   *out << "</table>"                                              << std::endl;

@@ -1,11 +1,11 @@
 #ifndef _evb_readoutunit_BUproxy_h_
 #define _evb_readoutunit_BUproxy_h_
 
+#include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <bitset>
 #include <set>
 #include <stdint.h>
 #include <vector>
@@ -100,12 +100,12 @@ namespace evb {
       /**
        * Print monitoring/configuration as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
       /**
        * Print the content of the fragment-request FIFO as HTML snipped
        */
-      inline void printFragmentRequestFIFO(xgi::Output* out)
+      inline void printFragmentRequestFIFO(xgi::Output* out) const
       { fragmentRequestFIFO_.printVerticalHtml(out); }
 
 
@@ -119,9 +119,9 @@ namespace evb {
       void updateRequestCounters(const FragmentRequestPtr);
       bool process(toolbox::task::WorkLoop*);
       bool processRequest(FragmentRequestPtr&,SuperFragments&);
-      void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&);
+      void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&) const;
       void sendData(const FragmentRequestPtr&, const SuperFragments&);
-      toolbox::mem::Reference* getNextBlock(const uint32_t blockNb);
+      toolbox::mem::Reference* getNextBlock(const uint32_t blockNb) const;
       void fillSuperFragmentHeader
       (
         unsigned char*& payload,
@@ -141,7 +141,8 @@ namespace evb {
       WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
       volatile bool doProcessing_;
-      std::bitset<MAX_WORKER_THREADS> processesActive_;
+      boost::dynamic_bitset<> processesActive_;
+      boost::mutex processesActiveMutex_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
@@ -155,7 +156,7 @@ namespace evb {
         uint64_t i2oCount;
         CountsPerBU logicalCountPerBU;
       } requestMonitoring_;
-      boost::mutex requestMonitoringMutex_;
+      mutable boost::mutex requestMonitoringMutex_;
 
       struct DataMonitoring
       {
@@ -165,7 +166,7 @@ namespace evb {
         uint64_t i2oCount;
         CountsPerBU payloadPerBU;
       } dataMonitoring_;
-      boost::mutex dataMonitoringMutex_;
+      mutable boost::mutex dataMonitoringMutex_;
 
       xdata::UnsignedInteger32 lastEventNumberToBUs_;
       xdata::UnsignedInteger64 i2oBUCacheCount_;
@@ -196,7 +197,7 @@ fragmentRequestFIFO_("fragmentRequestFIFO")
   }
   catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
-    toolbox::net::URN poolURN("toolbox-mem-pool",readoutUnit_->getApplicationDescriptor()->getURN());
+    toolbox::net::URN poolURN("toolbox-mem-pool","superFragment");
     try
     {
       superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->
@@ -305,7 +306,10 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t responderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_.set(responderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.set(responderId);
+  }
 
   try
   {
@@ -320,25 +324,37 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   }
   catch(xcept::Exception& e)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, e.what());
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    processesActive_.reset(responderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, "unkown exception");
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  processesActive_.reset(responderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.reset(responderId);
+  }
 
   ::usleep(10);
 
@@ -541,7 +557,7 @@ template<class ReadoutUnit>
 toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
 (
   const uint32_t blockNb
-)
+) const
 {
   toolbox::mem::Reference* bufRef =
     toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
@@ -606,18 +622,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   resetMonitoringCounters();
 }
 
+
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
-  processesActive_.reset();
-
-  if ( configuration_->numberOfResponders.value_ > MAX_WORKER_THREADS )
-  {
-    std::ostringstream oss;
-    oss << "The number of responder threads " << configuration_->numberOfResponders;
-    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
+  processesActive_.clear();
+  processesActive_.resize(configuration_->numberOfResponders);
 
   const std::string identifier = readoutUnit_->getIdentifier();
 
@@ -714,7 +724,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 
 
 template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
+void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
   *out << "<p>BUproxy</p>"                                        << std::endl;
@@ -767,7 +777,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  fragmentRequestFIFO_.printHtml(out, readoutUnit_->getApplicationDescriptor()->getURN());
+  fragmentRequestFIFO_.printHtml(out, readoutUnit_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
@@ -791,8 +801,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out)
 
     *out << "<tr>"                                                << std::endl;
     *out << "<td>BU_" << buTID << "</td>"                         << std::endl;
-    *out << "<td>" << requestMonitoring_.logicalCountPerBU[buTID] << "</td>" << std::endl;
-    *out << "<td>" << dataMonitoring_.payloadPerBU[buTID] / 1e6 << "</td>" << std::endl;
+    *out << "<td>" << requestMonitoring_.logicalCountPerBU.at(buTID) << "</td>" << std::endl;
+    *out << "<td>" << dataMonitoring_.payloadPerBU.at(buTID) / 1e6 << "</td>" << std::endl;
     *out << "</tr>"                                               << std::endl;
   }
   *out << "</table>"                                              << std::endl;

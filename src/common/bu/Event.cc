@@ -4,18 +4,14 @@
 #include <sys/mman.h>
 #include <sstream>
 
-#include <boost/crc.hpp>
-
 #include "interface/evb/i2oEVBMsgs.h"
 #include "interface/shared/ferol_header.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
-#include "evb/CRC16.h"
 #include "evb/DumpUtility.h"
 #include "evb/Exception.h"
 #include "interface/evb/i2oEVBMsgs.h"
 #include "xcept/tools.h"
-
 
 evb::bu::Event::Event
 (
@@ -96,7 +92,7 @@ bool evb::bu::Event::appendSuperFragment
 }
 
 
-void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
+void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler) const
 {
   if ( dataLocations_.empty() )
   {
@@ -132,7 +128,7 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler)
 }
 
 
-void evb::bu::Event::checkEvent()
+void evb::bu::Event::checkEvent() const
 {
   if ( ! isComplete() )
   {
@@ -241,7 +237,7 @@ void evb::bu::Event::FedInfo::addDataChunk(const unsigned char* pos, uint32_t& r
 }
 
 
-void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
+void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber) const
 {
   if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
   {
@@ -287,7 +283,7 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber)
   for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
        rit != ritEnd; ++rit)
   {
-    computeCRC(crc,(*rit)->location,(*rit)->length);
+    crcCalculator_.computeCRC(crc,(*rit)->location,(*rit)->length);
   }
 
   trailer()->conscheck = conscheck;

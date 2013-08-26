@@ -53,6 +53,11 @@ namespace evb {
     ~FragmentGenerator() {};
 
     /**
+     * Return the event number of the last generated event
+     */
+    uint32_t getLastEventNumber() const;
+
+    /**
      * Configure the super-fragment generator.
      * If usePlayback is set to true, the data is read from the playbackDataFile,
      * otherwise, dummy data is generated according to the fedPayloadSize.

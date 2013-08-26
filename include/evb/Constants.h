@@ -9,7 +9,6 @@ namespace evb {
   const uint16_t GTP_FED_ID          =   812; //0x32c
   const uint16_t FED_COUNT           =  1024;
   const uint16_t FEROL_BLOCK_SIZE    =  4096;
-  const uint16_t MAX_WORKER_THREADS  =     8;
 
 } // namespace evb
 

@@ -56,7 +56,7 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    void BUproxy<EVM>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
+    void BUproxy<EVM>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest) const
     {
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
     }
@@ -151,7 +151,7 @@ namespace evb {
     void evm::ReadoutUnit::do_defaultWebPage
     (
       xgi::Output *out
-    )
+    ) const
     {
       *out << "<tr>"                                                << std::endl;
       *out << "<td class=\"component\">"                            << std::endl;
@@ -167,7 +167,7 @@ namespace evb {
       *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
       *out << "</td>"                                               << std::endl;
       *out << "<td class=\"component\">"                            << std::endl;
-      dynamic_cast<EVM*>(this)->getRUproxy()->printHtml(out);
+      dynamic_cast<const EVM*>(this)->getRUproxy()->printHtml(out);
       *out << "</td>"                                               << std::endl;
       *out << "</tr>"                                               << std::endl;
     }

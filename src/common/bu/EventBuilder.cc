@@ -48,15 +48,8 @@ void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
 
-  processesActive_.reset();
-
-  if ( configuration_->numberOfBuilders.value_ > MAX_WORKER_THREADS )
-  {
-    std::ostringstream oss;
-    oss << "The number of builder threads " << configuration_->numberOfBuilders;
-    oss << " must not be larger than MAX_WORKER_THREADS " << MAX_WORKER_THREADS;
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
+  processesActive_.clear();
+  processesActive_.resize(configuration_->numberOfBuilders.value_);
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -152,7 +145,10 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   const size_t endPos = wlName.find("/",startPos);
   const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
-  processesActive_.set(builderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.set(builderId);
+  }
 
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
@@ -175,25 +171,37 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
   catch(xcept::Exception& e)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     stateMachine_->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    processesActive_.reset(builderId);
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(builderId);
+    }
     XCEPT_DECLARE(exception::SuperFragment,
       sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
-  processesActive_.reset(builderId);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    processesActive_.reset(builderId);
+  }
 
   return false;
 }
@@ -204,7 +212,7 @@ void evb::bu::EventBuilder::buildEvent
   FragmentChainPtr& superFragments,
   EventMapPtr& eventMap,
   StreamHandlerPtr& streamHandler
-)
+) const
 {
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
   const I2O_MESSAGE_FRAME* stdMsg =
@@ -282,9 +290,9 @@ void evb::bu::EventBuilder::buildEvent
 evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 (
   EventMapPtr& eventMap,
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg,
-  const uint16_t superFragmentCount
-)
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg,
+  const uint16_t& superFragmentCount
+) const
 {
   const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
 
@@ -299,11 +307,11 @@ evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 }
 
 
-void evb::bu::EventBuilder::printSuperFragmentFIFOs(xgi::Output* out)
+void evb::bu::EventBuilder::printSuperFragmentFIFOs(xgi::Output* out) const
 {
-  const toolbox::net::URN urn = bu_->getApplicationDescriptor()->getURN();
+  const toolbox::net::URN urn = bu_->getURN();
 
-  for (SuperFragmentFIFOs::iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
   {
     it->second->printHtml(out, urn);

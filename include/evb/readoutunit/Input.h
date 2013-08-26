@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "evb/CRC16.h"
+#include "evb/CRCCalculator.h"
 #include "evb/Constants.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
@@ -133,12 +133,12 @@ namespace evb {
       /**
        * Print monitoring information as HTML snipped
        */
-      void printHtml(xgi::Output*);
+      void printHtml(xgi::Output*) const;
 
       /**
        * Print the content of the super-fragment FIFO as HTML snipped
        */
-      void printSuperFragmentFIFO(xgi::Output* out);
+      void printSuperFragmentFIFO(xgi::Output* out) const;
 
 
     protected:
@@ -163,8 +163,8 @@ namespace evb {
         virtual void startProcessing(const uint32_t runNumber) {};
         virtual void drain() {};
         virtual void stopProcessing() {};
-        virtual void printSuperFragmentFIFO(xgi::Output*) {};
-        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) {};
+        virtual void printSuperFragmentFIFO(xgi::Output*) const {};
+        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) const {};
 
       };
 
@@ -180,8 +180,8 @@ namespace evb {
         virtual void startProcessing(const uint32_t runNumber);
         virtual void drain();
         virtual void stopProcessing();
-        virtual void printSuperFragmentFIFO(xgi::Output*);
-        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&);
+        virtual void printSuperFragmentFIFO(xgi::Output*) const;
+        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) const;
 
       protected:
 
@@ -199,10 +199,6 @@ namespace evb {
         FragmentFIFOs fragmentFIFOs_;
 
       private:
-
-        void addFragment(toolbox::mem::Reference*);
-        toolbox::mem::Reference* copyDataIntoDataBlock(FragmentChainPtr);
-        void fillBlockInfo(toolbox::mem::Reference*, const EvBid&, const uint32_t nbBlocks) const;
 
         bool dropInputData_;
 
@@ -253,6 +249,7 @@ namespace evb {
 
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
+      CRCCalculator crcCalculator_;
 
       struct InputMonitoring
       {
@@ -265,10 +262,10 @@ namespace evb {
       };
       typedef std::map<uint16_t,InputMonitoring> InputMonitors;
       InputMonitors inputMonitors_;
-      boost::mutex inputMonitorsMutex_;
+      mutable boost::mutex inputMonitorsMutex_;
 
       InputMonitoring superFragmentMonitor_;
-      boost::mutex superFragmentMonitorMutex_;
+      mutable boost::mutex superFragmentMonitorMutex_;
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -318,7 +315,11 @@ void evb::readoutunit::Input<Configuration>::superFragmentReady(toolbox::mem::Re
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::rawDataAvailable
+(
+  toolbox::mem::Reference* bufRef,
+  tcpla::MemoryCache* cache
+)
 {
   checkEventFragment(bufRef);
 
@@ -330,16 +331,17 @@ void evb::readoutunit::Input<Configuration>::rawDataAvailable(toolbox::mem::Refe
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Reference* bufRef)
+void evb::readoutunit::Input<Configuration>::checkEventFragment
+(
+  toolbox::mem::Reference* bufRef
+)
 {
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
   I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
   uint32_t payloadSize = frame->partLength;
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
-  #ifdef EVB_CALCULATE_CRC
   uint16_t crc = 0xffff;
-  #endif
 
   try
   {
@@ -414,12 +416,10 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
 
       const uint32_t dataLength = ferolHeader->data_length();
 
-      #ifdef EVB_CALCULATE_CRC
       if ( ferolHeader->is_last_packet() )
-        computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+        crcCalculator_.computeCRC(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
       else
-        computeCRC(crc,payload,dataLength);
-      #endif
+        crcCalculator_.computeCRC(crc,payload,dataLength);
 
       payload += dataLength;
       fedSize += dataLength;
@@ -486,14 +486,14 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment(toolbox::mem::Re
       XCEPT_RAISE(exception::DataCorruption, oss.str());
     }
 
-    #ifdef EVB_CALCULATE_CRC
     // Force CRC & R field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
     trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-    computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+    crcCalculator_.computeCRC(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
+    #ifdef EVB_CALCULATE_CRC
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
     if ( trailerCRC != crc )
     {
@@ -697,6 +697,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
   }
 }
 
+
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::configure()
 {
@@ -712,7 +713,7 @@ void evb::readoutunit::Input<Configuration>::configure()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
+void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out) const
 {
 
   *out << "<div>"                                                 << std::endl;
@@ -795,7 +796,7 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out)
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::printSuperFragmentFIFO(xgi::Output *out)
+void evb::readoutunit::Input<Configuration>::printSuperFragmentFIFO(xgi::Output *out) const
 {
   handler_->printSuperFragmentFIFO(out);
 }
@@ -844,7 +845,10 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(toolbox::mem::Reference* bufRef)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady
+(
+  toolbox::mem::Reference* bufRef
+)
 {
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -863,7 +867,11 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady(tool
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable
+(
+  toolbox::mem::Reference* bufRef,
+  tcpla::MemoryCache* cache
+)
 {
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   ferolh_t* ferolHeader = (ferolh_t*)payload;
@@ -938,14 +946,18 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(xgi::Output* out)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(xgi::Output* out) const
 {
   superFragmentFIFO_.printVerticalHtml(out);
 }
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs(xgi::Output* out, const toolbox::net::URN& urn)
+void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs
+(
+  xgi::Output* out,
+  const toolbox::net::URN& urn
+) const
 {
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
@@ -953,7 +965,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs(xgi:
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
-  for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+  for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
     *out << "<tr>"                                                  << std::endl;
@@ -1032,13 +1044,17 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
 
 
 template<class Configuration>
-bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment(const EvBid& evbId, FragmentChainPtr& superFragment)
+bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
+(
+  const EvBid& evbId,
+  FragmentChainPtr& superFragment
+)
 {
   superFragment.reset( new FragmentChain(evbId) );
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
 
-  for ( FragmentTrackers::iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
+  for ( FragmentTrackers::const_iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
         it != itEnd; ++it)
   {
     toolbox::mem::Reference* fragmentHead = 0;
@@ -1175,7 +1191,11 @@ namespace evb
 
 
   template <>
-  inline void OneToOneQueue<readoutunit::FragmentChainPtr>::formatter(readoutunit::FragmentChainPtr fragmentChain, std::ostringstream* out)
+  inline void OneToOneQueue<readoutunit::FragmentChainPtr>::formatter
+  (
+    readoutunit::FragmentChainPtr fragmentChain,
+    std::ostringstream* out
+  ) const
   {
     if ( fragmentChain.get() )
     {
@@ -1197,7 +1217,11 @@ namespace evb
 
 
   template <>
-  inline void OneToOneQueue<readoutunit::FragmentChain::FragmentPtr>::formatter(readoutunit::FragmentChain::FragmentPtr fragment, std::ostringstream* out)
+  inline void OneToOneQueue<readoutunit::FragmentChain::FragmentPtr>::formatter
+  (
+    readoutunit::FragmentChain::FragmentPtr fragment,
+    std::ostringstream* out
+  ) const
   {
     if ( fragment.get() )
     {

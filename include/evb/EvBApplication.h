@@ -65,7 +65,8 @@ namespace evb {
       const std::string& appIcon
     );
 
-    std::string getIdentifier(const std::string& suffix = "");
+    toolbox::net::URN getURN() const { return urn_; }
+    std::string getIdentifier(const std::string& suffix = "") const;
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
 
@@ -83,24 +84,24 @@ namespace evb {
     virtual void do_bindI2oCallbacks() {};
 
     virtual void bindNonDefaultXgiCallbacks() {};
-    virtual void do_defaultWebPage(xgi::Output*) = 0;
+    virtual void do_defaultWebPage(xgi::Output*) const = 0;
 
-    toolbox::mem::Pool* getFastControlMsgPool();
+    toolbox::mem::Pool* getFastControlMsgPool() const;
     xoap::MessageReference createFsmSoapResponseMsg
     (
       const std::string& event,
       const std::string& state
-    );
+    ) const;
 
-    void webPageHeader(xgi::Output*, const std::string& name);
-    void webPageBanner(xgi::Output*);
+    void webPageHeader(xgi::Output*, const std::string& name) const;
+    void webPageBanner(xgi::Output*) const;
     void printWebPageIcon
     (
       xgi::Output*,
       const std::string& imgSrc,
       const std::string& label,
       const std::string& href
-    );
+    ) const;
 
     const std::string appIcon_;
     log4cplus::Logger logger_;
@@ -184,10 +185,10 @@ void evb::EvBApplication<Configuration,StateMachine>::initialize()
 
 
 template<class Configuration,class StateMachine>
-std::string evb::EvBApplication<Configuration,StateMachine>::getIdentifier(const std::string& suffix)
+std::string evb::EvBApplication<Configuration,StateMachine>::getIdentifier(const std::string& suffix) const
 {
   std::ostringstream identifier;
-  identifier << xmlClass_ << "-" << instance_  << "/" << suffix;
+  identifier << xmlClass_ << "-" << instance_.value_  << "/" << suffix;
 
   return identifier.str();
 }
@@ -602,7 +603,7 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
 (
   xgi::Output* out,
   const std::string& name
-)
+) const
 {
   *out << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""          << std::endl;
   *out << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"          << std::endl;
@@ -611,9 +612,9 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
   *out << "<head>"                                                                    << std::endl;
   *out << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>"   << std::endl;
   *out << "<link type=\"text/css\" rel=\"stylesheet\"";
-  *out << " href=\"/evb/html/evb.css\"/>"                                 << std::endl;
+  *out << " href=\"/evb/html/evb.css\"/>"                                             << std::endl;
   *out << "<title>"                                                                   << std::endl;
-  *out << xmlClass_ << " " << instance_ << " - " << name                              << std::endl;
+  *out << xmlClass_ << " " << instance_ .value_ << " - " << name                      << std::endl;
   *out << "</title>"                                                                  << std::endl;
   *out << "</head>"                                                                   << std::endl;
   *out << "<body>"                                                                    << std::endl;
@@ -624,7 +625,7 @@ template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
 (
   xgi::Output* out
-)
+) const
 {
   *out << "<div class=\"header\">"                                                    << std::endl;
   *out << "<table border=\"0\" width=\"100%\">"                                       << std::endl;
@@ -640,7 +641,7 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   *out << "<table width=\"100%\" border=\"0\">"                                       << std::endl;
   *out << "<tr>"                                                                      << std::endl;
   *out << "<td>"                                                                      << std::endl;
-  *out << "<b>" << xmlClass_ << " " << instance_ << "</b>"                            << std::endl;
+  *out << "<b>" << xmlClass_ << " " << instance_.value_ << "</b>"                     << std::endl;
   *out << "</td>"                                                                     << std::endl;
   *out << "<td align=\"right\">"                                                      << std::endl;
   *out << "<b>" << stateMachine_->getStateName() << "</b>"                            << std::endl;
@@ -684,7 +685,7 @@ void evb::EvBApplication<Configuration,StateMachine>::printWebPageIcon
   const std::string& imgSrc,
   const std::string& label,
   const std::string& href
-)
+) const
 {
   *out << "<a href=\"" << href << "\">";
   *out << "<img style=\"border-style:none\"";
@@ -701,9 +702,9 @@ void evb::EvBApplication<Configuration,StateMachine>::printWebPageIcon
 template<class Configuration,class StateMachine>
 xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFsmSoapResponseMsg
 (
-    const std::string& event,
-    const std::string& state
-)
+  const std::string& event,
+  const std::string& state
+) const
 {
   try
   {
@@ -736,7 +737,7 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFs
 
 
 template<class Configuration,class StateMachine>
-toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastControlMsgPool()
+toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastControlMsgPool() const
 {
   toolbox::mem::Pool* fastCtrlMsgPool = 0;
 

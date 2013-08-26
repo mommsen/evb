@@ -41,11 +41,11 @@ namespace evb {
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
-        maxEvtsUnderConstruction(64),
-        eventsPerRequest(8),
+        maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
+        eventsPerRequest(16),
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
-        numberOfBuilders(3),
+        numberOfBuilders(6),
         rawDataDir("/tmp/fff"),
         metaDataDir("/tmp/fff"),
         rawDataHighWaterMark(0.7),

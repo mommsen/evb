@@ -345,7 +345,7 @@ void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
 }
 
 
-void evb::evm::RUproxy::printHtml(xgi::Output *out)
+void evb::evm::RUproxy::printHtml(xgi::Output *out) const
 {
   *out << "<div>"                                                 << std::endl;
   *out << "<p>RUproxy</p>"                                        << std::endl;
@@ -373,7 +373,7 @@ void evb::evm::RUproxy::printHtml(xgi::Output *out)
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
-  allocateFIFO_.printHtml(out, evm_->getApplicationDescriptor()->getURN());
+  allocateFIFO_.printHtml(out, evm_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
 

@@ -1,9 +1,10 @@
 #ifndef _evb_bu_EventBuilder_h_
 #define _evb_bu_EventBuilder_h_
 
+#include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
-#include <bitset>
 #include <map>
 #include <stdint.h>
 #include <vector>
@@ -87,7 +88,7 @@ namespace evb {
       /**
        * Print the content of the super-fragment FIFOs as HTML snipped
        */
-      void printSuperFragmentFIFOs(xgi::Output*);
+      void printSuperFragmentFIFOs(xgi::Output*) const;
 
 
     private:
@@ -97,8 +98,8 @@ namespace evb {
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&);
-      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*, const uint16_t superFragmentCount);
+      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&) const;
+      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
 
       BU* bu_;
       boost::shared_ptr<RUproxy> ruProxy_;
@@ -119,7 +120,8 @@ namespace evb {
       toolbox::task::ActionSignature* builderAction_;
 
       volatile bool doProcessing_;
-      std::bitset<MAX_WORKER_THREADS> processesActive_;
+      boost::dynamic_bitset<> processesActive_;
+      boost::mutex processesActiveMutex_;
 
     }; // EventBuilder
 
