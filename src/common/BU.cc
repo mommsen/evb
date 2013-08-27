@@ -160,13 +160,6 @@ void evb::BU::bindNonDefaultXgiCallbacks()
   xgi::bind
     (
       this,
-      &evb::BU::superFragmentFIFOWebPage,
-      "superFragmentFIFO"
-    );
-
-  xgi::bind
-    (
-      this,
       &evb::BU::freeResourceFIFOWebPage,
       "freeResourceFIFO"
     );
@@ -186,7 +179,7 @@ void evb::BU::do_defaultWebPage
 ) const
 {
   *out << "<tr>"                                                << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
+  *out << "<td class=\"component\" rowspan=\"3\">"              << std::endl;
   ruProxy_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "<td>"                                                << std::endl;
@@ -196,10 +189,30 @@ void evb::BU::do_defaultWebPage
   resourceManager_->printHtml(out);
   *out << "</td>"                                               << std::endl;
   *out << "<td>"                                                << std::endl;
+  *out << "<img src=\"/evb/images/arrow_w.gif\" alt=\"\"/>"     << std::endl;
+  *out << "</td>"                                               << std::endl;
+  *out << "<td class=\"component\" rowspan=\"3\">"              << std::endl;
+  diskWriter_->printHtml(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td></td>"                                           << std::endl;
+  *out << "<td>"                                                << std::endl;
+  *out << "<img src=\"/evb/images/arrow_ns.gif\" alt=\"\"/>"    << std::endl;
+  *out << "</td>"                                               << std::endl;
+  *out << "<td></td>"                                           << std::endl;
+  *out << "</tr>"                                               << std::endl;
+
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
   *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
   *out << "</td>"                                               << std::endl;
   *out << "<td class=\"component\">"                            << std::endl;
-  diskWriter_->printHtml(out);
+  eventBuilder_->printHtml(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "<td>"                                                << std::endl;
+  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
 }
@@ -253,35 +266,6 @@ void evb::BU::blockedResourceFIFOWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   resourceManager_->printBlockedResourceFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::superFragmentFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "superFragmentFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  eventBuilder_->printSuperFragmentFIFOs(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
 

@@ -86,9 +86,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print the content of the super-fragment FIFOs as HTML snipped
+       * Print monitoring information as HTML snipped
        */
-      void printSuperFragmentFIFOs(xgi::Output*) const;
+      void printHtml(xgi::Output*) const;
 
 
     private:
@@ -121,7 +121,7 @@ namespace evb {
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
-      boost::mutex processesActiveMutex_;
+      mutable boost::mutex processesActiveMutex_;
 
     }; // EventBuilder
 

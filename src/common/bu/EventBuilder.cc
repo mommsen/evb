@@ -307,15 +307,34 @@ evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 }
 
 
-void evb::bu::EventBuilder::printSuperFragmentFIFOs(xgi::Output* out) const
+void evb::bu::EventBuilder::printHtml(xgi::Output* out) const
 {
   const toolbox::net::URN urn = bu_->getURN();
+
+  *out << "<div>"                                                 << std::endl;
+  *out << "<p>EventBuilder</p>"                                   << std::endl;
+  *out << "<table>"                                               << std::endl;
+
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td># of active builders</td>"                         << std::endl;
+    *out << "<td>" << processesActive_.count() << "</td>"           << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+  }
 
   for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
   {
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td colspan=\"2\">"                                    << std::endl;
     it->second->printHtml(out, urn);
+    *out << "</td>"                                                 << std::endl;
+    *out << "</tr>"                                                 << std::endl;
   }
+
+  *out << "</table>"                                              << std::endl;
+  *out << "</div>"                                                << std::endl;
 }
 
 

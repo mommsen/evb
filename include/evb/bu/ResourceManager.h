@@ -91,7 +91,7 @@ namespace evb {
       void configure();
 
       /**
-       * Print monitoring/configuration as HTML snipped
+       * Print monitoring information as HTML snipped
        */
       void printHtml(xgi::Output*) const;
 

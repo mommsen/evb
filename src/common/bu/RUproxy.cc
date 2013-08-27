@@ -424,6 +424,10 @@ void evb::bu::RUproxy::printHtml(xgi::Output *out) const
     *out << "<td>" << fragmentMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
+    *out << "<td># incomplete super fragments</td>"                 << std::endl;
+    *out << "<td>" << dataBlockMap_.size() << "</td>"               << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+    *out << "<tr>"                                                  << std::endl;
     *out << "<th colspan=\"2\">Event data</th>"                     << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;

@@ -58,7 +58,6 @@ namespace evb {
     virtual void bindNonDefaultXgiCallbacks();
     virtual void do_defaultWebPage(xgi::Output*) const;
 
-    void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
 
