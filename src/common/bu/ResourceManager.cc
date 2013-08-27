@@ -98,9 +98,9 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
       allocatedResources_.erase(pos);
 
       if ( throttle_ )
-        while ( ! blockedResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
+        blockedResourceFIFO_.enqWait(event->buResourceId());
       else
-        while ( ! freeResourceFIFO_.enq(event->buResourceId()) ) ::usleep(1000);
+        freeResourceFIFO_.enqWait(event->buResourceId());
     }
   }
 

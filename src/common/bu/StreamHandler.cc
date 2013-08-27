@@ -43,7 +43,7 @@ void evb::bu::StreamHandler::close()
   boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
   if ( currentLumiMonitor_.get() )
   {
-    while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
+    lumiMonitorFIFO_.enqWait(currentLumiMonitor_);
     currentLumiMonitor_.reset();
   }
 }
@@ -89,11 +89,11 @@ void evb::bu::StreamHandler::closeLumiSection(const uint32_t lumiSection)
 {
   fileHandler_.reset();
 
-  while ( ! lumiMonitorFIFO_.enq(currentLumiMonitor_) ) ::usleep(1000);
+  lumiMonitorFIFO_.enqWait(currentLumiMonitor_);
 
   // Create empty lumiMonitors for skipped lumi sections
   for (uint32_t ls = currentLumiMonitor_->lumiSection+1; ls < lumiSection; ++ls)
-    while ( ! lumiMonitorFIFO_.enq( LumiMonitorPtr(new LumiMonitor(ls)) ) ) ::usleep(1000);
+    lumiMonitorFIFO_.enqWait( LumiMonitorPtr(new LumiMonitor(ls)) );
 
   currentLumiMonitor_.reset( new LumiMonitor(lumiSection) );
 }

@@ -869,7 +869,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
 
   if ( ! dropInputData_ )
-    while ( ! superFragmentFIFO_.enq(superFragment) ) ::usleep(1000);
+    superFragmentFIFO_.enqWait(superFragment);
 }
 
 
@@ -898,7 +898,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable
   FragmentChain::FragmentPtr fragment( new FragmentChain::Fragment(evbId,bufRef,cache) );
 
   if ( ! dropInputData_ )
-    while ( ! fragmentFIFOs_[fedId]->enq(fragment) ) ::usleep(10);
+    fragmentFIFOs_[fedId]->enqWait(fragment);
 }
 
 

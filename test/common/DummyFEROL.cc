@@ -317,7 +317,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
         if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
         {
           #ifdef DOUBLE_WORKLOOPS
-          while ( doProcessing_ && !fragmentFIFO_.enq(bufRef) ) ::usleep(1000);
+          fragmentFIFO_.enqWait(bufRef);
           #else
           updateCounters(bufRef);
           sendData(bufRef);

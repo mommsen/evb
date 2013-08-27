@@ -40,7 +40,7 @@ void evb::bu::EventBuilder::addSuperFragment
 )
 {
   const uint16_t builderId = buResourceId % configuration_->numberOfBuilders;
-  while ( ! superFragmentFIFOs_[builderId]->enq(superFragments) ) ::usleep(1000);
+  superFragmentFIFOs_[builderId]->enqWait(superFragments);
 }
 
 
