@@ -17,7 +17,8 @@ void source()
   uint32_t counter = 0;
   while ( generating )
   {
-    if ( queue.enq(counter) ) ++counter;
+    queue.enqWait(counter);
+    ++counter;
   }
   std::cout << "Enqueued " << counter << " elements" << std::endl;
 }
@@ -26,18 +27,18 @@ void sink()
 {
   uint32_t counter = 0;
   uint32_t expected = 0;
+
   while ( consuming || !queue.empty() )
   {
-    if ( queue.deq(counter) )
+    queue.deqWait(counter);
+
+    if ( counter != expected )
     {
-      if ( counter != expected )
-      {
-        std::ostringstream oss;
-        oss << "Dequeued " << counter << " while expecting " << expected;
-        throw( oss.str() );
-      }
-      ++expected;
+      std::ostringstream oss;
+      oss << "Dequeued " << counter << " while expecting " << expected;
+      throw( oss.str() );
     }
+    ++expected;
   }
   std::cout << "Dequeued " << expected << " elements" << std::endl;
 }
