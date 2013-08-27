@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Time::HiRes qw(usleep);
 
 my $testDir = $ENV{"EVB_TESTER_HOME"};
 my $symbolMap = $ENV{"TESTS_SYMBOL_MAP"};
@@ -25,7 +26,7 @@ while(<SYMBOL_MAP_FILE>) {
     $host =~ s/localhost/$hostname/;
 
     my $sshCmd      = "ssh -x -n $host";
-    my $launcherCmd = "cd /tmp && rm -f /tmp/core.* && source $testDir/setenv$testEnv.sh && xdaqLauncher $port";
+    my $launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && source $testDir/setenv$testEnv.sh && xdaqLauncher $port";
     my $awkCmd      = "awk '{print \"$host:$port \" \$0}'";
     my $cmd         = "$sshCmd \"sudo -u $user sh -c \\\"$launcherCmd\\\"\" | $awkCmd &";
     if($host eq "spare-c2d41-16.cms") {
@@ -34,6 +35,7 @@ while(<SYMBOL_MAP_FILE>) {
 
     print "$cmd\n";
     system $cmd;
+    usleep(50000);
 
     $port++;
   }
