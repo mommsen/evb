@@ -31,7 +31,7 @@ namespace evb {
 
     /**
      * Enqueue the element.
-     * Returns false if the element cannot be enqueued.
+     * Return false if the element cannot be enqueued.
      */
     bool enq(const T&);
 
