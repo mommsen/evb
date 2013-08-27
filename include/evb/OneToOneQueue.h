@@ -30,15 +30,27 @@ namespace evb {
 
     /**
      * Enqueue the element.
-     * Returns false if the element cannot be enqueued
+     * Returns false if the element cannot be enqueued.
      */
     bool enq(const T&);
+
+    /**
+     * Enqueue the element.
+     * If the queue is full wait until it becomes non-full.
+     */
+    void enqWait(const T&);
 
     /**
      * Dequeue an element.
      * Return false if no element can be dequeued.
      */
     bool deq(T&);
+
+    /**
+     * Dequeue an element.
+     * If the queue is empty wait until is has become non-empty.
+     */
+    void deqWait(T&);
 
     /**
      * Return the number of elements in the queue.
@@ -104,7 +116,6 @@ namespace evb {
     volatile uint32_t writePointer_;
     std::vector<T> container_;
     volatile uint32_t size_;
-    uint32_t queueFull_;
   };
 
 
@@ -116,8 +127,7 @@ namespace evb {
   OneToOneQueue<T>::OneToOneQueue(const std::string& name) :
   name_(name),
   readPointer_(0),
-  writePointer_(0),
-  queueFull_(0)
+  writePointer_(0)
   {
     resize(1);
   }
@@ -127,8 +137,7 @@ namespace evb {
   OneToOneQueue<T>::OneToOneQueue(const std::string& name, const uint32_t size) :
   name_(name),
   readPointer_(0),
-  writePointer_(0),
-  queueFull_(0)
+  writePointer_(0)
   {
     resize(size);
   }
@@ -170,7 +179,6 @@ namespace evb {
     readPointer_ = writePointer_ = 0;
     size_ = size+1;
     container_.resize(size_);
-    queueFull_ = 0;
   }
 
 
@@ -178,14 +186,17 @@ namespace evb {
   bool OneToOneQueue<T>::enq(const T& element)
   {
     volatile const uint32_t nextElement = (writePointer_ + 1) % size_;
-    if ( nextElement == readPointer_ )
-    {
-      ++queueFull_;
-      return false;
-    }
+    if ( nextElement == readPointer_ ) return false;
     container_[writePointer_] = element;
     writePointer_ = nextElement;
     return true;
+  }
+
+
+  template <class T>
+  void OneToOneQueue<T>::enqWait(const T& element)
+  {
+    while ( ! enq(element) ) ::usleep(1000);
   }
 
 
@@ -199,6 +210,13 @@ namespace evb {
     container_[readPointer_] = T();
     readPointer_ = nextElement;
     return true;
+  }
+
+
+  template <class T>
+  void OneToOneQueue<T>::deqWait(T& element)
+  {
+    while ( ! deq(element) ) ::usleep(1000);
   }
 
 
@@ -239,8 +257,7 @@ namespace evb {
     *out << "</tr>" << std::endl;
 
     *out << "<tr>" << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">" << cachedElements << " / " << cachedSize
-      << " - full " << queueFull_ << "</td>" << std::endl;
+    *out << "<td colspan=\"2\" style=\"text-align:center\">" << cachedElements << " / " << cachedSize << std::endl;
     *out << "</tr>" << std::endl;
 
     *out << "</table>" << std::endl;
