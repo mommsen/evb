@@ -139,7 +139,7 @@ static inline bool hasPCLMULQDQ()
 {
   unsigned int ebx(0), ecx(0), edx(0);
   unsigned int eax(1); // we want processor info and feature bits
-  
+
   // ecx is often an input as well as an output.
   asm volatile("cpuid"
     : "=a" (eax),
@@ -147,7 +147,7 @@ static inline bool hasPCLMULQDQ()
       "=c" (ecx),
       "=d" (edx)
     : "0" (eax), "2" (ecx));
-  
+
   return (ecx & 2);
 }
 
