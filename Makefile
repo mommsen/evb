@@ -60,7 +60,8 @@ TestSources = \
 	dummyFEROL/StateMachine.cc
 
 TestExecutables = \
-	OneToOneQueue.cxx
+	OneToOneQueue.cxx \
+	OneToOneQueueWait.cxx
 
 IncludeDirs = \
 	$(XERCES_INCLUDE_PREFIX) \
@@ -140,7 +141,7 @@ TestLibraryDirs = \
         $(XGI_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer
+UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer #-std=c++0x
 
 # These libraries can be platform specific and
 # potentially need conditional processing
