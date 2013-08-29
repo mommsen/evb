@@ -14,6 +14,11 @@ namespace evb {
     EvBidFactory();
 
     /**
+     * Return EvBid with a fake eventNumber and lumi section
+     */
+    EvBid getEvBid();
+
+    /**
      * Return EvBid for given eventNumber and a fake lumi section
      */
     EvBid getEvBid(const uint32_t eventNumber);

@@ -1067,7 +1067,7 @@ bool evb::readoutunit::Input<Configuration>::DummyInputData::createSuperFragment
     toolbox::mem::Reference* fragmentHead = 0;
     toolbox::mem::Reference* fragmentTail = 0;
 
-    const uint32_t fedSize = it->second->startFragment(evbId.eventNumber());
+    const uint32_t fedSize = it->second->startFragment(evbId);
     const uint16_t ferolBlocks = ceil( static_cast<double>(fedSize) / ferolPayloadSize );
     const uint16_t frameCount = ceil( static_cast<double>(ferolBlocks*FEROL_BLOCK_SIZE) / frameSize_ );
     uint32_t packetNumber = 0;

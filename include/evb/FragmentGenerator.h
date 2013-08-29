@@ -105,15 +105,16 @@ namespace evb {
       const unsigned char* fedPtr
     ) const;
 
+    EvBid evbId_;
     uint32_t frameSize_;
     uint32_t fedSize_;
-    uint32_t eventNumber_;
     uint64_t fedId_;
     uint16_t fedCRC_;
     bool usePlayback_;
     toolbox::mem::Pool* fragmentPool_;
     uint32_t fragmentPoolSize_;
 
+    EvBidFactory evbIdFactory_;
     boost::scoped_ptr<FragmentTracker> fragmentTracker_;
     typedef std::vector<toolbox::mem::Reference*> PlaybackData;
     PlaybackData playbackData_;

@@ -32,17 +32,19 @@ typeOfNextComponent_(FED_HEADER)
 }
 
 
-uint32_t evb::FragmentTracker::startFragment(const uint32_t eventNumber)
+uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
 {
   if ( typeOfNextComponent_ != FED_HEADER )
   {
     std::ostringstream oss;
-    oss << "Request to start a new dummy FED fragment for FED id " << fedId_;
-    oss << " while the previous fragment is not yet complete";
+    oss << "Request to start a new dummy FED fragment for evb id " << evbId;
+    oss << " with FED id " << fedId_;
+    oss << ", while the previous fragment for evb id " << evbId_;
+    oss << " is not yet complete";
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  eventNumber_ = eventNumber;
+  evbId_ = evbId;
   currentFedSize_ = getFedSize();
   remainingFedSize_ = currentFedSize_;
 
@@ -83,7 +85,7 @@ size_t evb::FragmentTracker::fillData
         fedHeader = (fedh_t*)payload;
 
         fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
-        fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber_;
+        fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | evbId_.eventNumber();
 
         fedCRC_ = crcCalculator_.compute(payload,sizeof(fedh_t));
         payload += sizeof(fedh_t);
