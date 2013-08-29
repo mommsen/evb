@@ -24,7 +24,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -42,6 +41,7 @@
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
@@ -67,7 +67,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -81,6 +80,7 @@
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
@@ -106,7 +106,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -119,6 +118,7 @@
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
