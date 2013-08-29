@@ -13,8 +13,6 @@
 #include "interface/evb/i2oEVBMsgs.h"
 #include "xcept/tools.h"
 
-#undef EVB_CALCULATE_CRC
-
 evb::bu::Event::Event
 (
   const EvBid& evbId,
