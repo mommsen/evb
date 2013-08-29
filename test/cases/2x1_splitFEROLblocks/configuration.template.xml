@@ -76,6 +76,7 @@
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dummyFedSize xsi:type="xsd:unsignedInt">16384</dummyFedSize>
         <frameSize xsi:type="xsd:unsignedInt">4096</frameSize>
+        <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
       </properties>
     </xc:Application>
 
