@@ -6,9 +6,9 @@
     <i2o:target class="evb::BU" instance="0" tid="30"/>
   </i2o:protocol>
 
-  <xc:Context url="http://EVM0_SOAP_HOST_NAME:EVM0_SOAP_PORT">
+  <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
 
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="EVM0_I2O_HOST_NAME" port="EVM0_I2O_PORT" network="tcp" targetId="12"/>
+    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="tcp" targetId="12"/>
 
     <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
@@ -24,7 +24,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -43,6 +42,7 @@
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
@@ -50,9 +50,9 @@
   </xc:Context>
 
 
-  <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
+  <xc:Context url="http://RU1_SOAP_HOST_NAME:RU1_SOAP_PORT">
 
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="tcp" targetId="12"/>
+    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU1_I2O_HOST_NAME" port="RU1_I2O_PORT" network="tcp" targetId="12"/>
 
     <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
@@ -68,7 +68,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -77,12 +76,14 @@
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dummyFedSize xsi:type="xsd:unsignedInt">16384</dummyFedSize>
         <frameSize xsi:type="xsd:unsignedInt">4096</frameSize>
+        <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
       </properties>
     </xc:Application>
 
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
@@ -108,7 +109,6 @@
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
         <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
-        <fragmentPoolSize xsi:type="xsd:unsignedInt">786432</fragmentPoolSize>
       </properties>
     </xc:Application-->
 
@@ -121,6 +121,7 @@
     <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>

@@ -19,6 +19,13 @@ void evb::EvBidFactory::reset(const uint32_t runNumber)
 }
 
 
+evb::EvBid evb::EvBidFactory::getEvBid()
+{
+  const uint32_t fakeEventNumber = (previousEventNumber_+1) % (1 << 24);
+  return getEvBid(fakeEventNumber);
+}
+
+
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 {
   if ( eventNumber%10000 == 0 ) ++fakeLumiSection_;

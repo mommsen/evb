@@ -8,6 +8,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "evb/CRCCalculator.h"
+#include "evb/EvBid.h"
 #include "toolbox/math/random.h"
 
 
@@ -34,7 +35,7 @@ namespace evb {
      * Starts a new FED fragment with the specified event number.
      * Return the size of the FED data.
      */
-    uint32_t startFragment(const uint32_t eventNumber);
+    uint32_t startFragment(const EvBid&);
 
     /**
      * Fill the FED data into the payload using at most
@@ -70,7 +71,7 @@ namespace evb {
     FedComponent typeOfNextComponent_;
     uint32_t currentFedSize_;
     uint32_t remainingFedSize_;
-    uint32_t eventNumber_;
+    EvBid evbId_;
   };
 
   typedef boost::shared_ptr<FragmentTracker> FragmentTrackerPtr;

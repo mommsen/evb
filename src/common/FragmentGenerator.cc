@@ -22,7 +22,6 @@
 evb::FragmentGenerator::FragmentGenerator() :
 frameSize_(0),
 fedSize_(0),
-eventNumber_(1),
 usePlayback_(false)
 {
   reset();
@@ -31,7 +30,8 @@ usePlayback_(false)
 
 uint32_t evb::FragmentGenerator::getLastEventNumber() const
 {
-  return ( eventNumber_ > 0 ? eventNumber_-1 : (1 << 24)-1 );
+  const uint32_t eventNumber = evbId_.eventNumber();
+  return ( eventNumber > 0 ? eventNumber-1 : (1 << 24)-1 );
 }
 
 
@@ -128,7 +128,7 @@ void evb::FragmentGenerator::cacheData(const std::string& playbackDataFile)
 void evb::FragmentGenerator::reset()
 {
   playbackDataPos_ = playbackData_.begin();
-  eventNumber_ = 1;
+  evbIdFactory_.reset(0);
 }
 
 
@@ -170,7 +170,8 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   uint32_t usedFrameSize = 0;
-  uint32_t remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
+  evbId_ = evbIdFactory_.getEvBid();
+  uint32_t remainingFedSize = fragmentTracker_->startFragment(evbId_);
   uint16_t ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
 
   while ( (usedFrameSize + remainingFedSize + ferolBlocks*sizeof(ferolh_t)) <= frameSize_ )
@@ -206,14 +207,14 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
 
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(fedId_);
-      ferolHeader->set_event_number(eventNumber_);
+      ferolHeader->set_event_number( evbId_.eventNumber() );
 
       // assert( ferolHeader->signature() == FEROL_SIGNATURE );
       // assert( ferolHeader->packet_number() == packetNumber );
       // assert( ferolHeader->data_length() == filledBytes );
       // assert( ferolHeader->data_length() == length );
       // assert( ferolHeader->fed_id() == fedId_ );
-      // assert( ferolHeader->event_number() == eventNumber_ );
+      // assert( ferolHeader->event_number() == evbId_.eventNumber() );
 
       frame += filledBytes;
       usedFrameSize += filledBytes + sizeof(ferolh_t);
@@ -223,8 +224,8 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
     }
     assert( packetNumber == ferolBlocks );
 
-    if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
-    remainingFedSize = fragmentTracker_->startFragment(eventNumber_);
+    evbId_ = evbIdFactory_.getEvBid();
+    remainingFedSize = fragmentTracker_->startFragment(evbId_);
     ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
   }
 

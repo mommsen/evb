@@ -80,8 +80,7 @@ namespace evb {
         {
           if ( ! doProcessing_ ) return false;
 
-          if (++eventNumber_ % (1 << 24) == 0) eventNumber_ = 1;
-          const EvBid evbId = evbIdFactory_.getEvBid(eventNumber_);
+          const EvBid evbId = evbIdFactory_.getEvBid();
 
           return createSuperFragment(evbId,superFragment);
         }
