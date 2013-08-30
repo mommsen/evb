@@ -8,9 +8,9 @@
     <i2o:target class="evb::BU" instance="1" tid="31"/>
   </i2o:protocol>
 
-  <xc:Context url="http://EVM0_SOAP_HOST_NAME:EVM0_SOAP_PORT">
+  <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
 
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="EVM0_I2O_HOST_NAME" port="EVM0_I2O_PORT" network="tcp" targetId="12"/>
+    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="tcp" targetId="12"/>
 
     <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
@@ -56,9 +56,9 @@
   </xc:Context>
 
 
-  <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
+  <xc:Context url="http://RU1_SOAP_HOST_NAME:RU1_SOAP_PORT">
 
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="tcp" targetId="12"/>
+    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU1_I2O_HOST_NAME" port="RU1_I2O_PORT" network="tcp" targetId="12"/>
 
     <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="1" network="local">
       <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
@@ -108,9 +108,9 @@
   </xc:Context>
 
 
-  <xc:Context url="http://RU1_SOAP_HOST_NAME:RU1_SOAP_PORT">
+  <xc:Context url="http://RU2_SOAP_HOST_NAME:RU2_SOAP_PORT">
 
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU1_I2O_HOST_NAME" port="RU1_I2O_PORT" network="tcp" targetId="12"/>
+    <xc:Endpoint protocol="atcp" service="i2o" hostname="RU2_I2O_HOST_NAME" port="RU2_I2O_PORT" network="tcp" targetId="12"/>
 
     <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="2" network="local">
       <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
