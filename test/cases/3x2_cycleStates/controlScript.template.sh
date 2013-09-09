@@ -135,17 +135,17 @@ sendCmdToExecutive BU1_SOAP_HOST_NAME BU1_SOAP_PORT configure.cmd.xml
 
 checkStates "Halted"
 
-# Configure and enable ptatcp
-sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT pt::atcp::PeerTransportATCP 0 Configure
-sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::atcp::PeerTransportATCP 1 Configure
-sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT pt::atcp::PeerTransportATCP 2 Configure
-sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::atcp::PeerTransportATCP 3 Configure
-sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT pt::atcp::PeerTransportATCP 4 Configure
-sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT pt::atcp::PeerTransportATCP 0 Enable
-sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::atcp::PeerTransportATCP 1 Enable
-sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT pt::atcp::PeerTransportATCP 2 Enable
-sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::atcp::PeerTransportATCP 3 Enable
-sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT pt::atcp::PeerTransportATCP 4 Enable
+# Configure and enable pt
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT pt::utcp::Application 0 Configure
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::utcp::Application 1 Configure
+sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT pt::utcp::Application 2 Configure
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::utcp::Application 3 Configure
+sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT pt::utcp::Application 4 Configure
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT pt::utcp::Application 0 Enable
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::utcp::Application 1 Enable
+sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT pt::utcp::Application 2 Enable
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::utcp::Application 3 Enable
+sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT pt::utcp::Application 4 Enable
 
 changeStates Configure Configuring
 sleep 1

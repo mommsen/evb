@@ -10,12 +10,7 @@
 
     <xc:Endpoint protocol="atcp" service="i2o" hostname="RU0_I2O_HOST_NAME" port="RU0_I2O_PORT" network="tcp" targetId="12"/>
 
-    <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="0" network="local">
-      <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
-    </xc:Application>
-    <xc:Module>$XDAQ_ROOT/lib/libptatcp.so</xc:Module>
-
-    <!--xc:Application class="pt::utcp::Application" id="11" instance="0" network="tcp">
+    <xc:Application class="pt::utcp::Application" id="11" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
@@ -23,9 +18,9 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
       </properties>
-    </xc:Application-->
+    </xc:Application>
 
     <xc:Application class="evb::EVM" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
@@ -52,12 +47,7 @@
 
     <xc:Endpoint protocol="atcp" service="i2o" hostname="RU1_I2O_HOST_NAME" port="RU1_I2O_PORT" network="tcp" targetId="12"/>
 
-    <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="1" network="local">
-      <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
-    </xc:Application>
-    <xc:Module>$XDAQ_ROOT/lib/libptatcp.so</xc:Module>
-
-    <!--xc:Application class="pt::utcp::Application" id="11" instance="1" network="tcp">
+    <xc:Application class="pt::utcp::Application" id="11" instance="1" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
@@ -65,9 +55,9 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
       </properties>
-    </xc:Application-->
+    </xc:Application>
 
     <xc:Application class="evb::RU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
@@ -75,7 +65,7 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
+    <xc:Application class="xmem::probe::Application" id="21" instance="1" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
@@ -90,12 +80,7 @@
 
     <xc:Endpoint protocol="atcp" service="i2o" hostname="BU0_I2O_HOST_NAME" port="BU0_I2O_PORT" network="tcp" targetId="12"/>
 
-    <xc:Application class="pt::atcp::PeerTransportATCP" id="11" instance="2" network="local">
-      <properties xmlns="urn:xdaq-application:pt::atcp::PeerTransportATCP" xsi:type="soapenc:Struct"/>
-    </xc:Application>
-    <xc:Module>$XDAQ_ROOT/lib/libptatcp.so</xc:Module>
-
-    <!--xc:Application class="pt::utcp::Application" id="11" instance="2" network="tcp">
+    <xc:Application class="pt::utcp::Application" id="11" instance="2" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
@@ -103,9 +88,9 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">32074</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
       </properties>
-    </xc:Application-->
+    </xc:Application>
 
     <xc:Application class="evb::BU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
@@ -114,7 +99,7 @@
        </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
+    <xc:Application class="xmem::probe::Application" id="21" instance="2" network="local"/>
 
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
