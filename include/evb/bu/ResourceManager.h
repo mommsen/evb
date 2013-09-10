@@ -141,7 +141,7 @@ namespace evb {
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;
-      xdata::UnsignedInteger32 rate_;
+      xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 bandwidth_;
       xdata::UnsignedInteger32 eventSize_;
       xdata::UnsignedInteger32 eventSizeStdDev_;

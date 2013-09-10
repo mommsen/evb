@@ -164,14 +164,14 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
-  rate_ = 0;
+  eventRate_ = 0;
   bandwidth_ = 0;
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
 
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
-  items.add("rate", &rate_);
+  items.add("eventRate", &eventRate_);
   items.add("bandwidth", &bandwidth_);
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
@@ -186,7 +186,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 
   nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
   nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
-  rate_ = eventMonitoring_.perf.logicalRate();
+  eventRate_ = eventMonitoring_.perf.logicalRate();
   bandwidth_ = eventMonitoring_.perf.bandwidth();
   eventSize_ = eventMonitoring_.perf.size();
   eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
@@ -262,7 +262,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
     out->setf(std::ios::scientific);
     out->precision(4);
     *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << rate_.value_ << "</td>"                       << std::endl;
+    *out << "<td>" << eventRate_.value_ << "</td>"                  << std::endl;
     *out << "</tr>"                                                 << std::endl;
     out->unsetf(std::ios::scientific);
     out->precision(1);

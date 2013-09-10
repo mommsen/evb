@@ -67,6 +67,7 @@ namespace evb {
     boost::shared_ptr<bu::RUproxy> ruProxy_;
 
     xdata::UnsignedInteger32 eventSize_;
+    xdata::UnsignedInteger32 eventRate_;
     xdata::UnsignedInteger32 nbEventsInBU_;
     xdata::UnsignedInteger32 nbEventsBuilt_;
     xdata::UnsignedInteger32 nbEvtsCorrupted_;
