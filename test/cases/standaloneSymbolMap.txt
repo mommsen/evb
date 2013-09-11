@@ -61,6 +61,9 @@ RU1_FRL_HOST_NAME localhost
 RU2_SOAP_HOST_NAME localhost
 RU2_I2O_HOST_NAME localhost
 RU2_FRL_HOST_NAME localhost
+RU3_SOAP_HOST_NAME localhost
+RU3_I2O_HOST_NAME localhost
+RU3_FRL_HOST_NAME localhost
 
 BU0_SOAP_HOST_NAME localhost
 BU0_I2O_HOST_NAME localhost
