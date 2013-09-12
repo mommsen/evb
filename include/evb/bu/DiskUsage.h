@@ -25,7 +25,8 @@ namespace evb {
       (
         const boost::filesystem::path& path,
         const double lowWaterMark,
-        const double highWaterMark
+        const double highWaterMark,
+        const bool deleteFiles
       );
 
       ~DiskUsage();
@@ -61,13 +62,12 @@ namespace evb {
       const boost::filesystem::path path_;
       const double lowWaterMark_;
       const double highWaterMark_;
+      const bool deleteFiles_;
 
       boost::mutex mutex_;
       int retVal_;
       struct statfs64 statfs_;
       bool tooHigh_;
-
-      //  : path(p), highWaterMark(highWaterMark), lowWaterMark(lowWaterMark) {};
     };
 
     typedef boost::shared_ptr<DiskUsage> DiskUsagePtr;

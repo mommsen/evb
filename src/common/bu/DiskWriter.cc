@@ -248,7 +248,9 @@ void evb::bu::DiskWriter::configure()
     oss << " is smaller than the low water mark " << configuration_->rawDataLowWaterMark.value_;
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
-  DiskUsagePtr rawDiskUsage( new DiskUsage(buRawDataDir_, configuration_->rawDataLowWaterMark, configuration_->rawDataHighWaterMark) );
+  DiskUsagePtr rawDiskUsage(
+    new DiskUsage(buRawDataDir_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
+  );
   resourceManager_->monitorDiskUsage( rawDiskUsage );
 
   buMetaDataDir_ = configuration_->metaDataDir.value_;
@@ -262,7 +264,9 @@ void evb::bu::DiskWriter::configure()
     oss << " is smaller than the low water mark " << configuration_->metaDataLowWaterMark.value_;
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
-  DiskUsagePtr metaDiskUsage( new DiskUsage(buMetaDataDir_, configuration_->metaDataLowWaterMark, configuration_->metaDataHighWaterMark) );
+  DiskUsagePtr metaDiskUsage(
+    new DiskUsage(buMetaDataDir_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
+  );
   resourceManager_->monitorDiskUsage( metaDiskUsage );
 
   resetMonitoringCounters();

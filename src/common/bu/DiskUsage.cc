@@ -2,6 +2,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 
 #include "evb/bu/DiskUsage.h"
@@ -11,11 +12,13 @@ evb::bu::DiskUsage::DiskUsage
 (
   const boost::filesystem::path& path,
   const double lowWaterMark,
-  const double highWaterMark
+  const double highWaterMark,
+  const bool deleteFiles
 ) :
 path_(path),
 lowWaterMark_(lowWaterMark),
 highWaterMark_(highWaterMark),
+deleteFiles_(deleteFiles),
 retVal_(1),
 tooHigh_(true)
 {
@@ -57,6 +60,25 @@ bool evb::bu::DiskUsage::tooHigh()
     tooHigh_ = ( diskUsage > lowWaterMark_ );
   else
     tooHigh_ = ( diskUsage > highWaterMark_ );
+
+  if ( tooHigh_ && deleteFiles_ )
+  {
+    boost::filesystem::recursive_directory_iterator it(path_);
+    while ( it != boost::filesystem::recursive_directory_iterator() )
+    {
+      if ( it->path().filename() == "open" )
+      {
+        it.pop();
+        continue;
+      }
+
+      if ( it->path().extension() == ".raw" )
+      {
+        boost::filesystem::remove(*it);
+      }
+      ++it;
+    }
+  }
 
   return tooHigh_;
 }
