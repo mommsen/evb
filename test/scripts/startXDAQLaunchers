@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Time::HiRes qw(usleep);
+#use Time::HiRes qw(usleep);
 
 my $testDir = $ENV{"EVB_TESTER_HOME"};
 my $symbolMap = $ENV{"TESTS_SYMBOL_MAP"};
@@ -35,7 +35,7 @@ while(<SYMBOL_MAP_FILE>) {
 
     print "$cmd\n";
     system $cmd;
-    usleep(50000);
+    sleep(1);
 
     $port++;
   }
