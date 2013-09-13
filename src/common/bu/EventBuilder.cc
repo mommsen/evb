@@ -56,7 +56,7 @@ void evb::bu::EventBuilder::configure()
     std::ostringstream fifoName;
     fifoName << "superFragmentFIFO_" << i;
     SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(fifoName.str()) );
-    superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
+    superFragmentFIFO->resize( configuration_->eventsPerRequest * configuration_->requestsPerBuilder);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
   }
 

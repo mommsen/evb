@@ -212,9 +212,8 @@ void evb::bu::ResourceManager::configure()
   blockedResourceFIFO_.clear();
   allocatedResources_.clear();
 
-  const uint32_t nbResources = std::max(1U,
-    bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
-    bu_->getConfiguration()->eventsPerRequest.value_);
+  const uint32_t nbResources =
+    bu_->getConfiguration()->requestsPerBuilder * bu_->getConfiguration()->numberOfBuilders;
   freeResourceFIFO_.resize(nbResources);
   blockedResourceFIFO_.resize(nbResources);
 

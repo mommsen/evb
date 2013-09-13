@@ -24,11 +24,10 @@ namespace evb {
     struct Configuration
     {
       xdata::Integer32 evmInstance;                        // Instance of the EVM. If not set, discover the EVM over I2O.
-      xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
+      xdata::UnsignedInteger32 requestsPerBuilder;         // Number of requests per builder thread
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
-      xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
-      xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
       xdata::UnsignedInteger32 numberOfBuilders;           // Number of threads used to build/write events
+      xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
       xdata::String rawDataDir;                            // Path to the top directory used to write the event data
       xdata::String metaDataDir;                           // Path to the top directory used to write the meta data (JSON)
       xdata::Double rawDataHighWaterMark;                  // Relative high-water mark for the event data directory
@@ -42,11 +41,10 @@ namespace evb {
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
-        maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
+        requestsPerBuilder(4),
         eventsPerRequest(16),
-        superFragmentFIFOCapacity(16384),
-        dropEventData(false),
         numberOfBuilders(6),
+        dropEventData(false),
         rawDataDir("/tmp/fff"),
         metaDataDir("/tmp/fff"),
         rawDataHighWaterMark(0.7),
@@ -62,11 +60,10 @@ namespace evb {
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
       {
         params.add("evmInstance", &evmInstance);
-        params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);
+        params.add("requestsPerBuilder", &requestsPerBuilder);
         params.add("eventsPerRequest", &eventsPerRequest);
-        params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
-        params.add("dropEventData", &dropEventData);
         params.add("numberOfBuilders", &numberOfBuilders);
+        params.add("dropEventData", &dropEventData);
         params.add("rawDataDir", &rawDataDir);
         params.add("metaDataDir", &metaDataDir);
         params.add("rawDataHighWaterMark", &rawDataHighWaterMark);
