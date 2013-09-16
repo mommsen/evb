@@ -193,6 +193,7 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
             ++diskWriterMonitoring_.nbLumiSections;
 
           writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
+          FileHandler::removeIndexForLumiSection( (*result.first)->lumiSection );
           lumiMonitors_.erase(result.first);
         }
       }

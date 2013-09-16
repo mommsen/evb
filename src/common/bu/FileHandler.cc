@@ -214,23 +214,27 @@ uint16_t evb::bu::FileHandler::getNextIndex(const uint32_t lumiSection)
 
   if ( lumiSection > lastLumiSection_ )
   {
-    index_ = 0;
+    lumiIndex_.insert( LumiIndex::value_type(lumiSection,0) );
     lastLumiSection_ = lumiSection;
+    return 0;
   }
-  else if ( lumiSection < lastLumiSection_ )
+  else
   {
-    std::ostringstream oss;
-    oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << lastLumiSection_;
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    return ++lumiIndex_[lumiSection];
   }
+}
 
-  return index_++;
+
+void evb::bu::FileHandler::removeIndexForLumiSection(const uint32_t lumiSection)
+{
+  boost::mutex::scoped_lock sl(indexMutex_);
+
+  lumiIndex_.erase(lumiSection);
 }
 
 
 boost::mutex evb::bu::FileHandler::indexMutex_;
-uint16_t evb::bu::FileHandler::index_(0);
+evb::bu::FileHandler::LumiIndex evb::bu::FileHandler::lumiIndex_;
 uint32_t evb::bu::FileHandler::lastLumiSection_(0);
 
 
