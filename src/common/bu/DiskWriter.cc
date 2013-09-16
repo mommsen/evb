@@ -44,10 +44,13 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   std::ostringstream runDir;
   runDir << "run" << std::setfill('0') << std::setw(6) << runNumber_;
 
-  runRawDataDir_ = buRawDataDir_ / runDir.str() / "open";
+  boost::filesystem::path rawRunDir( configuration_->rawDataDir.value_ );
+  rawRunDir /= runDir.str();
+  runRawDataDir_ = rawRunDir / "open";
   DiskWriter::createDir(runRawDataDir_);
 
-  runMetaDataDir_ = buMetaDataDir_ / runDir.str();
+  runMetaDataDir_ = configuration_->metaDataDir.value_;
+  runMetaDataDir_ /= runDir.str();
   DiskWriter::createDir(runMetaDataDir_);
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
@@ -58,7 +61,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
-  createLockFile( buRawDataDir_ / runDir.str() );
+  createLockFile(rawRunDir);
   defineEoLSjson();
   defineEoRjson();
 

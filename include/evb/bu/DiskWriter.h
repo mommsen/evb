@@ -126,8 +126,6 @@ namespace evb {
       const uint32_t buInstance_;
       uint32_t runNumber_;
 
-      boost::filesystem::path buRawDataDir_;
-      boost::filesystem::path buMetaDataDir_;
       boost::filesystem::path runRawDataDir_;
       boost::filesystem::path runMetaDataDir_;
       boost::filesystem::path eolsDefFile_;
