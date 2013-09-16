@@ -48,7 +48,7 @@ adlerB_(0)
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  fileDescriptor_ = open(rawFile.string().c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
+  fileDescriptor_ = open(rawFile.string().c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   if ( fileDescriptor_ == -1 )
   {
     std::ostringstream oss;
@@ -122,7 +122,9 @@ void evb::bu::FileHandler::close()
       }
       fileDescriptor_ = 0;
 
-      boost::filesystem::rename(runRawDataDir_ / fileName_, runRawDataDir_.parent_path() / fileName_);
+      const boost::filesystem::path destination( runRawDataDir_.parent_path() / fileName_ );
+      boost::filesystem::rename(runRawDataDir_ / fileName_, destination);
+      chmod(destination.string().c_str(),S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 
       writeJSON();
     }
@@ -156,19 +158,22 @@ void evb::bu::FileHandler::writeJSON() const
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  std::ofstream json(jsonFile.string().c_str());
+  const char* path = jsonFile.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                         << std::endl;
   json << "   \"data\" : [ \""     << eventCount_   << "\" ],"        << std::endl;
   json << "   \"definition\" : \"" << jsonDefFile.string()  << "\","  << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
   json << "}"                                                         << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
 void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile) const
 {
-  std::ofstream json(jsonDefFile.string().c_str());
+  const char* path = jsonDefFile.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -179,6 +184,7 @@ void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile
   json << "   \"file\" : \"" << jsonDefFile.string() << "\""  << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
