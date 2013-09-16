@@ -137,29 +137,29 @@ then
   exit 1
 fi
 
-ls -l $testDir/BU-000/run$runNumber
+ls -l $testDir/run$runNumber
 
-if [[ -x $testDir/BU-000/run$runNumber/open ]]
+if [[ -x $testDir/run$runNumber/open ]]
 then
-    echo "Test failed: $testDir/BU-000/run$runNumber/open exists"
+    echo "Test failed: $testDir/run$runNumber/open exists"
     exit 1
 fi
 
-if [[ ! -s $testDir/BU-000/run$runNumber/rawData.jsd ]]
+if [[ ! -s $testDir/run$runNumber/rawData.jsd ]]
 then
-    echo "Test failed: $testDir/BU-000/run$runNumber/rawData.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/rawData.jsd does not exist"
     exit 1
 fi
 
-if [[ ! -s $testDir/BU-000/run$runNumber/EoLS.jsd ]]
+if [[ ! -s $testDir/run$runNumber/EoLS.jsd ]]
 then
-    echo "Test failed: $testDir/BU-000/run$runNumber/EoLS.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/EoLS.jsd does not exist"
     exit 1
 fi
 
-if [[ ! -s $testDir/BU-000/run$runNumber/EoR.jsd ]]
+if [[ ! -s $testDir/run$runNumber/EoR.jsd ]]
 then
-    echo "Test failed: $testDir/BU-000/run$runNumber/EoR.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/EoR.jsd does not exist"
     exit 1
 fi
 
@@ -167,7 +167,7 @@ runEventCounter=0;
 runFileCounter=0;
 runLsCounter=0;
 
-for eolsFile in `ls $testDir/BU-000/run$runNumber/EoLS_*jsn`
+for eolsFile in `ls $testDir/run$runNumber/EoLS_*jsn`
 do
     lumiSection=$(echo $eolsFile | sed -re 's/.*EoLS_([0-9]+).jsn/\1/')
     lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
@@ -180,7 +180,7 @@ do
     then
         ((runLsCounter++))
 
-        for file in `ls $testDir/BU-000/run$runNumber/run${runNumber}_ls${lumiSection}_*raw`
+        for file in `ls $testDir/run$runNumber/run${runNumber}_ls${lumiSection}_*raw`
         do
             ((fileCounter++))
             ((runFileCounter++))
@@ -205,7 +205,7 @@ do
 
     else
 
-        fileCounter=$(ls $testDir/BU-000/run$runNumber/*[raw,jsn] | grep -c run${runNumber}_ls${lumiSection})
+        fileCounter=$(ls $testDir/run$runNumber/*[raw,jsn] | grep -c run${runNumber}_ls${lumiSection})
 
     fi
 
@@ -224,7 +224,7 @@ do
 
 done
 
-eorFile="$testDir/BU-000/run$runNumber/EoR_$runNumber.jsn"
+eorFile="$testDir/run$runNumber/EoR_$runNumber.jsn"
 
 if [[ ! -s $eorFile ]]
 then

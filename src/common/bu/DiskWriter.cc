@@ -1,5 +1,6 @@
 #include <sstream>
 #include <iomanip>
+#include <sys/stat.h>
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
@@ -43,10 +44,13 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   std::ostringstream runDir;
   runDir << "run" << std::setfill('0') << std::setw(6) << runNumber_;
 
-  runRawDataDir_ = buRawDataDir_ / runDir.str() / "open";
+  boost::filesystem::path rawRunDir( configuration_->rawDataDir.value_ );
+  rawRunDir /= runDir.str();
+  runRawDataDir_ = rawRunDir / "open";
   DiskWriter::createDir(runRawDataDir_);
 
-  runMetaDataDir_ = buMetaDataDir_ / runDir.str();
+  runMetaDataDir_ = configuration_->metaDataDir.value_;
+  runMetaDataDir_ /= runDir.str();
   DiskWriter::createDir(runMetaDataDir_);
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
@@ -57,6 +61,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
+  createLockFile(rawRunDir);
   defineEoLSjson();
   defineEoRjson();
 
@@ -188,6 +193,7 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
             ++diskWriterMonitoring_.nbLumiSections;
 
           writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
+          FileHandler::removeIndexForLumiSection( (*result.first)->lumiSection );
           lumiMonitors_.erase(result.first);
         }
       }
@@ -234,12 +240,7 @@ void evb::bu::DiskWriter::configure()
 
   if ( configuration_->dropEventData ) return;
 
-  std::ostringstream buDir;
-  buDir << "BU-" << std::setfill('0') << std::setw(3) << buInstance_;
-
-  buRawDataDir_ = configuration_->rawDataDir.value_;
-  buRawDataDir_ /= buDir.str();
-  createDir(buRawDataDir_);
+  createDir(configuration_->rawDataDir.value_);
   if ( configuration_->rawDataLowWaterMark > configuration_->rawDataHighWaterMark )
   {
     std::ostringstream oss;
@@ -249,13 +250,11 @@ void evb::bu::DiskWriter::configure()
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   DiskUsagePtr rawDiskUsage(
-    new DiskUsage(buRawDataDir_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
+    new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
   );
-  resourceManager_->monitorDiskUsage( rawDiskUsage );
+  resourceManager_->monitorDiskUsage(rawDiskUsage);
 
-  buMetaDataDir_ = configuration_->metaDataDir.value_;
-  buMetaDataDir_ /= buDir.str();
-  createDir(buMetaDataDir_);
+  createDir(configuration_->metaDataDir.value_);
   if ( configuration_->metaDataLowWaterMark > configuration_->metaDataHighWaterMark )
   {
     std::ostringstream oss;
@@ -265,9 +264,9 @@ void evb::bu::DiskWriter::configure()
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   DiskUsagePtr metaDiskUsage(
-    new DiskUsage(buMetaDataDir_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
+    new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
   );
-  resourceManager_->monitorDiskUsage( metaDiskUsage );
+  resourceManager_->monitorDiskUsage(metaDiskUsage);
 
   resetMonitoringCounters();
 }
@@ -282,6 +281,7 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path)
     oss << "Failed to create directory " << path.string();
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
+  chmod(path.string().c_str(),S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
 }
 
 
@@ -333,6 +333,20 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 }
 
 
+void evb::bu::DiskWriter::createLockFile(const boost::filesystem::path& runDir) const
+{
+  const boost::filesystem::path fulockPath( runDir / "fu.lock" );
+  const char* path = fulockPath.string().c_str();
+  std::ofstream fulock(path);
+  fulock << "1 0";
+  fulock.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+
+  const boost::filesystem::path monDirPath( runDir / "MON" );
+  DiskWriter::createDir(monDirPath);
+}
+
+
 void evb::bu::DiskWriter::writeEoLS
 (
   const uint32_t lumiSection,
@@ -353,7 +367,8 @@ void evb::bu::DiskWriter::writeEoLS
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  std::ofstream json(jsonFile.string().c_str());
+  const char* path = jsonFile.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                         << std::endl;
   json << "   \"data\" : [ \""     << eventCount  << "\", \""
                                    << fileCount   << "\" ],"          << std::endl;
@@ -361,6 +376,7 @@ void evb::bu::DiskWriter::writeEoLS
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
   json << "}"                                                         << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
@@ -379,7 +395,8 @@ void evb::bu::DiskWriter::writeEoR() const
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  std::ofstream json(jsonFile.string().c_str());
+  const char* path = jsonFile.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                                           << std::endl;
   json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
                                    << diskWriterMonitoring_.nbFiles         << "\", \""
@@ -388,6 +405,7 @@ void evb::bu::DiskWriter::writeEoR() const
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
@@ -395,7 +413,8 @@ void evb::bu::DiskWriter::defineEoLSjson()
 {
   eolsDefFile_ = runMetaDataDir_ / "EoLS.jsd";
 
-  std::ofstream json(eolsDefFile_.string().c_str());
+  const char* path = eolsDefFile_.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -410,6 +429,7 @@ void evb::bu::DiskWriter::defineEoLSjson()
   json << "   \"file\" : \"" << eolsDefFile_.string() << "\"" << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
@@ -417,7 +437,8 @@ void evb::bu::DiskWriter::defineEoRjson()
 {
   eorDefFile_ = runMetaDataDir_ / "EoR.jsd";
 
-  std::ofstream json(eorDefFile_.string().c_str());
+  const char* path = eorDefFile_.string().c_str();
+  std::ofstream json(path);
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -436,6 +457,7 @@ void evb::bu::DiskWriter::defineEoRjson()
   json << "   \"file\" : \"" << eorDefFile_.string() << "\""  << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 

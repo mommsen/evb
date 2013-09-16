@@ -57,6 +57,10 @@ namespace evb {
        */
       void close();
 
+      /**
+       * Remove the index counter from the map for the given lumi section
+       */
+      static void removeIndexForLumiSection(const uint32_t lumiSection);
 
     private:
 
@@ -64,9 +68,10 @@ namespace evb {
       void defineJSON(const boost::filesystem::path&) const;
       void calcAdler32(const unsigned char* address, size_t length);
 
+      typedef std::map<uint32_t,uint16_t> LumiIndex;
       static uint16_t getNextIndex(const uint32_t lumiSection);
       static boost::mutex indexMutex_;
-      static uint16_t index_;
+      static LumiIndex lumiIndex_;
       static uint32_t lastLumiSection_;
 
       const uint32_t buInstance_;
