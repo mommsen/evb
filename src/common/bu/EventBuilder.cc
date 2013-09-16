@@ -154,7 +154,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
 
   EventMapPtr eventMap(new EventMap);
-  uint32_t previousLumiSection = 0;
 
   StreamHandlerPtr streamHandler;
   if ( ! configuration_->dropEventData )
@@ -165,25 +164,9 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
     while ( doProcessing_ )
     {
       if ( superFragmentFIFO->deq(superFragments) )
-      {
-        const uint32_t lumiSection = superFragments->getEvBid().lumiSection();
-        if ( lumiSection < previousLumiSection )
-        {
-          std::ostringstream oss;
-          oss << "Received a super fragment in builder " << builderId;
-          oss << " from an earlier lumi section " << lumiSection;
-          oss << " while processing lumi section " << previousLumiSection;
-          oss << " with evb id " << superFragments->getEvBid();
-          XCEPT_RAISE(exception::EventOrder, oss.str());
-        }
-        previousLumiSection = lumiSection;
-
         buildEvent(superFragments,eventMap,streamHandler);
-      }
       else
-      {
         ::usleep(10);
-      }
     }
   }
   catch(xcept::Exception& e)
@@ -257,13 +240,13 @@ void evb::bu::EventBuilder::buildEvent
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
 
-      if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
+      const EventPtr& event = eventPos->second;
+      if ( event->appendSuperFragment(ruTid,bufRef->duplicate(),
           payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )
       {
         // the super fragment is complete
         ++superFragmentCount;
 
-        const EventPtr& event = eventPos->second;
         if ( event->isComplete() )
         {
           // the event is complete
