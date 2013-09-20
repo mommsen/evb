@@ -230,21 +230,21 @@ then
     exit 1
 fi
 
-if [[ ! -s $testDir/run$runNumber/rawData.jsd ]]
+if [[ ! -s $testDir/run$runNumber/jsd/rawData.jsd ]]
 then
-    echo "Test failed: $testDir/run$runNumber/rawData.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/jsd/rawData.jsd does not exist"
     exit 1
 fi
 
-if [[ ! -s $testDir/run$runNumber/EoLS.jsd ]]
+if [[ ! -s $testDir/run$runNumber/jsd/EoLS.jsd ]]
 then
-    echo "Test failed: $testDir/run$runNumber/EoLS.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/jsd/EoLS.jsd does not exist"
     exit 1
 fi
 
-if [[ ! -s $testDir/run$runNumber/EoR.jsd ]]
+if [[ ! -s $testDir/run$runNumber/jsd/EoR.jsd ]]
 then
-    echo "Test failed: $testDir/run$runNumber/EoR.jsd does not exist"
+    echo "Test failed: $testDir/run$runNumber/jsd/EoR.jsd does not exist"
     exit 1
 fi
 
