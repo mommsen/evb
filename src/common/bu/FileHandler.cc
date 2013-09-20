@@ -208,7 +208,7 @@ void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
 }
 
 
-uint16_t evb::bu::FileHandler::getNextIndex(const uint32_t lumiSection)
+uint32_t evb::bu::FileHandler::getNextIndex(const uint32_t lumiSection)
 {
   boost::mutex::scoped_lock sl(indexMutex_);
 
