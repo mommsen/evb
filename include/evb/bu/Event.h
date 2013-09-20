@@ -142,8 +142,8 @@ namespace evb {
       {
         const uint32_t version;
         const uint32_t runNumber;
-        const uint32_t eventNumber;
         const uint32_t lumiSection;
+        const uint32_t eventNumber;
         uint32_t eventSize;
         uint32_t paddingSize;
         uint32_t fedSizes[FED_COUNT];
@@ -152,14 +152,15 @@ namespace evb {
 
         EventInfo(
           const uint32_t runNumber,
-          const uint32_t eventNumber,
-          const uint32_t lumiSection
+          const uint32_t lumiSection,
+          const uint32_t eventNumber
         );
 
         bool addFedSize(const FedInfo&);
         size_t getBufferSize();
       };
       EventInfo* eventInfo_;
+      friend std::ostream& operator<<(std::ostream&, const EventInfo&);
 
       typedef std::vector<toolbox::mem::Reference*> BufferReferences;
       BufferReferences myBufRefs_;

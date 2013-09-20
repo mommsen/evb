@@ -21,7 +21,7 @@ evb::bu::Event::Event
 evbId_(evbId),
 buResourceId_(dataBlockMsg->buResourceId)
 {
-  eventInfo_ = new EventInfo(evbId.runNumber(), evbId.eventNumber(), evbId.lumiSection());
+  eventInfo_ = new EventInfo(evbId.runNumber(), evbId.lumiSection(), evbId.eventNumber());
   msg::RUtids ruTids;
   dataBlockMsg->getRUtids(ruTids);
   for (uint32_t i = 0; i < dataBlockMsg->nbRUtids; ++i)
@@ -320,13 +320,13 @@ inline
 evb::bu::Event::EventInfo::EventInfo
 (
   const uint32_t run,
-  const uint32_t event,
-  const uint32_t lumi
+  const uint32_t lumi,
+  const uint32_t event
 ) :
 version(3),
 runNumber(run),
-eventNumber(event),
 lumiSection(lumi),
+eventNumber(event),
 eventSize(0)
 {
   for (uint16_t i=0; i<FED_COUNT; ++i)
@@ -355,6 +355,37 @@ size_t evb::bu::Event::EventInfo::getBufferSize()
   return ( headerSize + eventSize + paddingSize );
 }
 
+namespace evb{
+  namespace bu {
+
+    std::ostream& operator<<
+    (
+      std::ostream& str,
+      const evb::bu::Event::EventInfo& eventInfo
+    )
+    {
+      str << "EventInfo:";
+      str << " headerSize=" << eventInfo.headerSize;
+      str << " version=" << eventInfo.version;
+      str << " runNumber=" << eventInfo.runNumber;
+      str << " lumiSection=" << eventInfo.lumiSection;
+      str << " eventNumber=" << eventInfo.eventNumber;
+      str << " eventSize=" << eventInfo.eventSize;
+      str << " paddingSize=" << eventInfo.paddingSize;
+
+      for (uint32_t i = 0; i < FED_COUNT; ++i)
+      {
+        if ( eventInfo.fedSizes[i] > 0 )
+        {
+          str << " FED[" << i << "]=" << eventInfo.fedSizes[i];
+        }
+      }
+
+      return str;
+    }
+
+  }
+}
 
 
 /// emacs configuration
