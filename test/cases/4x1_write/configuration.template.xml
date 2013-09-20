@@ -20,7 +20,7 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
 
@@ -71,7 +71,7 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
 
@@ -122,7 +122,7 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
 
@@ -173,7 +173,7 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
 
@@ -224,7 +224,7 @@
         <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
         <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
         <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65536</maxBlockSize>
+        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
 
