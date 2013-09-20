@@ -342,7 +342,7 @@ void evb::bu::DiskWriter::createLockFile(const boost::filesystem::path& runDir) 
   fulock.close();
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 
-  const boost::filesystem::path monDirPath( runDir / "MON" );
+  const boost::filesystem::path monDirPath( runDir / "mon" );
   DiskWriter::createDir(monDirPath);
 }
 
