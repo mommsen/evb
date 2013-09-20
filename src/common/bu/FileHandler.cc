@@ -145,7 +145,7 @@ void evb::bu::FileHandler::close()
 
 void evb::bu::FileHandler::writeJSON() const
 {
-  const boost::filesystem::path jsonDefFile = runMetaDataDir_ / "rawData.jsd";
+  const boost::filesystem::path jsonDefFile = runMetaDataDir_ / "jsd" / "rawData.jsd";
   if ( ! boost::filesystem::exists(jsonDefFile) ) defineJSON(jsonDefFile);
 
   boost::filesystem::path jsonFile = runMetaDataDir_ / fileName_;
@@ -180,8 +180,7 @@ void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile
   json << "         \"name\" : \"NEvents\","                  << std::endl;
   json << "         \"operation\" : \"sum\""                  << std::endl;
   json << "      }"                                           << std::endl;
-  json << "   ],"                                             << std::endl;
-  json << "   \"file\" : \"" << jsonDefFile.string() << "\""  << std::endl;
+  json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);

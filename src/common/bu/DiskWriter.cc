@@ -51,7 +51,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
   runMetaDataDir_ = configuration_->metaDataDir.value_;
   runMetaDataDir_ /= runDir.str();
-  DiskWriter::createDir(runMetaDataDir_);
+  DiskWriter::createDir(runMetaDataDir_ / "jsd" );
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -411,7 +411,7 @@ void evb::bu::DiskWriter::writeEoR() const
 
 void evb::bu::DiskWriter::defineEoLSjson()
 {
-  eolsDefFile_ = runMetaDataDir_ / "EoLS.jsd";
+  eolsDefFile_ = runMetaDataDir_ / "jsd" / "EoLS.jsd";
 
   const char* path = eolsDefFile_.string().c_str();
   std::ofstream json(path);
@@ -425,8 +425,7 @@ void evb::bu::DiskWriter::defineEoLSjson()
   json << "         \"name\" : \"NFiles\","                   << std::endl;
   json << "         \"operation\" : \"sum\""                  << std::endl;
   json << "      }"                                           << std::endl;
-  json << "   ],"                                             << std::endl;
-  json << "   \"file\" : \"" << eolsDefFile_.string() << "\"" << std::endl;
+  json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
@@ -435,7 +434,7 @@ void evb::bu::DiskWriter::defineEoLSjson()
 
 void evb::bu::DiskWriter::defineEoRjson()
 {
-  eorDefFile_ = runMetaDataDir_ / "EoR.jsd";
+  eorDefFile_ = runMetaDataDir_ / "jsd" / "EoR.jsd";
 
   const char* path = eorDefFile_.string().c_str();
   std::ofstream json(path);
@@ -453,8 +452,7 @@ void evb::bu::DiskWriter::defineEoRjson()
   json << "         \"name\" : \"NLumis\","                   << std::endl;
   json << "         \"operation\" : \"sum\""                  << std::endl;
   json << "      }"                                           << std::endl;
-  json << "   ],"                                             << std::endl;
-  json << "   \"file\" : \"" << eorDefFile_.string() << "\""  << std::endl;
+  json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
