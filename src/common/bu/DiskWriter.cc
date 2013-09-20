@@ -51,7 +51,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
   runMetaDataDir_ = configuration_->metaDataDir.value_;
   runMetaDataDir_ /= runDir.str();
-  DiskWriter::createDir(runMetaDataDir_ / "jsd" );
+  DiskWriter::createDir(runMetaDataDir_);
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -411,7 +411,9 @@ void evb::bu::DiskWriter::writeEoR() const
 
 void evb::bu::DiskWriter::defineEoLSjson()
 {
-  eolsDefFile_ = runMetaDataDir_ / "jsd" / "EoLS.jsd";
+  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
+  createDir(jsdDir);
+  eolsDefFile_ = jsdDir / "EoLS.jsd";
 
   const char* path = eolsDefFile_.string().c_str();
   std::ofstream json(path);
@@ -434,7 +436,9 @@ void evb::bu::DiskWriter::defineEoLSjson()
 
 void evb::bu::DiskWriter::defineEoRjson()
 {
-  eorDefFile_ = runMetaDataDir_ / "jsd" / "EoR.jsd";
+  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
+  createDir(jsdDir);
+  eorDefFile_ = jsdDir / "EoR.jsd";
 
   const char* path = eorDefFile_.string().c_str();
   std::ofstream json(path);
