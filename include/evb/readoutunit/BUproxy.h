@@ -276,7 +276,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
 
   updateRequestCounters(fragmentRequest);
 
-  fragmentRequestFIFO_.enqWait(fragmentRequest);
+  while ( ! fragmentRequestFIFO_.enq(fragmentRequest) ) ::usleep(1000);
 
   bufRef->release();
 }

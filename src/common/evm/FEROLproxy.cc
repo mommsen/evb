@@ -19,7 +19,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
   {
     if ( it != masterFED_ )
     {
-      it->second->deqWait(fragment);
+      while ( ! it->second->deq(fragment) ) ::usleep(10);
 
       if ( evbId != fragment->evbId )
       {

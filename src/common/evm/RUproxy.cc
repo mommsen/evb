@@ -35,7 +35,7 @@ void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr fragme
 {
   if ( participatingRUs_.empty() ) return;
 
-  allocateFIFO_.enqWait(fragmentRequest);
+  while ( ! allocateFIFO_.enq(fragmentRequest) ) ::usleep(1000);
 }
 
 
