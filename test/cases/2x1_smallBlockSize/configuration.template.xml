@@ -98,6 +98,7 @@
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
         <eventsPerRequest xsi:type="xsd:unsignedInt">8</eventsPerRequest>
+        <maxEvtsUnderConstruction xsi:type="xsd:unsignedInt">64</maxEvtsUnderConstruction>
       </properties>
     </xc:Application>
 
