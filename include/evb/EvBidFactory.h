@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace evb {
 
   class EvBid;
@@ -39,6 +41,7 @@ namespace evb {
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
     uint32_t fakeLumiSection_;
+    boost::posix_time::ptime startOfLumiSection_;
 
   };
 

@@ -28,7 +28,18 @@ evb::EvBid evb::EvBidFactory::getEvBid()
 
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 {
-  if ( eventNumber%10000 == 0 ) ++fakeLumiSection_;
+  const boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+  const boost::posix_time::time_duration lumiSectionDuration = boost::posix_time::seconds(23);
+
+  if ( startOfLumiSection_ == boost::posix_time::not_a_date_time )
+    startOfLumiSection_ = now;
+
+  while ( startOfLumiSection_ + lumiSectionDuration < now )
+  {
+    startOfLumiSection_ += lumiSectionDuration;
+    ++fakeLumiSection_;
+  }
+
   return getEvBid(eventNumber,fakeLumiSection_);
 }
 
