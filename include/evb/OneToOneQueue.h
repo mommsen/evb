@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include <vector>
 
+#include "interface/evb/i2oEVBMsgs.h"
 #include "evb/Exception.h"
-#include "toolbox/AllocPolicy.h"
-#include "toolbox/PolicyFactory.h"
+#include "toolbox/mem/Reference.h"
 #include "toolbox/net/URN.h"
 #include "xgi/Output.h"
 
@@ -26,8 +26,7 @@ namespace evb {
   public:
 
     OneToOneQueue(const std::string& name);
-
-    ~OneToOneQueue();
+    OneToOneQueue(const std::string& name, const uint32_t size);
 
     /**
      * Enqueue the element.
@@ -115,7 +114,7 @@ namespace evb {
     const std::string name_;
     volatile uint32_t readPointer_;
     volatile uint32_t writePointer_;
-    T* container_;
+    std::vector<T> container_;
     volatile uint32_t size_;
   };
 
@@ -128,16 +127,19 @@ namespace evb {
   OneToOneQueue<T>::OneToOneQueue(const std::string& name) :
   name_(name),
   readPointer_(0),
-  writePointer_(0),
-  container_(0),
-  size_(0)
-  {}
+  writePointer_(0)
+  {
+    resize(1);
+  }
 
 
   template <class T>
-  OneToOneQueue<T>::~OneToOneQueue()
+  OneToOneQueue<T>::OneToOneQueue(const std::string& name, const uint32_t size) :
+  name_(name),
+  readPointer_(0),
+  writePointer_(0)
   {
-    clear();
+    resize(size);
   }
 
 
@@ -173,27 +175,10 @@ namespace evb {
       XCEPT_RAISE(exception::FIFO,
         "Cannot resize the non-empty queue " + name_);
     }
-
-    toolbox::net::URN urn(name_, "alloc");
-    toolbox::PolicyFactory* factory = toolbox::getPolicyFactory();
-    toolbox::AllocPolicy* policy = static_cast<toolbox::AllocPolicy*>(factory->getPolicy(urn, "alloc"));
-
-    if ( container_ )
-      policy->free(container_, sizeof(container_));
-
+    container_.clear();
     readPointer_ = writePointer_ = 0;
     size_ = size+1;
-
-    try
-    {
-      container_ = static_cast<T*>( policy->alloc(sizeof(T) * size_) );
-    }
-    catch (toolbox::exception::Exception& e)
-    {
-      std::ostringstream msg;
-      msg << "Failed to allocate memory for " << size << " elements in queue " << name_;
-      XCEPT_RETHROW (exception::FIFO, msg.str(), e);
-    }
+    container_.resize(size_);
   }
 
 
@@ -202,7 +187,7 @@ namespace evb {
   {
     volatile const uint32_t nextElement = (writePointer_ + 1) % size_;
     if ( nextElement == readPointer_ ) return false;
-    new (&container_[writePointer_]) T(element);
+    container_[writePointer_] = element;
     writePointer_ = nextElement;
     return true;
   }
@@ -222,7 +207,7 @@ namespace evb {
 
     volatile const uint32_t nextElement = (readPointer_ + 1) % size_;
     element = container_[readPointer_];
-    container_[readPointer_].~T();
+    container_[readPointer_] = T();
     readPointer_ = nextElement;
     return true;
   }
@@ -336,9 +321,9 @@ namespace evb {
         *out << "  <td style=\"background:#51ef9e\">";
         try
         {
-          formatter( container_[pos], out );
+          formatter( container_.at(pos), out );
         }
-        catch(...)
+        catch(std::out_of_range&)
         {
           *out << "n/a";
         }
@@ -410,9 +395,9 @@ namespace evb {
         *out << "  <td style=\"background-color:#51ef9e\">";
         try
         {
-          formatter( container_[pos], out );
+          formatter( container_.at(pos), out );
         }
-        catch(...)
+        catch(std::out_of_range&)
         {
           *out << "n/a";
         }
