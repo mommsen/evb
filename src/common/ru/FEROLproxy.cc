@@ -26,7 +26,7 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    it->second->deqWait(fragment);
+    while ( ! it->second->deq(fragment) ) {};
 
     if ( evbId != fragment->evbId )
     {
