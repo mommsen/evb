@@ -204,11 +204,11 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
 
 void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 {
-  nbEvtsWritten_ = 0;
   nbFilesWritten_ = 0;
+  nbLumiSections_ = 0;
 
-  items.add("nbEvtsWritten", &nbEvtsWritten_);
   items.add("nbFilesWritten", &nbFilesWritten_);
+  items.add("nbLumiSections", &nbLumiSections_);
 }
 
 
@@ -216,8 +216,8 @@ void evb::bu::DiskWriter::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
-  nbEvtsWritten_ = diskWriterMonitoring_.nbEventsWritten;
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
+  nbLumiSections_ = diskWriterMonitoring_.nbLumiSections;
 }
 
 

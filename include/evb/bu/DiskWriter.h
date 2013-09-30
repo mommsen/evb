@@ -152,8 +152,8 @@ namespace evb {
       } diskWriterMonitoring_;
       mutable boost::mutex diskWriterMonitoringMutex_;
 
-      xdata::UnsignedInteger32 nbEvtsWritten_;
       xdata::UnsignedInteger32 nbFilesWritten_;
+      xdata::UnsignedInteger32 nbLumiSections_;
 
     };
 

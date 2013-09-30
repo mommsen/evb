@@ -272,11 +272,15 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 
 void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 {
-  i2oBUCacheCount_ = 0;
-  i2oRUSendCount_ = 0;
+  requestCount_ = 0;
+  fragmentCount_ = 0;
+  fragmentCountPerRU_.clear();
+  payloadPerRU_.clear();
 
-  items.add("i2oBUCacheCount", &i2oBUCacheCount_);
-  items.add("i2oRUSendCount", &i2oRUSendCount_);
+  items.add("requestCount", &requestCount_);
+  items.add("fragmentCount", &fragmentCount_);
+  items.add("fragmentCountPerRU", &fragmentCountPerRU_);
+  items.add("payloadPerRU", &payloadPerRU_);
 }
 
 
@@ -284,11 +288,29 @@ void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    i2oRUSendCount_ = requestMonitoring_.logicalCount;
+    requestCount_ = requestMonitoring_.logicalCount;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-    i2oBUCacheCount_ = fragmentMonitoring_.logicalCount;
+    fragmentCount_ = fragmentMonitoring_.logicalCount;
+
+    fragmentCountPerRU_.clear();
+    fragmentCountPerRU_.reserve(fragmentMonitoring_.logicalCountPerRU.size());
+    for (CountsPerRU::const_iterator it = fragmentMonitoring_.logicalCountPerRU.begin(),
+           itEnd = fragmentMonitoring_.logicalCountPerRU.end();
+         it != itEnd; ++it)
+    {
+      fragmentCountPerRU_.push_back(it->second);
+    }
+
+    payloadPerRU_.clear();
+    payloadPerRU_.reserve(fragmentMonitoring_.payloadPerRU.size());
+    for (CountsPerRU::const_iterator it = fragmentMonitoring_.payloadPerRU.begin(),
+           itEnd = fragmentMonitoring_.payloadPerRU.end();
+         it != itEnd; ++it)
+    {
+      payloadPerRU_.push_back(it->second);
+    }
   }
 }
 

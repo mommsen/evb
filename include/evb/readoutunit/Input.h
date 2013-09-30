@@ -276,8 +276,8 @@ namespace evb {
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
-      xdata::UnsignedInteger32 lastEventNumberFromFEROLs_;
-      xdata::UnsignedInteger64 i2oDataReadyCount_;
+      xdata::UnsignedInteger32 superFragmentSizeStdDev_;
+      xdata::UnsignedInteger64 dataReadyCount_;
 
     };
 
@@ -616,13 +616,13 @@ void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItem
 {
   eventRate_ = 0;
   superFragmentSize_ = 0;
-  lastEventNumberFromFEROLs_ = 0;
-  i2oDataReadyCount_ = 0;
+  superFragmentSizeStdDev_ = 0;
+  dataReadyCount_ = 0;
 
   items.add("eventRate", &eventRate_);
   items.add("superFragmentSize", &superFragmentSize_);
-  items.add("lastEventNumberFromFEROLs", &lastEventNumberFromFEROLs_);
-  items.add("i2oDataReadyCount", &i2oDataReadyCount_);
+  items.add("superFragmentSizeStdDev", &superFragmentSizeStdDev_);
+  items.add("dataReadyCount", &dataReadyCount_);
 }
 
 
@@ -669,8 +669,8 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
-  lastEventNumberFromFEROLs_ = lastEventNumber;
-  i2oDataReadyCount_ = dataReadyCount;
+  superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
+  dataReadyCount_ = dataReadyCount;
 }
 
 

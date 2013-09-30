@@ -20,6 +20,7 @@
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
+#include "xdata/Vector.h"
 #include "xgi/Output.h"
 
 
@@ -170,8 +171,10 @@ namespace evb {
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
 
-      xdata::UnsignedInteger64 i2oBUCacheCount_;
-      xdata::UnsignedInteger64 i2oRUSendCount_;
+      xdata::UnsignedInteger64 requestCount_;
+      xdata::UnsignedInteger64 fragmentCount_;
+      xdata::Vector<xdata::UnsignedInteger64> fragmentCountPerRU_;
+      xdata::Vector<xdata::UnsignedInteger64> payloadPerRU_;
     };
 
 

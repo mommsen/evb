@@ -43,15 +43,13 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   eventRate_ = 0;
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
-  nbEvtsCorrupted_ = 0;
-  nbFilesWritten_ = 0;
+  nbLumiSections_ = 0;
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("nbEvtsCorrupted", &nbEvtsCorrupted_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("nbFilesWritten", &nbFilesWritten_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
 }
 
 
@@ -122,26 +120,15 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
       nbEventsBuilt_ = 0;
     }
   }
-  else if (item == "nbEvtsCorrupted")
+  else if (item == "nbLumiSections")
   {
     try
     {
-      nbEvtsCorrupted_.setValue( *(monitoringInfoSpace_->find("nbEvtsCorrupted")) );
+      nbLumiSections_.setValue( *(monitoringInfoSpace_->find("nbLumiSections")) );
     }
     catch(xdata::exception::Exception& e)
     {
-      nbEvtsCorrupted_ = 0;
-    }
-  }
-  else if (item == "nbFilesWritten")
-  {
-    try
-    {
-      nbFilesWritten_.setValue( *(monitoringInfoSpace_->find("nbFilesWritten")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbFilesWritten_ = 0;
+      nbLumiSections_ = 0;
     }
   }
 }

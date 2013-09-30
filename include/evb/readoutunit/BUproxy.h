@@ -168,10 +168,10 @@ namespace evb {
       } dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
 
-      xdata::UnsignedInteger32 lastEventNumberToBUs_;
-      xdata::UnsignedInteger64 i2oBUCacheCount_;
-      xdata::Vector<xdata::UnsignedInteger64> i2oRUSendCountBU_;
-      xdata::Vector<xdata::UnsignedInteger64> i2oBUCachePayloadBU_;
+      xdata::UnsignedInteger64 requestCount_;
+      xdata::UnsignedInteger64 fragmentCount_;
+      xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
+      xdata::Vector<xdata::UnsignedInteger64> payloadPerBU_;
 
     };
 
@@ -654,15 +654,15 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
 {
-  lastEventNumberToBUs_ = 0;
-  i2oBUCacheCount_ = 0;
-  i2oRUSendCountBU_.clear();
-  i2oBUCachePayloadBU_.clear();
+  requestCount_ = 0;
+  fragmentCount_ = 0;
+  requestCountPerBU_.clear();
+  payloadPerBU_.clear();
 
-  items.add("lastEventNumberToBUs", &lastEventNumberToBUs_);
-  items.add("i2oBUCacheCount", &i2oBUCacheCount_);
-  items.add("i2oRUSendCountBU", &i2oRUSendCountBU_);
-  items.add("i2oBUCachePayloadBU", &i2oBUCachePayloadBU_);
+  items.add("requestCount", &requestCount_);
+  items.add("fragmentCount", &fragmentCount_);
+  items.add("requestCountPerBU", &requestCountPerBU_);
+  items.add("payloadPerBU", &payloadPerBU_);
 }
 
 
@@ -671,31 +671,30 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    requestCount_ = requestMonitoring_.logicalCount;
 
-    i2oRUSendCountBU_.clear();
-    i2oRUSendCountBU_.reserve(requestMonitoring_.logicalCountPerBU.size());
+    requestCountPerBU_.clear();
+    requestCountPerBU_.reserve(requestMonitoring_.logicalCountPerBU.size());
     CountsPerBU::const_iterator it, itEnd;
     for (it = requestMonitoring_.logicalCountPerBU.begin(),
            itEnd = requestMonitoring_.logicalCountPerBU.end();
          it != itEnd; ++it)
     {
-      i2oRUSendCountBU_.push_back(it->second);
+      requestCountPerBU_.push_back(it->second);
     }
   }
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    fragmentCount_ = dataMonitoring_.logicalCount;
 
-    lastEventNumberToBUs_ = dataMonitoring_.lastEventNumberToBUs;
-    i2oBUCacheCount_ = dataMonitoring_.logicalCount;
-
-    i2oBUCachePayloadBU_.clear();
-    i2oBUCachePayloadBU_.reserve(dataMonitoring_.payloadPerBU.size());
+    payloadPerBU_.clear();
+    payloadPerBU_.reserve(dataMonitoring_.payloadPerBU.size());
     CountsPerBU::const_iterator it, itEnd;
     for (it = dataMonitoring_.payloadPerBU.begin(),
            itEnd = dataMonitoring_.payloadPerBU.end();
          it != itEnd; ++it)
     {
-      i2oBUCachePayloadBU_.push_back(it->second);
+      payloadPerBU_.push_back(it->second);
     }
   }
 }
