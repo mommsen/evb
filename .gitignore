@@ -1,4 +1,5 @@
 .svn
+rpm
 src/linux
 test/linux
 test/tmp
