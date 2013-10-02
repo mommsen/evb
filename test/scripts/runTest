@@ -38,7 +38,7 @@ then
   exit 1
 fi
 
-localTestDir="${EVB_TESTER_HOME}/${XDAQ_PLATFORM}/$1"
+localTestDir="${EVB_TESTER_HOME}/tmp/$1"
 mkdir -p $localTestDir
 cd $localTestDir
 

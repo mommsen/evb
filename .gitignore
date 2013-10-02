@@ -1,3 +1,4 @@
 .svn
 src/linux
 test/linux
+test/tmp
