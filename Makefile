@@ -22,6 +22,7 @@ include $(XDAQ_ROOT)/config/mfAutoconf.rules
 include $(XDAQ_ROOT)/config/mfDefs.$(XDAQ_OS)
 include $(XDAQ_ROOT)/config/mfDefs.extern_coretools
 include $(XDAQ_ROOT)/config/mfDefs.coretools
+include $(XDAQ_ROOT)/config/mfDefs.powerpack
 include $(XDAQ_ROOT)/config/mfDefs.general_worksuite
 
 #
@@ -83,6 +84,8 @@ IncludeDirs = \
 	$(XI2O_UTILS_INCLUDE_PREFIX) \
 	$(XI2O_INCLUDE_PREFIX) \
 	$(XDAQ2RC_INCLUDE_PREFIX) \
+        $(TCPLA_INCLUDE_PREFIX) \
+        $(PTFRL_INCLUDE_PREFIX) \
 	$(INTERFACE_EVB_INCLUDE_PREFIX) \
 	$(INTERFACE_SHARED_INCLUDE_PREFIX)
 
@@ -96,16 +99,13 @@ TestLibraries = \
 	config \
 	evb \
 	executive \
-	i2o \
-	i2outils \
+	interfaceshared \
 	log4cplus \
 	logudpappender \
 	logxmlappender \
 	mimetic \
 	numa \
 	peer \
-	pttcp \
-	ptutcp \
 	tcpla \
 	toolbox \
 	asyncresolv \
@@ -113,6 +113,7 @@ TestLibraries = \
 	xcept \
 	xdaq \
 	xdata \
+	xdaq2rc \
 	xerces-c \
 	xgi \
 	xoap
@@ -124,21 +125,22 @@ TestLibraryDirs = \
         $(CONFIG_LIB_PREFIX) \
         $(EVB_LIB_PREFIX)  \
         $(EXECUTIVE_LIB_PREFIX)  \
-        $(I2O_LIB_PREFIX)  \
-        $(I2O_UTILS_LIB_PREFIX)  \
         $(LOG4CPLUS_LIB_PREFIX)  \
-        $(LOGUDPAPPENDER_LIB_PREFIX)  \
-        $(LOGXMLAPPENDER_LIB_PREFIX)  \
+        $(LOG_UDPAPPENDER_LIB_PREFIX) \
+        $(LOG_XMLAPPENDER_LIB_PREFIX) \
         $(MIMETIC_LIB_PREFIX) \
         $(PEER_LIB_PREFIX) \
         $(PT_LIB_PREFIX) \
         $(TOOLBOX_LIB_PREFIX) \
         $(UUID_LIB_PREFIX) \
         $(XCEPT_LIB_PREFIX) \
+        $(INTERFACE_SHARED_LIB_PREFIX) \
         $(XDAQ_LIB_PREFIX) \
+        $(TCPLA_LIB_PREFIX) \
         $(XDATA_LIB_PREFIX) \
         $(XERCES_LIB_PREFIX) \
         $(XGI_LIB_PREFIX) \
+        $(XDAQ2RC_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
 UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer #-std=c++0x
@@ -146,7 +148,7 @@ UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer #-std=c++0x
 # These libraries can be platform specific and
 # potentially need conditional processing
 DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system
-DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX)
+DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX)
 UserDynamicLinkFlags = src/$(XDAQ_OS)/$(XDAQ_PLATFORM)/crc16_T10DIF_128x_extended.o
 
 #
@@ -180,5 +182,3 @@ include $(XDAQ_ROOT)/config/mfRPM.rules
 
 crc: src/common/crc16_T10DIF_128x_extended.S
 	gcc -fPIC -c -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
-#crc: src/common/crc16_T10DIF_128x_extended.asm
-#	~aholz/bin/yasm -f x64 -f elf64 -X gnu -g dwarf2  -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<
