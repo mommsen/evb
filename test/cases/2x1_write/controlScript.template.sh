@@ -3,6 +3,8 @@
 # Cleanup
 testDir=/tmp/evb_test
 rm -rf $testDir
+mkdir -p $testDir
+echo "dummy HLT menu for EvB test" >> $testDir/HLTmenu.py
 
 # Launch executive processes
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
@@ -61,6 +63,7 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Enable
 
 #Enable BUs
 setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
+setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/HLTmenu.py"
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 
 echo "Sending data for 15 seconds"
@@ -160,6 +163,19 @@ fi
 if [[ ! -s $testDir/run$runNumber/jsd/EoR.jsd ]]
 then
     echo "Test failed: $testDir/run$runNumber/jsd/EoR.jsd does not exist"
+    exit 1
+fi
+
+if [[ ! -s $testDir/run$runNumber/hltParameterSet.py ]]
+then
+    echo "Test failed: $testDir/run$runNumber/hltParameterSet.py does not exist"
+    exit 1
+fi
+
+if [[ "x`diff -q $testDir/HLTmenu.py $testDir/run$runNumber/hltParameterSet.py`" != "x" ]]
+then
+    echo "Test failed: $testDir/HLTmenu.py $testDir/hltParameterSet.py differ:"
+    diff $testDir/HLTmenu.py $testDir/hltParameterSet.py
     exit 1
 fi
 
