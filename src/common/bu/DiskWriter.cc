@@ -1,4 +1,3 @@
-#include <curl/curl.h>
 #include <errno.h>
 #include <iomanip>
 #include <stdio.h>
@@ -346,41 +345,56 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
     XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl");
   }
 
-  const boost::filesystem::path hltParameterSetPath( runDir / "hltParameterSet.py" );
-  const char* path = hltParameterSetPath.string().c_str();
-  FILE* hltParameterSetFile = fopen(path,"w");
-  if ( ! hltParameterSetFile )
+  try
   {
-    const int errorNumber = errno;
+    const std::string url(configuration_->hltParameterSetURL.value_);
+    retrieveFromURL(curl, url, runDir/"hltParameterSet.py");
 
+    size_t pos = url.rfind("/");
+    const std::string baseURL = url.substr(0,pos+1);
+    retrieveFromURL(curl, baseURL+"SCRAM_ARCH", runDir/"SCRAM_ARCH");
+    retrieveFromURL(curl, baseURL+"CMSSW_VERSION", runDir/"CMSSW_VERSION");
+  }
+  catch(xcept::Exception& e)
+  {
     curl_easy_cleanup(curl);
+    throw(e);
+  }
 
+  curl_easy_cleanup(curl);
+}
+
+
+void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, const boost::filesystem::path& output) const
+{
+  const char* path = output.string().c_str();
+  FILE* file = fopen(path,"w");
+  if ( ! file )
+  {
     std::ostringstream msg;
-    msg << "Failed to open the HLT parameterSet " << hltParameterSetPath
-      << ": " << strerror(errorNumber);
+    msg << "Failed to open file " << path
+      << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, hltParameterSetFile);
-  curl_easy_setopt(curl, CURLOPT_URL, configuration_->hltParameterSetURL.value_.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
 
   const CURLcode res = curl_easy_perform(curl);
 
   if ( res != CURLE_OK )
   {
-    fclose(hltParameterSetFile);
-    curl_easy_cleanup(curl);
+    fclose(file);
 
     std::ostringstream msg;
-    msg << "Failed to retrieve the HLT menu from " << configuration_->hltParameterSetURL.value_
+    msg << "Failed to retrieve the HLT information from  " << url
       << ": " << curl_easy_strerror(res);
     XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
-  fclose(hltParameterSetFile);
+  fclose(file);
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-  curl_easy_cleanup(curl);
 }
 
 

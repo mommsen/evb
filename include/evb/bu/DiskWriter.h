@@ -4,6 +4,7 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <curl/curl.h>
 #include <map>
 #include <stdint.h>
 
@@ -112,7 +113,8 @@ namespace evb {
         const uint32_t eventCount
       ) const;
       void writeEoR() const;
-      void getHLTmenu(const boost::filesystem::path&) const;
+      void getHLTmenu(const boost::filesystem::path& runDir) const;
+      void retrieveFromURL(CURL*, const std::string& url, const boost::filesystem::path& output) const;
       void createLockFile(const boost::filesystem::path&) const;
       void defineEoLSjson();
       void defineEoRjson();

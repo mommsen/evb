@@ -5,6 +5,8 @@ testDir=/tmp/evb_test
 rm -rf $testDir
 mkdir -p $testDir
 echo "dummy HLT menu for EvB test" >> $testDir/HLTmenu.py
+echo "slc6_amd64_gcc472" >> $testDir/SCRAM_ARCH
+echo "cmssw_noxdaq" >> $testDir/CMSSW_VERSION
 
 # Launch executive processes
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
