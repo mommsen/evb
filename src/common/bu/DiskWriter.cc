@@ -1,5 +1,9 @@
-#include <sstream>
+#include <curl/curl.h>
+#include <errno.h>
 #include <iomanip>
+#include <stdio.h>
+#include <sstream>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "evb/BU.h"
@@ -61,6 +65,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
+  getHLTmenu(rawRunDir);
   createLockFile(rawRunDir);
   defineEoLSjson();
   defineEoRjson();
@@ -330,6 +335,52 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
+}
+
+
+void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) const
+{
+  CURL* curl = curl_easy_init();
+  if ( ! curl )
+  {
+    XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl");
+  }
+
+  const boost::filesystem::path hltParameterSetPath( runDir / "hltParameterSet.py" );
+  const char* path = hltParameterSetPath.string().c_str();
+  FILE* hltParameterSetFile = fopen(path,"w");
+  if ( ! hltParameterSetFile )
+  {
+    const int errorNumber = errno;
+
+    curl_easy_cleanup(curl);
+
+    std::ostringstream msg;
+    msg << "Failed to open the HLT parameterSet " << hltParameterSetPath
+      << ": " << strerror(errorNumber);
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
+  }
+
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, hltParameterSetFile);
+  curl_easy_setopt(curl, CURLOPT_URL, configuration_->hltParameterSetURL.value_.c_str());
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
+
+  const CURLcode res = curl_easy_perform(curl);
+
+  if ( res != CURLE_OK )
+  {
+    fclose(hltParameterSetFile);
+    curl_easy_cleanup(curl);
+
+    std::ostringstream msg;
+    msg << "Failed to retrieve the HLT menu from " << configuration_->hltParameterSetURL.value_
+      << ": " << curl_easy_strerror(res);
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
+  }
+
+  fclose(hltParameterSetFile);
+  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+  curl_easy_cleanup(curl);
 }
 
 

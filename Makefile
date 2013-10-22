@@ -147,7 +147,7 @@ UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer #-std=c++0x
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system
+DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system curl
 DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX)
 UserDynamicLinkFlags = src/$(XDAQ_OS)/$(XDAQ_PLATFORM)/crc16_T10DIF_128x_extended.o
 

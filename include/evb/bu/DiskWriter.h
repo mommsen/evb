@@ -112,6 +112,7 @@ namespace evb {
         const uint32_t eventCount
       ) const;
       void writeEoR() const;
+      void getHLTmenu(const boost::filesystem::path&) const;
       void createLockFile(const boost::filesystem::path&) const;
       void defineEoLSjson();
       void defineEoRjson();

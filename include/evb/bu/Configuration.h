@@ -39,6 +39,7 @@ namespace evb {
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
       xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;    // Capacity of the FIFO used for lumi-section monitoring
       xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
+      xdata::String hltParameterSetURL;                    // URL of the HLT menu
 
       Configuration()
       : evmInstance(-1), // Explicitly indicate parameter not set
@@ -56,7 +57,8 @@ namespace evb {
         deleteRawDataFiles(false),
         maxEventsPerFile(2000),
         lumiMonitorFIFOCapacity(128),
-        lumiSectionTimeout(25)
+        lumiSectionTimeout(25),
+        hltParameterSetURL("file:///opt/hltd/python/testFU_cfg1.py")
       {};
 
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
@@ -77,6 +79,7 @@ namespace evb {
         params.add("maxEventsPerFile", &maxEventsPerFile);
         params.add("lumiMonitorFIFOCapacity", &lumiMonitorFIFOCapacity);
         params.add("lumiSectionTimeout", &lumiSectionTimeout);
+        params.add("hltParameterSetURL", &hltParameterSetURL);
       }
     };
 
