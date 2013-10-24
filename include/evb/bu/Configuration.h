@@ -60,7 +60,7 @@ namespace evb {
         maxEventsPerFile(2000),
         lumiMonitorFIFOCapacity(128),
         lumiSectionTimeout(25),
-        hltParameterSetURL("file:///opt/hltd/python/testFU_cfg1.py")
+        hltParameterSetURL("")
       {};
 
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)

@@ -339,6 +339,13 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 
 void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) const
 {
+  std::string url(configuration_->hltParameterSetURL.value_);
+
+  if ( url.empty() )
+  {
+    XCEPT_RAISE(exception::Configuration, "hltParameterSetURL for HLT menu not set");
+  }
+
   CURL* curl = curl_easy_init();
   if ( ! curl )
   {
@@ -347,13 +354,12 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
 
   try
   {
-    const std::string url(configuration_->hltParameterSetURL.value_);
-    retrieveFromURL(curl, url, runDir/"hltParameterSet.py");
+    char lastChar = *url.rbegin();
+    if ( lastChar != '/' ) url += '/';
 
-    size_t pos = url.rfind("/");
-    const std::string baseURL = url.substr(0,pos+1);
-    retrieveFromURL(curl, baseURL+"SCRAM_ARCH", runDir/"SCRAM_ARCH");
-    retrieveFromURL(curl, baseURL+"CMSSW_VERSION", runDir/"CMSSW_VERSION");
+    retrieveFromURL(curl, url+"HltConfig.py", runDir/"HltConfig.py");
+    retrieveFromURL(curl, url+"SCRAM_ARCH", runDir/"SCRAM_ARCH");
+    retrieveFromURL(curl, url+"CMSSW_VERSION", runDir/"CMSSW_VERSION");
   }
   catch(xcept::Exception& e)
   {
@@ -388,7 +394,7 @@ void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, co
     fclose(file);
 
     std::ostringstream msg;
-    msg << "Failed to retrieve the HLT information from  " << url
+    msg << "Failed to retrieve the HLT information from " << url
       << ": " << curl_easy_strerror(res);
     XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
