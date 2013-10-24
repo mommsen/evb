@@ -16,12 +16,14 @@ evb::FragmentTracker::FragmentTracker
   const bool useLogNormal,
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
-  const uint32_t maxFedSize
+  const uint32_t maxFedSize,
+  const bool computeCRC
 ) :
 fedId_(fedId),
 fedSize_(fedSize),
 minFedSize_(minFedSize),
 maxFedSize_(maxFedSize),
+computeCRC_(computeCRC),
 fedCRC_(0xffff),
 typeOfNextComponent_(FED_HEADER)
 {
@@ -87,7 +89,9 @@ size_t evb::FragmentTracker::fillData
         fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | evbId_.eventNumber();
 
-        fedCRC_ = crcCalculator_.compute(payload,sizeof(fedh_t));
+        if ( computeCRC_ )
+          fedCRC_ = crcCalculator_.compute(payload,sizeof(fedh_t));
+
         payload += sizeof(fedh_t);
         bytesFilled += sizeof(fedh_t);
         nbBytesAvailable -= sizeof(fedh_t);
@@ -111,7 +115,9 @@ size_t evb::FragmentTracker::fillData
         }
 
         memset(payload, 0xCA, payloadSize);
-        crcCalculator_.compute(fedCRC_,payload,payloadSize);
+
+        if ( computeCRC_ )
+          crcCalculator_.compute(fedCRC_,payload,payloadSize);
 
         payload += payloadSize;
         bytesFilled += payloadSize;
@@ -128,11 +134,14 @@ size_t evb::FragmentTracker::fillData
         fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) |
           (currentFedSize_ >> 3);
 
-        // Force CRC & R field to zero before re-computing the CRC.
-        // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-        fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-        crcCalculator_.compute(fedCRC_,payload,sizeof(fedt_t));
-        fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
+        if ( computeCRC_ )
+        {
+          // Force CRC & R field to zero before re-computing the CRC.
+          // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+          fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+          crcCalculator_.compute(fedCRC_,payload,sizeof(fedt_t));
+          fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
+        }
 
         payload += sizeof(fedt_t);
         bytesFilled += sizeof(fedt_t);

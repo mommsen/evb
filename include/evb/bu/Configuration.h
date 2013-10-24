@@ -35,6 +35,7 @@ namespace evb {
       xdata::Double rawDataLowWaterMark;
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
+      xdata::Boolean checkCRC;                             // If set to true, check the CRC of the FED fragments
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
       xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;    // Capacity of the FIFO used for lumi-section monitoring
@@ -54,6 +55,7 @@ namespace evb {
         rawDataLowWaterMark(0.5),
         metaDataHighWaterMark(0.9),
         metaDataLowWaterMark(0.5),
+        checkCRC(true),
         deleteRawDataFiles(false),
         maxEventsPerFile(2000),
         lumiMonitorFIFOCapacity(128),
@@ -75,6 +77,7 @@ namespace evb {
         params.add("rawDataLowWaterMark", &rawDataLowWaterMark);
         params.add("metaDataHighWaterMark", &metaDataHighWaterMark);
         params.add("metaDataLowWaterMark", &metaDataLowWaterMark);
+        params.add("checkCRC", &checkCRC);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("maxEventsPerFile", &maxEventsPerFile);
         params.add("lumiMonitorFIFOCapacity", &lumiMonitorFIFOCapacity);

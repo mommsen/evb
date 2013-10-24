@@ -17,8 +17,6 @@
 #ifndef _evb_CRCCalculator_h_
 #define _evb_CRCCalculator_h_
 
-//#define EVB_CALCULATE_CRC
-
 #include <cassert>
 #include <stddef.h>
 #include <stdint.h>

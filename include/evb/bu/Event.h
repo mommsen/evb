@@ -62,7 +62,7 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent() const;
+      void checkEvent(const bool computeCRC) const;
 
       /**
        * Write the event to disk using the handler passed
@@ -119,7 +119,7 @@ namespace evb {
       public:
         FedInfo(const unsigned char* pos, uint32_t& remainingLength);
         void addDataChunk(const unsigned char* pos, uint32_t& remainingLength);
-        void checkData(const uint32_t eventNumber) const;
+        void checkData(const uint32_t eventNumber, const bool computeCRC) const;
 
         bool complete() const { return (remainingFedSize_ == 0); }
 

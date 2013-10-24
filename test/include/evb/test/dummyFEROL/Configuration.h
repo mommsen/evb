@@ -22,6 +22,7 @@ namespace evb {
         xdata::UnsignedInteger32 destinationInstance;
         xdata::UnsignedInteger32 fedId;
         xdata::UnsignedInteger32 fedSize;
+        xdata::Boolean computeCRC;
         xdata::Boolean useLogNormal;
         xdata::UnsignedInteger32 fedSizeStdDev;
         xdata::UnsignedInteger32 minFedSize;
@@ -34,6 +35,7 @@ namespace evb {
         Configuration()
         : destinationClass("evb::RU"),
           fedSize(2048),
+          computeCRC(false),
           useLogNormal(false),
           fedSizeStdDev(0),
           minFedSize(8), // minimum is 8 Bytes
@@ -53,6 +55,7 @@ namespace evb {
           params.add("destinationInstance", &destinationInstance);
           params.add("fedId", &fedId);
           params.add("fedSize", &fedSize);
+          params.add("computeCRC", &computeCRC);
           params.add("useLogNormal", &useLogNormal);
           params.add("fedSizeStdDev", &fedSizeStdDev);
           params.add("minFedSize", &minFedSize);

@@ -423,10 +423,13 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
 
       const uint32_t dataLength = ferolHeader->data_length();
 
-      if ( ferolHeader->is_last_packet() )
-        crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
-      else
-        crcCalculator_.compute(crc,payload,dataLength);
+      if ( configuration_->checkCRC )
+      {
+        if ( ferolHeader->is_last_packet() )
+          crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+        else
+          crcCalculator_.compute(crc,payload,dataLength);
+      }
 
       payload += dataLength;
       fedSize += dataLength;
@@ -493,24 +496,25 @@ void evb::readoutunit::Input<Configuration>::checkEventFragment
       XCEPT_RAISE(exception::DataCorruption, oss.str());
     }
 
-    // Force CRC & R field to zero before re-computing the CRC.
-    // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-    const uint32_t conscheck = trailer->conscheck;
-    trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-    crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
-    trailer->conscheck = conscheck;
-
-    #ifdef EVB_CALCULATE_CRC
-    const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
-    if ( trailerCRC != crc )
+    if ( configuration_->checkCRC )
     {
-      std::ostringstream oss;
-      oss << "Wrong CRC checksum:" << std::hex;
-      oss << " FED trailer claims 0x" << trailerCRC;
-      oss << ", but recalculation gives 0x" << crc;
-      XCEPT_RAISE(exception::DataCorruption, oss.str());
+      // Force CRC & R field to zero before re-computing the CRC.
+      // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+      const uint32_t conscheck = trailer->conscheck;
+      trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+      crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+      trailer->conscheck = conscheck;
+
+      const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+      if ( trailerCRC != crc )
+      {
+        std::ostringstream oss;
+        oss << "Wrong CRC checksum:" << std::hex;
+        oss << " FED trailer claims 0x" << trailerCRC;
+        oss << ", but recalculation gives 0x" << crc;
+        XCEPT_RAISE(exception::DataCorruption, oss.str());
+      }
     }
-    #endif
 
     boost::mutex::scoped_lock sl(inputMonitorsMutex_);
 
@@ -1043,7 +1047,7 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::sh
 
     FragmentTrackerPtr fragmentTracker(
       new FragmentTracker(fedId,configuration->dummyFedSize,configuration->useLogNormal,
-        configuration->dummyFedSizeStdDev,configuration->dummyFedSizeMin,configuration->dummyFedSizeMax)
+        configuration->dummyFedSizeStdDev,configuration->dummyFedSizeMin,configuration->dummyFedSizeMax,configuration->computeCRC)
     );
     fragmentTrackers_.insert( FragmentTrackers::value_type(fedId,fragmentTracker) );
   }

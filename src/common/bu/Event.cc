@@ -128,7 +128,7 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler) const
 }
 
 
-void evb::bu::Event::checkEvent() const
+void evb::bu::Event::checkEvent(const bool computeCRC) const
 {
   if ( ! isComplete() )
   {
@@ -159,7 +159,7 @@ void evb::bu::Event::checkEvent() const
         fedInfo.addDataChunk((*rit)->location, remainingLength);
       }
 
-      fedInfo.checkData( evbId_.eventNumber() );
+      fedInfo.checkData(evbId_.eventNumber(), computeCRC);
 
       if ( !eventInfo_->addFedSize(fedInfo) )
       {
@@ -237,7 +237,7 @@ void evb::bu::Event::FedInfo::addDataChunk(const unsigned char* pos, uint32_t& r
 }
 
 
-void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber) const
+void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool computeCRC) const
 {
   if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
   {
@@ -273,31 +273,32 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber) const
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  #ifdef EVB_CALCULATE_CRC
-  // Force CRC & R field to zero before re-computing the CRC.
-  // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-  const uint32_t conscheck = trailer()->conscheck;
-  trailer()->conscheck &= ~(FED_CRCS_MASK | 0x4);
-
-  uint16_t crc(0xffff);
-  for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
-       rit != ritEnd; ++rit)
+  if ( computeCRC )
   {
-    crcCalculator_.compute(crc,(*rit)->location,(*rit)->length);
-  }
+    // Force CRC & R field to zero before re-computing the CRC.
+    // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+    const uint32_t conscheck = trailer()->conscheck;
+    trailer()->conscheck &= ~(FED_CRCS_MASK | 0x4);
 
-  trailer()->conscheck = conscheck;
-  const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+    uint16_t crc(0xffff);
+    for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
+         rit != ritEnd; ++rit)
+    {
+      crcCalculator_.compute(crc,(*rit)->location,(*rit)->length);
+    }
 
-  if ( trailerCRC != crc )
-  {
-    std::ostringstream oss;
-    oss << "Wrong CRC checksum in FED trailer for FED " << fedId();
-    oss << ": found 0x" << std::hex << trailerCRC;
-    oss << ", but calculated 0x" << std::hex << crc;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    trailer()->conscheck = conscheck;
+    const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+
+    if ( trailerCRC != crc )
+    {
+      std::ostringstream oss;
+      oss << "Wrong CRC checksum in FED trailer for FED " << fedId();
+      oss << ": found 0x" << std::hex << trailerCRC;
+      oss << ", but calculated 0x" << std::hex << crc;
+      XCEPT_RAISE(exception::DataCorruption, oss.str());
+    }
   }
-  #endif
 }
 
 

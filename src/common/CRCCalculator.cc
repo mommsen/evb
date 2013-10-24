@@ -167,8 +167,6 @@ uint16_t evb::CRCCalculator::compute(const uint8_t* buffer, size_t bufSize) cons
 
 void evb::CRCCalculator::compute(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const
 {
-  #ifdef EVB_CALCULATE_CRC
-
   assert(0==bufSize%8);
   if ( bufSize == 0 ) return;
 
@@ -202,8 +200,6 @@ void evb::CRCCalculator::compute(uint16_t& crc, const uint8_t* buffer, size_t bu
       computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
     }
   }
-
-  #endif //EVB_CALCULATE_CRC
 }
 
 

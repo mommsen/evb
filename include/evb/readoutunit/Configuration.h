@@ -27,8 +27,10 @@ namespace evb {
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
       xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
+      xdata::Boolean checkCRC;                               // If set to true, check the CRC of the FED fragments
       xdata::Boolean dumpFragmentsToLogger;                  // If set to true, the incoming fragments are dumped to the logger
       xdata::Boolean dropInputData;                          // If set to true, the input data is dropped
+      xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
       xdata::UnsignedInteger32 dummyFedSize;                 // Mean size in Bytes of the FED when running in Local mode
@@ -47,8 +49,10 @@ namespace evb {
         blockSize(65536),
         fragmentFIFOCapacity(128),
         fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
+        checkCRC(false),
         dumpFragmentsToLogger(false),
         dropInputData(false),
+        computeCRC(true),
         usePlayback(false),
         playbackDataFile(""),
         dummyFedSize(2048),
@@ -77,8 +81,10 @@ namespace evb {
         params.add("blockSize", &blockSize);
         params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
+        params.add("checkCRC", &checkCRC);
         params.add("dumpFragmentsToLogger", &dumpFragmentsToLogger);
         params.add("dropInputData", &dropInputData);
+        params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSize", &dummyFedSize);

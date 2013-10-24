@@ -250,7 +250,7 @@ void evb::bu::EventBuilder::buildEvent
         if ( event->isComplete() )
         {
           // the event is complete
-          event->checkEvent();
+          event->checkEvent(configuration_->checkCRC);
           resourceManager_->eventCompleted(event);
 
           if ( ! configuration_->dropEventData )

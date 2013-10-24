@@ -28,7 +28,8 @@ namespace evb {
       const bool useLogNormal,
       const uint32_t fedSizeStdDev,
       const uint32_t minFedSize,
-      const uint32_t maxFedSize
+      const uint32_t maxFedSize,
+      const bool computeCRC
     );
 
     /**
@@ -66,6 +67,7 @@ namespace evb {
     const uint32_t fedSize_;
     const uint32_t minFedSize_;
     const uint32_t maxFedSize_;
+    const bool computeCRC_;
     boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
     uint16_t fedCRC_;
     FedComponent typeOfNextComponent_;
