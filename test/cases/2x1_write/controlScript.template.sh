@@ -4,7 +4,7 @@
 testDir=/tmp/evb_test
 rm -rf $testDir
 mkdir -p $testDir
-echo "dummy HLT menu for EvB test" >> $testDir/HLTmenu.py
+echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
 echo "slc6_amd64_gcc472" >> $testDir/SCRAM_ARCH
 echo "cmssw_noxdaq" >> $testDir/CMSSW_VERSION
 
@@ -65,7 +65,7 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Enable
 
 #Enable BUs
 setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
-setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/HLTmenu.py"
+setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/"
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 
 echo "Sending data for 15 seconds"
@@ -168,16 +168,16 @@ then
     exit 1
 fi
 
-if [[ ! -s $testDir/run$runNumber/hltParameterSet.py ]]
+if [[ ! -s $testDir/run$runNumber/HltConfig.py ]]
 then
-    echo "Test failed: $testDir/run$runNumber/hltParameterSet.py does not exist"
+    echo "Test failed: $testDir/run$runNumber/HltConfig.py does not exist"
     exit 1
 fi
 
-if [[ "x`diff -q $testDir/HLTmenu.py $testDir/run$runNumber/hltParameterSet.py`" != "x" ]]
+if [[ "x`diff -q $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py`" != "x" ]]
 then
-    echo "Test failed: $testDir/HLTmenu.py $testDir/hltParameterSet.py differ:"
-    diff $testDir/HLTmenu.py $testDir/hltParameterSet.py
+    echo "Test failed: $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py differ:"
+    diff $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py
     exit 1
 fi
 
