@@ -66,7 +66,6 @@ namespace evb {
 
       void writeJSON() const;
       void defineJSON(const boost::filesystem::path&) const;
-      void calcAdler32(const unsigned char* address, size_t length);
 
       typedef std::map<uint32_t,uint32_t> LumiIndex;
       static uint32_t getNextIndex(const uint32_t lumiSection);
@@ -82,8 +81,6 @@ namespace evb {
 
       uint64_t fileSize_;
       uint32_t eventCount_;
-      uint32_t adlerA_;
-      uint32_t adlerB_;
 
       boost::mutex mutex_;
 

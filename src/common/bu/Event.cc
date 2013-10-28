@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sstream>
+#include <zlib.h>
 
 #include "interface/evb/i2oEVBMsgs.h"
 #include "interface/shared/ferol_header.h"
@@ -92,7 +93,11 @@ bool evb::bu::Event::appendSuperFragment
 }
 
 
-void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler) const
+void evb::bu::Event::writeToDisk
+(
+  FileHandlerPtr fileHandler,
+  const bool calculateAdler32
+) const
 {
   if ( dataLocations_.empty() )
   {
@@ -101,20 +106,23 @@ void evb::bu::Event::writeToDisk(FileHandlerPtr fileHandler) const
 
   // Get the memory mapped file chunk
   const size_t bufferSize = eventInfo_->getBufferSize();
-  char* map = (char*)fileHandler->getMemMap(bufferSize);
-
-  // Write event information
-  memcpy(map, eventInfo_, eventInfo_->headerSize);
+  unsigned char* map = (unsigned char*)fileHandler->getMemMap(bufferSize);
 
   // Write event
-  char* filepos = map+eventInfo_->headerSize;
+  unsigned char* filepos = map + eventInfo_->headerSize;
 
   for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
        it != itEnd; ++it)
   {
+    if ( calculateAdler32 )
+      eventInfo_->adler = adler32(eventInfo_->adler, (*it)->location, (*it)->length);
+
     memcpy(filepos, (*it)->location, (*it)->length);
     filepos += (*it)->length;
   }
+
+  // Write event information
+  memcpy(map, eventInfo_, eventInfo_->headerSize);
 
   if ( munmap(map, bufferSize) == -1 )
   {
@@ -324,11 +332,13 @@ evb::bu::Event::EventInfo::EventInfo
   const uint32_t lumi,
   const uint32_t event
 ) :
-version(3),
+version(4),
 runNumber(run),
 lumiSection(lumi),
 eventNumber(event),
-eventSize(0)
+adler(adler32(0L,Z_NULL,0)),
+eventSize(0),
+paddingSize(0)
 {
   for (uint16_t i=0; i<FED_COUNT; ++i)
     fedSizes[i] = 0;
@@ -355,6 +365,7 @@ size_t evb::bu::Event::EventInfo::getBufferSize()
   paddingSize = pageSize - (headerSize + eventSize) % pageSize;
   return ( headerSize + eventSize + paddingSize );
 }
+
 
 namespace evb{
   namespace bu {

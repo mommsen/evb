@@ -28,9 +28,7 @@ runRawDataDir_(runRawDataDir),
 runMetaDataDir_(runMetaDataDir),
 fileDescriptor_(0),
 fileSize_(0),
-eventCount_(0),
-adlerA_(1),
-adlerB_(0)
+eventCount_(0)
 {
   std::ostringstream fileNameStream;
   fileNameStream << std::setfill('0') <<
@@ -123,6 +121,7 @@ void evb::bu::FileHandler::close()
       fileDescriptor_ = 0;
 
       const boost::filesystem::path destination( runRawDataDir_.parent_path() / fileName_ );
+      //boost::filesystem::remove(runRawDataDir_ / fileName_);
       boost::filesystem::rename(runRawDataDir_ / fileName_, destination);
       chmod(destination.string().c_str(),S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 
@@ -184,26 +183,6 @@ void evb::bu::FileHandler::defineJSON(const boost::filesystem::path& jsonDefFile
   json << "}"                                                 << std::endl;
   json.close();
   chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-}
-
-
-void evb::bu::FileHandler::calcAdler32(const unsigned char* address, size_t len)
-{
-  #define MOD_ADLER 65521
-
-  while (len > 0) {
-    size_t tlen = (len > 5552 ? 5552 : len);
-    len -= tlen;
-    do {
-      adlerA_ += *address++ & 0xff;
-      adlerB_ += adlerA_;
-    } while (--tlen);
-
-    adlerA_ %= MOD_ADLER;
-    adlerB_ %= MOD_ADLER;
-  }
-
-  #undef MOD_ADLER
 }
 
 

@@ -74,7 +74,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
     ++(currentLumiMonitor_->nbFiles);
   }
 
-  event->writeToDisk(fileHandler_);
+  event->writeToDisk(fileHandler_, configuration_->calculateAdler32);
 
   currentLumiMonitor_->update( event->getEvBid().eventNumber() );
 

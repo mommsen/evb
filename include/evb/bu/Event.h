@@ -67,7 +67,7 @@ namespace evb {
       /**
        * Write the event to disk using the handler passed
        */
-      void writeToDisk(FileHandlerPtr) const;
+      void writeToDisk(FileHandlerPtr, const bool calculateAdler32) const;
 
       /**
        * Return the event-builder id of the event
@@ -144,11 +144,12 @@ namespace evb {
         const uint32_t runNumber;
         const uint32_t lumiSection;
         const uint32_t eventNumber;
+        uint32_t adler;
         uint32_t eventSize;
         uint32_t paddingSize;
         uint32_t fedSizes[FED_COUNT];
 
-        static const size_t headerSize = sizeof(uint32_t)*(6+FED_COUNT);
+        static const size_t headerSize = sizeof(uint32_t)*(7+FED_COUNT);
 
         EventInfo(
           const uint32_t runNumber,
