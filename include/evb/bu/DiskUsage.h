@@ -24,8 +24,8 @@ namespace evb {
       DiskUsage
       (
         const boost::filesystem::path& path,
-        const double lowWaterMark,
-        const double highWaterMark,
+        const float lowWaterMark,
+        const float highWaterMark,
         const bool deleteFiles
       );
 
@@ -38,21 +38,20 @@ namespace evb {
       bool update();
 
       /**
-       * Returns true if the disk usage is exceeding the high-water mark.
-       * Once the high-water mark has been exceeded, the lower-water mark
-       * has be be reached before it returns false again.
+       * Returns the change in the relative disk usage
+       * btw the low and high water mark.
        */
-      bool tooHigh();
+      float overThreshold();
 
       /**
        * Return the disk size in GB
        */
-      double diskSizeGB();
+      float diskSizeGB();
 
       /**
        * Return the relative usage of the disk in percent
        */
-      double relDiskUsage();
+      float relDiskUsage();
 
 
     private:
@@ -60,14 +59,14 @@ namespace evb {
       void doStatFs();
 
       const boost::filesystem::path path_;
-      const double lowWaterMark_;
-      const double highWaterMark_;
+      const float lowWaterMark_;
+      const float highWaterMark_;
       const bool deleteFiles_;
+      float previousOverThreshold_;
 
       boost::mutex mutex_;
       int retVal_;
       struct statfs64 statfs_;
-      bool tooHigh_;
     };
 
     typedef boost::shared_ptr<DiskUsage> DiskUsagePtr;

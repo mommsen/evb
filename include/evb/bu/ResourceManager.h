@@ -117,13 +117,14 @@ namespace evb {
       BU* bu_;
       const ConfigurationPtr configuration_;
 
-      bool throttle_;
+      int16_t throttleResources_;
 
       typedef std::list<EvBid> EvBidList;
       typedef std::map<uint32_t, EvBidList> AllocatedResources;
       AllocatedResources allocatedResources_;
       boost::mutex allocatedResourcesMutex_;
 
+      uint32_t nbResources_;
       typedef OneToOneQueue<uint32_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;

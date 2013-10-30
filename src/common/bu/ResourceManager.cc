@@ -3,6 +3,7 @@
 #include "evb/bu/StateMachine.h"
 #include "evb/Constants.h"
 #include "evb/EvBid.h"
+#include "evb/Exception.h"
 #include "evb/I2OMessages.h"
 #include "xcept/tools.h"
 
@@ -15,7 +16,7 @@ evb::bu::ResourceManager::ResourceManager
   BU* bu
 ) :
 bu_(bu),
-throttle_(false),
+throttleResources_(0),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO")
 {
@@ -97,8 +98,14 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
     {
       allocatedResources_.erase(pos);
 
-      if ( throttle_ )
+      if ( throttleResources_ > 0 )
+      {
         blockedResourceFIFO_.enqWait(event->buResourceId());
+        --throttleResources_;
+
+        if ( blockedResourceFIFO_.full() ) // all resource ids have been blocked
+          throttleResources_ = 0;
+      }
       else
         freeResourceFIFO_.enqWait(event->buResourceId());
     }
@@ -113,7 +120,18 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 
 bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 {
-  if ( freeResourceFIFO_.deq(buResourceId) || ( !throttle_ && blockedResourceFIFO_.deq(buResourceId) ) )
+  bool gotResource = freeResourceFIFO_.deq(buResourceId);
+
+  if ( !gotResource && throttleResources_ < 0 && blockedResourceFIFO_.deq(buResourceId) )
+  {
+    gotResource = true;
+    ++throttleResources_;
+
+    if ( blockedResourceFIFO_.empty() ) // all resource ids have been unblocked
+      throttleResources_ = 0;
+  }
+
+  if ( gotResource )
   {
     {
       boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
@@ -147,16 +165,21 @@ void evb::bu::ResourceManager::monitorDiskUsage(DiskUsagePtr& diskUsage)
 
 void evb::bu::ResourceManager::getDiskUsages()
 {
+  float delta = -1;
+
   for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
         it != itEnd; ++it)
   {
     (*it)->update();
 
-    if ( (*it)->tooHigh() )
-      throttle_ = true;
-    else
-      throttle_ = false;
+    delta = std::max(delta,(*it)->overThreshold());
   }
+
+  int16_t resourceIdsToBlock = static_cast<int16_t>(delta * nbResources_);
+  if ( resourceIdsToBlock == 0 && delta != 0 )  // also act if the difference is rounded off
+    resourceIdsToBlock = (delta > 0) ? 1 : -1;
+
+  throttleResources_ += resourceIdsToBlock;
 }
 
 
@@ -212,13 +235,13 @@ void evb::bu::ResourceManager::configure()
   blockedResourceFIFO_.clear();
   allocatedResources_.clear();
 
-  const uint32_t nbResources = std::max(1U,
+  nbResources_ = std::max(1U,
     bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
     bu_->getConfiguration()->eventsPerRequest.value_);
-  freeResourceFIFO_.resize(nbResources);
-  blockedResourceFIFO_.resize(nbResources);
+  freeResourceFIFO_.resize(nbResources_);
+  blockedResourceFIFO_.resize(nbResources_);
 
-  for (uint32_t buResourceId = 0; buResourceId < nbResources; ++buResourceId)
+  for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
   {
     assert( freeResourceFIFO_.enq(buResourceId) );
   }

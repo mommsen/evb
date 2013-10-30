@@ -69,6 +69,11 @@ namespace evb {
     bool empty() const;
 
     /**
+     * Returns true if the queue is full.
+     */
+    bool full() const;
+
+    /**
      * Resizes the queue.
      * Throws an exception if queue is not empty.
      */
@@ -163,6 +168,14 @@ namespace evb {
   template <class T>
   bool OneToOneQueue<T>::empty() const
   { return (readPointer_ == writePointer_); }
+
+
+  template <class T>
+  bool OneToOneQueue<T>::full() const
+  {
+    volatile const uint32_t nextElement = (writePointer_ + 1) % size_;
+    return ( nextElement == readPointer_ );
+  }
 
 
   template <class T>

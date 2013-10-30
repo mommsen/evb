@@ -6,22 +6,33 @@
 #include <boost/thread.hpp>
 
 #include "evb/bu/DiskUsage.h"
+#include "evb/Exception.h"
+#include "xcept/tools.h"
 
 
 evb::bu::DiskUsage::DiskUsage
 (
   const boost::filesystem::path& path,
-  const double lowWaterMark,
-  const double highWaterMark,
+  const float lowWaterMark,
+  const float highWaterMark,
   const bool deleteFiles
 ) :
 path_(path),
 lowWaterMark_(lowWaterMark),
 highWaterMark_(highWaterMark),
 deleteFiles_(deleteFiles),
-retVal_(1),
-tooHigh_(true)
+previousOverThreshold_(0),
+retVal_(1)
 {
+  if ( lowWaterMark >= highWaterMark )
+  {
+    std::ostringstream oss;
+    oss << "The lowWaterMark " << lowWaterMark;
+    oss << " must be smaller than the highWaterMark " << highWaterMark;
+    oss << " for " << path;
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+
   update();
 }
 
@@ -47,21 +58,16 @@ bool evb::bu::DiskUsage::update()
 }
 
 
-bool evb::bu::DiskUsage::tooHigh()
+float evb::bu::DiskUsage::overThreshold()
 {
-  const double diskUsage = relDiskUsage();
+  const float diskUsage = relDiskUsage();
 
-  if ( diskUsage < 0 ) return true; //error condition
+  float overThreshold = (diskUsage < lowWaterMark_) ? 0 :
+    (diskUsage - lowWaterMark_) / (highWaterMark_ - lowWaterMark_);
 
-  // The disk usage is too high if the high water mark is exceeded.
-  // If the disk usage exceeded the high water mark, the usage has to decrease
-  // to the low water mark before setting tooHigh to false again.
-  if ( tooHigh_ )
-    tooHigh_ = ( diskUsage > lowWaterMark_ );
-  else
-    tooHigh_ = ( diskUsage > highWaterMark_ );
+  if ( diskUsage < 0 ) overThreshold = 1; //error condition
 
-  if ( tooHigh_ && deleteFiles_ )
+  if ( deleteFiles_ && overThreshold > 0.95 )
   {
     boost::filesystem::recursive_directory_iterator it(path_);
     while ( it != boost::filesystem::recursive_directory_iterator() )
@@ -80,25 +86,28 @@ bool evb::bu::DiskUsage::tooHigh()
     }
   }
 
-  return tooHigh_;
+  const float deltaOverThreshold = overThreshold - previousOverThreshold_;
+  previousOverThreshold_ = overThreshold;
+
+  return deltaOverThreshold;
 }
 
 
-double evb::bu::DiskUsage::diskSizeGB()
+float evb::bu::DiskUsage::diskSizeGB()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
   if ( ! lock ) return -2;
 
-  return ( retVal_==0 ? static_cast<double>(statfs_.f_blocks * statfs_.f_bsize) / 1024 / 1024 / 1024 : -1 );
+  return ( retVal_==0 ? static_cast<float>(statfs_.f_blocks * statfs_.f_bsize) / 1024 / 1024 / 1024 : -1 );
 }
 
 
-double evb::bu::DiskUsage::relDiskUsage()
+float evb::bu::DiskUsage::relDiskUsage()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
   if ( ! lock ) return -2;
 
-  return ( retVal_==0 ? 1 - static_cast<double>(statfs_.f_bavail)/statfs_.f_blocks : -1 );
+  return ( retVal_==0 ? 1 - static_cast<float>(statfs_.f_bavail)/statfs_.f_blocks : -1 );
 }
 
 
