@@ -199,12 +199,12 @@ void evb::test::DummyFEROL::configure()
     configuration_->playbackDataFile,
     configuration_->frameSize,
     configuration_->fedSize,
+    configuration_->computeCRC,
     configuration_->useLogNormal,
     configuration_->fedSizeStdDev,
     configuration_->minFedSize,
     configuration_->maxFedSize,
-    configuration_->frameSize*configuration_->fragmentFIFOCapacity,
-    configuration_->computeCRC
+    configuration_->frameSize*configuration_->fragmentFIFOCapacity
   );
 
   getApplicationDescriptors();

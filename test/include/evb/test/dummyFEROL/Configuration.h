@@ -35,7 +35,7 @@ namespace evb {
         Configuration()
         : destinationClass("evb::RU"),
           fedSize(2048),
-          computeCRC(false),
+          computeCRC(true),
           useLogNormal(false),
           fedSizeStdDev(0),
           minFedSize(8), // minimum is 8 Bytes
