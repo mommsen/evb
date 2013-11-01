@@ -21,7 +21,6 @@ path_(path),
 lowWaterMark_(lowWaterMark),
 highWaterMark_(highWaterMark),
 deleteFiles_(deleteFiles),
-previousOverThreshold_(0),
 retVal_(1)
 {
   if ( lowWaterMark >= highWaterMark )
@@ -62,12 +61,9 @@ float evb::bu::DiskUsage::overThreshold()
 {
   const float diskUsage = relDiskUsage();
 
-  float overThreshold = (diskUsage < lowWaterMark_) ? 0 :
-    (diskUsage - lowWaterMark_) / (highWaterMark_ - lowWaterMark_);
+  if ( diskUsage < 0 ) return 1; //error condition
 
-  if ( diskUsage < 0 ) overThreshold = 1; //error condition
-
-  if ( deleteFiles_ && overThreshold > 0.95 )
+  if ( deleteFiles_ && diskUsage > highWaterMark_ )
   {
     boost::filesystem::recursive_directory_iterator it(path_);
     while ( it != boost::filesystem::recursive_directory_iterator() )
@@ -86,10 +82,8 @@ float evb::bu::DiskUsage::overThreshold()
     }
   }
 
-  const float deltaOverThreshold = overThreshold - previousOverThreshold_;
-  previousOverThreshold_ = overThreshold;
-
-  return deltaOverThreshold;
+  return (diskUsage < lowWaterMark_) ? 0 :
+    (diskUsage - lowWaterMark_) / (highWaterMark_ - lowWaterMark_);
 }
 
 

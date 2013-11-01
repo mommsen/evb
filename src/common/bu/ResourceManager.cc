@@ -8,6 +8,7 @@
 #include "xcept/tools.h"
 
 #include <algorithm>
+#include <math.h>
 #include <string.h>
 
 
@@ -102,9 +103,6 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
       {
         blockedResourceFIFO_.enqWait(event->buResourceId());
         --throttleResources_;
-
-        if ( blockedResourceFIFO_.full() ) // all resource ids have been blocked
-          throttleResources_ = 0;
       }
       else
         freeResourceFIFO_.enqWait(event->buResourceId());
@@ -126,9 +124,6 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
   {
     gotResource = true;
     ++throttleResources_;
-
-    if ( blockedResourceFIFO_.empty() ) // all resource ids have been unblocked
-      throttleResources_ = 0;
   }
 
   if ( gotResource )
@@ -165,20 +160,19 @@ void evb::bu::ResourceManager::monitorDiskUsage(DiskUsagePtr& diskUsage)
 
 void evb::bu::ResourceManager::getDiskUsages()
 {
-  float delta = -1;
+  if ( diskUsageMonitors_.empty() ) return;
+
+  float overThreshold = 0;
 
   for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
         it != itEnd; ++it)
   {
     (*it)->update();
 
-    delta = std::max(delta,(*it)->overThreshold());
+    overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
 
-  int16_t resourceIdsToBlock = static_cast<int16_t>(delta * nbResources_);
-  if ( resourceIdsToBlock == 0 && delta != 0 )  // also act if the difference is rounded off
-    resourceIdsToBlock = (delta > 0) ? 1 : -1;
-
+  const int16_t resourceIdsToBlock = round(overThreshold * nbResources_) - blockedResourceFIFO_.elements();
   throttleResources_ += resourceIdsToBlock;
 }
 

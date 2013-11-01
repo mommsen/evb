@@ -245,32 +245,19 @@ void evb::bu::DiskWriter::configure()
   if ( configuration_->dropEventData ) return;
 
   createDir(configuration_->rawDataDir.value_);
-  if ( configuration_->rawDataLowWaterMark > configuration_->rawDataHighWaterMark )
-  {
-    std::ostringstream oss;
-    oss << "The high water mark " << configuration_->rawDataHighWaterMark.value_;
-    oss << " for the raw data path " << configuration_->rawDataDir.value_;
-    oss << " is smaller than the low water mark " << configuration_->rawDataLowWaterMark.value_;
-    XCEPT_RAISE(exception::Configuration, oss.str());
-  }
   DiskUsagePtr rawDiskUsage(
     new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
   );
   resourceManager_->monitorDiskUsage(rawDiskUsage);
 
-  createDir(configuration_->metaDataDir.value_);
-  if ( configuration_->metaDataLowWaterMark > configuration_->metaDataHighWaterMark )
+  if ( configuration_->metaDataDir != configuration_->rawDataDir )
   {
-    std::ostringstream oss;
-    oss << "The high water mark " << configuration_->metaDataHighWaterMark.value_;
-    oss << " for the meta data path " << configuration_->metaDataDir.value_;
-    oss << " is smaller than the low water mark " << configuration_->metaDataLowWaterMark.value_;
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    createDir(configuration_->metaDataDir.value_);
+    DiskUsagePtr metaDiskUsage(
+      new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
+    );
+    resourceManager_->monitorDiskUsage(metaDiskUsage);
   }
-  DiskUsagePtr metaDiskUsage(
-    new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
-  );
-  resourceManager_->monitorDiskUsage(metaDiskUsage);
 
   resetMonitoringCounters();
 }

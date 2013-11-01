@@ -62,7 +62,6 @@ namespace evb {
       const float lowWaterMark_;
       const float highWaterMark_;
       const bool deleteFiles_;
-      float previousOverThreshold_;
 
       boost::mutex mutex_;
       int retVal_;
