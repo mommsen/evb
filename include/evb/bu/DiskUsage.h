@@ -53,6 +53,11 @@ namespace evb {
        */
       float relDiskUsage();
 
+      /**
+       * Return the path being monitored
+       */
+      boost::filesystem::path path() const
+      { return path_; }
 
     private:
 

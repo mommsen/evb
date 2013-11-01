@@ -248,6 +248,9 @@ void evb::bu::ResourceManager::configure()
 
 void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
 {
+  const std::_Ios_Fmtflags originalFlags=out->flags();
+  const int originalPrecision=out->precision();
+
   *out << "<div>"                                                 << std::endl;
   *out << "<p>ResourceManager</p>"                                << std::endl;
   *out << "<table>"                                               << std::endl;
@@ -267,8 +270,6 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
     *out << "<td>" << eventMonitoring_.outstandingRequests << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
 
-    const std::_Ios_Fmtflags originalFlags=out->flags();
-    const int originalPrecision=out->precision();
     out->setf(std::ios::fixed);
     out->precision(2);
     *out << "<tr>"                                                  << std::endl;
@@ -288,9 +289,26 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
     *out << "<td>" << eventSize_.value_ / 1e3 <<
       " +/- " << eventSizeStdDev_.value_ / 1e3 << "</td>"           << std::endl;
     *out << "</tr>"                                                 << std::endl;
-    out->flags(originalFlags);
-    out->precision(originalPrecision);
   }
+
+  out->setf(std::ios::fixed);
+  out->precision(1);
+
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<th colspan=\"2\">Output disk usage</th>"              << std::endl;
+  *out << "</tr>"                                                 << std::endl;
+  for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+        it != itEnd; ++it)
+  {
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>" << (*it)->path() << "</td>"                      << std::endl;
+    *out << "<td>" << (*it)->relDiskUsage()*100 << "% of "
+      << (*it)->diskSizeGB() << " GB</td>"                          << std::endl;
+    *out << "</tr>"                                                 << std::endl;
+  }
+
+  out->flags(originalFlags);
+  out->precision(originalPrecision);
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td colspan=\"2\">"                                    << std::endl;
