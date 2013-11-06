@@ -114,8 +114,10 @@ void evb::bu::Event::writeToDisk
   for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
        it != itEnd; ++it)
   {
+    #ifdef EVB_ADLER
     if ( calculateAdler32 )
       eventInfo_->adler = adler32(eventInfo_->adler, (*it)->location, (*it)->length);
+    #endif
 
     memcpy(filepos, (*it)->location, (*it)->length);
     filepos += (*it)->length;
@@ -332,11 +334,17 @@ evb::bu::Event::EventInfo::EventInfo
   const uint32_t lumi,
   const uint32_t event
 ) :
+#ifdef EVB_ADLER
 version(4),
+#else
+version(3),
+#endif
 runNumber(run),
 lumiSection(lumi),
 eventNumber(event),
+#ifdef EVB_ADLER
 adler(adler32(0L,Z_NULL,0)),
+#endif
 eventSize(0),
 paddingSize(0)
 {

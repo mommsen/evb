@@ -16,6 +16,7 @@
 #include "interface/shared/fed_trailer.h"
 #include "toolbox/mem/Reference.h"
 
+//#define EVB_ADLER
 
 namespace evb {
   namespace bu {
@@ -144,12 +145,18 @@ namespace evb {
         const uint32_t runNumber;
         const uint32_t lumiSection;
         const uint32_t eventNumber;
+        #ifdef EVB_ADLER
         uint32_t adler;
+        #endif
         uint32_t eventSize;
         uint32_t paddingSize;
         uint32_t fedSizes[FED_COUNT];
 
+        #ifdef EVB_ADLER
         static const size_t headerSize = sizeof(uint32_t)*(7+FED_COUNT);
+        #else
+        static const size_t headerSize = sizeof(uint32_t)*(6+FED_COUNT);
+        #endif
 
         EventInfo(
           const uint32_t runNumber,
