@@ -31,6 +31,7 @@ namespace evb {
         xdata::String playbackDataFile;
         xdata::UnsignedInteger32 frameSize;
         xdata::UnsignedInteger32 fragmentFIFOCapacity;
+        xdata::UnsignedInteger32 fakeLumiSectionDuration;
 
         Configuration()
         : destinationClass("evb::RU"),
@@ -43,7 +44,8 @@ namespace evb {
           usePlayback(false),
           playbackDataFile(""),
           frameSize(0x40000),
-          fragmentFIFOCapacity(32)
+          fragmentFIFOCapacity(32),
+          fakeLumiSectionDuration(23)
         {};
 
         void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
@@ -64,6 +66,7 @@ namespace evb {
           params.add("playbackDataFile", &playbackDataFile);
           params.add("frameSize", &frameSize);
           params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
+          params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
         }
       };
 

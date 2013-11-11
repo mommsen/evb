@@ -7,10 +7,10 @@
 #include <stdint.h>
 
 #include "evb/EvBApplication.h"
-#include "evb/FragmentGenerator.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/test/dummyFEROL/Configuration.h"
+#include "evb/test/dummyFEROL/FragmentGenerator.h"
 #include "evb/test/dummyFEROL/StateMachine.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/Action.h"
@@ -94,7 +94,7 @@ namespace evb {
       typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
 
-      FragmentGenerator fragmentGenerator_;
+      dummyFEROL::FragmentGenerator fragmentGenerator_;
 
       PerformanceMonitor dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;

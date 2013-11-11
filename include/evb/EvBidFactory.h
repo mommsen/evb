@@ -33,7 +33,7 @@ namespace evb {
     /**
      * Reset the counters for a new run
      */
-    void reset(const uint32_t runNumber);
+    void reset(const uint32_t runNumber, const uint32_t fakeLumiSectionDuration);
 
   private:
 
@@ -41,6 +41,7 @@ namespace evb {
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
     uint32_t fakeLumiSection_;
+    boost::posix_time::time_duration fakeLumiSectionDuration_;
     boost::posix_time::ptime startOfLumiSection_;
 
   };

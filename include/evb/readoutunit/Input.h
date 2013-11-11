@@ -178,6 +178,7 @@ namespace evb {
 
         Input<Configuration>* input_;
         bool doProcessing_;
+        uint32_t fakeLumiSectionDuration_;
 
       };
 
@@ -824,6 +825,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
   this->doProcessing_ = false;
+  this->fakeLumiSectionDuration_ = configuration->fakeLumiSectionDuration;
   dropInputData_ = configuration->dropInputData;
 
   superFragmentFIFO_.clear();
@@ -911,7 +913,7 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::startProcessing(const u
 {
   for (typename EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
         it != itEnd; ++it)
-    it->second.reset(runNumber);
+    it->second.reset(runNumber,this->fakeLumiSectionDuration_);
 
   this->doProcessing_ = true;
 }
@@ -992,6 +994,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
 {
   this->doProcessing_ = false;
+  this->fakeLumiSectionDuration_ = configuration->fakeLumiSectionDuration;
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -1162,7 +1165,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(const uint32_t runNumber)
 {
   eventNumber_ = 0;
-  evbIdFactory_.reset(runNumber);
+  evbIdFactory_.reset(runNumber,this->fakeLumiSectionDuration_);
   this->doProcessing_ = true;
 }
 

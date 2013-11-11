@@ -7,8 +7,8 @@
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/Constants.h"
 #include "evb/Exception.h"
-#include "evb/FragmentGenerator.h"
 #include "evb/FragmentTracker.h"
+#include "evb/test/dummyFEROL/FragmentGenerator.h"
 #include "toolbox/mem/CommittedHeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "xcept/tools.h"
@@ -19,7 +19,7 @@
 #include <sstream>
 #include <sys/time.h>
 
-evb::FragmentGenerator::FragmentGenerator() :
+evb::test::dummyFEROL::FragmentGenerator::FragmentGenerator() :
 frameSize_(0),
 fedSize_(0),
 usePlayback_(false)
@@ -28,14 +28,14 @@ usePlayback_(false)
 }
 
 
-uint32_t evb::FragmentGenerator::getLastEventNumber() const
+uint32_t evb::test::dummyFEROL::FragmentGenerator::getLastEventNumber() const
 {
   const uint32_t eventNumber = evbId_.eventNumber();
   return ( eventNumber > 0 ? eventNumber-1 : (1 << 24)-1 );
 }
 
 
-void evb::FragmentGenerator::configure
+void evb::test::dummyFEROL::FragmentGenerator::configure
 (
   const uint32_t fedId,
   const bool usePlayback,
@@ -47,7 +47,8 @@ void evb::FragmentGenerator::configure
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
-  const size_t fragmentPoolSize
+  const size_t fragmentPoolSize,
+  const uint32_t fakeLumiSectionDuration
 )
 {
   if (fedId > FED_SOID_WIDTH)
@@ -85,6 +86,7 @@ void evb::FragmentGenerator::configure
   }
 
   usePlayback_ = usePlayback;
+  fakeLumiSectionDuration_ = fakeLumiSectionDuration;
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -117,7 +119,7 @@ void evb::FragmentGenerator::configure
 }
 
 
-void evb::FragmentGenerator::cacheData(const std::string& playbackDataFile)
+void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& playbackDataFile)
 {
   toolbox::mem::Reference* bufRef = 0;
   fillData(bufRef);
@@ -126,14 +128,14 @@ void evb::FragmentGenerator::cacheData(const std::string& playbackDataFile)
 }
 
 
-void evb::FragmentGenerator::reset()
+void evb::test::dummyFEROL::FragmentGenerator::reset()
 {
   playbackDataPos_ = playbackData_.begin();
-  evbIdFactory_.reset(0);
+  evbIdFactory_.reset(0,fakeLumiSectionDuration_);
 }
 
 
-bool evb::FragmentGenerator::getData(toolbox::mem::Reference*& bufRef)
+bool evb::test::dummyFEROL::FragmentGenerator::getData(toolbox::mem::Reference*& bufRef)
 {
   if ( usePlayback_ )
   {
@@ -154,7 +156,7 @@ bool evb::FragmentGenerator::getData(toolbox::mem::Reference*& bufRef)
 }
 
 
-bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
+bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
 {
   try
   {
@@ -237,7 +239,7 @@ bool evb::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
 }
 
 
-toolbox::mem::Reference* evb::FragmentGenerator::clone
+toolbox::mem::Reference* evb::test::dummyFEROL::FragmentGenerator::clone
 (
   toolbox::mem::Reference* bufRef
 ) const
@@ -284,7 +286,7 @@ toolbox::mem::Reference* evb::FragmentGenerator::clone
 }
 
 
-void evb::FragmentGenerator::fillTriggerPayload
+void evb::test::dummyFEROL::FragmentGenerator::fillTriggerPayload
 (
   unsigned char* fedPtr,
   const uint32_t eventNumber,
@@ -359,7 +361,7 @@ void evb::FragmentGenerator::fillTriggerPayload
 }
 
 
-void evb::FragmentGenerator::updateCRC
+void evb::test::dummyFEROL::FragmentGenerator::updateCRC
 (
   const unsigned char* fedPtr
 ) const
@@ -375,13 +377,13 @@ void evb::FragmentGenerator::updateCRC
 }
 
 
-evb::L1Information::L1Information()
+evb::test::dummyFEROL::L1Information::L1Information()
 {
   reset();
 }
 
 
-void evb::L1Information::reset()
+void evb::test::dummyFEROL::L1Information::reset()
 {
   strncpy(reason, "none", sizeof(reason));
   isValid           = false;
@@ -396,7 +398,7 @@ void evb::L1Information::reset()
 }
 
 
-const evb::L1Information& evb::L1Information::operator=
+const evb::test::dummyFEROL::L1Information& evb::test::dummyFEROL::L1Information::operator=
 (
   const L1Information& l1Info
 )
