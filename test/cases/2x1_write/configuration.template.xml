@@ -25,7 +25,7 @@
     <xc:Application class="evb::EVM" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
-        <dropInputData xsi:type="xsd:boolean">false</dropInputData>
+        <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">5</fakeLumiSectionDuration>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
         </fedSourceIds>
