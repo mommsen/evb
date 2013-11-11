@@ -156,6 +156,7 @@ namespace evb {
       void getDiskUsages();
 
       BU* bu_;
+      const ConfigurationPtr configuration_;
       uint32_t lumiSectionTimeout_;
 
       int16_t throttleResources_;
@@ -205,8 +206,11 @@ inline std::ostream& operator<<
   const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
 )
 {
-  s << "lumiSection=" << lumiAccount->lumiSection << " ";
-  s << "nbEvents=" << lumiAccount->nbEvents;
+  if ( lumiAccount.get() )
+  {
+    s << "lumiSection=" << lumiAccount->lumiSection << " ";
+    s << "nbEvents=" << lumiAccount->nbEvents;
+  }
 
   return s;
 }

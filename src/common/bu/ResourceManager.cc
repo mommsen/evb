@@ -17,6 +17,7 @@ evb::bu::ResourceManager::ResourceManager
   BU* bu
 ) :
 bu_(bu),
+configuration_(bu->getConfiguration()),
 throttleResources_(0),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO"),
@@ -72,6 +73,8 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
 
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
+  if ( configuration_->dropEventData ) return;
+
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
 
   if ( lumiSection < currentLumiSectionAccount_->lumiSection )
@@ -310,12 +313,12 @@ void evb::bu::ResourceManager::configure()
   allocatedResources_.clear();
   lumiSectionAccountFIFO_.clear();
 
-  lumiSectionAccountFIFO_.resize(bu_->getConfiguration()->lumiSectionFIFOCapacity);
-  lumiSectionTimeout_ = bu_->getConfiguration()->lumiSectionTimeout;
+  lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
+  lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
   nbResources_ = std::max(1U,
-    bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
-    bu_->getConfiguration()->eventsPerRequest.value_);
+    configuration_->maxEvtsUnderConstruction.value_ /
+    configuration_->eventsPerRequest.value_);
   freeResourceFIFO_.resize(nbResources_);
   blockedResourceFIFO_.resize(nbResources_);
 
