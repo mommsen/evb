@@ -35,7 +35,6 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
-	FragmentGenerator.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
@@ -58,6 +57,7 @@ Sources=\
 
 TestSources = \
 	DummyFEROL.cc \
+	dummyFEROL/FragmentGenerator.cc \
 	dummyFEROL/StateMachine.cc
 
 TestExecutables = \
