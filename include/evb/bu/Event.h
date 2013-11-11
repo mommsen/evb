@@ -85,6 +85,12 @@ namespace evb {
       /**
        * Return the lumiSection
        */
+      uint32_t eventNumber() const
+      { return eventInfo_->eventNumber; }
+
+      /**
+       * Return the lumiSection
+       */
       uint32_t lumiSection() const
       { return eventInfo_->lumiSection; }
 

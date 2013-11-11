@@ -95,6 +95,7 @@ void evb::bu::Running::entryAction()
   stateMachine.resourceManager()->resetMonitoringCounters();
 
   stateMachine.diskWriter()->startProcessing(runNumber);
+  stateMachine.resourceManager()->startProcessing();
   stateMachine.eventBuilder()->startProcessing(runNumber);
   stateMachine.ruProxy()->startProcessing();
 }
@@ -106,6 +107,7 @@ void evb::bu::Running::exitAction()
 
   stateMachine.ruProxy()->stopProcessing();
   stateMachine.eventBuilder()->stopProcessing();
+  stateMachine.resourceManager()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }
 
@@ -129,6 +131,7 @@ void evb::bu::Draining::activity()
   {
     if (doDraining_) stateMachine.ruProxy()->drain();
     if (doDraining_) stateMachine.eventBuilder()->drain();
+    if (doDraining_) stateMachine.resourceManager()->drain();
     if (doDraining_) stateMachine.diskWriter()->drain();
 
     if (doDraining_) stateMachine.processFSMEvent( DrainingDone() );

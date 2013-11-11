@@ -2,6 +2,7 @@
 #define _evb_bu_DiskWriter_h_
 
 #include <boost/filesystem/convenience.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <curl/curl.h>
@@ -91,35 +92,42 @@ namespace evb {
        */
       void printHtml(xgi::Output*) const;
 
-      /**
-       * Create the directory if it does not exist
-       */
-      static void createDir(const boost::filesystem::path&);
-
-      /**
-       * Remove the directory if it exists
-       */
-      static void removeDir(const boost::filesystem::path&);
-
 
     private:
 
+      struct LumiInfo
+      {
+        const uint32_t lumiSection;
+        uint32_t nbEvents;
+        uint32_t nbEventsWritten;
+        uint32_t fileCount;
+        uint32_t index;
+
+        LumiInfo(const uint32_t ls)
+        : lumiSection(ls),nbEvents(0),nbEventsWritten(0),fileCount(0),index(0) {};
+      };
+      typedef boost::shared_ptr<LumiInfo> LumiInfoPtr;
+      typedef std::map<uint32_t,LumiInfoPtr> LumiStatistics;
+      LumiStatistics lumiStatistics_;
+
       void resetMonitoringCounters();
-      void gatherLumiStatistics();
-      void writeEoLS
-      (
-        const uint32_t lumiSection,
-        const uint32_t fileCount,
-        const uint32_t eventCount
-      ) const;
-      void writeEoR() const;
+      void startFileMover();
+      bool fileMover(toolbox::task::WorkLoop*);
+      void doLumiSectionAccounting();
+      void moveFiles();
+      void handleRawDataFile(const StreamHandler::FileStatisticsPtr&);
+      uint32_t addFileToLumiStatistics(const StreamHandler::FileStatisticsPtr&);
+      LumiStatistics::iterator getLumiStatistics(const uint32_t lumiSection);
+      void createDir(const boost::filesystem::path&) const;
+      void removeDir(const boost::filesystem::path&) const;
       void getHLTmenu(const boost::filesystem::path& runDir) const;
       void retrieveFromURL(CURL*, const std::string& url, const boost::filesystem::path& output) const;
       void createLockFile(const boost::filesystem::path&) const;
-      void defineEoLSjson();
-      void defineEoRjson();
-      void startLumiMonitoring();
-      bool updateLumiMonitoring(toolbox::task::WorkLoop*);
+      void writeEoLS(const LumiInfoPtr&) const;
+      void writeEoR() const;
+      void defineRawData(const boost::filesystem::path& jsdDir);
+      void defineEoLS(const boost::filesystem::path& jsdDir);
+      void defineEoR(const boost::filesystem::path& jsdDir);
 
       BU* bu_;
       boost::shared_ptr<ResourceManager> resourceManager_;
@@ -131,19 +139,17 @@ namespace evb {
 
       boost::filesystem::path runRawDataDir_;
       boost::filesystem::path runMetaDataDir_;
+      boost::filesystem::path rawDataDefFile_;
       boost::filesystem::path eolsDefFile_;
       boost::filesystem::path eorDefFile_;
 
       typedef std::map<uint16_t,StreamHandlerPtr > StreamHandlers;
       StreamHandlers streamHandlers_;
 
-      toolbox::task::WorkLoop* lumiMonitoringWorkLoop_;
-      toolbox::task::ActionSignature* lumiMonitoringAction_;
+      toolbox::task::WorkLoop* fileMoverWorkLoop_;
+      toolbox::task::ActionSignature* fileMoverAction_;
       bool doProcessing_;
       bool processActive_;
-
-      typedef std::set<LumiMonitorPtr> LumiMonitors;
-      LumiMonitors lumiMonitors_;
 
       struct DiskWriterMonitoring
       {
@@ -161,6 +167,7 @@ namespace evb {
     };
 
   } } // namespace evb::bu
+
 
 #endif // _evb_bu_DiskWriter_h_
 

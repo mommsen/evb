@@ -1,17 +1,15 @@
 #ifndef _evb_bu_FileHandler_h_
 #define _evb_bu_FileHandler_h_
 
-#include <boost/filesystem/convenience.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <stdint.h>
+#include <string.h>
 
 
 namespace evb {
   namespace bu {
-
-    class StateMachine;
 
     /**
      * \ingroup xdaqApps
@@ -22,28 +20,9 @@ namespace evb {
     {
     public:
 
-      FileHandler
-      (
-        const uint32_t buInstance,
-        const uint32_t runNumber,
-        const boost::filesystem::path& runRawDataDir,
-        const boost::filesystem::path& runMetaDataDir,
-        const uint32_t lumiSection
-      );
+      FileHandler(const std::string& rawFileName);
 
       ~FileHandler();
-
-      /**
-       * Increment the number of events written
-       */
-      void incrementEventCount()
-      { ++eventCount_; }
-
-      /**
-       * Get the number of events written
-       */
-      uint32_t getEventCount() const
-      { return eventCount_; }
 
       /**
        * Return a memory mapped portion of the file with
@@ -55,32 +34,14 @@ namespace evb {
       /**
        * Close the file and do the bookkeeping.
        */
-      void close();
-
-      /**
-       * Remove the index counter from the map for the given lumi section
-       */
-      static void removeIndexForLumiSection(const uint32_t lumiSection);
+      uint64_t closeAndGetFileSize();
 
     private:
 
-      void writeJSON() const;
-      void defineJSON(const boost::filesystem::path&) const;
-
-      typedef std::map<uint32_t,uint32_t> LumiIndex;
-      static uint32_t getNextIndex(const uint32_t lumiSection);
-      static boost::mutex indexMutex_;
-      static LumiIndex lumiIndex_;
-      static uint32_t lastLumiSection_;
-
-      const uint32_t buInstance_;
-      const boost::filesystem::path runRawDataDir_;
-      const boost::filesystem::path runMetaDataDir_;
-      boost::filesystem::path fileName_;
+      const std::string rawFileName_;
       int fileDescriptor_;
 
       uint64_t fileSize_;
-      uint32_t eventCount_;
 
       boost::mutex mutex_;
 

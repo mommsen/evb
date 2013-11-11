@@ -133,8 +133,6 @@ void evb::bu::Event::writeToDisk
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-
-  fileHandler->incrementEventCount();
 }
 
 

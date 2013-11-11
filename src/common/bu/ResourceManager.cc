@@ -19,7 +19,9 @@ evb::bu::ResourceManager::ResourceManager
 bu_(bu),
 throttleResources_(0),
 freeResourceFIFO_("freeResourceFIFO"),
-blockedResourceFIFO_("blockedResourceFIFO")
+blockedResourceFIFO_("blockedResourceFIFO"),
+lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
+currentLumiSectionAccount_(new LumiSectionAccount(0))
 {
   resetMonitoringCounters();
 }
@@ -46,6 +48,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
       pos->second.push_back(dataBlockMsg->evbIds[i]);
+      incrementEventsInLumiSection(dataBlockMsg->evbIds[i].lumiSection());
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
@@ -64,6 +67,54 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
       XCEPT_RAISE(exception::SuperFragment, oss.str());
     }
   }
+}
+
+
+void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
+{
+  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+
+  if ( lumiSection < currentLumiSectionAccount_->lumiSection )
+  {
+    std::ostringstream oss;
+    oss << "Received an event from an earlier lumi section " << lumiSection;
+    oss << " while processing lumi section " << currentLumiSectionAccount_->lumiSection;
+    XCEPT_RAISE(exception::EventOrder, oss.str());
+  }
+
+  if ( lumiSection > currentLumiSectionAccount_->lumiSection )
+  {
+    if ( currentLumiSectionAccount_->lumiSection > 0 )
+      lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
+
+    // backfill any skipped lumi sections
+    for (uint32_t ls = currentLumiSectionAccount_->lumiSection+1;
+         ls < lumiSection; ++ls)
+    {
+      lumiSectionAccountFIFO_.enqWait(LumiSectionAccountPtr( new LumiSectionAccount(ls) ));
+    }
+
+    currentLumiSectionAccount_.reset( new LumiSectionAccount(lumiSection) );
+  }
+
+  ++(currentLumiSectionAccount_->nbEvents);
+}
+
+
+bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& lumiSectionAcount)
+{
+  if ( lumiSectionAccountFIFO_.deq(lumiSectionAcount) ) return true;
+
+  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+  if ( currentLumiSectionAccount_->lumiSection > 0 &&
+    time(0) > (currentLumiSectionAccount_->startTime + lumiSectionTimeout_) )
+  {
+    lumiSectionAcount.swap(currentLumiSectionAccount_);
+    currentLumiSectionAccount_.reset( new LumiSectionAccount(lumiSectionAcount->lumiSection + 1) );
+    return true;
+  }
+
+  return false;
 }
 
 
@@ -152,6 +203,35 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 }
 
 
+void evb::bu::ResourceManager::startProcessing()
+{}
+
+
+void evb::bu::ResourceManager::drain()
+{
+  enqCurrentLumiSectionAccount();
+  while ( ! lumiSectionAccountFIFO_.empty() ) { ::usleep(1000); }
+}
+
+
+void evb::bu::ResourceManager::stopProcessing()
+{
+  enqCurrentLumiSectionAccount();
+}
+
+
+void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
+{
+  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+
+  if ( currentLumiSectionAccount_->lumiSection > 0 )
+  {
+    lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
+    currentLumiSectionAccount_.reset( new LumiSectionAccount(0) );
+  }
+}
+
+
 void evb::bu::ResourceManager::monitorDiskUsage(DiskUsagePtr& diskUsage)
 {
   diskUsageMonitors_.push_back(diskUsage);
@@ -228,6 +308,10 @@ void evb::bu::ResourceManager::configure()
   freeResourceFIFO_.clear();
   blockedResourceFIFO_.clear();
   allocatedResources_.clear();
+  lumiSectionAccountFIFO_.clear();
+
+  lumiSectionAccountFIFO_.resize(bu_->getConfiguration()->lumiSectionFIFOCapacity);
+  lumiSectionTimeout_ = bu_->getConfiguration()->lumiSectionTimeout;
 
   nbResources_ = std::max(1U,
     bu_->getConfiguration()->maxEvtsUnderConstruction.value_ /
@@ -321,6 +405,13 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
   blockedResourceFIFO_.printHtml(out, bu_->getURN());
   *out << "</td>"                                                 << std::endl;
   *out << "</tr>"                                                 << std::endl;
+
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<td colspan=\"2\">"                                    << std::endl;
+  lumiSectionAccountFIFO_.printHtml(out, bu_->getURN());
+  *out << "</td>"                                                 << std::endl;
+  *out << "</tr>"                                                 << std::endl;
+
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
 }

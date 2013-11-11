@@ -4,7 +4,9 @@
 #include <map>
 #include <vector>
 #include <stdint.h>
+#include <time.h>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "evb/EvBid.h"
@@ -63,6 +65,38 @@ namespace evb {
       bool getResourceId(uint32_t& resourceId);
 
       /**
+       * Return the next lumi-section account.
+       * Return false is no lumi-section account is available.
+       */
+      struct LumiSectionAccount
+      {
+        const time_t startTime;
+        const uint32_t lumiSection;
+        uint32_t nbEvents;
+
+        LumiSectionAccount(const uint32_t ls)
+        : startTime(time(0)),lumiSection(ls),nbEvents(0) {};
+      };
+      typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
+
+      bool getNextLumiSectionAccount(LumiSectionAccountPtr&);
+
+      /**
+       * Start processing messages
+       */
+      void startProcessing();
+
+      /**
+       * Drain messages
+       */
+      void drain();
+
+      /**
+       * Stop processing messages
+       */
+      void stopProcessing();
+
+      /**
        * Add the DiskUsagePtr to the disks to be monitored
        */
       void monitorDiskUsage(DiskUsagePtr&);
@@ -108,14 +142,21 @@ namespace evb {
       inline void printBlockedResourceFIFO(xgi::Output* out)
       { blockedResourceFIFO_.printVerticalHtml(out); }
 
+      /**
+       * Print the content of the lumi-section account FIFO as HTML snipped
+       */
+      inline void printLumiSectionAccountFIFO(xgi::Output* out)
+      { lumiSectionAccountFIFO_.printVerticalHtml(out); }
 
 
     private:
 
+      void incrementEventsInLumiSection(const uint32_t lumiSection);
+      void enqCurrentLumiSectionAccount();
       void getDiskUsages();
 
       BU* bu_;
-      const ConfigurationPtr configuration_;
+      uint32_t lumiSectionTimeout_;
 
       int16_t throttleResources_;
 
@@ -131,6 +172,11 @@ namespace evb {
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;
+
+      typedef OneToOneQueue<LumiSectionAccountPtr> LumiSectionAccountFIFO;
+      LumiSectionAccountFIFO lumiSectionAccountFIFO_;
+      LumiSectionAccountPtr currentLumiSectionAccount_;
+      boost::mutex currentLumiSectionAccountMutex_;
 
       struct EventMonitoring
       {
@@ -151,6 +197,19 @@ namespace evb {
     };
 
   } } //namespace evb::bu
+
+
+inline std::ostream& operator<<
+(
+  std::ostream& s,
+  const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
+)
+{
+  s << "lumiSection=" << lumiAccount->lumiSection << " ";
+  s << "nbEvents=" << lumiAccount->nbEvents;
+
+  return s;
+}
 
 
 #endif // _evb_bu_ResourceManager_h_

@@ -1,122 +1,84 @@
 #include <sstream>
-#include <iomanip>
 
-#include "evb/bu/DiskWriter.h"
 #include "evb/bu/StreamHandler.h"
-#include "evb/bu/FileHandler.h"
-#include "evb/bu/ResourceManager.h"
-#include "evb/bu/StateMachine.h"
 #include "evb/Exception.h"
-#include "toolbox/task/WorkLoopFactory.h"
 
 
 evb::bu::StreamHandler::StreamHandler
 (
-  const uint32_t buInstance,
-  const uint32_t runNumber,
-  const boost::filesystem::path& runRawDataDir,
-  const boost::filesystem::path& runMetaDataDir,
+  const std::string& streamFileName,
   ConfigurationPtr configuration
 ) :
-buInstance_(buInstance),
-runNumber_(runNumber),
-runRawDataDir_(runRawDataDir),
-runMetaDataDir_(runMetaDataDir),
+streamFileName_(streamFileName),
 configuration_(configuration),
-currentLumiMonitor_( new LumiMonitor(1) ),
-lumiMonitorFIFO_("lumiMonitorFIFO")
+index_(0),
+currentFileStatistics_(new FileStatistics(0,"")),
+fileStatisticsFIFO_("currentFileStatisticsFIFO")
 {
-  lumiMonitorFIFO_.resize(configuration->lumiMonitorFIFOCapacity);
+  fileStatisticsFIFO_.resize(configuration->fileStatisticsFIFOCapacity);
 }
 
 
 evb::bu::StreamHandler::~StreamHandler()
 {
-  close();
-}
-
-
-void evb::bu::StreamHandler::close()
-{
-  fileHandler_.reset();
-
-  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
-  if ( currentLumiMonitor_.get() )
-  {
-    lumiMonitorFIFO_.enqWait(currentLumiMonitor_);
-    currentLumiMonitor_.reset();
-  }
+  closeFile();
 }
 
 
 void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
-  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
-
   const uint32_t lumiSection = event->lumiSection();
 
-  if ( lumiSection > currentLumiMonitor_->lumiSection )
+  if ( lumiSection > currentFileStatistics_->lumiSection )
   {
-    closeLumiSection(lumiSection);
+    closeFile();
   }
-  else if ( lumiSection < currentLumiMonitor_->lumiSection )
+  else if ( lumiSection < currentFileStatistics_->lumiSection )
   {
     std::ostringstream oss;
     oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << currentLumiMonitor_->lumiSection;
+    oss << " while processing lumi section " << currentFileStatistics_->lumiSection;
     oss << " with evb id " << event->getEvBid();
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
   if ( fileHandler_.get() == 0 )
   {
-    fileHandler_.reset( new FileHandler(buInstance_, runNumber_, runRawDataDir_, runMetaDataDir_, lumiSection) );
-    ++(currentLumiMonitor_->nbFiles);
+    std::ostringstream fileName;
+    fileName << streamFileName_ << "_" << std::hex << static_cast<unsigned int>(++index_);
+    fileHandler_.reset( new FileHandler(fileName.str()) );
+    currentFileStatistics_.reset( new FileStatistics(lumiSection,fileName.str()) );
   }
 
   event->writeToDisk(fileHandler_, configuration_->calculateAdler32);
+  currentFileStatistics_->lastEventNumberWritten = event->eventNumber();
 
-  currentLumiMonitor_->update( event->getEvBid().eventNumber() );
-
-  if ( fileHandler_->getEventCount() >= configuration_->maxEventsPerFile )
+  if ( ++currentFileStatistics_->nbEventsWritten >= configuration_->maxEventsPerFile )
   {
+    closeFile();
+  }
+
+  ::usleep(configuration_->sleepBetweenEvents);
+}
+
+
+void evb::bu::StreamHandler::closeFile()
+{
+  if ( fileHandler_.get() )
+  {
+    currentFileStatistics_->fileSize =
+      fileHandler_->closeAndGetFileSize();
+
+    fileStatisticsFIFO_.enqWait(currentFileStatistics_);
+
     fileHandler_.reset();
   }
 }
 
 
-void evb::bu::StreamHandler::closeLumiSection(const uint32_t lumiSection)
+bool evb::bu::StreamHandler::getFileStatistics(FileStatisticsPtr& fileStatistics)
 {
-  fileHandler_.reset();
-
-  lumiMonitorFIFO_.enqWait(currentLumiMonitor_);
-
-  // Create empty lumiMonitors for skipped lumi sections
-  for (uint32_t ls = currentLumiMonitor_->lumiSection+1; ls < lumiSection; ++ls)
-    lumiMonitorFIFO_.enqWait( LumiMonitorPtr(new LumiMonitor(ls)) );
-
-  currentLumiMonitor_.reset( new LumiMonitor(lumiSection) );
-}
-
-
-bool evb::bu::StreamHandler::getLumiMonitor(LumiMonitorPtr& lumiMonitor)
-{
-  if ( lumiMonitorFIFO_.deq(lumiMonitor) ) return true;
-
-  // Check for old lumi sections
-  boost::mutex::scoped_lock sl(currentLumiMonitorMutex_);
-
-  if ( ! currentLumiMonitor_.get() ) return false;
-
-  if ( time(0) > (currentLumiMonitor_->timeOfLastEvent + configuration_->lumiSectionTimeout) )
-  {
-    fileHandler_.reset();
-    lumiMonitor = currentLumiMonitor_;
-    currentLumiMonitor_.reset( new LumiMonitor(lumiMonitor->lumiSection+1) );
-    return true;
-  }
-
-  return false;
+  return fileStatisticsFIFO_.deq(fileStatistics);
 }
 
 

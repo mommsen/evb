@@ -63,7 +63,7 @@ float evb::bu::DiskUsage::overThreshold()
 
   if ( diskUsage < 0 ) return 1; //error condition
 
-  if ( deleteFiles_ && diskUsage > highWaterMark_ )
+  if ( deleteFiles_ && diskUsage > 0.9 )
   {
     boost::filesystem::recursive_directory_iterator it(path_);
     while ( it != boost::filesystem::recursive_directory_iterator() )

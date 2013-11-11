@@ -1,17 +1,15 @@
 #ifndef _evb_bu_StreamHandler_h_
 #define _evb_bu_StreamHandler_h_
 
-#include <boost/filesystem/convenience.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <stdint.h>
+#include <string.h>
 
 #include "evb/OneToOneQueue.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
-#include "evb/bu/LumiMonitor.h"
 
 
 namespace evb {
@@ -29,10 +27,7 @@ namespace evb {
 
       StreamHandler
       (
-        const uint32_t buInstance,
-        const uint32_t runNumber,
-        const boost::filesystem::path& buRawDataDir,
-        const boost::filesystem::path& buMetaDataDir,
+        const std::string& streamFileName,
         ConfigurationPtr
       );
 
@@ -44,34 +39,41 @@ namespace evb {
       void writeEvent(const EventPtr);
 
       /**
-       * Close the stream
+       * Close the file
        */
-      void close();
+      void closeFile();
 
       /**
-       * Get the next available lumi monitor.
-       * Return false if no lumi monitor is available
+       * Get the next available statistics of a closed file.
+       * Return false if no statistics is available
        */
-      bool getLumiMonitor(LumiMonitorPtr&);
+      struct FileStatistics
+      {
+        const uint32_t lumiSection;
+        const std::string fileName;
+        uint32_t nbEventsWritten;
+        uint32_t lastEventNumberWritten;
+        uint64_t fileSize;
+
+        FileStatistics(const uint32_t ls, const std::string& fileName)
+        : lumiSection(ls),fileName(fileName),nbEventsWritten(0),lastEventNumberWritten(0),fileSize(0) {};
+      };
+      typedef boost::shared_ptr<FileStatistics> FileStatisticsPtr;
+      bool getFileStatistics(FileStatisticsPtr&);
 
 
     private:
 
-      void closeLumiSection(const uint32_t lumiSection);
-
-      const uint32_t buInstance_;
-      const uint32_t runNumber_;
-
-      const boost::filesystem::path runRawDataDir_;
-      const boost::filesystem::path runMetaDataDir_;
+      const std::string streamFileName_;
       const ConfigurationPtr configuration_;
+      uint8_t index_;
+      uint32_t currentLumiSection_;
 
       FileHandlerPtr fileHandler_;
 
-      LumiMonitorPtr currentLumiMonitor_;
-      boost::mutex currentLumiMonitorMutex_;
-      typedef OneToOneQueue<LumiMonitorPtr> LumiMonitorFIFO;
-      LumiMonitorFIFO lumiMonitorFIFO_;
+      FileStatisticsPtr currentFileStatistics_;
+      typedef OneToOneQueue<FileStatisticsPtr> FileStatisticsFIFO;
+      FileStatisticsFIFO fileStatisticsFIFO_;
 
     };
 

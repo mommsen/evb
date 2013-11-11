@@ -39,7 +39,9 @@ namespace evb {
       xdata::Boolean calculateAdler32;                     // If set to true, an adler32 checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
-      xdata::UnsignedInteger32 lumiMonitorFIFOCapacity;    // Capacity of the FIFO used for lumi-section monitoring
+      xdata::UnsignedInteger32 sleepBetweenEvents;         // Throttle output rate by sleeping us between writing events
+      xdata::UnsignedInteger32 fileStatisticsFIFOCapacity; // Capacity of the FIFO used for file accounting
+      xdata::UnsignedInteger32 lumiSectionFIFOCapacity;    // Capacity of the FIFO used for lumi-section accounting
       xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
 
@@ -60,7 +62,9 @@ namespace evb {
         calculateAdler32(false),
         deleteRawDataFiles(false),
         maxEventsPerFile(2000),
-        lumiMonitorFIFOCapacity(128),
+        sleepBetweenEvents(0),
+        fileStatisticsFIFOCapacity(128),
+        lumiSectionFIFOCapacity(128),
         lumiSectionTimeout(25),
         hltParameterSetURL("")
       {};
@@ -83,7 +87,9 @@ namespace evb {
         params.add("calculateAdler32", &calculateAdler32);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("maxEventsPerFile", &maxEventsPerFile);
-        params.add("lumiMonitorFIFOCapacity", &lumiMonitorFIFOCapacity);
+        params.add("sleepBetweenEvents", &sleepBetweenEvents);
+        params.add("fileStatisticsFIFOCapacity", &fileStatisticsFIFOCapacity);
+        params.add("lumiSectionFIFOCapacity", &lumiSectionFIFOCapacity);
         params.add("lumiSectionTimeout", &lumiSectionTimeout);
         params.add("hltParameterSetURL", &hltParameterSetURL);
       }

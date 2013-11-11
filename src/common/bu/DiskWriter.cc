@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
@@ -21,12 +22,13 @@ evb::bu::DiskWriter::DiskWriter
 bu_(bu),
 resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
-buInstance_( bu->getApplicationDescriptor()->getInstance() ),
+buInstance_(bu->getApplicationDescriptor()->getInstance()),
 doProcessing_(false),
 processActive_(false)
 {
   resetMonitoringCounters();
-  startLumiMonitoring();
+  startFileMover();
+  umask(0);
 }
 
 
@@ -38,11 +40,10 @@ evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t b
 
 void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
-  if ( configuration_->dropEventData ) return;
-
   resetMonitoringCounters();
-
   runNumber_ = runNumber;
+
+  if ( configuration_->dropEventData ) return;
 
   std::ostringstream runDir;
   runDir << "run" << std::setfill('0') << std::setw(6) << runNumber_;
@@ -50,27 +51,32 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   boost::filesystem::path rawRunDir( configuration_->rawDataDir.value_ );
   rawRunDir /= runDir.str();
   runRawDataDir_ = rawRunDir / "open";
-  DiskWriter::createDir(runRawDataDir_);
+  createDir(runRawDataDir_);
 
   runMetaDataDir_ = configuration_->metaDataDir.value_;
   runMetaDataDir_ /= runDir.str();
-  DiskWriter::createDir(runMetaDataDir_);
+  createDir(runMetaDataDir_);
 
+  boost::filesystem::path streamFileName = runRawDataDir_ / "stream";
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
-    StreamHandlerPtr streamHandler(
-      new StreamHandler(buInstance_,runNumber_,runRawDataDir_,runMetaDataDir_,configuration_)
-    );
+    std::ostringstream fileName;
+    fileName << streamFileName.string() << std::hex << i;
+    StreamHandlerPtr streamHandler( new StreamHandler(fileName.str(),configuration_) );
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
   getHLTmenu(rawRunDir);
   createLockFile(rawRunDir);
-  defineEoLSjson();
-  defineEoRjson();
+
+  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
+  createDir(jsdDir);
+  defineRawData(jsdDir);
+  defineEoLS(jsdDir);
+  defineEoR(jsdDir);
 
   doProcessing_ = true;
-  lumiMonitoringWorkLoop_->submit(lumiMonitoringAction_);
+  fileMoverWorkLoop_->submit(fileMoverAction_);
 }
 
 
@@ -88,51 +94,63 @@ void evb::bu::DiskWriter::stopProcessing()
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
   {
-    it->second->close();
+    it->second->closeFile();
   }
 
+  moveFiles();
+  doLumiSectionAccounting();
+
+  if ( !lumiStatistics_.empty() )
   {
-    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-    gatherLumiStatistics();
-    writeEoR();
+    std::ostringstream oss;
+    oss << "The following lumi sections were not accounted for:";
+    for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
+         it != itEnd; ++it)
+    {
+      oss << " (lumiSection " << it->second->lumiSection << ",nbEvents " << it->second->nbEvents 
+        << ",nbEventsWritten " << it->second->nbEventsWritten << ",fileCount " << it->second->fileCount << ")";
+    }
+    XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
+
+  writeEoR();
 
   streamHandlers_.clear();
   removeDir(runRawDataDir_);
 }
 
 
-void evb::bu::DiskWriter::startLumiMonitoring()
+void evb::bu::DiskWriter::startFileMover()
 {
   try
   {
-    lumiMonitoringWorkLoop_ =
-      toolbox::task::getWorkLoopFactory()->getWorkLoop(bu_->getIdentifier("lumiMonitoring"), "waiting");
+    fileMoverWorkLoop_ =
+      toolbox::task::getWorkLoopFactory()->getWorkLoop(bu_->getIdentifier("fileMover"), "waiting");
 
-    if ( !lumiMonitoringWorkLoop_->isActive() )
-      lumiMonitoringWorkLoop_->activate();
+    if ( !fileMoverWorkLoop_->isActive() )
+      fileMoverWorkLoop_->activate();
 
-    lumiMonitoringAction_ =
+    fileMoverAction_ =
       toolbox::task::bind(this,
-        &evb::bu::DiskWriter::updateLumiMonitoring,
-        bu_->getIdentifier("lumiMonitoringAction"));
+        &evb::bu::DiskWriter::fileMover,
+        bu_->getIdentifier("fileMoverAction"));
   }
   catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start lumi monitoring workloop";
+    std::string msg = "Failed to start file mover workloop";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
 
 
-bool evb::bu::DiskWriter::updateLumiMonitoring(toolbox::task::WorkLoop* wl)
+bool evb::bu::DiskWriter::fileMover(toolbox::task::WorkLoop* wl)
 {
   processActive_ = true;
 
   try
   {
-    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-    gatherLumiStatistics();
+    moveFiles();
+    doLumiSectionAccounting();
   }
   catch(xcept::Exception& e)
   {
@@ -156,17 +174,51 @@ bool evb::bu::DiskWriter::updateLumiMonitoring(toolbox::task::WorkLoop* wl)
 
   processActive_ = false;
 
-  ::sleep(5);
+  ::usleep(1000);
 
   return doProcessing_;
 }
 
 
-void evb::bu::DiskWriter::gatherLumiStatistics()
+void evb::bu::DiskWriter::doLumiSectionAccounting()
 {
-  LumiMonitorPtr lumiMonitor;
-  std::pair<LumiMonitors::iterator,bool> result;
-  const uint32_t streamCount = streamHandlers_.size();
+  ResourceManager::LumiSectionAccountPtr lumiSectionAccount;
+
+  while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
+  {
+    LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
+    if ( pos->second->nbEvents > 0 )
+    {
+      std::ostringstream oss;
+      oss << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
+      XCEPT_RAISE(exception::EventOrder, oss.str());
+    }
+    pos->second->nbEvents = lumiSectionAccount->nbEvents;
+  }
+
+  LumiStatistics::iterator it = lumiStatistics_.begin();
+  while ( it != lumiStatistics_.end() )
+  {
+    if ( it->second->nbEvents == it->second->nbEventsWritten )
+    {
+      writeEoLS(it->second);
+
+      if ( it->second->nbEvents > 0 )
+        ++diskWriterMonitoring_.nbLumiSections;
+
+      lumiStatistics_.erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+}
+
+
+void evb::bu::DiskWriter::moveFiles()
+{
+  StreamHandler::FileStatisticsPtr fileStatistics;
   bool workDone;
 
   do
@@ -176,33 +228,82 @@ void evb::bu::DiskWriter::gatherLumiStatistics()
     for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
          it != itEnd; ++it)
     {
-      while ( it->second->getLumiMonitor(lumiMonitor) )
+      while ( it->second->getFileStatistics(fileStatistics) )
       {
         workDone = true;
-        result = lumiMonitors_.insert(lumiMonitor);
-
-        if ( result.second == false)        // lumisection exists
-          *(*result.first) += *lumiMonitor; // add values and see the stars
-
-        diskWriterMonitoring_.nbFiles += lumiMonitor->nbFiles;
-        diskWriterMonitoring_.nbEventsWritten += lumiMonitor->nbEventsWritten;
-        if ( diskWriterMonitoring_.lastEventNumberWritten < lumiMonitor->lastEventNumberWritten )
-          diskWriterMonitoring_.lastEventNumberWritten = lumiMonitor->lastEventNumberWritten;
-        if ( diskWriterMonitoring_.currentLumiSection < lumiMonitor->lumiSection )
-          diskWriterMonitoring_.currentLumiSection = lumiMonitor->lumiSection;
-
-        if ( (*result.first)->updates == streamCount )
-        {
-          if ( (*result.first)->nbFiles > 0 )
-            ++diskWriterMonitoring_.nbLumiSections;
-
-          writeEoLS( (*result.first)->lumiSection, (*result.first)->nbFiles, (*result.first)->nbEventsWritten );
-          FileHandler::removeIndexForLumiSection( (*result.first)->lumiSection );
-          lumiMonitors_.erase(result.first);
-        }
+        handleRawDataFile(fileStatistics);
       }
     }
   } while ( workDone );
+}
+
+
+void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsPtr& fileStatistics)
+{
+  const uint32_t index = addFileToLumiStatistics(fileStatistics);
+
+  std::ostringstream fileNameStream;
+  fileNameStream << std::setfill('0') <<
+    "run"<< std::setw(6) << runNumber_ <<
+    "_ls" << std::setw(4) << fileStatistics->lumiSection <<
+    "_index" << std::setw(6) << index <<
+    ".raw";
+  //boost::filesystem::remove(runRawDataDir_ / fileStatistics->fileName);
+  const boost::filesystem::path destination( runRawDataDir_.parent_path() / fileNameStream.str() );
+  boost::filesystem::rename(fileStatistics->fileName, destination);
+
+  boost::filesystem::path jsonFile( runMetaDataDir_ / fileNameStream.str() );
+  jsonFile.replace_extension("jsn");
+  if ( boost::filesystem::exists(jsonFile) )
+  {
+    std::ostringstream oss;
+    oss << "The JSON file " << jsonFile.string() << " already exists";
+    XCEPT_RAISE(exception::DiskWriting, oss.str());
+  }
+
+  const char* path = jsonFile.string().c_str();
+  std::ofstream json(path);
+  json << "{"                                                                     << std::endl;
+  json << "   \"data\" : [ \""     << fileStatistics->nbEventsWritten << "\" ],"  << std::endl;
+  json << "   \"definition\" : \"" << rawDataDefFile_.string() << "\","           << std::endl;
+  json << "   \"source\" : \"BU-"  << buInstance_  << "\""                        << std::endl;
+  json << "}"                                                                     << std::endl;
+  json.close();
+
+  {
+    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+
+    ++diskWriterMonitoring_.nbFiles;
+    diskWriterMonitoring_.nbEventsWritten += fileStatistics->nbEventsWritten;
+    if ( diskWriterMonitoring_.lastEventNumberWritten < fileStatistics->lastEventNumberWritten )
+      diskWriterMonitoring_.lastEventNumberWritten = fileStatistics->lastEventNumberWritten;
+    if ( diskWriterMonitoring_.currentLumiSection < fileStatistics->lumiSection )
+      diskWriterMonitoring_.currentLumiSection = fileStatistics->lumiSection;
+  }
+}
+
+
+uint32_t evb::bu::DiskWriter::addFileToLumiStatistics(const StreamHandler::FileStatisticsPtr& fileStatistics)
+{
+  const LumiStatistics::iterator pos = getLumiStatistics(fileStatistics->lumiSection);
+
+  pos->second->nbEventsWritten += fileStatistics->nbEventsWritten;
+  ++(pos->second->fileCount);
+
+  return (pos->second->index++);
+}
+
+
+evb::bu::DiskWriter::LumiStatistics::iterator evb::bu::DiskWriter::getLumiStatistics(const uint32_t lumiSection)
+{
+  LumiStatistics::iterator pos = lumiStatistics_.lower_bound(lumiSection);
+  if ( pos == lumiStatistics_.end() || lumiStatistics_.key_comp()(lumiSection,pos->first) )
+  {
+    // new lumi section
+    const LumiInfoPtr lumiInfo( new LumiInfo(lumiSection) );
+    pos = lumiStatistics_.insert(pos, LumiStatistics::value_type(lumiSection,lumiInfo));
+  }
+  return pos;
 }
 
 
@@ -240,7 +341,7 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
 void evb::bu::DiskWriter::configure()
 {
   streamHandlers_.clear();
-  lumiMonitors_.clear();
+  lumiStatistics_.clear();
 
   if ( configuration_->dropEventData ) return;
 
@@ -263,7 +364,7 @@ void evb::bu::DiskWriter::configure()
 }
 
 
-void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path)
+void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
 {
   if ( ! boost::filesystem::exists(path) &&
     ( ! boost::filesystem::create_directories(path) ) )
@@ -272,11 +373,10 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path)
     oss << "Failed to create directory " << path.string();
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-  chmod(path.string().c_str(),S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
 }
 
 
-void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path)
+void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
 {
   if ( boost::filesystem::exists(path) &&
     ( ! boost::filesystem::remove(path) ) )
@@ -387,7 +487,6 @@ void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, co
   }
 
   fclose(file);
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
@@ -398,23 +497,17 @@ void evb::bu::DiskWriter::createLockFile(const boost::filesystem::path& runDir) 
   std::ofstream fulock(path);
   fulock << "1 0";
   fulock.close();
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 
   const boost::filesystem::path monDirPath( runDir / "mon" );
-  DiskWriter::createDir(monDirPath);
+  createDir(monDirPath);
 }
 
 
-void evb::bu::DiskWriter::writeEoLS
-(
-  const uint32_t lumiSection,
-  const uint32_t fileCount,
-  const uint32_t eventCount
-) const
+void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
 {
   std::ostringstream fileNameStream;
   fileNameStream << std::setfill('0') <<
-    "EoLS_"  << std::setw(4) << lumiSection <<
+    "EoLS_"  << std::setw(4) << lumiInfo->lumiSection <<
     ".jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
 
@@ -427,14 +520,13 @@ void evb::bu::DiskWriter::writeEoLS
 
   const char* path = jsonFile.string().c_str();
   std::ofstream json(path);
-  json << "{"                                                         << std::endl;
-  json << "   \"data\" : [ \""     << eventCount  << "\", \""
-                                   << fileCount   << "\" ],"          << std::endl;
-  json << "   \"definition\" : \"" << eolsDefFile_.string()  << "\"," << std::endl;
-  json << "   \"source\" : \"BU-"  << buInstance_   << "\""           << std::endl;
-  json << "}"                                                         << std::endl;
+  json << "{"                                                              << std::endl;
+  json << "   \"data\" : [ \""     << lumiInfo->nbEvents  << "\", \""
+                                   << lumiInfo->fileCount << "\" ],"       << std::endl;
+  json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
+  json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
+  json << "}"                                                              << std::endl;
   json.close();
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
@@ -453,24 +545,40 @@ void evb::bu::DiskWriter::writeEoR() const
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
+  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
   const char* path = jsonFile.string().c_str();
   std::ofstream json(path);
   json << "{"                                                                           << std::endl;
   json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
                                    << diskWriterMonitoring_.nbFiles         << "\", \""
                                    << diskWriterMonitoring_.nbLumiSections  << "\" ],"  << std::endl;
-  json << "   \"definition\" : \"" << eorDefFile_.string()  << "\","                    << std::endl;
+  json << "   \"definition\" : \"" << eorDefFile_.string() << "\","                     << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
   json.close();
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
-void evb::bu::DiskWriter::defineEoLSjson()
+void evb::bu::DiskWriter::defineRawData(const boost::filesystem::path& jsdDir)
 {
-  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
-  createDir(jsdDir);
+  rawDataDefFile_ = jsdDir / "rawData.jsd";
+
+  const char* path = rawDataDefFile_.string().c_str();
+  std::ofstream json(path);
+  json << "{"                                                 << std::endl;
+  json << "   \"legend\" : ["                                 << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NEvents\","                  << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      }"                                           << std::endl;
+  json << "   ]"                                              << std::endl;
+  json << "}"                                                 << std::endl;
+  json.close();
+}
+
+
+void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
+{
   eolsDefFile_ = jsdDir / "EoLS.jsd";
 
   const char* path = eolsDefFile_.string().c_str();
@@ -488,14 +596,11 @@ void evb::bu::DiskWriter::defineEoLSjson()
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
-void evb::bu::DiskWriter::defineEoRjson()
+void evb::bu::DiskWriter::defineEoR(const boost::filesystem::path& jsdDir)
 {
-  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
-  createDir(jsdDir);
   eorDefFile_ = jsdDir / "EoR.jsd";
 
   const char* path = eorDefFile_.string().c_str();
@@ -517,7 +622,6 @@ void evb::bu::DiskWriter::defineEoRjson()
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
-  chmod(path,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 }
 
 
