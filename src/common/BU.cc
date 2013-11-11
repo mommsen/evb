@@ -170,6 +170,13 @@ void evb::BU::bindNonDefaultXgiCallbacks()
       &evb::BU::blockedResourceFIFOWebPage,
       "blockedResourceFIFO"
     );
+
+  xgi::bind
+    (
+      this,
+      &evb::BU::lumiSectionAccountFIFOWebPage,
+      "lumiSectionAccountFIFO"
+    );
 }
 
 
@@ -266,6 +273,35 @@ void evb::BU::blockedResourceFIFOWebPage
   *out << "<tr>"                                                << std::endl;
   *out << "<td>"                                                << std::endl;
   resourceManager_->printBlockedResourceFIFO(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+
+  *out << "</table>"                                            << std::endl;
+
+  *out << "</body>"                                             << std::endl;
+  *out << "</html>"                                             << std::endl;
+}
+
+
+void evb::BU::lumiSectionAccountFIFOWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  webPageHeader(out, "lumiSectionAccountFIFO");
+
+  *out << "<table class=\"layout\">"                            << std::endl;
+
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  webPageBanner(out);
+  *out << "</td>"                                               << std::endl;
+  *out << "</tr>"                                               << std::endl;
+
+  *out << "<tr>"                                                << std::endl;
+  *out << "<td>"                                                << std::endl;
+  resourceManager_->printLumiSectionAccountFIFO(out);
   *out << "</td>"                                               << std::endl;
   *out << "</tr>"                                               << std::endl;
 

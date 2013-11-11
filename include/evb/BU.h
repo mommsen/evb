@@ -60,6 +60,7 @@ namespace evb {
 
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
+    void lumiSectionAccountFIFOWebPage(xgi::Input*, xgi::Output*);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;
