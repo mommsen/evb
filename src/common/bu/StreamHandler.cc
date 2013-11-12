@@ -27,11 +27,13 @@ evb::bu::StreamHandler::~StreamHandler()
 
 void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
+  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+
   const uint32_t lumiSection = event->lumiSection();
 
-  if ( lumiSection > currentFileStatistics_->lumiSection )
+  if ( fileHandler_.get() && lumiSection > currentFileStatistics_->lumiSection )
   {
-    closeFile();
+    do_closeFile();
   }
   else if ( lumiSection < currentFileStatistics_->lumiSection )
   {
@@ -42,7 +44,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  if ( fileHandler_.get() == 0 )
+  if ( ! fileHandler_.get() )
   {
     std::ostringstream fileName;
     fileName << streamFileName_ << "_" << std::hex << static_cast<unsigned int>(++index_);
@@ -55,24 +57,46 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   if ( ++currentFileStatistics_->nbEventsWritten >= configuration_->maxEventsPerFile )
   {
-    closeFile();
+    do_closeFile();
   }
 
   ::usleep(configuration_->sleepBetweenEvents);
 }
 
 
+bool evb::bu::StreamHandler::closeFileIfOpenedBefore(const time_t& time)
+{
+  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+
+  if ( fileHandler_.get() && currentFileStatistics_->creationTime < time )
+  {
+    do_closeFile();
+    return true;
+  }
+
+  return false;
+}
+
+
 void evb::bu::StreamHandler::closeFile()
 {
+  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+
   if ( fileHandler_.get() )
   {
-    currentFileStatistics_->fileSize =
-      fileHandler_->closeAndGetFileSize();
-
-    fileStatisticsFIFO_.enqWait(currentFileStatistics_);
-
-    fileHandler_.reset();
+    do_closeFile();
   }
+}
+
+
+void evb::bu::StreamHandler::do_closeFile()
+{
+  currentFileStatistics_->fileSize =
+    fileHandler_->closeAndGetFileSize();
+
+  fileStatisticsFIFO_.enqWait(currentFileStatistics_);
+
+  fileHandler_.reset();
 }
 
 

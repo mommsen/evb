@@ -24,9 +24,11 @@ resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
 buInstance_(bu->getApplicationDescriptor()->getInstance()),
 doProcessing_(false),
-processActive_(false)
+lumiAccountingActive_(false),
+fileMoverActive_(false)
 {
   resetMonitoringCounters();
+  startLumiAccounting();
   startFileMover();
   umask(0);
 }
@@ -77,6 +79,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 
   doProcessing_ = true;
   fileMoverWorkLoop_->submit(fileMoverAction_);
+  lumiAccountingWorkLoop_->submit(lumiAccountingAction_);
 }
 
 
@@ -88,7 +91,7 @@ void evb::bu::DiskWriter::stopProcessing()
 {
   if ( configuration_->dropEventData ) return;
 
-  while ( processActive_ ) ::usleep(1000);
+  while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
   doProcessing_ = false;
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
@@ -120,6 +123,110 @@ void evb::bu::DiskWriter::stopProcessing()
 }
 
 
+void evb::bu::DiskWriter::startLumiAccounting()
+{
+  try
+  {
+    lumiAccountingWorkLoop_ =
+      toolbox::task::getWorkLoopFactory()->getWorkLoop(bu_->getIdentifier("lumiAccounting"), "waiting");
+
+    if ( !lumiAccountingWorkLoop_->isActive() )
+      lumiAccountingWorkLoop_->activate();
+
+    lumiAccountingAction_ =
+      toolbox::task::bind(this,
+        &evb::bu::DiskWriter::lumiAccounting,
+        bu_->getIdentifier("lumiAccountingAction"));
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start file mover workloop";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
+}
+
+
+bool evb::bu::DiskWriter::lumiAccounting(toolbox::task::WorkLoop* wl)
+{
+  lumiAccountingActive_ = true;
+
+  try
+  {
+    doLumiSectionAccounting();
+  }
+  catch(xcept::Exception& e)
+  {
+    lumiAccountingActive_ = false;
+    stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    lumiAccountingActive_ = false;
+    XCEPT_DECLARE(exception::DiskWriting,
+      sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    lumiAccountingActive_ = false;
+    XCEPT_DECLARE(exception::DiskWriting,
+      sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+
+  lumiAccountingActive_ = false;
+
+  ::usleep(1000);
+
+  return doProcessing_;
+}
+
+
+void evb::bu::DiskWriter::doLumiSectionAccounting()
+{
+  ResourceManager::LumiSectionAccountPtr lumiSectionAccount;
+
+  while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
+  {
+    if ( lumiSectionAccount->nbEvents == 0 )
+    {
+      // empty lumi section
+      const LumiInfoPtr lumiInfo( new LumiInfo(lumiSectionAccount->lumiSection) );
+      writeEoLS(lumiInfo);
+    }
+    else
+    {
+      LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
+      if ( pos->second->nbEvents > 0 )
+      {
+        std::ostringstream oss;
+        oss << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
+        XCEPT_RAISE(exception::EventOrder, oss.str());
+      }
+      pos->second->nbEvents = lumiSectionAccount->nbEvents;
+    }
+  }
+
+  LumiStatistics::iterator it = lumiStatistics_.begin();
+  while ( it != lumiStatistics_.end() )
+  {
+    if ( it->second->nbEvents > 0 && it->second->nbEvents == it->second->nbEventsWritten )
+    {
+      writeEoLS(it->second);
+
+      if ( it->second->nbEvents > 0 )
+        ++diskWriterMonitoring_.nbLumiSections;
+
+      lumiStatistics_.erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+}
+
+
 void evb::bu::DiskWriter::startFileMover()
 {
   try
@@ -145,74 +252,37 @@ void evb::bu::DiskWriter::startFileMover()
 
 bool evb::bu::DiskWriter::fileMover(toolbox::task::WorkLoop* wl)
 {
-  processActive_ = true;
+  fileMoverActive_ = true;
 
   try
   {
     moveFiles();
-    doLumiSectionAccounting();
   }
   catch(xcept::Exception& e)
   {
-    processActive_ = false;
+    fileMoverActive_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    processActive_ = false;
-    XCEPT_DECLARE(exception::L1Trigger,
+    fileMoverActive_ = false;
+    XCEPT_DECLARE(exception::DiskWriting,
       sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    processActive_ = false;
-    XCEPT_DECLARE(exception::L1Trigger,
+    fileMoverActive_ = false;
+    XCEPT_DECLARE(exception::DiskWriting,
       sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
-  processActive_ = false;
+  fileMoverActive_ = false;
 
   ::usleep(1000);
 
   return doProcessing_;
-}
-
-
-void evb::bu::DiskWriter::doLumiSectionAccounting()
-{
-  ResourceManager::LumiSectionAccountPtr lumiSectionAccount;
-
-  while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
-  {
-    LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
-    if ( pos->second->nbEvents > 0 )
-    {
-      std::ostringstream oss;
-      oss << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
-      XCEPT_RAISE(exception::EventOrder, oss.str());
-    }
-    pos->second->nbEvents = lumiSectionAccount->nbEvents;
-  }
-
-  LumiStatistics::iterator it = lumiStatistics_.begin();
-  while ( it != lumiStatistics_.end() )
-  {
-    if ( it->second->nbEvents == it->second->nbEventsWritten )
-    {
-      writeEoLS(it->second);
-
-      if ( it->second->nbEvents > 0 )
-        ++diskWriterMonitoring_.nbLumiSections;
-
-      lumiStatistics_.erase(it++);
-    }
-    else
-    {
-      ++it;
-    }
-  }
 }
 
 
@@ -224,6 +294,7 @@ void evb::bu::DiskWriter::moveFiles()
   do
   {
     workDone = false;
+    const time_t oldLumiSectionTime = time(0) - configuration_->lumiSectionTimeout;
 
     for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
          it != itEnd; ++it)
@@ -233,6 +304,7 @@ void evb::bu::DiskWriter::moveFiles()
         workDone = true;
         handleRawDataFile(fileStatistics);
       }
+      workDone |= it->second->closeFileIfOpenedBefore(oldLumiSectionTime);
     }
   } while ( workDone );
 }
@@ -240,13 +312,13 @@ void evb::bu::DiskWriter::moveFiles()
 
 void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsPtr& fileStatistics)
 {
-  const uint32_t index = addFileToLumiStatistics(fileStatistics);
+  const LumiStatistics::iterator lumiStatistics = getLumiStatistics(fileStatistics->lumiSection);
 
   std::ostringstream fileNameStream;
   fileNameStream << std::setfill('0') <<
     "run"<< std::setw(6) << runNumber_ <<
     "_ls" << std::setw(4) << fileStatistics->lumiSection <<
-    "_index" << std::setw(6) << index <<
+    "_index" << std::setw(6) << lumiStatistics->second->index++ <<
     ".raw";
   //boost::filesystem::remove(runRawDataDir_ / fileStatistics->fileName);
   const boost::filesystem::path destination( runRawDataDir_.parent_path() / fileNameStream.str() );
@@ -270,6 +342,9 @@ void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsP
   json << "}"                                                                     << std::endl;
   json.close();
 
+  lumiStatistics->second->nbEventsWritten += fileStatistics->nbEventsWritten;
+  ++(lumiStatistics->second->fileCount);
+
   {
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
@@ -283,19 +358,10 @@ void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsP
 }
 
 
-uint32_t evb::bu::DiskWriter::addFileToLumiStatistics(const StreamHandler::FileStatisticsPtr& fileStatistics)
-{
-  const LumiStatistics::iterator pos = getLumiStatistics(fileStatistics->lumiSection);
-
-  pos->second->nbEventsWritten += fileStatistics->nbEventsWritten;
-  ++(pos->second->fileCount);
-
-  return (pos->second->index++);
-}
-
-
 evb::bu::DiskWriter::LumiStatistics::iterator evb::bu::DiskWriter::getLumiStatistics(const uint32_t lumiSection)
 {
+  boost::mutex::scoped_lock sl(lumiStatisticsMutex_);
+
   LumiStatistics::iterator pos = lumiStatistics_.lower_bound(lumiSection);
   if ( pos == lumiStatistics_.end() || lumiStatistics_.key_comp()(lumiSection,pos->first) )
   {

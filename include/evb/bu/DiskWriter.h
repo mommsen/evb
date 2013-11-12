@@ -109,14 +109,16 @@ namespace evb {
       typedef boost::shared_ptr<LumiInfo> LumiInfoPtr;
       typedef std::map<uint32_t,LumiInfoPtr> LumiStatistics;
       LumiStatistics lumiStatistics_;
+      boost::mutex lumiStatisticsMutex_;
 
       void resetMonitoringCounters();
+      void startLumiAccounting();
       void startFileMover();
+      bool lumiAccounting(toolbox::task::WorkLoop*);
       bool fileMover(toolbox::task::WorkLoop*);
       void doLumiSectionAccounting();
       void moveFiles();
       void handleRawDataFile(const StreamHandler::FileStatisticsPtr&);
-      uint32_t addFileToLumiStatistics(const StreamHandler::FileStatisticsPtr&);
       LumiStatistics::iterator getLumiStatistics(const uint32_t lumiSection);
       void createDir(const boost::filesystem::path&) const;
       void removeDir(const boost::filesystem::path&) const;
@@ -146,10 +148,13 @@ namespace evb {
       typedef std::map<uint16_t,StreamHandlerPtr > StreamHandlers;
       StreamHandlers streamHandlers_;
 
+      toolbox::task::WorkLoop* lumiAccountingWorkLoop_;
       toolbox::task::WorkLoop* fileMoverWorkLoop_;
+      toolbox::task::ActionSignature* lumiAccountingAction_;
       toolbox::task::ActionSignature* fileMoverAction_;
       bool doProcessing_;
-      bool processActive_;
+      bool lumiAccountingActive_;
+      bool fileMoverActive_;
 
       struct DiskWriterMonitoring
       {
