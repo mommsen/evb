@@ -342,9 +342,6 @@ void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsP
   json << "}"                                                                     << std::endl;
   json.close();
 
-  lumiStatistics->second->nbEventsWritten += fileStatistics->nbEventsWritten;
-  ++(lumiStatistics->second->fileCount);
-
   {
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
@@ -355,6 +352,9 @@ void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsP
     if ( diskWriterMonitoring_.currentLumiSection < fileStatistics->lumiSection )
       diskWriterMonitoring_.currentLumiSection = fileStatistics->lumiSection;
   }
+
+  ++(lumiStatistics->second->fileCount);
+  lumiStatistics->second->nbEventsWritten += fileStatistics->nbEventsWritten;
 }
 
 
