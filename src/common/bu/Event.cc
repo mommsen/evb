@@ -109,22 +109,20 @@ void evb::bu::Event::writeToDisk
   unsigned char* map = (unsigned char*)fileHandler->getMemMap(bufferSize);
 
   // Write event
-  unsigned char* filepos = map + eventInfo_->headerSize;
+  unsigned char* filepos = map + sizeof(EventInfo);
 
   for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
        it != itEnd; ++it)
   {
-    #ifdef EVB_ADLER
     if ( calculateAdler32 )
-      eventInfo_->adler = adler32(eventInfo_->adler, (*it)->location, (*it)->length);
-    #endif
+      eventInfo_->adler32 = adler32(eventInfo_->adler32, (*it)->location, (*it)->length);
 
     memcpy(filepos, (*it)->location, (*it)->length);
     filepos += (*it)->length;
   }
 
   // Write event information
-  memcpy(map, eventInfo_, eventInfo_->headerSize);
+  memcpy(map, eventInfo_, sizeof(EventInfo));
 
   if ( munmap(map, bufferSize) == -1 )
   {
@@ -146,6 +144,7 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
   const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
   uint32_t chunk = dataLocations_.size() - 1;
+  std::set<uint32_t> fedIdsSeen;
 
   try
   {
@@ -169,7 +168,7 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
 
       fedInfo.checkData(evbId_.eventNumber(), computeCRC);
 
-      if ( !eventInfo_->addFedSize(fedInfo) )
+      if ( ! fedIdsSeen.insert( fedInfo.fedId() ).second )
       {
         std::ostringstream oss;
         oss << "Found a duplicated FED id " << fedInfo.fedId();
@@ -332,44 +331,22 @@ evb::bu::Event::EventInfo::EventInfo
   const uint32_t lumi,
   const uint32_t event
 ) :
-#ifdef EVB_ADLER
-version(4),
-#else
 version(3),
-#endif
 runNumber(run),
 lumiSection(lumi),
 eventNumber(event),
-#ifdef EVB_ADLER
-adler(adler32(0L,Z_NULL,0)),
-#endif
 eventSize(0),
-paddingSize(0)
-{
-  for (uint16_t i=0; i<FED_COUNT; ++i)
-    fedSizes[i] = 0;
-}
-
-
-inline
-bool evb::bu::Event::EventInfo::addFedSize(const FedInfo& fedInfo)
-{
-  const uint16_t fedId = fedInfo.fedId();
-  if ( fedSizes[fedId] > 0 ) return false;
-
-  const uint32_t fedSize = fedInfo.fedSize();
-  fedSizes[fedId] = fedSize;
-
-  return true;
-}
+paddingSize(0),
+adler32(::adler32(0L,Z_NULL,0))
+{}
 
 
 inline
 size_t evb::bu::Event::EventInfo::getBufferSize()
 {
   const size_t pageSize = sysconf(_SC_PAGE_SIZE);
-  paddingSize = pageSize - (headerSize + eventSize) % pageSize;
-  return ( headerSize + eventSize + paddingSize );
+  paddingSize = pageSize - (sizeof(EventInfo) + eventSize) % pageSize;
+  return ( sizeof(EventInfo) + eventSize + paddingSize );
 }
 
 
@@ -383,21 +360,13 @@ namespace evb{
     )
     {
       str << "EventInfo:";
-      str << " headerSize=" << eventInfo.headerSize;
       str << " version=" << eventInfo.version;
       str << " runNumber=" << eventInfo.runNumber;
       str << " lumiSection=" << eventInfo.lumiSection;
       str << " eventNumber=" << eventInfo.eventNumber;
+      str << " adler32=0x" << std::hex << eventInfo.adler32 << std::dec;
       str << " eventSize=" << eventInfo.eventSize;
       str << " paddingSize=" << eventInfo.paddingSize;
-
-      for (uint32_t i = 0; i < FED_COUNT; ++i)
-      {
-        if ( eventInfo.fedSizes[i] > 0 )
-        {
-          str << " FED[" << i << "]=" << eventInfo.fedSizes[i];
-        }
-      }
 
       return str;
     }
