@@ -115,7 +115,7 @@ void evb::bu::Event::writeToDisk
        it != itEnd; ++it)
   {
     if ( calculateAdler32 )
-      eventInfo_->adler32 = adler32(eventInfo_->adler32, (*it)->location, (*it)->length);
+      eventInfo_->adler32 = ::adler32(eventInfo_->adler32, (*it)->location, (*it)->length);
 
     memcpy(filepos, (*it)->location, (*it)->length);
     filepos += (*it)->length;
