@@ -58,5 +58,5 @@ chmod +x controlScript.sh
 
 stopXDAQs
 
-echo "Running the RU builder"
+echo "Running the EvB"
 ./controlScript.sh
