@@ -651,7 +651,9 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   *out << "<td>"                                                                      << std::endl;
   *out << "Version " << evb::version                                                  << std::endl;
   *out << "</td>"                                                                     << std::endl;
-  *out << "<td></td>"                                                                 << std::endl;
+  *out << "<td align=\"right\">"                                                      << std::endl;
+  *out << "<b>run " << stateMachine_->getRunNumber() << "</b>"                        << std::endl;
+  *out << "</td>"                                                                     << std::endl;
   *out << "</tr>"                                                                     << std::endl;
   *out << "<tr>"                                                                      << std::endl;
   *out << "<td>"                                                                      << std::endl;
