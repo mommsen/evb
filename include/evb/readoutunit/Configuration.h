@@ -42,7 +42,7 @@ namespace evb {
       xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
-      xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a luminosity section
+      xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
       Configuration()
       : inputSource("FEROL"),
@@ -64,7 +64,7 @@ namespace evb {
         fragmentPoolSize(20000000),
         frameSize(32768),
         maxTriggerAgeMSec(1000),
-        fakeLumiSectionDuration(23)
+        fakeLumiSectionDuration(0)
       {};
 
       void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)

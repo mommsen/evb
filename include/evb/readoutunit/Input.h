@@ -868,9 +868,18 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady
   const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
-  const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
 
-  const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+  EvBid evbId;
+
+  if ( this->fakeLumiSectionDuration_ > 0 )
+  {
+    evbId = evbIdFactories_[fedId].getEvBid(eventNumber);
+  }
+  else
+  {
+    const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
+    evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+  }
 
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
 
