@@ -24,6 +24,7 @@ namespace evb {
 
   namespace bu { // namespace evb::bu
 
+    class RUproxy;
     class ResourceManager;
     class StateMachine;
 
@@ -67,6 +68,12 @@ namespace evb {
       void configure();
 
       /**
+       * Register the RU proxy
+       */
+      void registerRUproxy(boost::shared_ptr<RUproxy> ruProxy)
+      { ruProxy_ = ruProxy; }
+
+      /**
        * Register the state machine
        */
       void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
@@ -98,13 +105,14 @@ namespace evb {
       struct LumiInfo
       {
         const uint32_t lumiSection;
+        uint32_t totalEvents;
         uint32_t nbEvents;
         uint32_t nbEventsWritten;
         uint32_t fileCount;
         uint32_t index;
 
         LumiInfo(const uint32_t ls)
-        : lumiSection(ls),nbEvents(0),nbEventsWritten(0),fileCount(0),index(0) {};
+        : lumiSection(ls),totalEvents(0),nbEvents(0),nbEventsWritten(0),fileCount(0),index(0) {};
       };
       typedef boost::shared_ptr<LumiInfo> LumiInfoPtr;
       typedef std::map<uint32_t,LumiInfoPtr> LumiStatistics;
@@ -132,6 +140,7 @@ namespace evb {
       void defineEoR(const boost::filesystem::path& jsdDir);
 
       BU* bu_;
+      boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       const ConfigurationPtr configuration_;

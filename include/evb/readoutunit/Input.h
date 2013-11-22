@@ -97,6 +97,11 @@ namespace evb {
       bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
 
       /**
+       * Get the number of events contained in the given lumi section
+       */
+      uint32_t getEventCountForLumiSection(const uint32_t lumiSection);
+
+      /**
        * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
@@ -258,6 +263,10 @@ namespace evb {
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
       CRCCalculator crcCalculator_;
+
+      typedef std::map<uint32_t,uint32_t> LumiCounterMap;
+      LumiCounterMap lumiCounterMap_;
+      LumiCounterMap::iterator currentLumiCounter_;
 
       struct InputMonitoring
       {
@@ -584,19 +593,53 @@ bool evb::readoutunit::Input<Configuration>::getSuperFragmentWithEvBid(const EvB
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateSuperFragmentCounters(const FragmentChainPtr& superFragment)
 {
-  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  {
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
-  const uint32_t size = superFragment->getSize();
-  superFragmentMonitor_.lastEventNumber = superFragment->getEvBid().eventNumber();
-  superFragmentMonitor_.perf.sumOfSizes += size;
-  superFragmentMonitor_.perf.sumOfSquares += size*size;
-  ++superFragmentMonitor_.perf.logicalCount;
+    const uint32_t size = superFragment->getSize();
+    superFragmentMonitor_.lastEventNumber = superFragment->getEvBid().eventNumber();
+    superFragmentMonitor_.perf.sumOfSizes += size;
+    superFragmentMonitor_.perf.sumOfSquares += size*size;
+    ++superFragmentMonitor_.perf.logicalCount;
+  }
+
+  const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
+  if ( lumiSection > currentLumiCounter_->first )
+  {
+    const std::pair<LumiCounterMap::iterator,bool> result =
+      lumiCounterMap_.insert(LumiCounterMap::value_type(lumiSection,0));
+    if ( ! result.second )
+    {
+      std::ostringstream msg;
+      msg << "Received an event from lumi section " << lumiSection;
+      msg << " for which an entry in lumiCounterMap already exists.";
+      XCEPT_RAISE(exception::EventOrder,msg.str());
+    }
+    currentLumiCounter_ = result.first;
+  }
+  ++(currentLumiCounter_->second);
+}
+
+
+template<class Configuration>
+uint32_t evb::readoutunit::Input<Configuration>::getEventCountForLumiSection(const uint32_t lumiSection)
+{
+  const LumiCounterMap::const_iterator pos = lumiCounterMap_.find(lumiSection);
+
+  if ( pos == lumiCounterMap_.end() )
+    return 0;
+  else
+    return pos->second;
 }
 
 
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::startProcessing(const uint32_t runNumber)
 {
+  lumiCounterMap_.clear();
+  currentLumiCounter_ =
+    lumiCounterMap_.insert(LumiCounterMap::value_type(0,0)).first;
+
   resetMonitoringCounters();
   handler_->startProcessing(runNumber);
 }

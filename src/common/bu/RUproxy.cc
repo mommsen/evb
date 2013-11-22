@@ -13,6 +13,8 @@
 #include "xcept/tools.h"
 #include "xdaq/ApplicationDescriptor.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <string.h>
 
 
@@ -34,6 +36,22 @@ tid_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
+
+  curl_ = curl_easy_init();
+  if ( ! curl_ )
+  {
+    XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl for connection to EVM");
+  }
+  curl_easy_setopt(curl_, CURLOPT_HEADER, 0);
+  curl_easy_setopt(curl_, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
+  curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, &evb::bu::RUproxy::curlWriter);
+  curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &curlBuffer_);
+}
+
+
+evb::bu::RUproxy::~RUproxy()
+{
+  curl_easy_cleanup(curl_);
 }
 
 
@@ -421,6 +439,56 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     XCEPT_RETHROW(exception::I2O,
       "Failed to get the I2O TID of the EVM", e);
   }
+
+  evmURL_ = evm_.descriptor->getContextDescriptor()->getURL()
+    + "/" + evm_.descriptor->getURN();
+}
+
+
+uint32_t evb::bu::RUproxy::getTotalEventsInLumiSection(const uint32_t lumiSection)
+{
+  uint32_t eventCount = 0;
+  std::ostringstream url;
+  url << evmURL_ << "/eventCountForLumiSection?ls=" << lumiSection;
+  curl_easy_setopt(curl_, CURLOPT_URL, url.str().c_str());
+  const CURLcode result = curl_easy_perform(curl_);
+
+  if (result == CURLE_OK)
+  {
+    try
+    {
+      eventCount = boost::lexical_cast<uint32_t>(curlBuffer_);
+    }
+    catch(boost::bad_lexical_cast& e)
+    {
+      std::ostringstream oss;
+      oss << "Received bad response from EVM: " << curlBuffer_;
+      XCEPT_RAISE(exception::DiskWriting,oss.str());
+    }
+  }
+  else
+  {
+    std::ostringstream oss;
+    oss << "Failed to get total event count for lumi section " << lumiSection;
+    oss << " from EVM at " << url.str() <<": ";
+    oss << curl_easy_strerror(result);
+    XCEPT_RAISE(exception::DiskWriting,oss.str());
+  }
+
+  curlBuffer_.clear();
+
+  return eventCount;
+}
+
+
+int evb::bu::RUproxy::curlWriter(char* data, size_t size, size_t nmemb, std::string* buffer)
+{
+  int result = 0;
+  if (buffer) {
+    buffer->append(data, size * nmemb);
+    result = size * nmemb;
+  }
+  return result;
 }
 
 

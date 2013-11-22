@@ -16,12 +16,10 @@
 evb::bu::EventBuilder::EventBuilder
 (
   BU* bu,
-  boost::shared_ptr<RUproxy> ruProxy,
   boost::shared_ptr<DiskWriter> diskWriter,
   boost::shared_ptr<ResourceManager> resourceManager
 ) :
 bu_(bu),
-ruProxy_(ruProxy),
 diskWriter_(diskWriter),
 resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),

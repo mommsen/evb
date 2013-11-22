@@ -49,7 +49,6 @@ namespace evb {
       EventBuilder
       (
         BU*,
-        boost::shared_ptr<RUproxy>,
         boost::shared_ptr<DiskWriter>,
         boost::shared_ptr<ResourceManager>
       );
@@ -102,7 +101,6 @@ namespace evb {
       EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
 
       BU* bu_;
-      boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<DiskWriter> diskWriter_;
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;

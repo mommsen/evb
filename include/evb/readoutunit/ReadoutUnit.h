@@ -22,6 +22,7 @@
 #include "xgi/Input.h"
 #include "xgi/Method.h"
 #include "xgi/Output.h"
+#include "xgi/Utils.h"
 
 
 namespace evb {
@@ -77,6 +78,7 @@ namespace evb {
 
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
+      void eventCountForLumiSection(xgi::Input*, xgi::Output*);
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -243,6 +245,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage,
     "superFragmentFIFO"
   );
+
+  xgi::bind(
+    this,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountForLumiSection,
+    "eventCountForLumiSection"
+  );
 }
 
 
@@ -325,6 +333,21 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragme
   *out << "</html>"                                             << std::endl;
 }
 
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountForLumiSection
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  cgicc::Cgicc cgi(in);
+
+  if ( xgi::Utils::hasFormElement(cgi,"ls") ) {
+    const uint32_t ls = xgi::Utils::getFormElement(cgi, "ls")->getIntegerValue();
+    *out << input_->getEventCountForLumiSection(ls);
+  }
+}
 
 #endif // _evb_readoutunit_ReadoutUnit_h_
 

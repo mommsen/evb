@@ -3,6 +3,7 @@
 
 #include <boost/thread/mutex.hpp>
 
+#include <curl/curl.h>
 #include <map>
 #include <stdint.h>
 
@@ -55,7 +56,7 @@ namespace evb {
         toolbox::mem::Pool*
       );
 
-      virtual ~RUproxy() {};
+      ~RUproxy();
 
       /**
        * Callback for I2O message containing a super fragment
@@ -66,6 +67,11 @@ namespace evb {
        * Send request for N trigger data fragments to the RUs
        */
       void requestFragments(const uint32_t buResourceId, const uint32_t count);
+
+      /**
+       * Get the total number of events in the given lumi section from the EVM
+       */
+      uint32_t getTotalEventsInLumiSection(const uint32_t lumiSection);
 
       /**
        * Append the info space items to be published in the
@@ -120,6 +126,7 @@ namespace evb {
       void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
       void getApplicationDescriptorForEVM();
+      static int curlWriter(char*, size_t, size_t, std::string*);
 
       BU* bu_;
       boost::shared_ptr<EventBuilder> eventBuilder_;
@@ -137,6 +144,9 @@ namespace evb {
 
       I2O_TID tid_;
       ApplicationDescriptorAndTid evm_;
+      std::string evmURL_;
+      CURL* curl_;
+      std::string curlBuffer_;
 
       // Lookup table of data blocks, indexed by RU tid and BU resource id
       struct Index

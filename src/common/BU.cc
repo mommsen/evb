@@ -19,11 +19,12 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
 
   resourceManager_.reset( new bu::ResourceManager(this) );
   diskWriter_.reset( new bu::DiskWriter(this, resourceManager_) );
-  eventBuilder_.reset( new bu::EventBuilder(this, ruProxy_, diskWriter_, resourceManager_) );
+  eventBuilder_.reset( new bu::EventBuilder(this, diskWriter_, resourceManager_) );
   ruProxy_.reset( new bu::RUproxy(this, eventBuilder_, resourceManager_, fastCtrlMsgPool) );
   stateMachine_.reset( new bu::StateMachine(this,
       ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
+  diskWriter_->registerRUproxy(ruProxy_);
   diskWriter_->registerStateMachine(stateMachine_);
   eventBuilder_->registerStateMachine(stateMachine_);
   ruProxy_->registerStateMachine(stateMachine_);

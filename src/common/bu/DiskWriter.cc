@@ -10,6 +10,7 @@
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/ResourceManager.h"
+#include "evb/bu/RUproxy.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"
 
@@ -140,7 +141,7 @@ void evb::bu::DiskWriter::startLumiAccounting()
   }
   catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start file mover workloop";
+    std::string msg = "Failed to start lumi accounting workloop";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -188,10 +189,14 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
 
   while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
   {
+    const uint32_t totalEventsInLumiSection =
+      ruProxy_->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
+
     if ( lumiSectionAccount->nbEvents == 0 )
     {
       // empty lumi section
       const LumiInfoPtr lumiInfo( new LumiInfo(lumiSectionAccount->lumiSection) );
+      lumiInfo->totalEvents = totalEventsInLumiSection;
       writeEoLS(lumiInfo);
     }
     else
@@ -204,6 +209,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
         XCEPT_RAISE(exception::EventOrder, oss.str());
       }
       pos->second->nbEvents = lumiSectionAccount->nbEvents;
+      pos->second->totalEvents = totalEventsInLumiSection;
     }
   }
 
@@ -502,7 +508,7 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
   CURL* curl = curl_easy_init();
   if ( ! curl )
   {
-    XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl");
+    XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl for retrieving the HLT menu");
   }
 
   try
@@ -540,15 +546,15 @@ void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, co
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
 
-  const CURLcode res = curl_easy_perform(curl);
+  const CURLcode result = curl_easy_perform(curl);
 
-  if ( res != CURLE_OK )
+  if ( result != CURLE_OK )
   {
     fclose(file);
 
     std::ostringstream msg;
     msg << "Failed to retrieve the HLT information from " << url
-      << ": " << curl_easy_strerror(res);
+      << ": " << curl_easy_strerror(result);
     XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
@@ -588,7 +594,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
   std::ofstream json(path);
   json << "{"                                                              << std::endl;
   json << "   \"data\" : [ \""     << lumiInfo->nbEvents  << "\", \""
-                                   << lumiInfo->fileCount << "\" ],"       << std::endl;
+                                   << lumiInfo->fileCount  << "\", \""
+                                   << lumiInfo->totalEvents << "\" ],"     << std::endl;
   json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
   json << "}"                                                              << std::endl;
@@ -658,6 +665,10 @@ void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
   json << "      {"                                           << std::endl;
   json << "         \"name\" : \"NFiles\","                   << std::endl;
   json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"TotalEvents\","              << std::endl;
+  json << "         \"operation\" : \"max\""                  << std::endl;
   json << "      }"                                           << std::endl;
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
