@@ -188,8 +188,15 @@ runLsCounter=0;
 for eolsFile in `ls $testDir/run$runNumber/EoLS_*jsn`
 do
     lumiSection=$(echo $eolsFile | sed -re 's/.*EoLS_([0-9]+).jsn/\1/')
-    lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
-    lsFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)" \],/\1/p' $eolsFile)
+    lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eolsFile)
+    lsFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
+    totalEventCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "([0-9]+)" \],/\1/p' $eolsFile)
+
+    if [[ $lsEventCount != $totalEventCount ]]
+    then
+        echo "Test failed: total event count $totalEventCount does not match $lsEventCount in $eolsFile"
+        exit 1
+    fi
 
     eventCounter=0
     fileCounter=0
@@ -203,7 +210,7 @@ do
             ((fileCounter++))
             ((runFileCounter++))
             fileSize=$(stat -c%s $file)
-            expectedEventCount=$(($fileSize/24576))
+            expectedEventCount=$(($fileSize/20480))
 
             jsonFile=$(echo $file | sed -re 's/.raw$/.jsn/')
             if [[ ! -s $jsonFile ]]
@@ -215,7 +222,7 @@ do
             eventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)" \],/\1/p' $jsonFile)
             if [[ $eventCount != $expectedEventCount ]]
             then
-                echo "Test failed: expected $expectedEventCount, but found $eventCount events in JSON file"
+                echo "Test failed: expected $expectedEventCount, but found $eventCount events in JSON file $jsonFile"
                 exit 1
             fi
             eventCounter=$(($eventCounter+$eventCount))

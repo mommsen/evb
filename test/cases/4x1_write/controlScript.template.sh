@@ -273,8 +273,15 @@ runLsCounter=0;
 for eolsFile in `ls $testDir/run$runNumber/EoLS_*jsn`
 do
     lumiSection=$(echo $eolsFile | sed -re 's/.*EoLS_([0-9]+).jsn/\1/')
-    lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
-    lsFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)" \],/\1/p' $eolsFile)
+    lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eolsFile)
+    lsFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
+    totalEventCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "([0-9]+)" \],/\1/p' $eolsFile)
+
+    if [[ $lsEventCount != $totalEventCount ]]
+    then
+        echo "Test failed: total event count $totalEventCount does not match $lsEventCount in $eolsFile"
+        exit 1
+    fi
 
     eventCounter=0
     fileCounter=0
