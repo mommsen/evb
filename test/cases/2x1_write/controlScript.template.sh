@@ -150,36 +150,28 @@ then
     exit 1
 fi
 
-if [[ ! -s $testDir/run$runNumber/jsd/rawData.jsd ]]
-then
-    echo "Test failed: $testDir/run$runNumber/jsd/rawData.jsd does not exist"
-    exit 1
-fi
+for jsdFile in rawData.jsd EoLS.jsd EoR.jsd ; do
+    if [[ ! -s $testDir/run$runNumber/jsd/${jsdFile} ]]
+    then
+        echo "Test failed: $testDir/run$runNumber/jsd/${jsdFile} does not exist"
+        exit 1
+    fi
+done
 
-if [[ ! -s $testDir/run$runNumber/jsd/EoLS.jsd ]]
-then
-    echo "Test failed: $testDir/run$runNumber/jsd/EoLS.jsd does not exist"
-    exit 1
-fi
+for hltFile in HltConfig.py CMSSW_VERSION SCRAM_ARCH ; do
+    if [[ ! -s $testDir/run$runNumber/hlt/${hltFile} ]]
+    then
+        echo "Test failed: $testDir/run$runNumber/hlt/${hltFile} does not exist"
+        exit 1
+    fi
 
-if [[ ! -s $testDir/run$runNumber/jsd/EoR.jsd ]]
-then
-    echo "Test failed: $testDir/run$runNumber/jsd/EoR.jsd does not exist"
-    exit 1
-fi
-
-if [[ ! -s $testDir/run$runNumber/HltConfig.py ]]
-then
-    echo "Test failed: $testDir/run$runNumber/HltConfig.py does not exist"
-    exit 1
-fi
-
-if [[ "x`diff -q $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py`" != "x" ]]
-then
-    echo "Test failed: $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py differ:"
-    diff $testDir/HltConfig.py $testDir/run$runNumber/HltConfig.py
-    exit 1
-fi
+    if [[ "x`diff -q $testDir/${hltFile} $testDir/run$runNumber/hlt/${hltFile}`" != "x" ]]
+    then
+        echo "Test failed: $testDir/${hltFile} $testDir/run$runNumber/hlt/${hltFile} differ:"
+        diff $testDir/${hltFile} $testDir/run$runNumber/hlt/${hltFile}
+        exit 1
+    fi
+done
 
 runEventCounter=0;
 runFileCounter=0;

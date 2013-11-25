@@ -72,7 +72,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   getHLTmenu(rawRunDir);
   createLockFile(rawRunDir);
 
-  const boost::filesystem::path jsdDir = runMetaDataDir_ / "jsd";
+  const boost::filesystem::path jsdDir = runMetaDataDir_ / configuration_->jsdDirName.value_;
   createDir(jsdDir);
   defineRawData(jsdDir);
   defineEoLS(jsdDir);
@@ -498,6 +498,9 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 
 void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) const
 {
+  const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_ );
+  createDir(hltPath);
+
   std::string url(configuration_->hltParameterSetURL.value_);
 
   if ( url.empty() )
@@ -516,9 +519,9 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
     char lastChar = *url.rbegin();
     if ( lastChar != '/' ) url += '/';
 
-    retrieveFromURL(curl, url+"HltConfig.py", runDir/"HltConfig.py");
-    retrieveFromURL(curl, url+"SCRAM_ARCH", runDir/"SCRAM_ARCH");
-    retrieveFromURL(curl, url+"CMSSW_VERSION", runDir/"CMSSW_VERSION");
+    retrieveFromURL(curl, url+"HltConfig.py", hltPath/"HltConfig.py");
+    retrieveFromURL(curl, url+"SCRAM_ARCH", hltPath/"SCRAM_ARCH");
+    retrieveFromURL(curl, url+"CMSSW_VERSION", hltPath/"CMSSW_VERSION");
   }
   catch(xcept::Exception& e)
   {
@@ -564,14 +567,11 @@ void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, co
 
 void evb::bu::DiskWriter::createLockFile(const boost::filesystem::path& runDir) const
 {
-  const boost::filesystem::path fulockPath( runDir / "fu.lock" );
+  const boost::filesystem::path fulockPath( runDir / configuration_->fuLockName.value_ );
   const char* path = fulockPath.string().c_str();
   std::ofstream fulock(path);
   fulock << "1 0";
   fulock.close();
-
-  const boost::filesystem::path monDirPath( runDir / "mon" );
-  createDir(monDirPath);
 }
 
 

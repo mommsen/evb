@@ -31,6 +31,9 @@ namespace evb {
       xdata::UnsignedInteger32 numberOfBuilders;           // Number of threads used to build/write events
       xdata::String rawDataDir;                            // Path to the top directory used to write the event data
       xdata::String metaDataDir;                           // Path to the top directory used to write the meta data (JSON)
+      xdata::String jsdDirName;                            // Directory name under the run directory used for JSON definition files
+      xdata::String hltDirName;                            // Directory name under the run directory used for HLT configuration files
+      xdata::String fuLockName;                            // Filename of the lock file used to arbritrate file-access btw FUs
       xdata::Double rawDataHighWaterMark;                  // Relative high-water mark for the event data directory
       xdata::Double rawDataLowWaterMark;
       xdata::Double metaDataHighWaterMark;
@@ -54,6 +57,9 @@ namespace evb {
         numberOfBuilders(6),
         rawDataDir("/tmp/fff"),
         metaDataDir("/tmp/fff"),
+        jsdDirName("jsd"),
+        hltDirName("hlt"),
+        fuLockName("fu.lock"),
         rawDataHighWaterMark(0.7),
         rawDataLowWaterMark(0.5),
         metaDataHighWaterMark(0.9),
@@ -79,6 +85,9 @@ namespace evb {
         params.add("numberOfBuilders", &numberOfBuilders);
         params.add("rawDataDir", &rawDataDir);
         params.add("metaDataDir", &metaDataDir);
+        params.add("jsdDirName", &jsdDirName);
+        params.add("hltDirName", &hltDirName);
+        params.add("fuLockName", &fuLockName);
         params.add("rawDataHighWaterMark", &rawDataHighWaterMark);
         params.add("rawDataLowWaterMark", &rawDataLowWaterMark);
         params.add("metaDataHighWaterMark", &metaDataHighWaterMark);
