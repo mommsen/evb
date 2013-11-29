@@ -46,6 +46,9 @@ namespace evb {
         const std::string& appIcon
       );
 
+      void processI2O(const bool val)
+      { processI2O_ = val; }
+
       typedef boost::shared_ptr< Input<Configuration> > InputPtr;
       InputPtr getInput() const
       { return input_; }
@@ -79,6 +82,8 @@ namespace evb {
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
       void eventCountForLumiSection(xgi::Input*, xgi::Output*);
+
+      bool processI2O_;
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -207,7 +212,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvai
   tcpla::MemoryCache* cache
 )
 {
-  input_->rawDataAvailable(bufRef,cache);
+  if ( processI2O_ )
+    input_->rawDataAvailable(bufRef,cache);
+  else
+  {
+    bufRef->release();
+    LOG4CPLUS_WARN(this->logger_, "Received a rawDataAvailable callback while not running.");
+  }
 }
 
 
@@ -217,7 +228,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SUPER_F
   toolbox::mem::Reference *bufRef
 )
 {
-  input_->superFragmentReady(bufRef);
+  if ( processI2O_ )
+    input_->superFragmentReady(bufRef);
+  else
+  {
+    bufRef->release();
+    LOG4CPLUS_WARN(this->logger_, "Received an I2O_SUPER_FRAGMENT_READY message while not running.");
+  }
 }
 
 
@@ -227,7 +244,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FR
   toolbox::mem::Reference *bufRef
 )
 {
-  buProxy_->readoutMsgCallback(bufRef);
+  if ( processI2O_ )
+    buProxy_->readoutMsgCallback(bufRef);
+  else
+  {
+    bufRef->release();
+    LOG4CPLUS_WARN(this->logger_, "Received an I2O_SHIP_FRAGMENTS message while not running.");
+  }
 }
 
 

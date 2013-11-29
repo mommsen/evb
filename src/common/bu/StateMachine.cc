@@ -94,6 +94,7 @@ void evb::bu::Running::entryAction()
 
   stateMachine.resourceManager()->resetMonitoringCounters();
 
+  stateMachine.bu()->processI2O(true);
   stateMachine.diskWriter()->startProcessing(runNumber);
   stateMachine.resourceManager()->startProcessing();
   stateMachine.eventBuilder()->startProcessing(runNumber);
@@ -105,6 +106,7 @@ void evb::bu::Running::exitAction()
 {
   outermost_context_type& stateMachine = outermost_context();
 
+  stateMachine.bu()->processI2O(false);
   stateMachine.ruProxy()->stopProcessing();
   stateMachine.eventBuilder()->stopProcessing();
   stateMachine.resourceManager()->stopProcessing();

@@ -152,7 +152,13 @@ void evb::BU::I2O_BU_CACHE_Callback
   toolbox::mem::Reference * bufRef
 )
 {
-  ruProxy_->superFragmentCallback(bufRef);
+  if ( processI2O_ )
+    ruProxy_->superFragmentCallback(bufRef);
+  else
+  {
+    bufRef->release();
+    LOG4CPLUS_WARN(logger_, "Received an I2O_BU_CACHE message while not running.");
+  }
 }
 
 

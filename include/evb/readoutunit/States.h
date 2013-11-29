@@ -389,6 +389,7 @@ void evb::readoutunit::Running<Owner>::entryAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const uint32_t runNumber = stateMachine.getRunNumber();
 
+  stateMachine.getOwner()->processI2O(true);
   stateMachine.getOwner()->getInput()->startProcessing(runNumber);
   stateMachine.getOwner()->getBUproxy()->startProcessing();
   doStartProcessing(runNumber);
@@ -400,6 +401,7 @@ void evb::readoutunit::Running<Owner>::exitAction()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
 
+  stateMachine.getOwner()->processI2O(false);
   stateMachine.getOwner()->getInput()->stopProcessing();
   stateMachine.getOwner()->getBUproxy()->stopProcessing();
   doStopProcessing();
