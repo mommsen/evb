@@ -944,10 +944,18 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
 
-  const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
 
-  // Input::checkEventFragment already checks that the fedId is known
-  const EvBid evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+  EvBid evbId;
+
+  if ( this->fakeLumiSectionDuration_ > 0 )
+  {
+    evbId = evbIdFactories_[fedId].getEvBid(eventNumber);
+  }
+  else
+  {
+    const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
+    evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+  }
 
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
   //bufRef->release(); return;
