@@ -41,9 +41,6 @@ namespace evb {
 
     virtual ~BU() {};
 
-    void processI2O(const bool val)
-    { processI2O_ = val; }
-
     XDAQ_INSTANTIATOR();
 
 
@@ -69,8 +66,6 @@ namespace evb {
     boost::shared_ptr<bu::ResourceManager> resourceManager_;
     boost::shared_ptr<bu::EventBuilder> eventBuilder_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
-
-    bool processI2O_;
 
     xdata::UnsignedInteger32 eventRate_;
     xdata::UnsignedInteger32 eventSize_;
