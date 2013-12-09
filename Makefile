@@ -32,6 +32,7 @@ Project=daq
 Package=evb
 
 Sources=\
+	crc16_T10DIF_128x_extended.S \
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
@@ -53,9 +54,7 @@ Sources=\
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
 	bu/StreamHandler.cc \
-	version.cc
-
-TestSources = \
+	version.cc \
 	DummyFEROL.cc \
 	dummyFEROL/FragmentGenerator.cc \
 	dummyFEROL/StateMachine.cc
@@ -143,13 +142,12 @@ TestLibraryDirs = \
         $(XDAQ2RC_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Werror -fno-omit-frame-pointer #-std=c++0x
+UserCCFlags = -O3 -funroll-loops -Werror #-fno-omit-frame-pointer #-std=c++0x
 
 # These libraries can be platform specific and
 # potentially need conditional processing
 DependentLibraries = interfaceshared xdaq2rc boost_filesystem boost_thread-mt boost_system curl
 DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX)
-UserDynamicLinkFlags = src/$(XDAQ_OS)/$(XDAQ_PLATFORM)/crc16_T10DIF_128x_extended.o
 
 #
 # Compile the source files and create a shared library
@@ -159,11 +157,9 @@ TestDynamicLibrary=evbtest
 
 TestDynamicLibraryName = $(TestDynamicLibrary:%=$(PackageLibDir)/$(LibraryPrefix)%$(DynamicSuffix))
 
-all: buildall test install
+all: _all test install
 
-buildall: crc _buildall
-
-test: buildall
+test: _all
 	@make tests
 
 testinstall: test
@@ -171,14 +167,8 @@ testinstall: test
 
 clean: _cleanall
 	@make testsclean
-	@rm -f $(PackageTargetDir)/crc16_T10DIF_128x_extended.o
 
 install: _installall testinstall
 
-rpm: buildall test _rpmall
-
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules
-
-crc: src/common/crc16_T10DIF_128x_extended.S
-	gcc -fPIC -c -o $(PackageTargetDir)/crc16_T10DIF_128x_extended.o $<

@@ -32,7 +32,6 @@
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-    <xc:Module>$XDAQ_LOCAL/lib/libevbtest.so</xc:Module>
 
   </xc:Context>
 
