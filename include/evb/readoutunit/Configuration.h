@@ -25,6 +25,7 @@ namespace evb {
       xdata::String inputSource;                             // Input mode selection: FEROL or Local
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
+      xdata::UnsignedInteger32 numberOfPreallocatedBlocks;   // Number of blocks pre-allocated during configure
       xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
       xdata::Boolean checkCRC;                               // If set to true, check the CRC of the FED fragments
@@ -48,6 +49,7 @@ namespace evb {
       : inputSource("FEROL"),
         numberOfResponders(4),
         blockSize(65536),
+        numberOfPreallocatedBlocks(0),
         fragmentFIFOCapacity(128),
         fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
         checkCRC(false),
@@ -81,6 +83,7 @@ namespace evb {
         params.add("inputSource", &inputSource, InfoSpaceItems::change);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);
+        params.add("numberOfPreallocatedBlocks", &numberOfPreallocatedBlocks);
         params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
         params.add("checkCRC", &checkCRC);

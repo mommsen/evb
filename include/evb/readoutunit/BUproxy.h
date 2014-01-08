@@ -604,6 +604,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   fragmentRequestFIFO_.clear();
   fragmentRequestFIFO_.resize(configuration_->fragmentRequestFIFOCapacity);
 
+  for (uint32_t i = 0; i < configuration_->numberOfPreallocatedBlocks; ++i)
+  {
+    toolbox::mem::Reference* bufRef =
+      toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
+    bufRef->release();
+  }
+
   input_ = readoutUnit_->getInput();
 
   try
