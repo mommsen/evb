@@ -321,16 +321,6 @@ void evb::bu::EventBuilder::printHtml(xgi::Output* out) const
     *out << "</tr>"                                                 << std::endl;
   }
 
-  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\">"                                    << std::endl;
-    it->second->printHtml(out, urn);
-    *out << "</td>"                                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
-
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
 }
