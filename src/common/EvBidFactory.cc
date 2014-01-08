@@ -1,14 +1,20 @@
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 
+#include <boost/bind.hpp>
 
 evb::EvBidFactory::EvBidFactory() :
 runNumber_(0),
 previousEventNumber_(0),
 resyncCount_(0),
-fakeLumiSection_(1)
+fakeLumiSection_(0)
 {}
 
+
+evb::EvBidFactory::~EvBidFactory()
+{
+  stopFakeLumiThread();
+}
 
 void evb::EvBidFactory::reset
 (
@@ -19,8 +25,37 @@ void evb::EvBidFactory::reset
   runNumber_ = runNumber;
   previousEventNumber_ = 0;
   resyncCount_ = 0;
+  fakeLumiSection_ = 0;
+
+  stopFakeLumiThread();
+  if ( fakeLumiSectionDuration > 0 )
+  {
+    fakeLumiThread_.reset(
+      new boost::thread( boost::bind( &evb::EvBidFactory::fakeLumiActivity, this,
+                                      static_cast<boost::posix_time::seconds>(fakeLumiSectionDuration) ) )
+    );
+  }
+}
+
+
+void evb::EvBidFactory::stopFakeLumiThread()
+{
+  if ( fakeLumiThread_.get() )
+  {
+    fakeLumiThread_->interrupt();
+    fakeLumiThread_->join();
+  }
+}
+
+
+void evb::EvBidFactory::fakeLumiActivity(const boost::posix_time::seconds fakeLumiSectionDuration)
+{
   fakeLumiSection_ = 1;
-  fakeLumiSectionDuration_ = boost::posix_time::seconds(fakeLumiSectionDuration);
+  while(1)
+  {
+    boost::this_thread::sleep(fakeLumiSectionDuration);
+    ++fakeLumiSection_;
+  }
 }
 
 
@@ -33,25 +68,7 @@ evb::EvBid evb::EvBidFactory::getEvBid()
 
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 {
-  if ( fakeLumiSectionDuration_ > boost::posix_time::seconds(0) )
-  {
-    const boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-
-    if ( startOfLumiSection_ == boost::posix_time::not_a_date_time )
-      startOfLumiSection_ = now;
-
-    while ( startOfLumiSection_ + fakeLumiSectionDuration_ < now )
-    {
-      startOfLumiSection_ += fakeLumiSectionDuration_;
-      ++fakeLumiSection_;
-    }
-
-    return getEvBid(eventNumber,fakeLumiSection_);
-  }
-  else
-  {
-    return getEvBid(eventNumber,0);
-  }
+  return getEvBid(eventNumber,fakeLumiSection_);
 }
 
 

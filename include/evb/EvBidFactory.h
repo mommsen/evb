@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 namespace evb {
 
@@ -14,6 +16,7 @@ namespace evb {
   public:
 
     EvBidFactory();
+    ~EvBidFactory();
 
     /**
      * Return EvBid with a fake eventNumber and lumi section
@@ -37,12 +40,14 @@ namespace evb {
 
   private:
 
+    void stopFakeLumiThread();
+    void fakeLumiActivity(const boost::posix_time::seconds fakeLumiSectionDuration);
+
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
     uint32_t fakeLumiSection_;
-    boost::posix_time::time_duration fakeLumiSectionDuration_;
-    boost::posix_time::ptime startOfLumiSection_;
+    boost::shared_ptr<boost::thread> fakeLumiThread_;
 
   };
 
