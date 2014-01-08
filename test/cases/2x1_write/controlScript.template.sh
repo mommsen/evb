@@ -142,7 +142,7 @@ then
   exit 1
 fi
 
-ls -l $testDir/run$runNumber
+ls --full-time -rt $testDir/run$runNumber
 
 if [[ -x $testDir/run$runNumber/open ]]
 then
