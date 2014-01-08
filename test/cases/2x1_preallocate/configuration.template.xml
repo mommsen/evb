@@ -26,7 +26,7 @@
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
-        <numberOfPreallocatedBlocks xsi:type="xsd:unsignedInt">64</numberOfPreallocatedBlocks>
+        <numberOfPreallocatedBlocks xsi:type="xsd:unsignedInt">32</numberOfPreallocatedBlocks>
         <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
           <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">512</item>
         </fedSourceIds>
@@ -63,7 +63,7 @@
     <xc:Application class="evb::RU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::RU" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">Local</inputSource>
-        <numberOfPreallocatedBlocks xsi:type="xsd:unsignedInt">64</numberOfPreallocatedBlocks>
+        <numberOfPreallocatedBlocks xsi:type="xsd:unsignedInt">128</numberOfPreallocatedBlocks>
       </properties>
     </xc:Application>
 
