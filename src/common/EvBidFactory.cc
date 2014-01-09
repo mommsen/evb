@@ -7,7 +7,7 @@ evb::EvBidFactory::EvBidFactory() :
 runNumber_(0),
 previousEventNumber_(0),
 resyncCount_(0),
-fakeLumiSection_(0)
+fakeLumiSection_(1)
 {}
 
 
@@ -25,9 +25,9 @@ void evb::EvBidFactory::reset
   runNumber_ = runNumber;
   previousEventNumber_ = 0;
   resyncCount_ = 0;
-  fakeLumiSection_ = 0;
 
   stopFakeLumiThread();
+  fakeLumiSection_ = 1;
   if ( fakeLumiSectionDuration > 0 )
   {
     fakeLumiThread_.reset(
@@ -50,10 +50,11 @@ void evb::EvBidFactory::stopFakeLumiThread()
 
 void evb::EvBidFactory::fakeLumiActivity(const boost::posix_time::seconds fakeLumiSectionDuration)
 {
-  fakeLumiSection_ = 1;
+  boost::system_time nextLumiSectionStartTime = boost::get_system_time();
   while(1)
   {
-    boost::this_thread::sleep(fakeLumiSectionDuration);
+    nextLumiSectionStartTime += fakeLumiSectionDuration;
+    boost::this_thread::sleep(nextLumiSectionStartTime);
     ++fakeLumiSection_;
   }
 }
