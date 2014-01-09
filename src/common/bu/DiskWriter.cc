@@ -340,14 +340,16 @@ void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsP
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  const char* path = jsonFile.string().c_str();
-  std::ofstream json(path);
+  const std::string path = jsonFile.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                                     << std::endl;
   json << "   \"data\" : [ \""     << fileStatistics->nbEventsWritten << "\" ],"  << std::endl;
   json << "   \"definition\" : \"" << rawDataDefFile_.string() << "\","           << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_  << "\""                        << std::endl;
   json << "}"                                                                     << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,jsonFile);
 
   {
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
@@ -591,8 +593,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  const char* path = jsonFile.string().c_str();
-  std::ofstream json(path);
+  const std::string path = jsonFile.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                              << std::endl;
   json << "   \"data\" : [ \""     << lumiInfo->nbEvents  << "\", \""
                                    << lumiInfo->fileCount  << "\", \""
@@ -601,6 +603,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
   json << "}"                                                              << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,jsonFile);
 }
 
 
@@ -620,8 +624,8 @@ void evb::bu::DiskWriter::writeEoR() const
   }
 
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
-  const char* path = jsonFile.string().c_str();
-  std::ofstream json(path);
+  const std::string path = jsonFile.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                                           << std::endl;
   json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
                                    << diskWriterMonitoring_.nbFiles         << "\", \""
@@ -630,15 +634,16 @@ void evb::bu::DiskWriter::writeEoR() const
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,jsonFile);
 }
 
 
 void evb::bu::DiskWriter::defineRawData(const boost::filesystem::path& jsdDir)
 {
   rawDataDefFile_ = jsdDir / "rawData.jsd";
-
-  const char* path = rawDataDefFile_.string().c_str();
-  std::ofstream json(path);
+  const std::string path = rawDataDefFile_.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -648,6 +653,8 @@ void evb::bu::DiskWriter::defineRawData(const boost::filesystem::path& jsdDir)
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,rawDataDefFile_);
 }
 
 
@@ -655,8 +662,8 @@ void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
 {
   eolsDefFile_ = jsdDir / "EoLS.jsd";
 
-  const char* path = eolsDefFile_.string().c_str();
-  std::ofstream json(path);
+  const std::string path = eolsDefFile_.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -674,6 +681,8 @@ void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,eolsDefFile_);
 }
 
 
@@ -681,8 +690,8 @@ void evb::bu::DiskWriter::defineEoR(const boost::filesystem::path& jsdDir)
 {
   eorDefFile_ = jsdDir / "EoR.jsd";
 
-  const char* path = eorDefFile_.string().c_str();
-  std::ofstream json(path);
+  const std::string path = eorDefFile_.string() + ".tmp";
+  std::ofstream json(path.c_str());
   json << "{"                                                 << std::endl;
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
@@ -700,6 +709,8 @@ void evb::bu::DiskWriter::defineEoR(const boost::filesystem::path& jsdDir)
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
   json.close();
+
+  boost::filesystem::rename(path,eorDefFile_);
 }
 
 
