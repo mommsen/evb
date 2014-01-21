@@ -266,6 +266,14 @@ void evb::evm::RUproxy::configure()
   allocateFIFO_.clear();
   allocateFIFO_.resize(evm_->getConfiguration()->fragmentRequestFIFOCapacity);
 
+  getApplicationDescriptors();
+
+  resetMonitoringCounters();
+}
+
+
+void evb::evm::RUproxy::getApplicationDescriptors()
+{
   try
   {
     tid_ = i2o::utils::getAddressMap()->
@@ -282,66 +290,54 @@ void evb::evm::RUproxy::configure()
   ruTids_.clear();
   ruTids_.push_back(tid_);
 
-  getApplicationDescriptorsForRUs();
-
-  resetMonitoringCounters();
+  for ( xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = evm_->getConfiguration()->ruInstances.begin(),
+          itEnd = evm_->getConfiguration()->ruInstances.end(); it != itEnd; ++it )
+  {
+    fillRUInstance(*it);
+  }
 }
 
 
-void evb::evm::RUproxy::getApplicationDescriptorsForRUs()
+void evb::evm::RUproxy::fillRUInstance(xdata::UnsignedInteger32 instance)
 {
-  std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
+  ApplicationDescriptorAndTid ru;
 
   try
   {
-    ruDescriptors =
+    ru.descriptor =
       evm_->getApplicationContext()->
       getDefaultZone()->
-      getApplicationDescriptors("evb::RU");
+      getApplicationDescriptor("evb::RU", instance);
   }
-  catch(xcept::Exception& e)
+  catch(xcept::Exception &e)
   {
-    XCEPT_RETHROW(exception::I2O,
-      "Failed to get RU application descriptor", e);
+    std::stringstream oss;
+    oss << "Failed to get application descriptor for RU ";
+    oss << instance.toString();
+    XCEPT_RETHROW(exception::Configuration, oss.str(), e);
   }
 
-  if ( ruDescriptors.empty() )
+  try
   {
-    LOG4CPLUS_WARN(evm_->getApplicationLogger(), "There are no RU application descriptors");
-
-    return;
+    ru.tid = i2o::utils::getAddressMap()->getTid(ru.descriptor);
   }
-
-  std::set<xdaq::ApplicationDescriptor*>::const_iterator it = ruDescriptors.begin();
-  const std::set<xdaq::ApplicationDescriptor*>::const_iterator itEnd = ruDescriptors.end();
-  for ( ; it != itEnd ; ++it)
+  catch(xcept::Exception &e)
   {
-    ApplicationDescriptorAndTid ru;
-
-    ru.descriptor = *it;
-
-    try
-    {
-      ru.tid = i2o::utils::getAddressMap()->getTid(*it);
-    }
-    catch(xcept::Exception& e)
-    {
-      std::ostringstream oss;
-      oss << "Failed to get I2O TID for RU ";
-      oss << (*it)->getInstance();
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-
-    if ( ! participatingRUs_.insert(ru).second )
-    {
-      std::ostringstream oss;
-      oss << "Participating RU instance " << (*it)->getInstance();
-      oss << " is a duplicate";
-      XCEPT_RAISE(exception::Configuration, oss.str());
-    }
-
-    ruTids_.push_back(ru.tid);
+    std::stringstream oss;
+    oss << "Failed to get I2O TID for RU ";
+    oss << instance.toString();
+    XCEPT_RETHROW(exception::I2O, oss.str(), e);
   }
+
+  if ( ! participatingRUs_.insert(ru).second )
+  {
+    std::stringstream oss;
+    oss << "Participating RU instance " << instance.toString();
+    oss << " is a duplicate.";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+
+  ruTids_.push_back(ru.tid);
 }
 
 

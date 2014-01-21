@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "evb/InfoSpaceItems.h"
+#include "xdaq/ApplicationContext.h"
 #include "xdata/Boolean.h"
 #include "xdata/Double.h"
 #include "xdata/String.h"
@@ -75,7 +76,12 @@ namespace evb {
         hltParameterSetURL("")
       {};
 
-      void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
+      void addToInfoSpace
+      (
+        InfoSpaceItems& params,
+        const uint32_t instance,
+        xdaq::ApplicationContext* context
+      )
       {
         params.add("evmInstance", &evmInstance);
         params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);

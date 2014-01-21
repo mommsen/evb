@@ -236,7 +236,7 @@ void evb::EvBApplication<Configuration,StateMachine>::appendApplicationInfoSpace
 
   do_appendApplicationInfoSpaceItems(params);
 
-  configuration_->addToInfoSpace( params, getApplicationDescriptor()->getInstance() );
+  configuration_->addToInfoSpace( params, getApplicationDescriptor()->getInstance(), getApplicationContext() );
 }
 
 

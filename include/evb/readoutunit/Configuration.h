@@ -5,7 +5,11 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
+#include "evb/UnsignedInteger32Less.h"
+#include "xdaq/ApplicationContext.h"
+#include "xdaq/ApplicationDescriptor.h"
 #include "xdata/Boolean.h"
 #include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
@@ -42,6 +46,7 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
+      xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
@@ -69,16 +74,15 @@ namespace evb {
         fakeLumiSectionDuration(0)
       {};
 
-      void addToInfoSpace(InfoSpaceItems& params, const uint32_t instance)
+      void addToInfoSpace
+      (
+        InfoSpaceItems& params,
+        const uint32_t instance,
+        xdaq::ApplicationContext* context
+      )
       {
-        // Default is 8 FEDs per super-fragment
-        // RU0 has 0 to 7, RU1 has 8 to 15, etc.
-        const uint32_t firstSourceId = (instance * 8);
-        const uint32_t lastSourceId  = (instance * 8) + 7;
-        for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
-        {
-          fedSourceIds.push_back(sourceId);
-        }
+        fillDefaultFedSourceIds(instance);
+        fillDefaultRUinstances(instance,context);
 
         params.add("inputSource", &inputSource, InfoSpaceItems::change);
         params.add("numberOfResponders", &numberOfResponders);
@@ -100,8 +104,52 @@ namespace evb {
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds);
+        params.add("ruInstances", &ruInstances);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
+      }
+
+      void fillDefaultFedSourceIds(const uint32_t instance)
+      {
+        fedSourceIds.clear();
+
+        // Default is 8 FEDs per super-fragment
+        // RU0 has 0 to 7, RU1 has 8 to 15, etc.
+        const uint32_t firstSourceId = (instance * 8);
+        const uint32_t lastSourceId  = (instance * 8) + 7;
+        for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
+        {
+          fedSourceIds.push_back(sourceId);
+        }
+      }
+
+      void fillDefaultRUinstances(const uint32_t instance, xdaq::ApplicationContext* context)
+      {
+        ruInstances.clear();
+
+        std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
+
+        try
+        {
+          ruDescriptors =
+            context->getDefaultZone()->
+            getApplicationDescriptors("evb::RU");
+        }
+        catch(xcept::Exception& e)
+        {
+          XCEPT_RETHROW(exception::I2O,
+            "Failed to get RU application descriptor", e);
+        }
+
+        for (std::set<xdaq::ApplicationDescriptor*>::const_iterator
+               it=ruDescriptors.begin(), itEnd =ruDescriptors.end();
+             it != itEnd; ++it)
+        {
+          ruInstances.push_back((*it)->getInstance());
+        }
+
+        std::sort(ruInstances.begin(), ruInstances.end(),
+          UnsignedInteger32Less());
       }
     };
 
