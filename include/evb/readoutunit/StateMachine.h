@@ -75,7 +75,7 @@ void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected
 {
   LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
 
-  this->rcmsStateNotifier_.stateChanged("MismatchDetectedBackPressuring", evt.getReason());
+  this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
 
   this->app_->notifyQualified("error", evt.getException());
 }

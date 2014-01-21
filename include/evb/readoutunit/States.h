@@ -42,7 +42,7 @@ namespace evb {
     // Inner states of Running
     template<class> class Enabled;
     template<class> class Draining;
-    template<class> class MismatchDetectedBackPressuring;
+    template<class> class SynchLoss;
 
     template<class> class StateMachine;
 
@@ -255,7 +255,7 @@ namespace evb {
       typedef EvBState< Enabled<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
         boost::statechart::transition< Stop,Draining<Owner> >,
-        boost::statechart::transition< MismatchDetected,MismatchDetectedBackPressuring<Owner>,
+        boost::statechart::transition< MismatchDetected,SynchLoss<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::mismatchEvent>
         > reactions;
@@ -301,19 +301,19 @@ namespace evb {
 
 
     /**
-     * The MismatchDetectedBackPressuring state of the outer-state Enabled.
+     * The SynchLoss state of the outer-state Enabled.
      */
     template<class Owner>
-    class MismatchDetectedBackPressuring: public EvBState< MismatchDetectedBackPressuring<Owner>,Running<Owner> >
+    class SynchLoss: public EvBState< SynchLoss<Owner>,Running<Owner> >
     {
 
     public:
 
-      typedef EvBState< MismatchDetectedBackPressuring<Owner>,Running<Owner> > my_state;
+      typedef EvBState< SynchLoss<Owner>,Running<Owner> > my_state;
 
-      MismatchDetectedBackPressuring(typename my_state::boost_state::my_context c) : my_state("MismatchDetectedBackPressuring", c)
+      SynchLoss(typename my_state::boost_state::my_context c) : my_state("SynchLoss", c)
       { this->safeEntryAction(); }
-      virtual ~MismatchDetectedBackPressuring()
+      virtual ~SynchLoss()
       { this->safeExitAction(); }
 
     };
