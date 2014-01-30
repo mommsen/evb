@@ -104,18 +104,15 @@ void evb::bu::DiskWriter::stopProcessing()
   moveFiles();
   doLumiSectionAccounting();
 
-  if ( !lumiStatistics_.empty() )
+  for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
+       it != itEnd; ++it)
   {
-    std::ostringstream oss;
-    oss << "The following lumi sections were not accounted for:";
-    for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
-         it != itEnd; ++it)
-    {
-      oss << " (lumiSection " << it->second->lumiSection << ",nbEvents " << it->second->nbEvents
-        << ",nbEventsWritten " << it->second->nbEventsWritten << ",fileCount " << it->second->fileCount << ")";
-    }
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    writeEoLS(it->second);
+
+    if ( it->second->nbEvents > 0 )
+      ++diskWriterMonitoring_.nbLumiSections;
   }
+  lumiStatistics_.clear();
 
   writeEoR();
 
@@ -596,8 +593,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
   json << "{"                                                              << std::endl;
-  json << "   \"data\" : [ \""     << lumiInfo->nbEvents  << "\", \""
-                                   << lumiInfo->fileCount  << "\", \""
+  json << "   \"data\" : [ \""     << lumiInfo->nbEventsWritten << "\", \""
+                                   << lumiInfo->fileCount << "\", \""
                                    << lumiInfo->totalEvents << "\" ],"     << std::endl;
   json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
