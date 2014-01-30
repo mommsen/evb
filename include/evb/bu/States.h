@@ -180,7 +180,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Enable,Enabled>
+      boost::statechart::transition<Enable,Running>
       > reactions;
 
       Ready(my_context c) : my_state("Ready", c)
