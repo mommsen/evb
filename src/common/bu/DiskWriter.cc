@@ -111,7 +111,7 @@ void evb::bu::DiskWriter::stopProcessing()
     for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
          it != itEnd; ++it)
     {
-      oss << " (lumiSection " << it->second->lumiSection << ",nbEvents " << it->second->nbEvents 
+      oss << " (lumiSection " << it->second->lumiSection << ",nbEvents " << it->second->nbEvents
         << ",nbEventsWritten " << it->second->nbEventsWritten << ",fileCount " << it->second->fileCount << ")";
     }
     XCEPT_RAISE(exception::DiskWriting, oss.str());
@@ -489,7 +489,7 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
     *out << "<td>" << diskWriterMonitoring_.nbLumiSections << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last lumi section closed</td>"                     << std::endl;
+    *out << "<td>current lumi section</td>"                         << std::endl;
     *out << "<td>" << diskWriterMonitoring_.currentLumiSection << "</td>" << std::endl;
     *out << "</tr>"                                                 << std::endl;
   }
