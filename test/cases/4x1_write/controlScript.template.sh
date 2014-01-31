@@ -8,6 +8,13 @@ echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
 echo "slc6_amd64_gcc472" >> $testDir/SCRAM_ARCH
 echo "cmssw_noxdaq" >> $testDir/CMSSW_VERSION
 
+# Emulate some left-over runs
+dummyRuns="123456 234567 345678"
+for run in $dummyRuns; do
+    mkdir $testDir/run$run
+done
+touch $testDir/run234567/EoR_234567.jsn
+
 # Launch executive processes
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
 sendCmdToLauncher RU1_SOAP_HOST_NAME RU1_LAUNCHER_PORT STARTXDAQRU1_SOAP_PORT
@@ -352,6 +359,15 @@ then
     echo "Test failed: expected $runLsCount lumi sections for run $runNumber, but found raw data files from $runLsCounter lumi sections"
     exit 1
 fi
+
+for run in $dummyRuns; do
+    if [[ ! -e $testDir/run$run/EoR_$run.jsn ]]
+    then
+        echo "Test failed: creation of dummy EoR for run $run failed"
+        exit 1
+    fi
+done
+
 
 echo "Test completed successfully"
 exit 0
