@@ -499,7 +499,11 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 
 void evb::bu::DiskWriter::closeAnyOldRuns() const
 {
-  boost::filesystem::directory_iterator dirIter( configuration_->rawDataDir.value_ );
+  const boost::filesystem::path rawDataDir( configuration_->rawDataDir.value_ );
+
+  if ( ! boost::filesystem::exists(rawDataDir) ) return;
+
+  boost::filesystem::directory_iterator dirIter(rawDataDir);
 
   while ( dirIter != boost::filesystem::directory_iterator() )
   {
