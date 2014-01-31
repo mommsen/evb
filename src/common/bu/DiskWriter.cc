@@ -43,6 +43,7 @@ evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t b
 
 void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
+  closeAnyOldRuns();
   resetMonitoringCounters();
   runNumber_ = runNumber;
 
@@ -493,6 +494,29 @@ void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
 
   *out << "</table>"                                              << std::endl;
   *out << "</div>"                                                << std::endl;
+}
+
+
+void evb::bu::DiskWriter::closeAnyOldRuns() const
+{
+  boost::filesystem::directory_iterator dirIter( configuration_->rawDataDir.value_ );
+
+  while ( dirIter != boost::filesystem::directory_iterator() )
+  {
+    const std::string fileName = dirIter->filename();
+    size_t pos = fileName.rfind("run");
+    if ( pos != std::string::npos )
+    {
+      boost::filesystem::path eolsPath = *dirIter;
+      eolsPath /= boost::filesystem::path( "EoR_" + fileName.substr(pos+3) + ".jsn" );
+      if ( ! boost::filesystem::exists(eolsPath) )
+      {
+        std::ofstream json(eolsPath.string().c_str());
+        json.close();
+      }
+    }
+    ++dirIter;
+  }
 }
 
 
