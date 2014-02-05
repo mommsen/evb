@@ -10,12 +10,12 @@
 
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
+#include "log4cplus/logger.h"
+#include "log4cplus/loggingmacros.h"
 #include "xcept/tools.h"
 #include "xdaq/Application.h"
 #include "xdaq2rc/RcmsStateNotifier.h"
 #include "xdata/String.h"
-
-#include "log4cplus/logger.h"
 
 #include <string>
 

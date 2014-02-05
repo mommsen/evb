@@ -27,6 +27,7 @@
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
+#include "log4cplus/loggingmacros.h"
 #include "tcpla/MemoryCache.h"
 #include "toolbox/mem/CommittedHeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"

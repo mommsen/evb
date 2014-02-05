@@ -6,13 +6,13 @@
 #include <string>
 #include <time.h>
 
-#include "log4cplus/logger.h"
-
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/EvBStateMachine.h"
 #include "evb/version.h"
 #include "i2o/Method.h"
+#include "log4cplus/logger.h"
+#include "log4cplus/loggingmacros.h"
 #include "toolbox/mem/HeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "toolbox/mem/Pool.h"
