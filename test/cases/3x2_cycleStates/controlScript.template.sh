@@ -46,8 +46,18 @@ function sendCmdToBUs
 
 function changeStates
 {
-  sendCmdToRUs $1 $2
+  if [[ $1 == "Enable" ]]
+  then
+    runNumber=`date "+%s"`
+    setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $runNumber
+    setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $runNumber
+    setParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 runNumber unsignedInt $runNumber
+    setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
+    setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 runNumber unsignedInt $runNumber
+  fi
+
   sendCmdToEVM $1 $2
+  sendCmdToRUs $1 $2
   sendCmdToBUs $1 $2
   sleep 1
 }
@@ -91,6 +101,13 @@ function checkStates
   fi
 }
 
+# Cleanup
+testDir=/tmp/evb_test
+rm -rf $testDir
+mkdir -p $testDir
+echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
+echo "slc6_amd64_gcc472" >> $testDir/SCRAM_ARCH
+echo "cmssw_noxdaq" >> $testDir/CMSSW_VERSION
 
 # Launch executive processes
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
@@ -155,6 +172,10 @@ checkStates "Ready"
 changeStates Halt Halted
 
 checkStates "Halted"
+
+setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 rawDataDir string $testDir
+setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 metaDataDir string $testDir
+setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/"
 
 changeStates Configure Configuring
 sleep 1
@@ -300,6 +321,18 @@ then
  echo "Test failed"
  exit 1
 fi
+
+# fail the EVM
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Fail
+
+state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+echo "EVM state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 
 echo "Test launched successfully"
 exit 0
