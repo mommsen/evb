@@ -21,7 +21,7 @@ path_(path),
 lowWaterMark_(lowWaterMark),
 highWaterMark_(highWaterMark),
 deleteFiles_(deleteFiles),
-retVal_(1)
+valid_(false)
 {
   if ( lowWaterMark >= highWaterMark )
   {
@@ -40,20 +40,17 @@ evb::bu::DiskUsage::~DiskUsage()
 {}
 
 
-bool evb::bu::DiskUsage::update()
+void evb::bu::DiskUsage::update()
 {
   boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
 
-  if ( ! lock ) return false; // don't start another thread if there's already one
+  if ( ! lock ) return; // don't start another thread if there's already one
 
   boost::thread thread(
     boost::bind( &DiskUsage::doStatFs, this )
   );
 
-  return (
-    thread.timed_join( boost::posix_time::milliseconds(500) ) &&
-    retVal_ == 0
-  );
+  valid_ = thread.timed_join( boost::posix_time::milliseconds(500) );
 }
 
 
@@ -61,7 +58,7 @@ float evb::bu::DiskUsage::overThreshold()
 {
   const float diskUsage = relDiskUsage();
 
-  if ( diskUsage < 0 ) return 1; //error condition
+  if ( ! valid_ ) return 1; //error condition
 
   if ( deleteFiles_ && diskUsage > 0.9 )
   {
@@ -89,25 +86,28 @@ float evb::bu::DiskUsage::overThreshold()
 
 float evb::bu::DiskUsage::diskSizeGB()
 {
-  boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
-  if ( ! lock ) return -2;
-
-  return ( retVal_==0 ? static_cast<float>(statfs_.f_blocks * statfs_.f_bsize) / 1024 / 1024 / 1024 : -1 );
+  return ( valid_ ? diskSizeGB_ : -1 );
 }
 
 
 float evb::bu::DiskUsage::relDiskUsage()
 {
-  boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
-  if ( ! lock ) return -2;
-
-  return ( retVal_==0 ? 1 - static_cast<float>(statfs_.f_bavail)/statfs_.f_blocks : -1 );
+  return ( valid_ ? relDiskUsage_ : -1 );
 }
 
 
 void evb::bu::DiskUsage::doStatFs()
 {
-  retVal_ = statfs64(path_.string().c_str(), &statfs_);
+  struct statfs64 statfs;
+  const int retVal = statfs64(path_.string().c_str(), &statfs);
+
+  if ( retVal == 0 )
+  {
+    diskSizeGB_ = static_cast<float>(statfs.f_blocks * statfs.f_bsize) / 1024 / 1024 / 1024;
+    relDiskUsage_ = 1 - static_cast<float>(statfs.f_bavail)/statfs.f_blocks;
+    valid_ = true;
+  }
+
   if (path_ == "/aSlowDiskForUnitTests") ::sleep(5);
 }
 

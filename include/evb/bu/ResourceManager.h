@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 
+#include <boost/filesystem/convenience.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -97,11 +98,6 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Add the DiskUsagePtr to the disks to be monitored
-       */
-      void monitorDiskUsage(DiskUsagePtr&);
-
-      /**
        * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
@@ -153,23 +149,24 @@ namespace evb {
 
       void incrementEventsInLumiSection(const uint32_t lumiSection);
       void enqCurrentLumiSectionAccount();
-      void getDiskUsages();
+      void configureDiskUsageMonitors();
+      uint32_t getAvailableResources() const;
+      void updateResources();
 
       BU* bu_;
       const ConfigurationPtr configuration_;
       uint32_t lumiSectionTimeout_;
-
-      int16_t throttleResources_;
 
       typedef std::list<EvBid> EvBidList;
       typedef std::map<uint32_t, EvBidList> AllocatedResources;
       AllocatedResources allocatedResources_;
       boost::mutex allocatedResourcesMutex_;
 
-      uint32_t nbResources_;
+      uint32_t resourcesToBlock_;
       typedef OneToOneQueue<uint32_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
+      boost::filesystem::path resourceDirectory_;
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;

@@ -416,24 +416,13 @@ void evb::bu::DiskWriter::configure()
   streamHandlers_.clear();
   lumiStatistics_.clear();
 
-  if ( configuration_->dropEventData ) return;
-
-  createDir(configuration_->rawDataDir.value_);
-  DiskUsagePtr rawDiskUsage(
-    new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
-  );
-  resourceManager_->monitorDiskUsage(rawDiskUsage);
-
-  if ( configuration_->metaDataDir != configuration_->rawDataDir )
-  {
-    createDir(configuration_->metaDataDir.value_);
-    DiskUsagePtr metaDiskUsage(
-      new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
-    );
-    resourceManager_->monitorDiskUsage(metaDiskUsage);
-  }
-
   resetMonitoringCounters();
+
+  if ( ! configuration_->dropEventData )
+  {
+    createDir(configuration_->rawDataDir.value_);
+    createDir(configuration_->metaDataDir.value_);
+  }
 }
 
 

@@ -35,7 +35,7 @@ namespace evb {
        * Update the information about the disk
        * Returns false if the disk cannot be accesssed
        */
-      bool update();
+      void update();
 
       /**
        * Returns the change in the relative disk usage
@@ -69,8 +69,9 @@ namespace evb {
       const bool deleteFiles_;
 
       boost::mutex mutex_;
-      int retVal_;
-      struct statfs64 statfs_;
+      float diskSizeGB_;
+      float relDiskUsage_;
+      bool valid_;
     };
 
     typedef boost::shared_ptr<DiskUsage> DiskUsagePtr;

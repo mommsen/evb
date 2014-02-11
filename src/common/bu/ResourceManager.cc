@@ -18,7 +18,6 @@ evb::bu::ResourceManager::ResourceManager
 ) :
 bu_(bu),
 configuration_(bu->getConfiguration()),
-throttleResources_(0),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO"),
 lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
@@ -153,13 +152,10 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
     {
       allocatedResources_.erase(pos);
 
-      if ( throttleResources_ > 0 )
-      {
-        blockedResourceFIFO_.enqWait(event->buResourceId());
-        --throttleResources_;
-      }
+      if ( blockedResourceFIFO_.elements() < resourcesToBlock_ )
+        blockedResourceFIFO_.enqWait( event->buResourceId() );
       else
-        freeResourceFIFO_.enqWait(event->buResourceId());
+        freeResourceFIFO_.enqWait( event->buResourceId() );
     }
   }
 
@@ -174,10 +170,9 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 {
   bool gotResource = freeResourceFIFO_.deq(buResourceId);
 
-  if ( !gotResource && throttleResources_ < 0 && blockedResourceFIFO_.deq(buResourceId) )
+  if ( !gotResource && blockedResourceFIFO_.elements() > resourcesToBlock_ && blockedResourceFIFO_.deq(buResourceId) )
   {
     gotResource = true;
-    ++throttleResources_;
   }
 
   if ( gotResource )
@@ -235,13 +230,13 @@ void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
 }
 
 
-void evb::bu::ResourceManager::monitorDiskUsage(DiskUsagePtr& diskUsage)
+uint32_t evb::bu::ResourceManager::getAvailableResources() const
 {
-  diskUsageMonitors_.push_back(diskUsage);
+  return 32*8*(configuration_->resourcesPerCore);
 }
 
 
-void evb::bu::ResourceManager::getDiskUsages()
+void evb::bu::ResourceManager::updateResources()
 {
   if ( diskUsageMonitors_.empty() ) return;
 
@@ -255,8 +250,9 @@ void evb::bu::ResourceManager::getDiskUsages()
     overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
 
-  const int16_t resourceIdsToBlock = round(overThreshold * nbResources_) - blockedResourceFIFO_.elements();
-  throttleResources_ += resourceIdsToBlock;
+  const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
+  resourcesToBlock_ = blockedResourceFIFO_.size() < usableResources ? 0 :
+    blockedResourceFIFO_.size() - usableResources;
 }
 
 
@@ -280,7 +276,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
-  getDiskUsages();
+  updateResources();
 
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
@@ -316,20 +312,49 @@ void evb::bu::ResourceManager::configure()
   lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
-  nbResources_ = std::max(1U,
-    configuration_->maxEvtsUnderConstruction.value_ /
-    configuration_->eventsPerRequest.value_);
-  freeResourceFIFO_.resize(nbResources_);
-  blockedResourceFIFO_.resize(nbResources_);
+  freeResourceFIFO_.resize(configuration_->resourceFIFOCapacity);
+  blockedResourceFIFO_.resize(configuration_->resourceFIFOCapacity);
 
-  for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
+  if ( configuration_->dropEventData )
   {
-    assert( freeResourceFIFO_.enq(buResourceId) );
+    resourcesToBlock_ = 0;
+    for (uint32_t buResourceId = 0; buResourceId < configuration_->resourceFIFOCapacity; ++buResourceId)
+      assert( freeResourceFIFO_.enq(buResourceId) );
+  }
+  else
+  {
+    resourcesToBlock_ = configuration_->resourceFIFOCapacity;
+    for (uint32_t buResourceId = 0; buResourceId < configuration_->resourceFIFOCapacity; ++buResourceId)
+      assert( blockedResourceFIFO_.enq(buResourceId) );
   }
 
-  diskUsageMonitors_.clear();
+  configureDiskUsageMonitors();
 
   resetMonitoringCounters();
+}
+
+
+void evb::bu::ResourceManager::configureDiskUsageMonitors()
+{
+  diskUsageMonitors_.clear();
+  resourceDirectory_.clear();
+
+  if ( configuration_->dropEventData ) return;
+
+  resourceDirectory_ = boost::filesystem::path(configuration_->rawDataDir.value_) / "appliance" / "boxes";
+
+  DiskUsagePtr rawDiskUsage(
+    new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
+  );
+  diskUsageMonitors_.push_back(rawDiskUsage);
+
+  if ( configuration_->metaDataDir != configuration_->rawDataDir )
+  {
+    DiskUsagePtr metaDiskUsage(
+      new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
+    );
+    diskUsageMonitors_.push_back(metaDiskUsage);
+  }
 }
 
 
