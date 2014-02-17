@@ -88,6 +88,7 @@ namespace evb {
         params.add("evmInstance", &evmInstance);
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("resourcesPerCore", &resourcesPerCore);
+        params.add("maxEvtsUnderConstruction", &resourceFIFOCapacity); // depreciated
         params.add("resourceFIFOCapacity", &resourceFIFOCapacity);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);
