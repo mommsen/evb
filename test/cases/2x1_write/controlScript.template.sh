@@ -144,6 +144,28 @@ then
   exit 1
 fi
 
+eventCountEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt`
+echo "EVM eventCount: $eventCountEVM"
+if [[ $eventCountEVM -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+if [[ $eventCountEVM -ne $nbEventsBuiltBU0 ]]
+then
+  echo "Test failed: EVM counted $eventCountEVM events, while BU built $nbEventsBuiltBU0 events"
+  exit 1
+fi
+
 checkBuDir $testDir/run$runNumber 20480 1
 
 echo "Test completed successfully"

@@ -49,6 +49,14 @@ then
   exit 1
 fi
 
+eventCountEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt`
+echo "EVM eventCount: $eventCountEVM"
+if [[ $eventCountEVM -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
 echo "EVM eventRate: $eventRateEVM"
 if [[ $eventRateEVM -lt 1000 ]]

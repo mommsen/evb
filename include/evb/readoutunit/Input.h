@@ -272,6 +272,7 @@ namespace evb {
       struct InputMonitoring
       {
         uint32_t lastEventNumber;
+        uint32_t eventCount;
         PerformanceMonitor perf;
         double rate;
         double eventSize;
@@ -285,6 +286,7 @@ namespace evb {
       InputMonitoring superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
 
+      xdata::UnsignedInteger32 eventCount_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 superFragmentSizeStdDev_;
@@ -602,6 +604,7 @@ void evb::readoutunit::Input<Configuration>::updateSuperFragmentCounters(const F
     superFragmentMonitor_.perf.sumOfSizes += size;
     superFragmentMonitor_.perf.sumOfSquares += size*size;
     ++superFragmentMonitor_.perf.logicalCount;
+    ++superFragmentMonitor_.eventCount;
   }
 
   const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
@@ -663,11 +666,13 @@ void evb::readoutunit::Input<Configuration>::stopProcessing()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItems& items)
 {
+  eventCount_ = 0;
   eventRate_ = 0;
   superFragmentSize_ = 0;
   superFragmentSizeStdDev_ = 0;
   dataReadyCount_ = 0;
 
+  items.add("eventCount", &eventCount_);
   items.add("eventRate", &eventRate_);
   items.add("superFragmentSize", &superFragmentSize_);
   items.add("superFragmentSizeStdDev", &superFragmentSizeStdDev_);
@@ -716,6 +721,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     superFragmentMonitor_.perf.reset();
   }
 
+  eventCount_ = superFragmentMonitor_.eventCount;
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
   superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
@@ -745,6 +751,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
     superFragmentMonitor_.lastEventNumber = 0;
+    superFragmentMonitor_.eventCount = 0;
     superFragmentMonitor_.rate = 0;
     superFragmentMonitor_.bandwidth = 0;
     superFragmentMonitor_.eventSize = 0;
@@ -784,6 +791,10 @@ void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out) const
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
+    *out << "<tr>"                                                  << std::endl;
+    *out << "<td>number of events</td>"                             << std::endl;
+    *out << "<td>" << superFragmentMonitor_.eventCount << "</td>"   << std::endl;
+    *out << "</tr>"                                                 << std::endl;
     *out << "<tr>"                                                  << std::endl;
     *out << "<td>evt number of last super fragment</td>"            << std::endl;
     *out << "<td>" << superFragmentMonitor_.lastEventNumber << "</td>" << std::endl;
