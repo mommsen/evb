@@ -8,8 +8,12 @@
 #include "xcept/tools.h"
 
 #include <algorithm>
+#include <ctime>
+#include <fstream>
 #include <math.h>
 #include <string.h>
+
+#include <boost/lexical_cast.hpp>
 
 
 evb::bu::ResourceManager::ResourceManager
@@ -234,7 +238,35 @@ void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
 
 uint32_t evb::bu::ResourceManager::getAvailableResources() const
 {
-  uint32_t resourcesFromCores = 32*8*(configuration_->resourcesPerCore);
+  if ( resourceDirectory_.empty() ) return nbResources_;
+
+  uint32_t resourcesFromCores = 0;
+  boost::filesystem::directory_iterator dirIter(resourceDirectory_);
+
+  while ( dirIter != boost::filesystem::directory_iterator() )
+  {
+    const std::time_t lastWriteTime =
+      boost::filesystem::last_write_time(*dirIter);
+    if ( (std::time(0) - lastWriteTime) < configuration_->staleResourceTime )
+    {
+      std::ifstream boxFile( dirIter->path().string().c_str() );
+      while (boxFile)
+      {
+        std::string line;
+        std::getline(boxFile,line);
+        std::size_t pos = line.find('=');
+        if (pos != std::string::npos)
+        {
+          const std::string key = line.substr(0,pos);
+          if ( key == "idles" || key == "used" )
+            resourcesFromCores +=
+              boost::lexical_cast<unsigned int>(line.substr(pos+1)) * configuration_->resourcesPerCore;
+        }
+      }
+    }
+    ++dirIter;
+  }
+
   return ( resourcesFromCores > nbResources_ ? nbResources_ : resourcesFromCores );
 }
 
@@ -310,6 +342,8 @@ void evb::bu::ResourceManager::configure()
   blockedResourceFIFO_.clear();
   allocatedResources_.clear();
   lumiSectionAccountFIFO_.clear();
+  diskUsageMonitors_.clear();
+  resourceDirectory_.clear();
 
   lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
@@ -331,9 +365,9 @@ void evb::bu::ResourceManager::configure()
     resourcesToBlock_ = nbResources_;
     for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
       assert( blockedResourceFIFO_.enq(buResourceId) );
-  }
 
-  configureDiskUsageMonitors();
+    configureDiskUsageMonitors();
+  }
 
   resetMonitoringCounters();
 }
@@ -341,12 +375,9 @@ void evb::bu::ResourceManager::configure()
 
 void evb::bu::ResourceManager::configureDiskUsageMonitors()
 {
-  diskUsageMonitors_.clear();
-  resourceDirectory_.clear();
-
-  if ( configuration_->dropEventData ) return;
-
   resourceDirectory_ = boost::filesystem::path(configuration_->rawDataDir.value_) / "appliance" / "boxes";
+  if ( ! boost::filesystem::is_directory(resourceDirectory_) )
+    resourceDirectory_.clear();
 
   DiskUsagePtr rawDiskUsage(
     new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
