@@ -18,6 +18,8 @@ evb::bu::ResourceManager::ResourceManager
 ) :
 bu_(bu),
 configuration_(bu->getConfiguration()),
+nbResources_(1),
+resourcesToBlock_(1),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO"),
 lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
@@ -232,7 +234,8 @@ void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
 
 uint32_t evb::bu::ResourceManager::getAvailableResources() const
 {
-  return 32*8*(configuration_->resourcesPerCore);
+  uint32_t resourcesFromCores = 32*8*(configuration_->resourcesPerCore);
+  return ( resourcesFromCores > nbResources_ ? nbResources_ : resourcesFromCores );
 }
 
 
@@ -251,8 +254,7 @@ void evb::bu::ResourceManager::updateResources()
   }
 
   const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
-  resourcesToBlock_ = blockedResourceFIFO_.size() < usableResources ? 0 :
-    blockedResourceFIFO_.size() - usableResources;
+  resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
 }
 
 
@@ -312,19 +314,22 @@ void evb::bu::ResourceManager::configure()
   lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
-  freeResourceFIFO_.resize(configuration_->resourceFIFOCapacity);
-  blockedResourceFIFO_.resize(configuration_->resourceFIFOCapacity);
+  nbResources_ = std::max(1U,
+    configuration_->maxEvtsUnderConstruction.value_ /
+    configuration_->eventsPerRequest.value_);
+  freeResourceFIFO_.resize(nbResources_);
+  blockedResourceFIFO_.resize(nbResources_);
 
   if ( configuration_->dropEventData )
   {
     resourcesToBlock_ = 0;
-    for (uint32_t buResourceId = 0; buResourceId < configuration_->resourceFIFOCapacity; ++buResourceId)
+    for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
       assert( freeResourceFIFO_.enq(buResourceId) );
   }
   else
   {
-    resourcesToBlock_ = configuration_->resourceFIFOCapacity;
-    for (uint32_t buResourceId = 0; buResourceId < configuration_->resourceFIFOCapacity; ++buResourceId)
+    resourcesToBlock_ = nbResources_;
+    for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
       assert( blockedResourceFIFO_.enq(buResourceId) );
   }
 

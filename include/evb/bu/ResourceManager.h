@@ -162,6 +162,7 @@ namespace evb {
       AllocatedResources allocatedResources_;
       boost::mutex allocatedResourcesMutex_;
 
+      uint32_t nbResources_;
       uint32_t resourcesToBlock_;
       typedef OneToOneQueue<uint32_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;

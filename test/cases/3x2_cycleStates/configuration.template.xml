@@ -129,7 +129,7 @@
 
     <xc:Application class="evb::BU" id="12" instance="0" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
-        <resourceFIFOCapacity xsi:type="xsd:unsignedInt">64</resourceFIFOCapacity>
+        <dropEventData xsi:type="xsd:boolean">true</dropEventData>
       </properties>
     </xc:Application>
 
@@ -163,7 +163,6 @@
     <xc:Application class="evb::BU" id="12" instance="1" network="tcp">
       <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
         <dropEventData xsi:type="xsd:boolean">true</dropEventData>
-        <resourceFIFOCapacity xsi:type="xsd:unsignedInt">64</resourceFIFOCapacity>
       </properties>
     </xc:Application>
 

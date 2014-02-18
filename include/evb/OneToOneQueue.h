@@ -135,7 +135,7 @@ namespace evb {
   readPointer_(0),
   writePointer_(0),
   container_(0),
-  size_(0)
+  size_(1)
   {}
 
 
