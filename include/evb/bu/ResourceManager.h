@@ -150,7 +150,7 @@ namespace evb {
       void incrementEventsInLumiSection(const uint32_t lumiSection);
       void enqCurrentLumiSectionAccount();
       void configureDiskUsageMonitors();
-      uint32_t getAvailableResources() const;
+      float getAvailableResources();
       void updateResources();
 
       BU* bu_;
@@ -185,6 +185,7 @@ namespace evb {
         PerformanceMonitor perf;
       } eventMonitoring_;
       mutable boost::mutex eventMonitoringMutex_;
+      uint32_t fuCoresAvailable_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;

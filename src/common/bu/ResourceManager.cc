@@ -27,7 +27,8 @@ resourcesToBlock_(1),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO"),
 lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
-currentLumiSectionAccount_(new LumiSectionAccount(0))
+currentLumiSectionAccount_(new LumiSectionAccount(0)),
+fuCoresAvailable_(0)
 {
   resetMonitoringCounters();
 }
@@ -208,7 +209,13 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
 
 
 void evb::bu::ResourceManager::startProcessing()
-{}
+{
+  if ( ! configuration_->dropEventData )
+  {
+    boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+    currentLumiSectionAccount_.reset( new LumiSectionAccount(1) );
+  }
+}
 
 
 void evb::bu::ResourceManager::drain()
@@ -236,11 +243,11 @@ void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
 }
 
 
-uint32_t evb::bu::ResourceManager::getAvailableResources() const
+float evb::bu::ResourceManager::getAvailableResources()
 {
   if ( resourceDirectory_.empty() ) return nbResources_;
 
-  uint32_t resourcesFromCores = 0;
+  uint32_t coreCount = 0;
   boost::filesystem::directory_iterator dirIter(resourceDirectory_);
 
   while ( dirIter != boost::filesystem::directory_iterator() )
@@ -259,13 +266,15 @@ uint32_t evb::bu::ResourceManager::getAvailableResources() const
         {
           const std::string key = line.substr(0,pos);
           if ( key == "idles" || key == "used" )
-            resourcesFromCores +=
-              boost::lexical_cast<unsigned int>(line.substr(pos+1)) * configuration_->resourcesPerCore;
+            coreCount += boost::lexical_cast<unsigned int>(line.substr(pos+1));
         }
       }
     }
     ++dirIter;
   }
+
+  fuCoresAvailable_ = coreCount;
+  const float resourcesFromCores = coreCount * configuration_->resourcesPerCore;
 
   return ( resourcesFromCores > nbResources_ ? nbResources_ : resourcesFromCores );
 }
@@ -440,6 +449,14 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
   }
 
   out->setf(std::ios::fixed);
+  out->precision(0);
+
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<td>FU cores available</td>"                           << std::endl;
+  *out << "<td>" << fuCoresAvailable_ << "</td>"                  << std::endl;
+  *out << "</tr>"                                                 << std::endl;
+
+
   out->precision(1);
 
   *out << "<tr>"                                                  << std::endl;

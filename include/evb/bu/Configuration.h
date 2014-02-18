@@ -27,7 +27,7 @@ namespace evb {
       xdata::Integer32 evmInstance;                        // Instance of the EVM. If not set, discover the EVM over I2O.
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
-      xdata::UnsignedInteger32 resourcesPerCore;           // Number of resource IDs per active FU core
+      xdata::Double resourcesPerCore;                      // Number of resource IDs per active FU core
       xdata::UnsignedInteger32 staleResourceTime;          // Number of seconds after which a FU resource is no longer considered
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
       xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
@@ -55,7 +55,7 @@ namespace evb {
       : evmInstance(-1), // Explicitly indicate parameter not set
         maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
         eventsPerRequest(16),
-        resourcesPerCore(2),
+        resourcesPerCore(0.1),
         staleResourceTime(10),
         superFragmentFIFOCapacity(16384),
         dropEventData(false),
