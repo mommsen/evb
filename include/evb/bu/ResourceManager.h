@@ -185,7 +185,6 @@ namespace evb {
         PerformanceMonitor perf;
       } eventMonitoring_;
       mutable boost::mutex eventMonitoringMutex_;
-      uint32_t fuCoresAvailable_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger32 nbEventsBuilt_;
@@ -193,6 +192,7 @@ namespace evb {
       xdata::UnsignedInteger64 bandwidth_;
       xdata::UnsignedInteger32 eventSize_;
       xdata::UnsignedInteger32 eventSizeStdDev_;
+      xdata::UnsignedInteger32 fuCoresAvailable_;
 
     };
 

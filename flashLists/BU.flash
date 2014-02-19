@@ -19,4 +19,5 @@
   <xmas:item name="nbEventsBuilt"           infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbFilesWritten"          infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbLumiSections"          infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="fuCoresAvailable"        infospace="urn:evb::BU" type="unsigned int 32"/>
 </xmas:flash>

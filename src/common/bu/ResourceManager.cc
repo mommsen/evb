@@ -27,8 +27,7 @@ resourcesToBlock_(1),
 freeResourceFIFO_("freeResourceFIFO"),
 blockedResourceFIFO_("blockedResourceFIFO"),
 lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
-currentLumiSectionAccount_(new LumiSectionAccount(0)),
-fuCoresAvailable_(0)
+currentLumiSectionAccount_(new LumiSectionAccount(0))
 {
   resetMonitoringCounters();
 }
@@ -307,6 +306,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   bandwidth_ = 0;
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
+  fuCoresAvailable_ = 0;
 
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
@@ -314,6 +314,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("bandwidth", &bandwidth_);
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
+  items.add("fuCoresAvailable", &fuCoresAvailable_);
 }
 
 
@@ -453,7 +454,7 @@ void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
 
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>FU cores available</td>"                           << std::endl;
-  *out << "<td>" << fuCoresAvailable_ << "</td>"                  << std::endl;
+  *out << "<td>" << fuCoresAvailable_.value_ << "</td>"           << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
 
