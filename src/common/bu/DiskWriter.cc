@@ -496,7 +496,7 @@ void evb::bu::DiskWriter::closeAnyOldRuns() const
 
   while ( dirIter != boost::filesystem::directory_iterator() )
   {
-    const std::string fileName = dirIter->filename();
+    const std::string fileName = dirIter->path().string();
     size_t pos = fileName.rfind("run");
     if ( pos != std::string::npos )
     {
