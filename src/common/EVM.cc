@@ -19,7 +19,7 @@ evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
 
   this->initialize();
 
-  LOG4CPLUS_INFO(this->logger_, "End of constructor");
+  LOG4CPLUS_INFO(this->getApplicationLogger(), "End of constructor");
 }
 
 

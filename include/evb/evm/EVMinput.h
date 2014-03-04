@@ -6,8 +6,6 @@
 #include <map>
 #include <stdint.h>
 
-#include "log4cplus/logger.h"
-
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 #include "evb/FragmentChain.h"

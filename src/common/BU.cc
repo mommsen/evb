@@ -31,7 +31,7 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
 
   initialize();
 
-  LOG4CPLUS_INFO(logger_, "End of constructor");
+  LOG4CPLUS_INFO(getApplicationLogger(), "End of constructor");
 }
 
 

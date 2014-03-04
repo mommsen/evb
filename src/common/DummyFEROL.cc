@@ -28,7 +28,7 @@ fragmentFIFO_("fragmentFIFO")
 
   initialize();
 
-  LOG4CPLUS_INFO(logger_, "End of constructor");
+  LOG4CPLUS_INFO(getApplicationLogger(), "End of constructor");
 }
 
 

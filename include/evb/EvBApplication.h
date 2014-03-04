@@ -11,7 +11,6 @@
 #include "evb/EvBStateMachine.h"
 #include "evb/version.h"
 #include "i2o/Method.h"
-#include "log4cplus/logger.h"
 #include "log4cplus/loggingmacros.h"
 #include "toolbox/mem/HeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
@@ -104,7 +103,6 @@ namespace evb {
     ) const;
 
     const std::string appIcon_;
-    log4cplus::Logger logger_;
 
     xdata::InfoSpace *monitoringInfoSpace_;
 
@@ -158,7 +156,6 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
 ) :
 xdaq::WebApplication(app),
 appIcon_(appIcon),
-logger_(getApplicationLogger()),
 configuration_(new Configuration()),
 soapParameterExtractor_(this),
 urn_(getApplicationDescriptor()->getURN()),
@@ -209,7 +206,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
   catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to put parameters into application info space";
-    LOG4CPLUS_ERROR(logger_,
+    LOG4CPLUS_ERROR(getApplicationLogger(),
       msg << xcept::stdformat_exception_history(e));
 
     // Notify the sentinel
@@ -258,7 +255,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
   catch(xcept::Exception& e)
   {
     const std::string msg = "Failed to put parameters into monitoring info space";
-    LOG4CPLUS_ERROR(logger_,
+    LOG4CPLUS_ERROR(getApplicationLogger(),
       msg << xcept::stdformat_exception_history(e));
 
     // Notify the sentinel
@@ -509,7 +506,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
   {
     monitoringInfoSpace_->unlock();
 
-    LOG4CPLUS_ERROR(logger_,
+    LOG4CPLUS_ERROR(getApplicationLogger(),
       errorMsg << xcept::stdformat_exception_history(e));
 
     XCEPT_DECLARE_NESTED(exception::Monitoring,
@@ -522,7 +519,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 
     errorMsg += e.what();
 
-    LOG4CPLUS_ERROR(logger_, errorMsg);
+    LOG4CPLUS_ERROR(getApplicationLogger(), errorMsg);
 
     XCEPT_DECLARE(exception::Monitoring,
       sentinelException, errorMsg );
@@ -534,7 +531,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 
     errorMsg += "Unknown exception";
 
-    LOG4CPLUS_ERROR(logger_, errorMsg);
+    LOG4CPLUS_ERROR(getApplicationLogger(), errorMsg);
 
     XCEPT_DECLARE(exception::Monitoring,
       sentinelException, errorMsg );

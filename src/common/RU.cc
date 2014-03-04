@@ -13,7 +13,7 @@ ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 
   this->initialize();
 
-  LOG4CPLUS_INFO(this->logger_, "End of constructor");
+  LOG4CPLUS_INFO(this->getApplicationLogger(), "End of constructor");
 }
 
 
