@@ -31,7 +31,7 @@ tid_(0)
 }
 
 
-void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr fragmentRequest)
+void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr& fragmentRequest)
 {
   if ( participatingRUs_.empty() ) return;
 

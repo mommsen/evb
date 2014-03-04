@@ -116,7 +116,7 @@ namespace evb {
       void resetMonitoringCounters();
       void startProcessingWorkLoop();
       void createProcessingWorkLoops();
-      void updateRequestCounters(const FragmentRequestPtr);
+      void updateRequestCounters(const FragmentRequestPtr&);
       bool process(toolbox::task::WorkLoop*);
       bool processRequest(FragmentRequestPtr&,SuperFragments&);
       void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&) const;
@@ -283,7 +283,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
 
 
 template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequestPtr fragmentRequest)
+void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequestPtr& fragmentRequest)
 {
   boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 

@@ -52,7 +52,7 @@ namespace evb {
       /**
        * Send the request for event fragments to all RUs
        */
-      void sendRequest(const readoutunit::FragmentRequestPtr);
+      void sendRequest(const readoutunit::FragmentRequestPtr&);
 
       /**
        * Append the info space items to be published in the
