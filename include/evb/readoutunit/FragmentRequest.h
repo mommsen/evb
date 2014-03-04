@@ -15,8 +15,9 @@ namespace evb {
     struct FragmentRequest
     {
       I2O_TID  buTid;
-      uint32_t buResourceId;
-      uint32_t nbRequests;
+      uint16_t buResourceId;
+      uint16_t nbRequests;
+      uint16_t nbDiscards;
       std::vector<EvBid> evbIds;
       std::vector<I2O_TID> ruTids;
     };
@@ -39,6 +40,7 @@ inline std::ostream& operator<<
     str << "buTid=" << request->buTid << std::endl;
     str << "buResourceId=" << request->buResourceId << std::endl;
     str << "nbRequests=" << request->nbRequests << std::endl;
+    str << "nbDiscards=" << request->nbDiscards << std::endl;
     if ( !request->evbIds.empty() )
     {
       str << "evbIds:" << std::endl;

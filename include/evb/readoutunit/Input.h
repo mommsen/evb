@@ -233,6 +233,7 @@ namespace evb {
 
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
+        virtual void drain();
         virtual void stopProcessing();
 
       protected:
@@ -1239,6 +1240,13 @@ void evb::readoutunit::Input<Configuration>::DummyInputData::startProcessing(con
   eventNumber_ = 0;
   evbIdFactory_.reset(runNumber,this->fakeLumiSectionDuration_);
   this->doProcessing_ = true;
+
+}
+
+template<class Configuration>
+void evb::readoutunit::Input<Configuration>::DummyInputData::drain()
+{
+  this->doProcessing_ = false;
 }
 
 

@@ -125,6 +125,7 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
       readoutMsg->buTid        = fragmentRequest->buTid;
       readoutMsg->buResourceId = fragmentRequest->buResourceId;
       readoutMsg->nbRequests   = requestsCount;
+      readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
       readoutMsg->nbRUtids     = ruCount;
 
       uint32_t lastEventNumberToRUs = 0;

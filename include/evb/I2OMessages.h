@@ -25,8 +25,9 @@ namespace evb {
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
       I2O_TID buTid;                             // BU TID to send the data
-      uint32_t buResourceId;                     // Index of BU resource used to built the event
-      uint16_t nbRequests;                       // Number of EvBids
+      uint16_t buResourceId;                     // Index of BU resource used to built the event
+      uint16_t nbRequests;                       // Number of requested EvBids
+      uint16_t nbDiscards;                       // Number of previously sent EvBids to discard
       uint16_t nbRUtids;                         // Number of RU TIDs
       EvBid evbIds[];                            // EvBids
       I2O_TID ruTids[];                          // List of RU TIDs participating in the event building

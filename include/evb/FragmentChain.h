@@ -55,7 +55,7 @@ namespace evb {
      * Append the toolbox::mem::Reference to the fragment.
      * Return false if the resource id is not expected.
      */
-    bool append(uint32_t resourceId, toolbox::mem::Reference*);
+    bool append(uint16_t resourceId, toolbox::mem::Reference*);
 
     /**
      * Append the toolbox::mem::Reference to the fragment.
@@ -101,7 +101,7 @@ namespace evb {
   private:
 
     uint32_t calculateSize(toolbox::mem::Reference*) const;
-    bool checkResourceId(const uint32_t resourceId);
+    bool checkResourceId(const uint16_t resourceId);
 
     EvBid evbId_;
     ResourceList resourceList_;
@@ -188,7 +188,7 @@ uint32_t evb::FragmentChain<T>::calculateSize
 template<class T>
 bool evb::FragmentChain<T>::append
 (
-  const uint32_t resourceId,
+  const uint16_t resourceId,
   toolbox::mem::Reference* bufRef
 )
 {
@@ -234,7 +234,7 @@ void evb::FragmentChain<T>::append
 
 
 template<class T>
-bool evb::FragmentChain<T>::checkResourceId(const uint32_t resourceId)
+bool evb::FragmentChain<T>::checkResourceId(const uint16_t resourceId)
 {
   ResourceList::iterator pos =
     std::find(resourceList_.begin(),resourceList_.end(),resourceId);

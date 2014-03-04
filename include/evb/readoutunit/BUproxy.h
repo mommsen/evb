@@ -161,6 +161,7 @@ namespace evb {
       struct DataMonitoring
       {
         uint32_t lastEventNumberToBUs;
+        int32_t outstandingEvents;
         uint64_t logicalCount;
         uint64_t payload;
         uint64_t i2oCount;
@@ -249,6 +250,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
+  while ( dataMonitoring_.outstandingEvents != 0 ) ::usleep(1000);
+
   while ( processesActive_.any() ) ::usleep(1000);
 }
 
@@ -275,6 +278,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
   fillRequest(readoutMsg, fragmentRequest);
 
   updateRequestCounters(fragmentRequest);
+
+  {
+    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    dataMonitoring_.outstandingEvents -= readoutMsg->nbDiscards;
+  }
 
   fragmentRequestFIFO_.enqWait(fragmentRequest);
 
@@ -546,6 +554,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   }
 
   dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
+  dataMonitoring_.outstandingEvents += nbSuperFragments;
   dataMonitoring_.i2oCount += i2oCount;
   dataMonitoring_.payload += payloadSize;
   dataMonitoring_.logicalCount += nbSuperFragments;
@@ -729,6 +738,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
   {
     boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
     dataMonitoring_.lastEventNumberToBUs = 0;
+    dataMonitoring_.outstandingEvents = 0;
     dataMonitoring_.payload = 0;
     dataMonitoring_.logicalCount = 0;
     dataMonitoring_.i2oCount = 0;
@@ -755,6 +765,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out) const
   *out << "<tr>"                                                  << std::endl;
   *out << "<td>last evt number to BUs</td>"                       << std::endl;
   *out << "<td>" << dataMonitoring_.lastEventNumberToBUs << "</td>" << std::endl;
+  *out << "</tr>"                                                 << std::endl;
+  *out << "<tr>"                                                  << std::endl;
+  *out << "<td>nb of outstanding events</td>"                     << std::endl;
+  *out << "<td>" << abs(dataMonitoring_.outstandingEvents) << "</td>" << std::endl;
   *out << "</tr>"                                                 << std::endl;
 
   *out << "<tr>"                                                  << std::endl;

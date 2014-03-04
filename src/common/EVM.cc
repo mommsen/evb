@@ -58,6 +58,7 @@ namespace evb {
     template<>
     void BUproxy<EVM>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest) const
     {
+      fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
     }
 

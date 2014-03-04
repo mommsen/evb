@@ -78,7 +78,7 @@ namespace evb {
       /**
        * Return the resource id
        */
-      uint32_t buResourceId() const
+      uint16_t buResourceId() const
       { return buResourceId_; }
 
       /**
@@ -170,7 +170,7 @@ namespace evb {
       BufferReferences myBufRefs_;
 
       const EvBid evbId_;
-      const uint32_t buResourceId_;
+      const uint16_t buResourceId_;
       typedef std::map<I2O_TID,uint32_t> RUsizes;
       RUsizes ruSizes_;
 
