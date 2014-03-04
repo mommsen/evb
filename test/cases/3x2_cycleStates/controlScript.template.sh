@@ -334,5 +334,5 @@ then
 fi
 
 
-echo "Test launched successfully"
+echo "Test completed successfully"
 exit 0
