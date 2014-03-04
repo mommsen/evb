@@ -8,7 +8,6 @@
 #include "xcept/tools.h"
 
 #include <algorithm>
-#include <ctime>
 #include <fstream>
 #include <math.h>
 #include <string.h>
@@ -117,6 +116,9 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
   if ( currentLumiSectionAccount_->lumiSection > 0 &&
     time(0) > (currentLumiSectionAccount_->startTime + lumiSectionTimeout_) )
   {
+    std::ostringstream msg;
+    msg << "Lumisection " <<  currentLumiSectionAccount_->lumiSection << " timed out after " << lumiSectionTimeout_ << "s";
+    LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
     lumiSectionAcount.swap(currentLumiSectionAccount_);
     currentLumiSectionAccount_.reset( new LumiSectionAccount(lumiSectionAcount->lumiSection + 1) );
     return true;
