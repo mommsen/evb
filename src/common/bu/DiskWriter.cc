@@ -99,7 +99,7 @@ void evb::bu::DiskWriter::stopProcessing()
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
   {
-    it->second->closeFile();
+    it->second->closeFiles();
   }
 
   moveFiles();
@@ -293,7 +293,7 @@ bool evb::bu::DiskWriter::fileMover(toolbox::task::WorkLoop* wl)
 
 void evb::bu::DiskWriter::moveFiles()
 {
-  StreamHandler::FileStatisticsPtr fileStatistics;
+  FileStatisticsPtr fileStatistics;
   bool workDone;
 
   do
@@ -309,13 +309,13 @@ void evb::bu::DiskWriter::moveFiles()
         workDone = true;
         handleRawDataFile(fileStatistics);
       }
-      workDone |= it->second->closeFileIfOpenedBefore(oldLumiSectionTime);
+      workDone |= it->second->closeFilesIfOpenedBefore(oldLumiSectionTime);
     }
   } while ( workDone );
 }
 
 
-void evb::bu::DiskWriter::handleRawDataFile(const StreamHandler::FileStatisticsPtr& fileStatistics)
+void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatistics)
 {
   const LumiStatistics::iterator lumiStatistics = getLumiStatistics(fileStatistics->lumiSection);
 

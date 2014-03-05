@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "evb/bu/Configuration.h"
+#include "evb/bu/FileStatistics.h"
 #include "evb/bu/StreamHandler.h"
 #include "evb/InfoSpaceItems.h"
 #include "toolbox/lang/Class.h"
@@ -126,7 +127,7 @@ namespace evb {
       bool fileMover(toolbox::task::WorkLoop*);
       void doLumiSectionAccounting();
       void moveFiles();
-      void handleRawDataFile(const StreamHandler::FileStatisticsPtr&);
+      void handleRawDataFile(const FileStatisticsPtr&);
       LumiStatistics::iterator getLumiStatistics(const uint32_t lumiSection);
       void createDir(const boost::filesystem::path&) const;
       void removeDir(const boost::filesystem::path&) const;

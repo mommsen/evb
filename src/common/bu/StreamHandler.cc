@@ -12,91 +12,110 @@ evb::bu::StreamHandler::StreamHandler
 streamFileName_(streamFileName),
 configuration_(configuration),
 index_(0),
-currentFileStatistics_(new FileStatistics(0,"")),
 fileStatisticsFIFO_("currentFileStatisticsFIFO")
 {
   fileStatisticsFIFO_.resize(configuration->fileStatisticsFIFOCapacity);
 }
 
 
-evb::bu::StreamHandler::~StreamHandler()
+void evb::bu::StreamHandler::writeEvent(const EventPtr& event)
 {
-  closeFile();
-}
+  const FileHandlerPtr fileHandler = getFileHandlerForLumiSection(event->lumiSection());
 
-
-void evb::bu::StreamHandler::writeEvent(const EventPtr event)
-{
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
-
-  const uint32_t lumiSection = event->lumiSection();
-
-  if ( fileHandler_.get() && lumiSection > currentFileStatistics_->lumiSection )
-  {
-    do_closeFile();
-  }
-  else if ( lumiSection < currentFileStatistics_->lumiSection )
-  {
-    std::ostringstream oss;
-    oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << currentFileStatistics_->lumiSection;
-    oss << " with evb id " << event->getEvBid();
-    XCEPT_RAISE(exception::EventOrder, oss.str());
-  }
-
-  if ( ! fileHandler_.get() )
-  {
-    std::ostringstream fileName;
-    fileName << streamFileName_ << "_" << std::hex << static_cast<unsigned int>(++index_);
-    fileHandler_.reset( new FileHandler(fileName.str()) );
-    currentFileStatistics_.reset( new FileStatistics(lumiSection,fileName.str()) );
-  }
-
-  event->writeToDisk(fileHandler_, configuration_->calculateAdler32);
-  currentFileStatistics_->lastEventNumberWritten = event->eventNumber();
-
-  if ( ++currentFileStatistics_->nbEventsWritten >= configuration_->maxEventsPerFile )
-  {
-    do_closeFile();
-  }
+  event->writeToDisk(fileHandler, configuration_->calculateAdler32);
+  fileHandler->eventWritten( event->eventNumber() );
 
   ::usleep(configuration_->sleepBetweenEvents);
 }
 
 
-bool evb::bu::StreamHandler::closeFileIfOpenedBefore(const time_t& time)
+evb::bu::FileHandlerPtr evb::bu::StreamHandler::getFileHandlerForLumiSection(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+  boost::mutex::scoped_lock sl(fileHandlersMutex_);
 
-  if ( fileHandler_.get() && currentFileStatistics_->creationTime < time )
+  FileHandlers::iterator pos = fileHandlers_.lower_bound(lumiSection);
+  if ( pos == fileHandlers_.end() || fileHandlers_.key_comp()(lumiSection,pos->first) )
   {
-    do_closeFile();
-    return true;
+    // new lumi section
+    pos = fileHandlers_.insert(pos,
+      FileHandlers::value_type(lumiSection,getNewFileHandler(lumiSection))
+    );
   }
-
-  return false;
+  else if ( pos->second->getNumberOfEventsWritten() >= configuration_->maxEventsPerFile )
+  {
+    // too many events
+    closeFileHandler(pos->second);
+    fileHandlers_.erase(pos);
+    const std::pair<FileHandlers::iterator,bool> result =
+      fileHandlers_.insert(
+        FileHandlers::value_type(lumiSection,getNewFileHandler(lumiSection))
+      );
+    if ( result.second )
+    {
+      pos = result.first;
+    }
+    else
+    {
+      std::ostringstream oss;
+      oss << "Failed to insert new file handler for stream " << streamFileName_
+        << " and lumi section " << lumiSection;
+      XCEPT_RAISE(exception::DiskWriting, oss.str());
+    }
+  }
+  return pos->second;
 }
 
 
-void evb::bu::StreamHandler::closeFile()
+evb::bu::FileHandlerPtr evb::bu::StreamHandler::getNewFileHandler(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
-
-  if ( fileHandler_.get() )
-  {
-    do_closeFile();
-  }
+  std::ostringstream fileName;
+  fileName << streamFileName_ << "_" << std::hex << static_cast<unsigned int>(++index_);
+  const FileStatisticsPtr fileStatistics( new FileStatistics(lumiSection,fileName.str()) );
+  return FileHandlerPtr( new FileHandler(fileStatistics) );
 }
 
 
-void evb::bu::StreamHandler::do_closeFile()
+bool evb::bu::StreamHandler::closeFilesIfOpenedBefore(const time_t& time)
 {
-  currentFileStatistics_->fileSize =
-    fileHandler_->closeAndGetFileSize();
+  boost::mutex::scoped_lock sl(fileHandlersMutex_);
 
-  fileStatisticsFIFO_.enqWait(currentFileStatistics_);
+  bool fileClosed = false;
 
-  fileHandler_.reset();
+  FileHandlers::iterator it = fileHandlers_.begin();
+  while ( it != fileHandlers_.end() )
+  {
+    if ( it->second->getCreationTime() < time )
+    {
+      closeFileHandler(it->second);
+      fileHandlers_.erase(it++);
+      fileClosed = true;
+    }
+    else
+    {
+      ++it;
+    }
+  }
+  return fileClosed;
+}
+
+
+void evb::bu::StreamHandler::closeFiles()
+{
+  boost::mutex::scoped_lock sl(fileHandlersMutex_);
+
+  for(FileHandlers::const_iterator it = fileHandlers_.begin(), itEnd = fileHandlers_.end();
+      it != itEnd; ++it)
+  {
+    closeFileHandler(it->second);
+  }
+  fileHandlers_.clear();
+}
+
+
+void evb::bu::StreamHandler::closeFileHandler(const FileHandlerPtr& fileHandler)
+{
+  FileStatisticsPtr fileStatistics = fileHandler->closeAndGetFileStatistics();
+  fileStatisticsFIFO_.enqWait(fileStatistics);
 }
 
 

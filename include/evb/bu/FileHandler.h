@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "evb/bu/FileStatistics.h"
+
 
 namespace evb {
   namespace bu {
@@ -20,9 +22,7 @@ namespace evb {
     {
     public:
 
-      FileHandler(const std::string& rawFileName);
-
-      ~FileHandler();
+      FileHandler(FileStatisticsPtr);
 
       /**
        * Return a memory mapped portion of the file with
@@ -34,16 +34,29 @@ namespace evb {
       /**
        * Close the file and do the bookkeeping.
        */
-      uint64_t closeAndGetFileSize();
+      FileStatisticsPtr closeAndGetFileStatistics();
+
+      /**
+       * Update the file statistics for the given event
+       */
+      void eventWritten(const uint32_t eventNumber);
+
+      /**
+       * Return the number of events written to disk
+       */
+      uint32_t getNumberOfEventsWritten() const
+      { return fileStatistics_->nbEventsWritten; }
+
+      /**
+       * Return the time when the file was opened
+       */
+      uint32_t getCreationTime() const
+      { return fileStatistics_->creationTime; }
 
     private:
 
-      const std::string rawFileName_;
+      const FileStatisticsPtr fileStatistics_;
       int fileDescriptor_;
-
-      uint64_t fileSize_;
-
-      boost::mutex mutex_;
 
     }; // FileHandler
 

@@ -4,6 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <map>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -12,6 +13,7 @@
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
 #include "evb/bu/FileHandler.h"
+#include "evb/bu/FileStatistics.h"
 
 
 namespace evb {
@@ -33,57 +35,43 @@ namespace evb {
         ConfigurationPtr
       );
 
-      ~StreamHandler();
-
       /**
        * Write the given event to disk
        */
-      void writeEvent(const EventPtr);
+      void writeEvent(const EventPtr&);
 
       /**
-       * Close the file
+       * Close all open files
        */
-      void closeFile();
+      void closeFiles();
 
       /**
-       * Close the file if it was opened before the given time.
+       * Close all files opened before the given time.
        * Return true if a file was closed
        */
-      bool closeFileIfOpenedBefore(const time_t&);
+      bool closeFilesIfOpenedBefore(const time_t&);
 
       /**
        * Get the next available statistics of a closed file.
        * Return false if no statistics is available
        */
-      struct FileStatistics
-      {
-        const time_t creationTime;
-        const uint32_t lumiSection;
-        const std::string fileName;
-        uint32_t nbEventsWritten;
-        uint32_t lastEventNumberWritten;
-        uint64_t fileSize;
-
-        FileStatistics(const uint32_t ls, const std::string& fileName)
-        : creationTime(time(0)),lumiSection(ls),fileName(fileName),nbEventsWritten(0),lastEventNumberWritten(0),fileSize(0) {};
-      };
-      typedef boost::shared_ptr<FileStatistics> FileStatisticsPtr;
       bool getFileStatistics(FileStatisticsPtr&);
 
 
     private:
 
-      void do_closeFile();
+      FileHandlerPtr getFileHandlerForLumiSection(const uint32_t lumiSection);
+      FileHandlerPtr getNewFileHandler(const uint32_t lumiSection);
+      void closeFileHandler(const FileHandlerPtr&);
 
       const std::string streamFileName_;
       const ConfigurationPtr configuration_;
       uint8_t index_;
-      uint32_t currentLumiSection_;
 
-      FileHandlerPtr fileHandler_;
-      boost::mutex fileHandlerMutex_;
+      typedef std::map<uint32_t,FileHandlerPtr> FileHandlers;
+      FileHandlers fileHandlers_;
+      boost::mutex fileHandlersMutex_;
 
-      FileStatisticsPtr currentFileStatistics_;
       typedef OneToOneQueue<FileStatisticsPtr> FileStatisticsFIFO;
       FileStatisticsFIFO fileStatisticsFIFO_;
 

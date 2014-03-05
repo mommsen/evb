@@ -37,12 +37,13 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
   boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
   const AllocatedResources::iterator pos = allocatedResources_.find(dataBlockMsg->buResourceId);
+  const I2O_TID ruTid = ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
 
   if ( pos == allocatedResources_.end() )
   {
     std::ostringstream oss;
     oss << "The buResourceId " << dataBlockMsg->buResourceId;
-    oss << " received from RU tid " << ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
+    oss << " received from RU tid " << ruTid;
     oss << " is not in the allocated resources" ;
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
@@ -66,10 +67,36 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     {
       std::ostringstream oss;
       oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
-      oss << " from RU tid " << ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
+      oss << " from RU tid " << ruTid;
       oss << " with an inconsistent number of super fragments: expected " << pos->second.size();
       oss << ", but got " << dataBlockMsg->nbSuperFragments;
       XCEPT_RAISE(exception::SuperFragment, oss.str());
+    }
+    uint32_t index = 0;
+    for (EvBidList::const_iterator it = pos->second.begin(), itEnd = pos->second.end();
+         it != itEnd; ++it)
+    {
+      if ( dataBlockMsg->evbIds[index] != *it )
+      {
+        std::ostringstream oss;
+        oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
+        oss << " from RU tid " << ruTid;
+        oss << " with an inconsistent EvBid for super fragment " << index;
+        oss << ": expected " << *it;
+        oss << ", but got " << dataBlockMsg->evbIds[index];
+        XCEPT_RAISE(exception::SuperFragment, oss.str());
+      }
+      if ( dataBlockMsg->evbIds[index].lumiSection() != it->lumiSection() )
+      {
+        std::ostringstream oss;
+        oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
+        oss << " from RU tid " << ruTid;
+        oss << " with an inconsistent lumi section for super fragment " << index;
+        oss << ": expected " << it->lumiSection();
+        oss << ", but got " << dataBlockMsg->evbIds[index].lumiSection();
+        XCEPT_RAISE(exception::SuperFragment, oss.str());
+      }
+      ++index;
     }
   }
 }
