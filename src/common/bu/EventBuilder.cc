@@ -205,7 +205,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 }
 
 
-void evb::bu::EventBuilder::buildEvent
+inline void evb::bu::EventBuilder::buildEvent
 (
   FragmentChainPtr& superFragments,
   EventMapPtr& eventMap,
@@ -258,9 +258,6 @@ void evb::bu::EventBuilder::buildEvent
           eventMap->erase(eventPos++);
         }
 
-        const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
-          (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
-
         eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
       }
 
@@ -285,7 +282,7 @@ void evb::bu::EventBuilder::buildEvent
 }
 
 
-evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
+inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
 (
   EventMapPtr& eventMap,
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg,
