@@ -58,6 +58,7 @@ function changeStates
 
   sendCmdToEVM $1 $2
   sendCmdToRUs $1 $2
+  sleep 1
   sendCmdToBUs $1 $2
   sleep 1
 }
