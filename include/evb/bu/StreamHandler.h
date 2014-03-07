@@ -4,7 +4,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <map>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -35,21 +34,23 @@ namespace evb {
         ConfigurationPtr
       );
 
+      ~StreamHandler();
+
       /**
        * Write the given event to disk
        */
-      void writeEvent(const EventPtr&);
+      void writeEvent(const EventPtr);
 
       /**
-       * Close all open files
+       * Close the file
        */
-      void closeFiles();
+      void closeFile();
 
       /**
-       * Close all files opened before the given time.
+       * Close the file if it was opened before the given time.
        * Return true if a file was closed
        */
-      bool closeFilesIfOpenedBefore(const time_t&);
+      bool closeFileIfOpenedBefore(const time_t&);
 
       /**
        * Get the next available statistics of a closed file.
@@ -60,18 +61,17 @@ namespace evb {
 
     private:
 
-      FileHandlerPtr getFileHandlerForLumiSection(const uint32_t lumiSection);
-      FileHandlerPtr getNewFileHandler(const uint32_t lumiSection);
-      void closeFileHandler(const FileHandlerPtr&);
+      void do_closeFile();
 
       const std::string streamFileName_;
       const ConfigurationPtr configuration_;
       uint8_t index_;
+      uint32_t currentLumiSection_;
 
-      typedef std::map<uint32_t,FileHandlerPtr> FileHandlers;
-      FileHandlers fileHandlers_;
-      boost::mutex fileHandlersMutex_;
+      FileHandlerPtr fileHandler_;
+      boost::mutex fileHandlerMutex_;
 
+      FileStatisticsPtr currentFileStatistics_;
       typedef OneToOneQueue<FileStatisticsPtr> FileStatisticsFIFO;
       FileStatisticsFIFO fileStatisticsFIFO_;
 

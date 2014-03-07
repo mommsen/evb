@@ -14,42 +14,42 @@
 #include "xcept/tools.h"
 
 
-evb::bu::FileHandler::FileHandler(FileStatisticsPtr fileStatistics) :
-fileStatistics_(fileStatistics),
-fileDescriptor_(0)
+evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
+rawFileName_(rawFileName),
+fileDescriptor_(0),
+fileSize_(0)
 {
-  if ( boost::filesystem::exists(fileStatistics_->fileName) )
+  if ( boost::filesystem::exists(rawFileName_) )
   {
     std::ostringstream oss;
-    oss << "The output file " << fileStatistics_->fileName << " already exists";
+    oss << "The output file " << rawFileName_ << " already exists";
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  fileDescriptor_ = open(fileStatistics_->fileName.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+  fileDescriptor_ = open(rawFileName_.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   if ( fileDescriptor_ == -1 )
   {
     std::ostringstream oss;
-    oss << "Failed to open output file " << fileStatistics_->fileName
+    oss << "Failed to open output file " << rawFileName_
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 }
 
-void evb::bu::FileHandler::eventWritten(const uint32_t eventNumber)
+
+evb::bu::FileHandler::~FileHandler()
 {
-  if ( fileStatistics_->lastEventNumberWritten < eventNumber )
-    fileStatistics_->lastEventNumberWritten = eventNumber;
-  ++fileStatistics_->nbEventsWritten;
+  closeAndGetFileSize();
 }
 
 
 void* evb::bu::FileHandler::getMemMap(const size_t length)
 {
-  const int result = lseek(fileDescriptor_, fileStatistics_->fileSize+length-1, SEEK_SET);
+  const int result = lseek(fileDescriptor_, fileSize_+length-1, SEEK_SET);
   if ( result == -1 )
   {
     std::ostringstream oss;
-    oss << "Failed to stretch the output file " << fileStatistics_->fileName
+    oss << "Failed to stretch the output file " << rawFileName_
       << " by " << length << " Bytes: " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
@@ -60,29 +60,29 @@ void* evb::bu::FileHandler::getMemMap(const size_t length)
   if ( ::write(fileDescriptor_, "", 1) != 1 )
   {
     std::ostringstream oss;
-    oss << "Failed to write last byte to output file " << fileStatistics_->fileName
+    oss << "Failed to write last byte to output file " << rawFileName_
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  void* map = mmap(0, length, PROT_WRITE, MAP_SHARED, fileDescriptor_, fileStatistics_->fileSize);
+  void* map = mmap(0, length, PROT_WRITE, MAP_SHARED, fileDescriptor_, fileSize_);
   if (map == MAP_FAILED)
   {
     std::ostringstream oss;
-    oss << "Failed to mmap the output file " << fileStatistics_->fileName
+    oss << "Failed to mmap the output file " << rawFileName_
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  fileStatistics_->fileSize += length;
+  fileSize_ += length;
 
   return map;
 }
 
 
-evb::bu::FileStatisticsPtr evb::bu::FileHandler::closeAndGetFileStatistics()
+uint64_t evb::bu::FileHandler::closeAndGetFileSize()
 {
-  std::string msg = "Failed to close the output file " + fileStatistics_->fileName;
+  std::string msg = "Failed to close the output file " + rawFileName_;
 
   try
   {
@@ -109,7 +109,7 @@ evb::bu::FileStatisticsPtr evb::bu::FileHandler::closeAndGetFileStatistics()
     XCEPT_RAISE(exception::DiskWriting, msg);
   }
 
-  return fileStatistics_;
+  return fileSize_;
 }
 
 

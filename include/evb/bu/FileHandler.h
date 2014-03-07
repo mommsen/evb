@@ -1,13 +1,10 @@
 #ifndef _evb_bu_FileHandler_h_
 #define _evb_bu_FileHandler_h_
 
-#include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <stdint.h>
 #include <string.h>
-
-#include "evb/bu/FileStatistics.h"
 
 
 namespace evb {
@@ -22,7 +19,9 @@ namespace evb {
     {
     public:
 
-      FileHandler(FileStatisticsPtr);
+      FileHandler(const std::string& rawFileName);
+
+      ~FileHandler();
 
       /**
        * Return a memory mapped portion of the file with
@@ -34,29 +33,14 @@ namespace evb {
       /**
        * Close the file and do the bookkeeping.
        */
-      FileStatisticsPtr closeAndGetFileStatistics();
-
-      /**
-       * Update the file statistics for the given event
-       */
-      void eventWritten(const uint32_t eventNumber);
-
-      /**
-       * Return the number of events written to disk
-       */
-      uint32_t getNumberOfEventsWritten() const
-      { return fileStatistics_->nbEventsWritten; }
-
-      /**
-       * Return the time when the file was opened
-       */
-      uint32_t getCreationTime() const
-      { return fileStatistics_->creationTime; }
+      uint64_t closeAndGetFileSize();
 
     private:
 
-      const FileStatisticsPtr fileStatistics_;
+      const std::string rawFileName_;
       int fileDescriptor_;
+
+      uint64_t fileSize_;
 
     }; // FileHandler
 

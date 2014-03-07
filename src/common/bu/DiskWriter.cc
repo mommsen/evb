@@ -99,7 +99,7 @@ void evb::bu::DiskWriter::stopProcessing()
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
   {
-    it->second->closeFiles();
+    it->second->closeFile();
   }
 
   moveFiles();
@@ -309,7 +309,7 @@ void evb::bu::DiskWriter::moveFiles()
         workDone = true;
         handleRawDataFile(fileStatistics);
       }
-      workDone |= it->second->closeFilesIfOpenedBefore(oldLumiSectionTime);
+      workDone |= it->second->closeFileIfOpenedBefore(oldLumiSectionTime);
     }
   } while ( workDone );
 }
