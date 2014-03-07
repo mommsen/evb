@@ -4,6 +4,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <set>
@@ -15,6 +16,7 @@
 #include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
+#include "evb/LumiBarrier.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
@@ -143,6 +145,7 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       boost::mutex processesActiveMutex_;
+      boost::scoped_ptr<LumiBarrier> lumiBarrier_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
@@ -249,7 +252,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
-  while ( processesActive_.any() ) ::usleep(1000);
+  while ( processesActive_.any() )
+  {
+    lumiBarrier_->unblockCurrentLumiSection();
+    ::usleep(1000);
+  }
 }
 
 
@@ -257,8 +264,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
-
-  while ( processesActive_.any() ) ::usleep(1000);
+  drain();
 }
 
 
@@ -464,6 +470,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
   }
 
+  // Assure that all sender threads have sent data for the previous lumi section
+  const uint32_t lumiSection = fragmentRequest->evbIds[0].lumiSection();
+  lumiBarrier_->reachedLumiSection(lumiSection);
+
   xdaq::ApplicationDescriptor *bu = 0;
   try
   {
@@ -643,6 +653,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
   processesActive_.clear();
   processesActive_.resize(configuration_->numberOfResponders);
+  lumiBarrier_.reset( new LumiBarrier(configuration_->numberOfResponders) );
 
   const std::string identifier = readoutUnit_->getIdentifier();
 
