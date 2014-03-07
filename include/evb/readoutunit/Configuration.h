@@ -68,7 +68,7 @@ namespace evb {
         dummyFedSizeStdDev(0),
         dummyFedSizeMin(8), // minimum is 8 Bytes
         dummyFedSizeMax(0), // no limitation
-        fragmentPoolSize(20000000),
+        fragmentPoolSize(200000000),
         frameSize(32768),
         maxTriggerAgeMSec(1000),
         fakeLumiSectionDuration(0)
