@@ -500,11 +500,11 @@ void evb::bu::DiskWriter::closeAnyOldRuns() const
     size_t pos = fileName.rfind("run");
     if ( pos != std::string::npos )
     {
-      boost::filesystem::path eolsPath = *dirIter;
-      eolsPath /= boost::filesystem::path( "EoR_" + fileName.substr(pos+3) + ".jsn" );
-      if ( ! boost::filesystem::exists(eolsPath) )
+      boost::filesystem::path eorPath = *dirIter;
+      eorPath /= boost::filesystem::path( "run" + fileName.substr(pos+3) + "_ls0000_EoR.jsn" );
+      if ( ! boost::filesystem::exists(eorPath) )
       {
-        std::ofstream json(eolsPath.string().c_str());
+        std::ofstream json(eorPath.string().c_str());
         json.close();
       }
     }
@@ -596,8 +596,9 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
 {
   std::ostringstream fileNameStream;
   fileNameStream << std::setfill('0') <<
-    "EoLS_"  << std::setw(4) << lumiInfo->lumiSection <<
-    ".jsn";
+    "run" << std::setw(6) << runNumber_ <<
+    "_ls"  << std::setw(4) << lumiInfo->lumiSection <<
+    "_EoLS.jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
 
   if ( boost::filesystem::exists(jsonFile) )
@@ -626,8 +627,8 @@ void evb::bu::DiskWriter::writeEoR() const
 {
   std::ostringstream fileNameStream;
   fileNameStream << std::setfill('0') <<
-    "EoR_" << std::setw(6) << runNumber_ <<
-    ".jsn";
+    "run" << std::setw(6) << runNumber_ <<
+    "_ls0000_EoR.jsn";
   const boost::filesystem::path jsonFile = runMetaDataDir_ / fileNameStream.str();
 
   if ( boost::filesystem::exists(jsonFile) )
