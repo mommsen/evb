@@ -40,9 +40,9 @@ function checkBuDir {
     runFileCounter=0;
     runLsCounter=0;
 
-    for eolsFile in `ls $runDir/EoLS_*jsn`
+    for eolsFile in `ls $runDir/*_EoLS.jsn`
     do
-        lumiSection=$(echo $eolsFile | sed -re 's/.*EoLS_([0-9]+).jsn/\1/')
+        lumiSection=$(echo $eolsFile | sed -re 's/.*_ls([0-9]+)_EoLS.jsn/\1/')
         lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eolsFile)
         lsFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)", "[0-9]+" \],/\1/p' $eolsFile)
         totalEventCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "([0-9]+)" \],/\1/p' $eolsFile)
@@ -85,7 +85,7 @@ function checkBuDir {
 
         else
 
-            fileCounter=$(ls $runDir/*[raw,jsn] | grep -c run${runNumber}_ls${lumiSection})
+            fileCounter=$(ls $runDir/*[raw,jsn] | grep -v EoLS | grep -c run${runNumber}_ls${lumiSection})
 
         fi
 
@@ -104,7 +104,7 @@ function checkBuDir {
 
     done
 
-    eorFile="$runDir/EoR_$runNumber.jsn"
+    eorFile="$runDir/run${runNumber}_ls0000_EoR.jsn"
 
     if [[ ! -s $eorFile ]]
     then

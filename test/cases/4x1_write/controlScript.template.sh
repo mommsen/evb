@@ -239,7 +239,7 @@ fi
 checkBuDir $testDir/run$runNumber 69632 1
 
 for run in $dummyRuns; do
-    if [[ ! -e $testDir/run$run/EoR_$run.jsn ]]
+    if [[ ! -e $testDir/run$run/run${run}_ls0000_EoR.jsn ]]
     then
         echo "Test failed: creation of dummy EoR for run $run failed"
         exit 1
