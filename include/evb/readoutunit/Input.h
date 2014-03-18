@@ -692,7 +692,8 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
          it != itEnd; ++it)
     {
-      lastEventNumber = it->second.lastEventNumber;
+      if ( lastEventNumber < it->second.lastEventNumber )
+        lastEventNumber = it->second.lastEventNumber;
       dataReadyCount += it->second.perf.logicalCount;
 
       it->second.rate = it->second.perf.logicalRate();
@@ -725,7 +726,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
   superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
-  dataReadyCount_ = dataReadyCount;
+  dataReadyCount_.value_ += dataReadyCount;
 }
 
 
@@ -758,6 +759,7 @@ void evb::readoutunit::Input<Configuration>::resetMonitoringCounters()
     superFragmentMonitor_.eventSizeStdDev = 0;
     superFragmentMonitor_.perf.reset();
   }
+  dataReadyCount_ = 0;
 }
 
 
