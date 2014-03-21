@@ -38,9 +38,13 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
 )
 {
   stopAtEvent_ = 0;
+  skipNbEvents_ = 0;
+  duplicateNbEvents_ = 0;
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
+  appInfoSpaceParams.add("skipNbEvents", &skipNbEvents_);
+  appInfoSpaceParams.add("duplicateNbEvents", &duplicateNbEvents_);
 }
 
 
@@ -254,6 +258,8 @@ void evb::test::DummyFEROL::drain()
 void evb::test::DummyFEROL::stopProcessing()
 {
   doProcessing_ = false;
+  while ( generatingActive_ || sendingActive_ ) ::usleep(1000);
+  fragmentFIFO_.clear();
 }
 
 
@@ -315,20 +321,35 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
       if ( fragmentGenerator_.getData(bufRef) )
       {
-        lastEventNumber_ = fragmentGenerator_.getLastEventNumber();
-        if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
+        if (skipNbEvents_.value_ > 0)
         {
-          #ifdef DOUBLE_WORKLOOPS
-          fragmentFIFO_.enqWait(bufRef);
-          #else
-          updateCounters(bufRef);
-          sendData(bufRef);
-          #endif
+          bufRef->release();
+          --skipNbEvents_;
         }
         else
         {
-          bufRef->release();
-          doProcessing_ = false;
+          lastEventNumber_ = fragmentGenerator_.getLastEventNumber();
+          if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
+          {
+            do
+            {
+              if ( duplicateNbEvents_.value_ > 0 )
+                bufRef->duplicate();
+
+              #ifdef DOUBLE_WORKLOOPS
+              fragmentFIFO_.enqWait(bufRef);
+              #else
+              updateCounters(bufRef);
+              sendData(bufRef);
+              #endif
+            }
+            while ( duplicateNbEvents_-- > 0 );
+          }
+          else
+          {
+            bufRef->release();
+            doProcessing_ = false;
+          }
         }
       }
     }

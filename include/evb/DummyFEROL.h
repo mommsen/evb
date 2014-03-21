@@ -100,6 +100,8 @@ namespace evb {
       mutable boost::mutex dataMonitoringMutex_;
 
       xdata::UnsignedInteger32 stopAtEvent_;
+      xdata::UnsignedInteger32 skipNbEvents_;
+      xdata::UnsignedInteger32 duplicateNbEvents_;
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::Double bandwidth_;
       xdata::Double frameRate_;
