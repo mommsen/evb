@@ -183,7 +183,7 @@ namespace evb {
       protected:
 
         Input<Configuration>* input_;
-        bool doProcessing_;
+        volatile bool doProcessing_;
         uint32_t fakeLumiSectionDuration_;
 
       };
@@ -317,7 +317,7 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::inputSourceChanged()
 {
   getHandlerForInputSource(handler_);
-  handler_->configure(configuration_);
+  configure();
   resetMonitoringCounters();
 }
 
@@ -920,6 +920,12 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::superFragmentReady
   toolbox::mem::Reference* bufRef
 )
 {
+  if ( ! this->doProcessing_ )
+  {
+    bufRef->release();
+    return;
+  }
+
   I2O_DATA_READY_MESSAGE_FRAME* frame =
     (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
@@ -952,6 +958,12 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable
   tcpla::MemoryCache* cache
 )
 {
+  if ( ! this->doProcessing_ )
+  {
+    cache->grantFrame(bufRef);
+    return;
+  }
+
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   ferolh_t* ferolHeader = (ferolh_t*)payload;
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
@@ -972,8 +984,6 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::rawDataAvailable
   }
 
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
-  //bufRef->release(); return;
-  //cache->grantFrame(bufRef); return;
 
   FragmentChain::FragmentPtr fragment( new FragmentChain::Fragment(evbId,bufRef,cache) );
 
@@ -1021,14 +1031,6 @@ template<class Configuration>
 void evb::readoutunit::Input<Configuration>::FEROLproxy::stopProcessing()
 {
   this->doProcessing_ = false;
-
-  superFragmentFIFO_.clear();
-
-  for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    it->second->clear();
-  }
 }
 
 

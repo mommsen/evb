@@ -1,3 +1,4 @@
+#include "evb/Exception.h"
 #include "evb/ru/RUinput.h"
 
 
@@ -26,7 +27,12 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    while ( ! it->second->deq(fragment) ) {};
+    while ( doProcessing_ && !it->second->deq(fragment) ) {};
+
+    if ( ! doProcessing_ )
+    {
+      throw exception::HaltRequested();
+    }
 
     if ( evbId != fragment->evbId )
     {
@@ -42,7 +48,7 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
     superFragment->append(fragment);
   }
 
-  return doProcessing_;
+  return true;
 }
 
 

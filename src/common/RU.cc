@@ -34,17 +34,24 @@ namespace evb {
 
       if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
 
-      for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
+      try
       {
-        const EvBid& evbId = fragmentRequest->evbIds.at(i);
-        FragmentChainPtr superFragment;
+        for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
+        {
+          const EvBid& evbId = fragmentRequest->evbIds.at(i);
+          FragmentChainPtr superFragment;
 
-        while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(10);
+          while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(10);
 
-        superFragments.push_back(superFragment);
+          superFragments.push_back(superFragment);
+        }
+      }
+      catch ( exception::HaltRequested )
+      {
+        return false;
       }
 
-      return !superFragments.empty();
+      return true;
     }
   }
 }

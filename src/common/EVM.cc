@@ -71,7 +71,7 @@ namespace evb {
       FragmentChainPtr superFragment;
       if ( fragmentRequestFIFO_.empty() || !input_->getNextAvailableSuperFragment(superFragment) ) return false;
 
-      assert( fragmentRequestFIFO_.deq(fragmentRequest) );
+      fragmentRequestFIFO_.deq(fragmentRequest);
 
       fragmentRequest->evbIds.clear();
       fragmentRequest->evbIds.reserve(fragmentRequest->nbRequests);
@@ -79,10 +79,10 @@ namespace evb {
       superFragments.push_back(superFragment);
       EvBid evbId = superFragment->getEvBid();
       fragmentRequest->evbIds.push_back(evbId);
+
       const uint32_t lumiSectionOfFirstFragment = evbId.lumiSection();
       uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
       const uint32_t maxTries = configuration_->maxTriggerAgeMSec*100;
-
       uint32_t tries = 0;
       while (
         doProcessing_ &&

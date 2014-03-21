@@ -1,6 +1,8 @@
 #ifndef _evb_Exception_h_
 #define _evb_Exception_h_
 
+#include <exception>
+
 #include "xcept/Exception.h"
 
 /**
@@ -78,4 +80,21 @@ XCEPT_DEFINE_EXCEPTION(evb, SuperFragment)
  */
 XCEPT_DEFINE_EXCEPTION(evb, WorkLoop)
 
+/**
+ * Local exception signalling a Halt command
+ */
+namespace evb {
+  namespace exception {
+    class HaltRequested : public std::exception {};
+  }
+}
+
 #endif
+
+
+/// emacs configuration
+/// Local Variables: -
+/// mode: c++ -
+/// c-basic-offset: 2 -
+/// indent-tabs-mode: nil -
+/// End: -

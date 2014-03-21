@@ -11,7 +11,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
 
   if ( ! masterFED_->second->deq(fragment) ) return false;
 
-  const EvBid evbId = fragment->evbId;
+  const EvBid& evbId = fragment->evbId;
   superFragment.reset( new readoutunit::FragmentChain(fragment) );
 
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
@@ -19,7 +19,9 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
   {
     if ( it != masterFED_ )
     {
-      while ( ! it->second->deq(fragment) ) {};
+      while ( doProcessing_ && !it->second->deq(fragment) ) {};
+
+      if ( ! doProcessing_ ) return false;
 
       if ( evbId != fragment->evbId )
       {
@@ -36,7 +38,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
     }
   }
 
-  return doProcessing_;
+  return true;
 }
 
 
