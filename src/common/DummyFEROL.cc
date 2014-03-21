@@ -328,9 +328,10 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
         }
         else
         {
-          lastEventNumber_ = fragmentGenerator_.getLastEventNumber();
-          if (stopAtEvent_.value_ == 0 || lastEventNumber_ < stopAtEvent_.value_)
+          const uint32_t lastEventNumber = fragmentGenerator_.getLastEventNumber();
+          if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
           {
+            lastEventNumber_ = lastEventNumber;
             do
             {
               if ( duplicateNbEvents_.value_ > 0 )
@@ -343,7 +344,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
               sendData(bufRef);
               #endif
             }
-            while ( duplicateNbEvents_-- > 0 );
+            while ( duplicateNbEvents_.value_ > 0 && --duplicateNbEvents_ );
           }
           else
           {
