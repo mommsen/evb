@@ -41,7 +41,11 @@ namespace evb {
           const EvBid& evbId = fragmentRequest->evbIds.at(i);
           FragmentChainPtr superFragment;
 
-          while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) ) ::usleep(10);
+          while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) )
+          {
+            if ( ! doProcessing_ ) return false;
+            ::usleep(10);
+          }
 
           superFragments.push_back(superFragment);
         }
