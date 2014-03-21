@@ -346,7 +346,7 @@
     <xc:Alias name="ferol06">ferola</xc:Alias>
     <xc:Alias name="ferol07">ferola</xc:Alias>
 
-    <xc:Application class="pt::utcp::Application" id="11" instance="0" network="tcp">
+    <xc:Application class="pt::utcp::Application" id="11" instance="1" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
@@ -437,7 +437,7 @@
 
     <xc:Endpoint protocol="atcp" service="i2o" hostname="BU0_I2O_HOST_NAME" port="BU0_I2O_PORT" network="tcp" targetId="12"/>
 
-    <xc:Application class="pt::utcp::Application" id="11" instance="1" network="tcp">
+    <xc:Application class="pt::utcp::Application" id="11" instance="2" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
         <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
