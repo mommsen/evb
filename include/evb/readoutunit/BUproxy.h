@@ -20,6 +20,7 @@
 #include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
+#include "evb/readoutunit/StateMachine.h"
 #include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
@@ -327,6 +328,14 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
       sendData(fragmentRequest, superFragments);
       superFragments.clear();
     }
+  }
+  catch(exception::MismatchDetected& e)
+  {
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      processesActive_.reset(responderId);
+    }
+    readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
   }
   catch(xcept::Exception& e)
   {

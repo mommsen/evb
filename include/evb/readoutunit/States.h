@@ -301,7 +301,7 @@ namespace evb {
 
 
     /**
-     * The SynchLoss state of the outer-state Enabled.
+     * The SynchLoss state of the outer-state Running.
      */
     template<class Owner>
     class SynchLoss: public EvBState< SynchLoss<Owner>,Running<Owner> >
@@ -310,6 +310,9 @@ namespace evb {
     public:
 
       typedef EvBState< SynchLoss<Owner>,Running<Owner> > my_state;
+      typedef boost::mpl::list<
+        boost::statechart::transition< MismatchDetected,SynchLoss<Owner> >
+        > reactions;
 
       SynchLoss(typename my_state::boost_state::my_context c) : my_state("SynchLoss", c)
       { this->safeEntryAction(); }
