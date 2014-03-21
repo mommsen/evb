@@ -99,26 +99,9 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 
 void evb::bu::EventBuilder::drain()
 {
-  bool workDone;
-
-  do
-  {
-    workDone = false;
-
-    for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
-         it != itEnd; ++it)
-    {
-      if ( ! it->second->empty() )
-      {
-        workDone = true;
-        ::usleep(1000);
-      }
-    }
-  } while ( workDone );
+  while ( processesActive_.any() ) ::usleep(1000);
 
   doProcessing_ = false;
-
-  while ( processesActive_.any() ) ::usleep(1000);
 }
 
 
@@ -162,9 +145,25 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
     while ( doProcessing_ )
     {
       if ( superFragmentFIFO->deq(superFragments) )
+      {
         buildEvent(superFragments,eventMap,streamHandler);
+      }
       else
-        ::usleep(10);
+      {
+        if ( eventMap->empty() )
+        {
+          boost::mutex::scoped_lock sl(processesActiveMutex_);
+          processesActive_.reset(builderId);
+          sl.unlock();
+          ::usleep(1000);
+          sl.lock();
+          processesActive_.set(builderId);
+        }
+        else
+        {
+          ::usleep(10);
+        }
+      }
     }
   }
   catch(xcept::Exception& e)
@@ -255,7 +254,7 @@ inline void evb::bu::EventBuilder::buildEvent
             streamHandler->writeEvent(event);
 
           resourceManager_->discardEvent(event);
-          eventMap->erase(eventPos++);
+          eventMap->erase(eventPos);
         }
 
         eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
@@ -289,6 +288,9 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
   const uint16_t& superFragmentCount
 ) const
 {
+  if ( superFragmentCount >= dataBlockMsg->nbSuperFragments )
+    return eventMap->end();
+
   const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
 
   EventMap::iterator eventPos = eventMap->lower_bound(evbId);
