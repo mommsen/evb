@@ -83,6 +83,7 @@ namespace evb {
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 eventCount_;
+      xdata::UnsignedInteger32 lastEventNumber_;
 
     };
 
@@ -112,10 +113,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendAp
   eventRate_ = 0;
   superFragmentSize_ = 0;
   eventCount_ = 0;
+  lastEventNumber_ = 0;
 
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("superFragmentSize", &superFragmentSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventCount", &eventCount_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_, InfoSpaceItems::retrieve);
 }
 
 
@@ -184,6 +187,17 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
     catch(xdata::exception::Exception)
     {
       eventCount_ = 0;
+    }
+  }
+  else if (item == "lastEventNumber")
+  {
+    try
+    {
+      lastEventNumber_.setValue( *(this->monitoringInfoSpace_->find("lastEventNumber")) );
+    }
+    catch(xdata::exception::Exception)
+    {
+      lastEventNumber_ = 0;
     }
   }
 }

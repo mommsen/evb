@@ -286,6 +286,7 @@ namespace evb {
       InputMonitoring superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
 
+      xdata::UnsignedInteger32 lastEventNumber_;
       xdata::UnsignedInteger32 eventCount_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -666,12 +667,14 @@ void evb::readoutunit::Input<Configuration>::stopProcessing()
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItems& items)
 {
+  lastEventNumber_ = 0;
   eventCount_ = 0;
   eventRate_ = 0;
   superFragmentSize_ = 0;
   superFragmentSizeStdDev_ = 0;
   dataReadyCount_ = 0;
 
+  items.add("lastEventNumber", &lastEventNumber_);
   items.add("eventCount", &eventCount_);
   items.add("eventRate", &eventRate_);
   items.add("superFragmentSize", &superFragmentSize_);
@@ -683,7 +686,6 @@ void evb::readoutunit::Input<Configuration>::appendMonitoringItems(InfoSpaceItem
 template<class Configuration>
 void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
 {
-  uint32_t lastEventNumber = 0;
   uint32_t dataReadyCount = 0;
 
   {
@@ -692,8 +694,6 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     for (typename InputMonitors::iterator it = inputMonitors_.begin(), itEnd = inputMonitors_.end();
          it != itEnd; ++it)
     {
-      if ( lastEventNumber < it->second.lastEventNumber )
-        lastEventNumber = it->second.lastEventNumber;
       dataReadyCount += it->second.perf.logicalCount;
 
       it->second.rate = it->second.perf.logicalRate();
@@ -722,6 +722,7 @@ void evb::readoutunit::Input<Configuration>::updateMonitoringItems()
     superFragmentMonitor_.perf.reset();
   }
 
+  lastEventNumber_ = superFragmentMonitor_.lastEventNumber;
   eventCount_ = superFragmentMonitor_.eventCount;
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
