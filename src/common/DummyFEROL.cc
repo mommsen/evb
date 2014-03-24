@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <pthread.h>
 
-#define DOUBLE_WORKLOOPS
-
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
 EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/rui64x64.gif"),
 doProcessing_(false),
@@ -242,9 +240,7 @@ void evb::test::DummyFEROL::startProcessing()
   doProcessing_ = true;
   fragmentGenerator_.reset();
   generatingWL_->submit(generatingAction_);
-  #ifdef DOUBLE_WORKLOOPS
   sendingWL_->submit(sendingAction_);
-  #endif
 }
 
 
@@ -285,7 +281,6 @@ void evb::test::DummyFEROL::startWorkLoops()
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 
-  #ifdef DOUBLE_WORKLOOPS
   try
   {
     sendingWL_ = toolbox::task::getWorkLoopFactory()->
@@ -305,7 +300,6 @@ void evb::test::DummyFEROL::startWorkLoops()
     std::string msg = "Failed to start workloop 'Sending'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
-  #endif
 }
 
 
@@ -332,19 +326,14 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
           if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
           {
             lastEventNumber_ = lastEventNumber;
-            do
+            for (uint32_t i = duplicateNbEvents_+1; i > 0; --i)
             {
-              if ( duplicateNbEvents_.value_ > 0 )
-                bufRef->duplicate();
-
-              #ifdef DOUBLE_WORKLOOPS
-              fragmentFIFO_.enqWait(bufRef);
-              #else
-              updateCounters(bufRef);
-              sendData(bufRef);
-              #endif
+              if ( i > 1 )
+                fragmentFIFO_.enqWait( bufRef->duplicate() );
+              else
+                fragmentFIFO_.enqWait(bufRef);
             }
-            while ( duplicateNbEvents_.value_ > 0 && --duplicateNbEvents_ );
+            duplicateNbEvents_ = 0;
           }
           else
           {
