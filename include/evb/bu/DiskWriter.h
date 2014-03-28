@@ -9,6 +9,7 @@
 #include <map>
 #include <stdint.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/FileStatistics.h"
 #include "evb/bu/StreamHandler.h"
@@ -96,9 +97,10 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print monitoring/configuration as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
+
 
 
     private:

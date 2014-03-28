@@ -83,6 +83,7 @@ namespace evb {
 
     std::string getStateName() const { return stateName_; }
     uint32_t getRunNumber() const { return runNumber_.value_; }
+    std::string getReasonForFailed() const { return reasonForFailed_; }
 
     typedef std::list<std::string> SoapFsmEvents;
     SoapFsmEvents getSoapFsmEvents() const { return soapFsmEvents_; }

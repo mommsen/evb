@@ -341,40 +341,37 @@ void evb::evm::RUproxy::fillRUInstance(xdata::UnsignedInteger32 instance)
 }
 
 
-void evb::evm::RUproxy::printHtml(xgi::Output *out) const
+cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
 {
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>RUproxy</p>"                                        << std::endl;
-  *out << "<table>"                                               << std::endl;
+  using namespace cgicc;
+
+  table table;
 
   {
     boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last event number to RUs</td>"                     << std::endl;
-    *out << "<td>" << allocateMonitoring_.lastEventNumberToRUs << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << allocateMonitoring_.payload / 1e3 << "</td>"  << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << allocateMonitoring_.logicalCount << "</td>"      << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << allocateMonitoring_.i2oCount << "</td>"          << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+
+    table.add(tr()
+      .add(td("last event number to RUs"))
+      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.lastEventNumberToRUs))));
+    table.add(tr()
+      .add(td("payload (kB)"))
+      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.payload / 1000))));
+    table.add(tr()
+      .add(td("logical count"))
+      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.logicalCount))));
+    table.add(tr()
+      .add(td("I2O count"))
+      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oCount))));
   }
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  allocateFIFO_.printHtml(out, evm_->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(allocateFIFO_.getHtmlSnipped(evm_->getURN()))));
 
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  cgicc::div div;
+  div.add(p("RUproxy"));
+  div.add(table);
+  return div;
 }
 
 

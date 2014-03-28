@@ -159,28 +159,21 @@ namespace evb {
 
 
     template<>
-    void evm::ReadoutUnit::do_defaultWebPage
+    void evm::ReadoutUnit::addMainWebPage
     (
-      xgi::Output *out
+      cgicc::table& table
     ) const
     {
-      *out << "<tr>"                                                << std::endl;
-      *out << "<td class=\"component\">"                            << std::endl;
-      input_->printHtml(out);
-      *out << "</td>"                                               << std::endl;
-      *out << "<td>"                                                << std::endl;
-      *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-      *out << "</td>"                                               << std::endl;
-      *out << "<td class=\"component\">"                            << std::endl;
-      buProxy_->printHtml(out);
-      *out << "</td>"                                               << std::endl;
-      *out << "<td>"                                                << std::endl;
-      *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-      *out << "</td>"                                               << std::endl;
-      *out << "<td class=\"component\">"                            << std::endl;
-      dynamic_cast<const EVM*>(this)->getRUproxy()->printHtml(out);
-      *out << "</td>"                                               << std::endl;
-      *out << "</tr>"                                               << std::endl;
+      using namespace cgicc;
+
+      table.add(tr()
+        .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","2"))
+        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(dynamic_cast<const EVM*>(this)->getRUproxy()->getHtmlSnipped()).set("class","xdaq-evb-component")));
+
+      table.add(tr()
+        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }
 }

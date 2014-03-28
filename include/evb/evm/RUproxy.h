@@ -6,6 +6,7 @@
 #include <map>
 #include <stdint.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/ApplicationDescriptorAndTid.h"
 #include "evb/EvBid.h"
 #include "evb/FragmentChain.h"
@@ -101,9 +102,9 @@ namespace evb {
       { return ruTids_; }
 
       /**
-       * Print monitoring/configuration as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
 
       /**
        * Print the content of the allocation FIFO as HTML snipped

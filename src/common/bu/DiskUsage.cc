@@ -103,7 +103,7 @@ void evb::bu::DiskUsage::doStatFs()
 
   if ( retVal == 0 )
   {
-    diskSizeGB_ = static_cast<float>(statfs.f_blocks * statfs.f_bsize) / 1024 / 1024 / 1024;
+    diskSizeGB_ = static_cast<float>(statfs.f_blocks * statfs.f_bsize) / 1e9;
     relDiskUsage_ = 1 - static_cast<float>(statfs.f_bavail)/statfs.f_blocks;
     valid_ = true;
   }

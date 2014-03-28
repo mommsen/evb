@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_Input_h_
 #define _evb_readoutunit_Input_h_
 
+#include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -11,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/CRCCalculator.h"
 #include "evb/Constants.h"
 #include "evb/DumpUtility.h"
@@ -137,9 +139,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print monitoring information as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
 
       /**
        * Print the content of the super-fragment FIFO as HTML snipped
@@ -178,7 +180,7 @@ namespace evb {
         virtual void drain() {};
         virtual void stopProcessing() {};
         virtual void printSuperFragmentFIFO(xgi::Output*) const {};
-        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) const {};
+        virtual cgicc::div getHtmlSnippedForFragmentFIFOs(const toolbox::net::URN&) const { return cgicc::div(); }
 
       protected:
 
@@ -201,7 +203,7 @@ namespace evb {
         virtual void drain();
         virtual void stopProcessing();
         virtual void printSuperFragmentFIFO(xgi::Output*) const;
-        virtual void printFragmentFIFOs(xgi::Output*, const toolbox::net::URN&) const;
+        virtual cgicc::div getHtmlSnippedForFragmentFIFOs(const toolbox::net::URN&) const;
 
       protected:
 
@@ -260,6 +262,7 @@ namespace evb {
       void resetMonitoringCounters();
       void dumpFragmentToLogger(toolbox::mem::Reference*) const;
       void updateSuperFragmentCounters(const FragmentChainPtr&);
+      cgicc::table getFedTable() const;
 
       xdaq::ApplicationStub* app_;
       boost::shared_ptr<Handler> handler_;
@@ -779,89 +782,102 @@ void evb::readoutunit::Input<Configuration>::configure()
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::printHtml(xgi::Output *out) const
+cgicc::div evb::readoutunit::Input<Configuration>::getHtmlSnipped() const
 {
+  using namespace cgicc;
 
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>Input - " << configuration_->inputSource.toString() <<"</p>" << std::endl;
-  *out << "<table>"                                               << std::endl;
-
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
-  out->setf(std::ios::fixed);
-  out->precision(2);
+  table table;
 
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>number of events</td>"                             << std::endl;
-    *out << "<td>" << superFragmentMonitor_.eventCount << "</td>"   << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>evt number of last super fragment</td>"            << std::endl;
-    *out << "<td>" << superFragmentMonitor_.lastEventNumber << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << superFragmentMonitor_.bandwidth / 1e6 << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->setf(std::ios::scientific);
-    out->precision(4);
-    *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << superFragmentMonitor_.rate << "</td>"         << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->unsetf(std::ios::scientific);
-    out->precision(1);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>super fragment size (kB)</td>"                     << std::endl;
-    *out << "<td>" << superFragmentMonitor_.eventSize / 1e3 << " +/- "
-      << superFragmentMonitor_.eventSizeStdDev / 1e3 << "</td>"     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
-
-  handler_->printFragmentFIFOs(out,app_->getDescriptor()->getURN());
-
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Statistics per FED</th>"             << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  *out << "<table style=\"border-collapse:collapse;padding:0px\">"<< std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>FED id</td>"                                       << std::endl;
-  *out << "<td>Last event</td>"                                   << std::endl;
-  *out << "<td>Size (kB)</td>"                                    << std::endl;
-  *out << "<td>B/w (MB/s)</td>"                                   << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  {
-    boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-
-    typename InputMonitors::const_iterator it, itEnd;
-    for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
-         it != itEnd; ++it)
+    table.add(tr()
+      .add(td("# events"))
+      .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
+    table.add(tr()
+      .add(td("evt number of last super fragment"))
+      .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));
     {
-      *out << "<tr>"                                                << std::endl;
-      *out << "<td>" << it->first << "</td>"                        << std::endl;
-      *out << "<td>" << it->second.lastEventNumber << "</td>"       << std::endl;
-      *out << "<td>" << it->second.eventSize / 1e3 << " +/- "
-        << it->second.eventSizeStdDev / 1e3 << "</td>"              << std::endl;
-      *out << "<td>" << it->second.bandwidth / 1e6 << "</td>"       << std::endl;
-      *out << "</tr>"                                               << std::endl;
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << superFragmentMonitor_.bandwidth / 1e6;
+      table.add(tr()
+        .add(td("throughput (MB/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::scientific);
+      str.precision(4);
+      str << superFragmentMonitor_.rate;
+      table.add(tr()
+        .add(td("rate (events/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << superFragmentMonitor_.eventSize / 1e3 << " +/- " << superFragmentMonitor_.eventSizeStdDev / 1e3;
+      table.add(tr()
+        .add(td("super fragment size (kB)"))
+        .add(td(str.str())));
     }
   }
 
-  out->flags(originalFlags);
-  out->precision(originalPrecision);
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(handler_->getHtmlSnippedForFragmentFIFOs(app_->getDescriptor()->getURN()))));
 
-  *out << "</table>"                                              << std::endl;
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(getFedTable())));
 
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  cgicc::div div;
+  div.add(p("Input - "+configuration_->inputSource.toString()));
+  div.add(table);
+  return div;
+}
+
+
+template<class Configuration>
+cgicc::table evb::readoutunit::Input<Configuration>::getFedTable() const
+{
+  using namespace cgicc;
+
+  boost::mutex::scoped_lock sl(inputMonitorsMutex_);
+
+  table fedTable;
+
+  fedTable.add(tr()
+    .add(th("Statistics per FED").set("colspan","4")));
+  fedTable.add(tr()
+    .add(td("FED id"))
+    .add(td("Last event"))
+    .add(td("Size (kB)"))
+    .add(td("B/w (MB/s)")));
+
+  typename InputMonitors::const_iterator it, itEnd;
+  for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
+       it != itEnd; ++it)
+  {
+    std::ostringstream str;
+    str.setf(std::ios::fixed);
+    str.precision(1);
+
+    tr row;
+    row.add(td(boost::lexical_cast<std::string>(it->first)));
+    row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
+    str << it->second.eventSize / 1e3 << " +/- " << it->second.eventSizeStdDev / 1e3;
+    row.add(td(str.str()));
+    str.str(std::string());
+    str << it->second.bandwidth / 1e6;
+    row.add(td(str.str()));
+    fedTable.add(row);
+  }
+
+  return fedTable;
 }
 
 
@@ -1043,27 +1059,22 @@ void evb::readoutunit::Input<Configuration>::FEROLproxy::printSuperFragmentFIFO(
 
 
 template<class Configuration>
-void evb::readoutunit::Input<Configuration>::FEROLproxy::printFragmentFIFOs
+cgicc::div evb::readoutunit::Input<Configuration>::FEROLproxy::getHtmlSnippedForFragmentFIFOs
 (
-  xgi::Output* out,
   const toolbox::net::URN& urn
 ) const
 {
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  superFragmentFIFO_.printHtml(out, urn);
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  using namespace cgicc;
+
+  cgicc::div queues;
+  queues.add(superFragmentFIFO_.getHtmlSnipped(urn));
 
   for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\">"                                    << std::endl;
-    it->second->printHtml(out, urn);
-    *out << "</td>"                                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    queues.add(it->second->getHtmlSnipped(urn));
   }
+  return queues;
 }
 
 

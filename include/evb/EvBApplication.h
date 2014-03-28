@@ -1,11 +1,13 @@
 #ifndef _evb_EvBApplication_h_
 #define _evb_EvBApplication_h_
 
+#include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <time.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/EvBStateMachine.h"
@@ -24,15 +26,16 @@
 #include "xdaq/ApplicationDescriptor.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdaq/NamespaceURI.h"
-#include "xdaq/WebApplication.h"
+#include "xdaq/Application.h"
 #include "xdaq2rc/SOAPParameterExtractor.hh"
 #include "xdata/ActionListener.h"
 #include "xdata/InfoSpace.h"
 #include "xdata/InfoSpaceFactory.h"
 #include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xgi/framework/Method.h"
+#include "xgi/framework/UIManager.h"
 #include "xgi/Input.h"
-#include "xgi/Method.h"
 #include "xgi/Output.h"
 #include "xoap/MessageFactory.h"
 #include "xoap/MessageReference.h"
@@ -51,7 +54,7 @@ namespace evb {
    */
   template<class Configuration,class StateMachine>
   class EvBApplication :
-    public xdaq::WebApplication, public xdata::ActionListener
+    public xdaq::Application, public xgi::framework::UIManager, public xdata::ActionListener
   {
   public:
 
@@ -83,7 +86,11 @@ namespace evb {
     virtual void do_bindI2oCallbacks() {};
 
     virtual void bindNonDefaultXgiCallbacks() {};
-    virtual void do_defaultWebPage(xgi::Output*) const = 0;
+    virtual void addMainWebPage(cgicc::table&) const = 0;
+
+    void webPageHeader(xgi::Output*, const std::string& name="") const;
+    void webPageBanner(xgi::Output*) const;
+    cgicc::div getWebPageBanner() const;
 
     toolbox::mem::Pool* getFastControlMsgPool() const;
     xoap::MessageReference createFsmSoapResponseMsg
@@ -91,18 +98,6 @@ namespace evb {
       const std::string& event,
       const std::string& state
     ) const;
-
-    void webPageHeader(xgi::Output*, const std::string& name) const;
-    void webPageBanner(xgi::Output*) const;
-    void printWebPageIcon
-    (
-      xgi::Output*,
-      const std::string& imgSrc,
-      const std::string& label,
-      const std::string& href
-    ) const;
-
-    const std::string appIcon_;
 
     xdata::InfoSpace *monitoringInfoSpace_;
 
@@ -154,15 +149,16 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
   xdaq::ApplicationStub* app,
   const std::string& appIcon
 ) :
-xdaq::WebApplication(app),
-appIcon_(appIcon),
+xdaq::Application(app),
+xgi::framework::UIManager(this),
 configuration_(new Configuration()),
 soapParameterExtractor_(this),
 urn_(getApplicationDescriptor()->getURN()),
 xmlClass_(getApplicationDescriptor()->getClassName()),
 instance_(getApplicationDescriptor()->getInstance())
 {
-  getApplicationDescriptor()->setAttribute("icon", appIcon_);
+  getApplicationDescriptor()->setAttribute("icon", appIcon);
+  getApplicationDescriptor()->setAttribute("icon16x16", appIcon);
 }
 
 
@@ -185,7 +181,9 @@ template<class Configuration,class StateMachine>
 std::string evb::EvBApplication<Configuration,StateMachine>::getIdentifier(const std::string& suffix) const
 {
   std::ostringstream identifier;
-  identifier << xmlClass_ << "-" << instance_.value_  << "/" << suffix;
+  identifier << xmlClass_ << "_" << instance_.value_;
+  if ( !suffix.empty() )
+    identifier << "/" << suffix;
 
   return identifier.str();
 }
@@ -548,12 +546,9 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
 template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::bindXgiCallbacks()
 {
-  xgi::bind
-    (
-      this,
-      &evb::EvBApplication<Configuration,StateMachine>::defaultWebPage,
-      "Default"
-    );
+  xgi::framework::deferredbind(this, this,
+    &evb::EvBApplication<Configuration,StateMachine>::defaultWebPage,
+    "Default");
 
   bindNonDefaultXgiCallbacks();
 }
@@ -566,32 +561,22 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
   xgi::Output *out
 )
 {
-  webPageHeader(out, "MAIN");
+  webPageHeader(out);
 
-  *out << "<table class=\"layout\">"                            << std::endl;
+  using namespace cgicc;
 
-  *out << "<colgroup>"                                          << std::endl;
-  *out << "<col/>"                                              << std::endl;
-  *out << "<col class=\"arrow\"/>"                              << std::endl;
-  *out << "<col/>"                                              << std::endl;
-  *out << "<col class=\"arrow\"/>"                              << std::endl;
-  *out << "<col/>"                                              << std::endl;
-  *out << "</colgroup>"                                         << std::endl;
+  table layoutTable;
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(colgroup()
+    .add(col())
+    .add(col().set("class","xdaq-evb-arrow"))
+    .add(col()));
+  layoutTable.add(tr()
+    .add(td(getWebPageBanner()).set("colspan","3")));
 
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td colspan=\"5\">"                                  << std::endl;
+  addMainWebPage(layoutTable);
 
-  webPageBanner(out);
-
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  do_defaultWebPage(out);
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
+  *out << layoutTable;
 }
 
 
@@ -609,9 +594,11 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
   *out << "<head>"                                                                    << std::endl;
   *out << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>"   << std::endl;
   *out << "<link type=\"text/css\" rel=\"stylesheet\"";
-  *out << " href=\"/evb/html/evb.css\"/>"                                             << std::endl;
+  *out << " href=\"/evb/html/xdaq-evb.css\"/>"                                        << std::endl;
   *out << "<title>"                                                                   << std::endl;
-  *out << xmlClass_ << " " << instance_ .value_ << " - " << name                      << std::endl;
+  *out << xmlClass_ << " " << instance_.value_;
+  if ( !name.empty() ) *out << " - " << name;
+  *out << std::endl;
   *out << "</title>"                                                                  << std::endl;
   *out << "</head>"                                                                   << std::endl;
   *out << "<body>"                                                                    << std::endl;
@@ -624,77 +611,41 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
   xgi::Output* out
 ) const
 {
-  *out << "<div class=\"header\">"                                                    << std::endl;
-  *out << "<table border=\"0\" width=\"100%\">"                                       << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td class=\"icon\">"                                                       << std::endl;
-  *out << "<img src=\"" << appIcon_ << "\" alt=\"EVM\"/>"                             << std::endl;
-  *out << "<p>created by "
-    <<"<a href=\"mailto:Remigius.Mommsen@cern.ch\">R.K.&nbsp;Mommsen</a>"
-    << " &amp;&nbsp;S.&nbsp;Murray</p>"                                               << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-
-  *out << "<td>"                                                                      << std::endl;
-  *out << "<table width=\"100%\" border=\"0\">"                                       << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "<b>" << xmlClass_ << " " << instance_.value_ << "</b>"                     << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<b>" << stateMachine_->getStateName() << "</b>"                            << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "Version " << evb::version                                                  << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<b>run " << stateMachine_->getRunNumber() << "</b>"                        << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "<tr>"                                                                      << std::endl;
-  *out << "<td>"                                                                      << std::endl;
-  *out << "Page last updated: " << getCurrentTimeUTC() << " UTC"                      << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td align=\"right\">"                                                      << std::endl;
-  *out << "<a href=\"/" << urn_.toString() << "/ParameterQuery\">XML</a>"             << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "</table>"                                                                  << std::endl;
-  *out << "</td>"                                                                     << std::endl;
-  *out << "<td class=\"app_links\">"                                                  << std::endl;
-  printWebPageIcon(out, "/hyperdaq/images/HyperDAQ.jpg",
-    "HyperDAQ", "/urn:xdaq-application:service=hyperdaq");
-  *out << "</td>"                                                                     << std::endl;
-
-  *out << "<td class=\"app_links\">"                                                  << std::endl;
-  printWebPageIcon(out, appIcon_, "Main", "/" + urn_.toString() + "/");
-  *out << "</td>"                                                                     << std::endl;
-
-  *out << "</tr>"                                                                     << std::endl;
-  *out << "</table>"                                                                  << std::endl;
-  *out << "</div>"                                                                    << std::endl;
+  *out << getWebPageBanner();
 }
 
 
 template<class Configuration,class StateMachine>
-void evb::EvBApplication<Configuration,StateMachine>::printWebPageIcon
-(
-  xgi::Output* out,
-  const std::string& imgSrc,
-  const std::string& label,
-  const std::string& href
-) const
+cgicc::div evb::EvBApplication<Configuration,StateMachine>::getWebPageBanner() const
 {
-  *out << "<a href=\"" << href << "\">";
-  *out << "<img style=\"border-style:none\"";
-  *out << " src=\"" << imgSrc << "\"";
-  *out << " alt=\"" << label << "\"";
-  *out << " width=\"64\"";
-  *out << " height=\"64\"/>";
-  *out << "</a><br/>" << std::endl;
-  *out << "<a href=\"" << href << "\">" << label << "</a>";
-  *out << std::endl;
+  using namespace cgicc;
+
+  table banner;
+  banner.set("class","xdaq-evb-banner");
+
+  banner.add(tr()
+    .add(td(getIdentifier()))
+    .add(td(a("XML").set("href","/"+urn_.toString()+"/ParameterQuery"))));
+
+  banner.add(tr()
+    .add(td("run "+boost::lexical_cast<std::string>(stateMachine_->getRunNumber())))
+    .add(td("Version "+evb::version)));
+
+  const std::string stateName = stateMachine_->getStateName();
+  banner.add(tr()
+    .add(td(stateName))
+    .add(td("Page last updated: "+getCurrentTimeUTC()+" UTC")));
+
+  if ( stateName == "Failed" )
+  {
+    banner.add(tr().set("class","xdaq-error")
+      .add(td(stateMachine_->getReasonForFailed()).set("colspan","2")));
+  }
+
+  cgicc::div div;
+  div.set("class","xdaq-header");
+  div.add(banner);
+  return div;
 }
 
 

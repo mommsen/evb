@@ -433,98 +433,87 @@ void evb::bu::ResourceManager::configureDiskUsageMonitors()
 }
 
 
-void evb::bu::ResourceManager::printHtml(xgi::Output *out) const
+cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
 {
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
+  using namespace cgicc;
 
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>ResourceManager</p>"                                << std::endl;
-  *out << "<table>"                                               << std::endl;
+  table table;
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events built</td>"                               << std::endl;
-    *out << "<td>" << eventMonitoring_.nbEventsBuilt << "</td>"     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events in BU</td>"                               << std::endl;
-    *out << "<td>" << eventMonitoring_.nbEventsInBU << "</td>"      << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># outstanding requests</td>"                       << std::endl;
-    *out << "<td>" << eventMonitoring_.outstandingRequests << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
 
-    out->setf(std::ios::fixed);
-    out->precision(2);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_.value_ / 1e6 << "</td>"            << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->setf(std::ios::scientific);
-    out->precision(4);
-    *out << "<td>rate (events/s)</td>"                              << std::endl;
-    *out << "<td>" << eventRate_.value_ << "</td>"                  << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->unsetf(std::ios::scientific);
-    out->precision(1);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>event size (kB)</td>"                              << std::endl;
-    *out << "<td>" << eventSize_.value_ / 1e3 <<
-      " +/- " << eventSizeStdDev_.value_ / 1e3 << "</td>"           << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    table.add(tr()
+      .add(td("# events built"))
+      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsBuilt))));
+    table.add(tr()
+      .add(td("# events in BU"))
+      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsInBU))));
+    table.add(tr()
+      .add(td("# outstanding requests"))
+      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.outstandingRequests))));
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << bandwidth_.value_ / 1e6;
+      table.add(tr()
+        .add(td("throughput (MB/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::scientific);
+      str.precision(4);
+      str << eventRate_.value_;
+      table.add(tr()
+        .add(td("rate (events/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << eventSize_.value_ / 1e3 << " +/- " << eventSizeStdDev_.value_ / 1e3;
+      table.add(tr()
+        .add(td("event size (kB)"))
+        .add(td(str.str())));
+    }
   }
+  table.add(tr()
+    .add(td("# FU cores available"))
+    .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
 
-  out->setf(std::ios::fixed);
-  out->precision(0);
+  table.add(tr()
+    .add(th("Output disk usage").set("colspan","2")));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>FU cores available</td>"                           << std::endl;
-  *out << "<td>" << fuCoresAvailable_.value_ << "</td>"           << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-
-  out->precision(1);
-
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Output disk usage</th>"              << std::endl;
-  *out << "</tr>"                                                 << std::endl;
   for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
         it != itEnd; ++it)
   {
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>" << (*it)->path() << "</td>"                      << std::endl;
-    *out << "<td>" << (*it)->relDiskUsage()*100 << "% of "
-      << (*it)->diskSizeGB() << " GB</td>"                          << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    std::ostringstream str;
+    str.setf(std::ios::fixed);
+    str.precision(1);
+    str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
+    table.add(tr()
+      .add(td((*it)->path().string()))
+      .add(td(str.str())));
   }
 
-  out->flags(originalFlags);
-  out->precision(originalPrecision);
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(freeResourceFIFO_.getHtmlSnipped(bu_->getURN()))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  freeResourceFIFO_.printHtml(out, bu_->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(blockedResourceFIFO_.getHtmlSnipped(bu_->getURN()))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  blockedResourceFIFO_.printHtml(out, bu_->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(lumiSectionAccountFIFO_.getHtmlSnipped(bu_->getURN()))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  lumiSectionAccountFIFO_.printHtml(out, bu_->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  cgicc::div div;
+  div.add(p("ResourceManager"));
+  div.add(table);
+  return div;
 }
 
 

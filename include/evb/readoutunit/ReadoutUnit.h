@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/EvBApplication.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/readoutunit/BUproxy.h"
@@ -74,7 +75,7 @@ namespace evb {
       virtual void do_handleItemRetrieveEvent(const std::string& item);
 
       virtual void bindNonDefaultXgiCallbacks();
-      virtual void do_defaultWebPage(xgi::Output*) const;
+      virtual void addMainWebPage(cgicc::table&) const;
 
       void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
       void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
@@ -283,22 +284,17 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
 
 
 template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_defaultWebPage
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::addMainWebPage
 (
-  xgi::Output *out
+  cgicc::table& table
 ) const
 {
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  input_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  buProxy_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  using namespace cgicc;
+
+  table.add(tr()
+    .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
 }
 
 

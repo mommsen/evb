@@ -7,6 +7,7 @@
 #include <map>
 #include <stdint.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/ApplicationDescriptorAndTid.h"
 #include "evb/EvBid.h"
 #include "evb/FragmentChain.h"
@@ -114,9 +115,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print monitoring/configuration as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
 
 
     private:
@@ -126,6 +127,7 @@ namespace evb {
       void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
       void getApplicationDescriptorForEVM();
+      cgicc::table getStatisticsPerRU() const;
       static int curlWriter(char*, size_t, size_t, std::string*);
 
       BU* bu_;
@@ -165,6 +167,7 @@ namespace evb {
       {
         uint32_t lastEventNumberFromEVM;
         uint32_t lastEventNumberFromRUs;
+        uint32_t incompleteSuperFragments;
         uint64_t logicalCount;
         uint64_t payload;
         uint64_t i2oCount;

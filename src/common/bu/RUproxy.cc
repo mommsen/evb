@@ -310,6 +310,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
     fragmentCount_ = fragmentMonitoring_.logicalCount;
 
     fragmentCountPerRU_.clear();
@@ -345,6 +346,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     fragmentMonitoring_.lastEventNumberFromEVM = 0;
     fragmentMonitoring_.lastEventNumberFromRUs = 0;
+    fragmentMonitoring_.incompleteSuperFragments = 0;
     fragmentMonitoring_.payload = 0;
     fragmentMonitoring_.logicalCount = 0;
     fragmentMonitoring_.i2oCount = 0;
@@ -492,107 +494,98 @@ int evb::bu::RUproxy::curlWriter(char* data, size_t size, size_t nmemb, std::str
 }
 
 
-void evb::bu::RUproxy::printHtml(xgi::Output *out) const
+cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
 {
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>RUproxy</p>"                                        << std::endl;
-  *out << "<table>"                                               << std::endl;
+  using namespace cgicc;
 
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
-  out->setf(std::ios::fixed);
-  out->precision(0);
+  table table;
 
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last event number from EVM</td>"                   << std::endl;
-    *out << "<td>" << fragmentMonitoring_.lastEventNumberFromEVM << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last event number from RUs</td>"                   << std::endl;
-    *out << "<td>" << fragmentMonitoring_.lastEventNumberFromRUs << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># incomplete super fragments</td>"                 << std::endl;
-    *out << "<td>" << dataBlockMap_.size() << "</td>"               << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<th colspan=\"2\">Event data</th>"                     << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (MB)</td>"                                 << std::endl;
-    *out << "<td>" << fragmentMonitoring_.payload / 1e6 << "</td>"  << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << fragmentMonitoring_.logicalCount << "</td>"   << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << fragmentMonitoring_.i2oCount << "</td>"       << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+
+    table.add(tr()
+      .add(td("last event number from EVM"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromEVM))));
+    table.add(tr()
+      .add(td("last event number from RUs"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromRUs))));
+    table.add(tr()
+      .add(td("# incomplete super fragments"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.incompleteSuperFragments))));
+    table.add(tr()
+      .add(th("Event data").set("colspan","2")));
+    table.add(tr()
+      .add(td("payload (MB)"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payload / 1000000))));
+    table.add(tr()
+      .add(td("logical count"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.logicalCount))));
+    table.add(tr()
+      .add(td("I2O count"))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oCount))));
   }
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<th colspan=\"2\">Requests</th>"                       << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>payload (kB)</td>"                                 << std::endl;
-    *out << "<td>" << requestMonitoring_.payload / 1e3 << "</td>"   << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>logical count</td>"                                << std::endl;
-    *out << "<td>" << requestMonitoring_.logicalCount << "</td>"    << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>I2O count</td>"                                    << std::endl;
-    *out << "<td>" << requestMonitoring_.i2oCount << "</td>"        << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
 
+    table.add(tr()
+      .add(th("Event data").set("colspan","2")));
+    table.add(tr()
+      .add(td("payload (kB)"))
+      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+    table.add(tr()
+      .add(td("logical count"))
+      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+    table.add(tr()
+      .add(td("I2O count"))
+      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+  }
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(getStatisticsPerRU())));
+
+  cgicc::div div;
+  div.add(p("RUproxy"));
+  div.add(table);
+  return div;
+}
+
+
+cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
+{
+  using namespace cgicc;
+
+  boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+
+  table table;
+
+  table.add(tr()
+    .add(th("Statistics per RU").set("colspan","3")));
+  table.add(tr()
+    .add(td("Instance"))
+    .add(td("Fragments"))
+    .add(td("Payload (MB)")));
+
+  CountsPerRU::const_iterator it, itEnd;
+  for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
+         itEnd = fragmentMonitoring_.logicalCountPerRU.end();
+       it != itEnd; ++it)
   {
-    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<th colspan=\"2\">Statistics per RU</th>"              << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td colspan=\"2\">"                                    << std::endl;
-    *out << "<table style=\"border-collapse:collapse;padding:0px\">"<< std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>Instance</td>"                                     << std::endl;
-    *out << "<td>Fragments</td>"                                    << std::endl;
-    *out << "<td>Payload (MB)</td>"                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
+    const std::string url = ru->getContextDescriptor()->getURL() + "/" + ru->getURN();
 
-    CountsPerRU::const_iterator it, itEnd;
-    for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
-           itEnd = fragmentMonitoring_.logicalCountPerRU.end();
-         it != itEnd; ++it)
-    {
-      *out << "<tr>"                                                << std::endl;
-      *out << "<td>";
-      if ( it->first == evm_.tid )
-        *out << "EVM";
-      else
-        *out << "RU_" << it->first;
-      *out << "</td>"                                               << std::endl;
-      *out << "<td>" << it->second << "</td>"                       << std::endl;
-      *out << "<td>" << fragmentMonitoring_.payloadPerRU.at(it->first) / 1e6 << "</td>" << std::endl;
-      *out << "</tr>"                                               << std::endl;
-    }
-    *out << "</table>"                                              << std::endl;
+    std::ostringstream label;
+    if ( it->first == evm_.tid )
+      label << "EVM";
+    else
+      label << "RU " << ru->getInstance();
 
-    *out << "</td>"                                                 << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    table.add(tr()
+      .add(td()
+        .add(a(label.str()).set("href",url).set("target","_blank")))
+      .add(td(boost::lexical_cast<std::string>(it->second)))
+      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
   }
-
-  out->flags(originalFlags);
-  out->precision(originalPrecision);
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  return table;
 }
 
 

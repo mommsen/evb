@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/EvBApplication.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
@@ -68,7 +69,8 @@ namespace evb {
       virtual void do_updateMonitoringInfo();
 
       virtual void bindNonDefaultXgiCallbacks();
-      virtual void do_defaultWebPage(xgi::Output*) const;
+      virtual void addMainWebPage(cgicc::table&) const;
+      cgicc::div getHtmlSnipped() const;
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
 
       void resetMonitoringCounters();

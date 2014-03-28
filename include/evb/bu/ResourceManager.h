@@ -10,6 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/EvBid.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
@@ -122,9 +123,9 @@ namespace evb {
       void configure();
 
       /**
-       * Print monitoring information as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
 
       /**
        * Print the content of the free resource FIFO as HTML snipped

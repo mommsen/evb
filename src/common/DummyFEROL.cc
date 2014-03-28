@@ -89,67 +89,75 @@ void evb::test::DummyFEROL::bindNonDefaultXgiCallbacks()
     );
 }
 
-
-void evb::test::DummyFEROL::do_defaultWebPage
+void evb::test::DummyFEROL::addMainWebPage
 (
-  xgi::Output *out
+  cgicc::table& table
 ) const
 {
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td class=\"component\">"                              << std::endl;
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>FEROL</p>"                                          << std::endl;
-  *out << "<table>"                                               << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Monitoring</th>"                     << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  using namespace cgicc;
+
+  table.add(tr()
+    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
+}
+
+
+cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
+{
+  using namespace cgicc;
+
+  table table;
 
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last event number</td>"                            << std::endl;
-    *out << "<td>" << lastEventNumber_.value_ << "</td>"            << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    const std::_Ios_Fmtflags originalFlags=out->flags();
-    const int originalPrecision=out->precision();
-    out->setf(std::ios::fixed);
-    out->precision(2);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>throughput (MB/s)</td>"                            << std::endl;
-    *out << "<td>" << bandwidth_.value_ / 0x100000 << "</td>"       << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    out->setf(std::ios::scientific);
-    *out << "<td>rate (frame/s)</td>"                               << std::endl;
-    *out << "<td>" << frameRate_.value_ << "</td>"                  << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>rate (fragments/s)</td>"                           << std::endl;
-    *out << "<td>" << fragmentRate_.value_ << "</td>"               << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->unsetf(std::ios::scientific);
-    out->precision(1);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>FED size (kB)</td>"                                << std::endl;
-    *out << "<td>" << fragmentSize_.value_ / 0x400 << " +/- "
-      << fragmentSizeStdDev_.value_ / 0x400 << "</td>"              << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    out->flags(originalFlags);
-    out->precision(originalPrecision);
+    table.add(tr()
+      .add(td("last event number"))
+      .add(td(boost::lexical_cast<std::string>(lastEventNumber_.value_))));
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << bandwidth_.value_ / 1e6;
+      table.add(tr()
+        .add(td("throughput (MB/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::scientific);
+      str.precision(2);
+      str << frameRate_.value_ ;
+      table.add(tr()
+        .add(td("rate (frame/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::scientific);
+      str.precision(2);
+      str << fragmentRate_.value_ ;
+      table.add(tr()
+        .add(td("rate (fragments/s)"))
+        .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << fragmentSize_.value_ / 1e3 << " +/- " << fragmentSizeStdDev_.value_ / 1e3;
+      table.add(tr()
+        .add(td("FED size (kB)"))
+        .add(td(str.str())));
+    }
   }
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(fragmentFIFO_.getHtmlSnipped(urn_))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td style=\"text-align:center\" colspan=\"2\">"        << std::endl;
-  fragmentFIFO_.printHtml(out, urn_);
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  cgicc::div div;
+  div.add(p("FEROL"));
+  div.add(table);
+  return div;
 }
 
 

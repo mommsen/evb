@@ -450,39 +450,36 @@ void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
 }
 
 
-void evb::bu::DiskWriter::printHtml(xgi::Output *out) const
+cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
 {
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>DiskWriter</p>"                                     << std::endl;
-  *out << "<table>"                                               << std::endl;
+  using namespace cgicc;
+
+  table table;
 
   {
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>last evt number written</td>"                      << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.lastEventNumberWritten  << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># files written</td>"                              << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.nbFiles << "</td>"      << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># events written</td>"                             << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.nbEventsWritten << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># lumi sections with files</td>"                   << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.nbLumiSections << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td>current lumi section</td>"                         << std::endl;
-    *out << "<td>" << diskWriterMonitoring_.currentLumiSection << "</td>" << std::endl;
-    *out << "</tr>"                                                 << std::endl;
+    table.add(tr()
+      .add(td("last evt number written"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastEventNumberWritten))));
+    table.add(tr()
+      .add(td("# files written"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbFiles))));
+    table.add(tr()
+      .add(td("# events written"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbEventsWritten))));
+    table.add(tr()
+      .add(td("# lumi sections with files"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
+    table.add(tr()
+      .add(td("current lumi section"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
   }
 
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  cgicc::div div;
+  div.add(p("DiskWriter"));
+  div.add(table);
+  return div;
 }
 
 

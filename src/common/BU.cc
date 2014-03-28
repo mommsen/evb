@@ -181,48 +181,25 @@ void evb::BU::bindNonDefaultXgiCallbacks()
 }
 
 
-void evb::BU::do_defaultWebPage
+void evb::BU::addMainWebPage
 (
-  xgi::Output *out
+  cgicc::table& table
 ) const
 {
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td class=\"component\" rowspan=\"3\">"              << std::endl;
-  ruProxy_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  resourceManager_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_w.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\" rowspan=\"3\">"              << std::endl;
-  diskWriter_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  using namespace cgicc;
 
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td></td>"                                           << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_ns.gif\" alt=\"\"/>"    << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td></td>"                                           << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  table.add(tr()
+    .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
+    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component")));
 
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "<td class=\"component\">"                            << std::endl;
-  eventBuilder_->printHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "<td>"                                                << std::endl;
-  *out << "<img src=\"/evb/images/arrow_e.gif\" alt=\"\"/>"     << std::endl;
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
+  table.add(tr()
+    .add(td())
+    .add(td(img().set("src","/evb/images/arrow_n.gif"))));
+
+  table.add(tr()
+    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component")));
 }
 
 

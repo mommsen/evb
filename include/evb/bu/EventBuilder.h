@@ -85,10 +85,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print monitoring information as HTML snipped
+       * Return the number of builders doing work
        */
-      void printHtml(xgi::Output*) const;
-
+      uint16_t getNumberOfActiveBuilders() const;
 
     private:
 

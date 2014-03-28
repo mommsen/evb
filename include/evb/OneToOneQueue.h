@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <vector>
 
+#include <boost/lexical_cast.hpp>
+
+#include "cgicc/HTMLClasses.h"
 #include "evb/Exception.h"
 #include "toolbox/AllocPolicy.h"
 #include "toolbox/PolicyFactory.h"
@@ -85,6 +88,11 @@ namespace evb {
     void clear();
 
     /**
+     * Return a cgicc snipped representing the queue
+     */
+    cgicc::div getHtmlSnipped(const toolbox::net::URN& urn) const;
+
+    /**
      * Print summary icon as HTML.
      */
     void printHtml(xgi::Output*, const toolbox::net::URN& urn) const;
@@ -108,6 +116,26 @@ namespace evb {
      * Print vertically upto nbElementsToPrint as HTML.
      */
     void printVerticalHtml(xgi::Output*, const uint32_t nbElementsToPrint) const;
+
+    /**
+     * Return a cgicc snipped showing all elements horizontally
+     */
+    cgicc::div getHtmlSnippedHorizontal() const;
+
+    /**
+     * Return a cgicc snipped showing horizontally upto nbElementsToPrint
+     */
+    cgicc::div getHtmlSnippedHorizontal(const uint32_t nbElementsToPrint) const;
+
+    /**
+     * Return a cgicc snipped showing all elements vertically
+     */
+    cgicc::div getHtmlSnippedVertical() const;
+
+    /**
+     * Return a cgicc snipped showing vertically upto nbElementsToPrint
+     */
+    cgicc::div getHtmlSnippedVertical(const uint32_t nbElementsToPrint) const;
 
 
   private:
@@ -259,42 +287,7 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn) const
   {
-    // cache values which might change during the printout
-    const uint32_t cachedSize = size();
-    const uint32_t cachedElements = elements();
-    const double fillFraction = cachedSize > 0 ? 100. * cachedElements / cachedSize : 0;
-
-    *out << "<div class=\"queue\">" << std::endl;
-    *out << "<table onclick=\"window.open('/" << urn.toString() << "/" << name_ << "','_blank')\" "
-      << "onmouseover=\"this.style.cursor = 'pointer'; "
-      << "document.getElementById('" << name_ << "').style.visibility = 'visible';\" "
-      << "onmouseout=\"document.getElementById('" << name_ << "').style.visibility = 'hidden';\">" << std::endl;
-    *out << "<colgroup>" << std::endl;
-    *out << "<col width=\"" << static_cast<unsigned int>( fillFraction + 0.5 ) << "%\"/>" << std::endl;
-    *out << "<col width=\"" << static_cast<unsigned int>( (100-fillFraction) + 0.5 ) << "%\"/>" << std::endl;
-    *out << "</colgroup>" << std::endl;
-
-    *out << "<tr>" << std::endl;
-    *out << "<th colspan=\"2\">" << name_ << "</th>" << std::endl;
-    *out << "</tr>" << std::endl;
-
-    *out << "<tr>" << std::endl;
-    *out << "<td style=\"height:1em;background:#8178fe\"></td>" << std::endl;
-
-    *out << "<td style=\"background:#feffd6\"></td>" << std::endl;
-    *out << "</tr>" << std::endl;
-
-    *out << "<tr>" << std::endl;
-    *out << "<td colspan=\"2\" style=\"text-align:center\">" << cachedElements << " / " << cachedSize << std::endl;
-    *out << "</tr>" << std::endl;
-
-    *out << "</table>" << std::endl;
-
-    *out << "<div id=\"" << name_ << "\" class=\"queuefloat\">" << std::endl;
-    printHorizontalHtml(out, 10);
-    *out << "</div>" << std::endl;
-
-    *out << "</div>" << std::endl;
+    *out << getHtmlSnipped(urn);
   }
 
 
@@ -304,7 +297,7 @@ namespace evb {
     xgi::Output *out
   ) const
   {
-    printHorizontalHtml( out, size() );
+    *out << getHtmlSnippedHorizontal();
   }
 
 
@@ -315,57 +308,7 @@ namespace evb {
     const uint32_t nbElementsToPrint
   ) const
   {
-    // cache values which might change during the printout
-    // Note: we do not want to lock the queue for the debug
-    // printout. Thus, be prepared that some elements are no
-    // longer there when we want to print them.
-    const uint32_t cachedReadPointer = readPointer_;
-    const uint32_t cachedWritePointer = writePointer_;
-    const uint32_t cachedSize = size();
-    const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
-
-    *out << "<div class=\"queuedetail\">" << std::endl;
-    *out << "<table>" << std::endl;
-
-    *out << "<tr>" << std::endl;
-
-    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
-    {
-      uint32_t pos = i % cachedSize;
-      *out << "  <th>" << pos << "</th>" << std::endl;
-    }
-
-    *out << "</tr>" << std::endl;
-
-    *out << "<tr>" << std::endl;
-
-    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
-    {
-      uint32_t pos = i % cachedSize;
-
-      if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
-           ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
-      {
-        *out << "  <td style=\"background:#51ef9e\">";
-        try
-        {
-          formatter( container_[pos], out );
-        }
-        catch(...)
-        {
-          *out << "n/a";
-        }
-        *out << "</td>" << std::endl;
-      }
-      else
-      {
-        *out << "  <td>&nbsp;</td>" << std::endl;
-      }
-    }
-
-    *out << "</tr>" << std::endl;
-    *out << "</table>" << std::endl;
-    *out << "</div>" << std::endl;
+    *out << getHtmlSnippedHorizontal(nbElementsToPrint);
   }
 
 
@@ -375,7 +318,7 @@ namespace evb {
     xgi::Output *out
   ) const
   {
-    printVerticalHtml( out, size() );
+    *out << getHtmlSnippedVertical();
   }
 
 
@@ -385,6 +328,123 @@ namespace evb {
     xgi::Output  *out,
     const uint32_t nbElementsToPrint
   ) const
+  {
+    *out << getHtmlSnippedVertical(nbElementsToPrint);
+  }
+
+
+  template <class T>
+  cgicc::div OneToOneQueue<T>::getHtmlSnipped(const toolbox::net::URN& urn) const
+  {
+    // cache values which might change during the printout
+    const uint32_t cachedSize = size();
+    const uint32_t cachedElements = elements();
+    const double fillFraction = cachedSize > 0 ? 100. * cachedElements / cachedSize : 0;
+    const uint16_t fullWidth = static_cast<uint8_t>(fillFraction + 0.5);
+    const uint16_t emptyWidth = static_cast<uint8_t>((100-fillFraction) + 0.5);
+
+    using namespace cgicc;
+
+    table queueTable;
+    queueTable
+      .set("onclick","window.open('/"+urn.toString()+"/"+name_ +"','_blank')")
+      .set("onmouseover","this.style.cursor = 'pointer'; document.getElementById('"+name_+"').style.visibility = 'visible';")
+      .set("onmouseout","document.getElementById('"+name_+"').style.visibility = 'hidden';");
+    queueTable.add(colgroup()
+      .add(col().set("width",boost::lexical_cast<std::string>(fullWidth)+"%"))
+      .add(col().set("width",boost::lexical_cast<std::string>(emptyWidth)+"%")));
+    queueTable.add(tr()
+      .add(th(name_).set("colspan","2")));
+    queueTable.add(tr()
+      .add(td(" ").set("class","xdaq-evb-queue-full"))
+      .add(td(" ").set("class","xdaq-evb-queue-empty")));
+    queueTable.add(tr()
+      .add(td(boost::lexical_cast<std::string>(cachedElements)+" / "+boost::lexical_cast<std::string>(cachedSize))
+        .set("colspan","2")));
+
+    cgicc::div queueFloat;
+    queueFloat
+      .set("id",name_)
+      .set("class","xdaq-evb-queuefloat");
+    queueFloat.add(getHtmlSnippedHorizontal(10));
+
+    cgicc::div div;
+    div.set("class","xdaq-evb-queue");
+    div.add(queueTable);
+    div.add(queueFloat);
+
+    return div;
+  }
+
+
+  template <class T>
+  cgicc::div OneToOneQueue<T>::getHtmlSnippedHorizontal() const
+  {
+    return getHtmlSnippedHorizontal( size() );
+  }
+
+
+  template <class T>
+  cgicc::div OneToOneQueue<T>::getHtmlSnippedHorizontal(const uint32_t nbElementsToPrint) const
+  {
+    // cache values which might change during the printout
+    // Note: we do not want to lock the queue for the debug
+    // printout. Thus, be prepared that some elements are no
+    // longer there when we want to print them.
+    const uint32_t cachedReadPointer = readPointer_;
+    const uint32_t cachedWritePointer = writePointer_;
+    const uint32_t cachedSize = size();
+    const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
+
+    using namespace cgicc;
+
+    tr headerRow,tableRow;
+
+    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
+    {
+      uint32_t pos = i % cachedSize;
+      headerRow.add(th(boost::lexical_cast<std::string>(pos)));
+
+      if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
+           ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
+      {
+        std::ostringstream content;
+        try
+        {
+          formatter(container_[pos], &content);
+        }
+        catch(...)
+        {
+          content << "n/a";
+        }
+
+        tableRow.add(td(content.str()).set("style","background:#51ef9e"));
+      }
+      else
+      {
+        tableRow.add(td("&nbsp;"));
+      }
+    }
+
+    cgicc::div queueDetail;
+    queueDetail.set("class","xdaq-evb-queuedetail");
+    queueDetail.add(table()
+      .add(headerRow)
+      .add(tableRow));
+
+    return queueDetail;
+  }
+
+
+  template <class T>
+  cgicc::div OneToOneQueue<T>::getHtmlSnippedVertical() const
+  {
+    return getHtmlSnippedVertical( size() );
+  }
+
+
+  template <class T>
+  cgicc::div OneToOneQueue<T>::getHtmlSnippedVertical(const uint32_t nbElementsToPrint) const
   {
     // cache values which might change during the printout
     // Note: we do not want to lock the queue for the debug
@@ -396,51 +456,54 @@ namespace evb {
     const uint32_t cachedSize = size();
     const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
 
-    *out << "<div class=\"queuedetail\">" << std::endl;
-    *out << "<table>" << std::endl;
+    using namespace cgicc;
 
-    *out << "<tr>" << std::endl;
-    *out << "  <th colspan=\"2\">";
-    *out << name_;
-    *out << "<br/>";
-    *out << " read="     << cachedReadPointer;
-    *out << " write="    << cachedWritePointer;
-    *out << " size="     << cachedSize;
-    *out << " elements=" << cachedElements;
-    *out << "</th>" << std::endl;
-    *out << "</tr>" << std::endl;
+    table table;
+
+    std::ostringstream str;
+    str << name_ << "<br/>";
+    str << " read="     << cachedReadPointer;
+    str << " write="    << cachedWritePointer;
+    str << " size="     << cachedSize;
+    str << " elements=" << cachedElements;
+
+    table.add(tr()
+      .add(th(str.str()).set("colspan","2")));
+
 
     for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
     {
+      tr tr;
       uint32_t pos = i % cachedSize;
-
-      *out << "<tr>" << std::endl;
-      *out << "  <th>" << pos << "</th>" << std::endl;
+      tr.add(th(boost::lexical_cast<std::string>(pos)));
 
       if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
            ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
       {
-        *out << "  <td style=\"background-color:#51ef9e\">";
+        std::ostringstream content;
         try
         {
-          formatter( container_[pos], out );
+          formatter(container_[pos], &content);
         }
         catch(...)
         {
-          *out << "n/a";
+          content << "n/a";
         }
-        *out << "</td>" << std::endl;
+
+        tr.add(td(content.str()).set("style","background:#51ef9e"));
       }
       else
       {
-        *out << "  <td>&nbsp;</td>" << std::endl;
+        tr.add(td("&nbsp;"));
       }
-
-      *out << "</tr>" << std::endl;
+      table.add(tr);
     }
 
-    *out << "</table>" << std::endl;
-    *out << "</div>" << std::endl;
+    cgicc::div queueDetail;
+    queueDetail.set("class","xdaq-evb-queuedetail");
+    queueDetail.add(table);
+
+    return queueDetail;
   }
 
 

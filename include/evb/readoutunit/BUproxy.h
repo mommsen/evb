@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <vector>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
 #include "evb/FragmentChain.h"
@@ -101,9 +102,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Print monitoring/configuration as HTML snipped
+       * Return monitoring information as cgicc snipped
        */
-      void printHtml(xgi::Output*) const;
+      cgicc::div getHtmlSnipped() const;
 
       /**
        * Print the content of the fragment-request FIFO as HTML snipped
@@ -133,6 +134,7 @@ namespace evb {
         const uint32_t superFragmentSize,
         const uint32_t currentFragmentSize
       ) const;
+      cgicc::table getStatisticsPerBU() const;
 
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
@@ -483,7 +485,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   const uint32_t lumiSection = fragmentRequest->evbIds[0].lumiSection();
   lumiBarrier_->reachedLumiSection(lumiSection);
 
-  xdaq::ApplicationDescriptor *bu = 0;
+  xdaq::ApplicationDescriptor* bu = 0;
   try
   {
     bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest->buTid);
@@ -758,105 +760,94 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 
 
 template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::printHtml(xgi::Output *out) const
+cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
 {
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>BUproxy</p>"                                        << std::endl;
-  *out << "<table>"                                               << std::endl;
-
-  const std::_Ios_Fmtflags originalFlags=out->flags();
-  const int originalPrecision=out->precision();
-  out->setf(std::ios::fixed);
-  out->precision(0);
+  using namespace cgicc;
 
   boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
   boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>last evt number to BUs</td>"                       << std::endl;
-  *out << "<td>" << dataMonitoring_.lastEventNumberToBUs << "</td>" << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table table;
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">BU requests</th>"                    << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>payload (kB)</td>"                                 << std::endl;
-  *out << "<td>" << requestMonitoring_.payload / 1e3 << "</td>"   << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>logical count</td>"                                << std::endl;
-  *out << "<td>" << requestMonitoring_.logicalCount << "</td>"    << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>I2O count</td>"                                    << std::endl;
-  *out << "<td>" << requestMonitoring_.i2oCount << "</td>"        << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(td("last evt number to BUs"))
+    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">BU events cache</th>"                << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>payload (MB)</td>"                                 << std::endl;
-  *out << "<td>" << dataMonitoring_.payload / 1e6 << "</td>"      << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>logical count</td>"                                << std::endl;
-  *out << "<td>" << dataMonitoring_.logicalCount << "</td>"       << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>I2O count</td>"                                    << std::endl;
-  *out << "<td>" << dataMonitoring_.i2oCount << "</td>"           << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(th("BU requests").set("colspan","2")));
+  table.add(tr()
+    .add(td("payload (kB)"))
+    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+  table.add(tr()
+    .add(td("logical count"))
+    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+  table.add(tr()
+    .add(td("I2O count"))
+    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  fragmentRequestFIFO_.printHtml(out, readoutUnit_->getURN());
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(th("BU events cache").set("colspan","2")));
+  table.add(tr()
+    .add(td("payload (MB)"))
+    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
+  table.add(tr()
+    .add(td("logical count"))
+    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount))));
+  table.add(tr()
+    .add(td("I2O count"))
+    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
 
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\">Statistics per BU</th>"              << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td colspan=\"2\">"                                    << std::endl;
-  *out << "<table style=\"border-collapse:collapse;padding:0px\">"<< std::endl;
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<td>Instance</td>"                                     << std::endl;
-  *out << "<td>Nb requests</td>"                                  << std::endl;
-  *out << "<td>Data payload (MB)</td>"                            << std::endl;
-  *out << "</tr>"                                                 << std::endl;
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(fragmentRequestFIFO_.getHtmlSnipped(readoutUnit_->getURN()))));
+
+  table.add(tr()
+    .add(td().set("colspan","2")
+      .add(getStatisticsPerBU())));
+
+  cgicc::div div;
+  div.add(p("BUproxy"));
+  div.add(table);
+  return div;
+}
+
+
+template<class ReadoutUnit>
+cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
+{
+  using namespace cgicc;
+
+  table table;
+
+  table.add(tr()
+    .add(th("Statistics per BU").set("colspan","3")));
+  table.add(tr()
+    .add(td("Instance"))
+    .add(td("Nb requests"))
+    .add(td("Data payload (MB)")));
 
   CountsPerBU::const_iterator it, itEnd;
   for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
        it != itEnd; ++it)
   {
     const uint32_t buTID = it->first;
-
-    *out << "<tr>"                                                << std::endl;
-    *out << "<td>BU_" << buTID << "</td>"                         << std::endl;
-    *out << "<td>" << requestMonitoring_.logicalCountPerBU.at(buTID) << "</td>" << std::endl;
-    *out << "<td>";
+    uint32_t payloadPerBU = 0;
     try
     {
-      *out << dataMonitoring_.payloadPerBU.at(buTID) / 1e6 << "</td>" << std::endl;
+      payloadPerBU = dataMonitoring_.payloadPerBU.at(buTID) / 1e6;
     }
-    catch(std::out_of_range)
-    {
-      *out << "0</td>"                                            << std::endl;
-    }
-    *out << "</tr>"                                               << std::endl;
+    catch(std::out_of_range) {}
+
+    xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(buTID);
+    const std::string url = bu->getContextDescriptor()->getURL() + "/" + bu->getURN();
+    table.add(tr()
+      .add(td()
+        .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
+      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCountPerBU.at(buTID))))
+      .add(td(boost::lexical_cast<std::string>(payloadPerBU))));
   }
-  *out << "</table>"                                              << std::endl;
 
-  *out << "</td>"                                                 << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  out->flags(originalFlags);
-  out->precision(originalPrecision);
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  return table;
 }
 
 #endif // _evb_readoutunit_BUproxy_h_

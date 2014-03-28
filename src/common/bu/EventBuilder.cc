@@ -304,24 +304,10 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
 }
 
 
-void evb::bu::EventBuilder::printHtml(xgi::Output* out) const
+uint16_t evb::bu::EventBuilder::getNumberOfActiveBuilders() const
 {
-  const toolbox::net::URN urn = bu_->getURN();
-
-  *out << "<div>"                                                 << std::endl;
-  *out << "<p>EventBuilder</p>"                                   << std::endl;
-  *out << "<table>"                                               << std::endl;
-
-  {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
-    *out << "<tr>"                                                  << std::endl;
-    *out << "<td># of active builders</td>"                         << std::endl;
-    *out << "<td>" << processesActive_.count() << "</td>"           << std::endl;
-    *out << "</tr>"                                                 << std::endl;
-  }
-
-  *out << "</table>"                                              << std::endl;
-  *out << "</div>"                                                << std::endl;
+  boost::mutex::scoped_lock sl(processesActiveMutex_);
+  return processesActive_.count();
 }
 
 

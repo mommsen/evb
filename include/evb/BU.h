@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/EvBApplication.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/Configuration.h"
@@ -56,7 +57,7 @@ namespace evb {
     virtual void do_handleItemRetrieveEvent(const std::string& item);
 
     virtual void bindNonDefaultXgiCallbacks();
-    virtual void do_defaultWebPage(xgi::Output*) const;
+    virtual void addMainWebPage(cgicc::table&) const;
 
     void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
     void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
