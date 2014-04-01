@@ -107,6 +107,9 @@ html, body {
     min-width:20em;
     z-index:5;
 }
+.xdaq-evb-queuefloat td:first-child {
+    text-align:left
+}
 .xdaq-evb-queuedetail table {
     background:#f7f8f9;
     border: thin solid #bbb;
