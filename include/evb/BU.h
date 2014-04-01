@@ -56,12 +56,7 @@ namespace evb {
 
     virtual void do_handleItemRetrieveEvent(const std::string& item);
 
-    virtual void bindNonDefaultXgiCallbacks();
-    virtual void addMainWebPage(cgicc::table&) const;
-
-    void freeResourceFIFOWebPage(xgi::Input*, xgi::Output*);
-    void blockedResourceFIFOWebPage(xgi::Input*, xgi::Output*);
-    void lumiSectionAccountFIFOWebPage(xgi::Input*, xgi::Output*);
+    virtual cgicc::table getMainWebPage() const;
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;

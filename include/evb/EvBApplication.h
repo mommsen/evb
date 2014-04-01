@@ -1,9 +1,11 @@
 #ifndef _evb_EvBApplication_h_
 #define _evb_EvBApplication_h_
 
+#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <map>
 #include <string>
 #include <time.h>
 
@@ -72,6 +74,9 @@ namespace evb {
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
 
+    typedef boost::function<cgicc::div()> QueueContentFunction;
+    void registerQueueCallback(const std::string name, QueueContentFunction);
+
   protected:
 
     void initialize();
@@ -86,10 +91,9 @@ namespace evb {
     virtual void do_bindI2oCallbacks() {};
 
     virtual void bindNonDefaultXgiCallbacks() {};
-    virtual void addMainWebPage(cgicc::table&) const = 0;
+    virtual cgicc::table getMainWebPage() const = 0;
 
     void webPageHeader(xgi::Output*, const std::string& name="") const;
-    void webPageBanner(xgi::Output*) const;
     cgicc::div getWebPageBanner() const;
 
     toolbox::mem::Pool* getFastControlMsgPool() const;
@@ -132,7 +136,11 @@ namespace evb {
     void handleItemRetrieveEvent(const std::string& item);
 
     void defaultWebPage(xgi::Input*, xgi::Output*);
+    void queueWebPage(xgi::Input*, xgi::Output*);
     std::string getCurrentTimeUTC() const;
+
+    typedef std::map<std::string,QueueContentFunction> QueueContents;
+    QueueContents queueContents_;
 
   }; // template class EvBApplication
 
@@ -562,19 +570,59 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
 )
 {
   webPageHeader(out);
+  *out << getMainWebPage();
+}
 
+
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::registerQueueCallback
+(
+  const std::string name,
+  QueueContentFunction queueContentFunction
+)
+{
+  const QueueContents::iterator pos = queueContents_.find(name);
+  if ( pos == queueContents_.end() )
+  {
+    xgi::framework::deferredbind(this, this,
+      &evb::EvBApplication<Configuration,StateMachine>::queueWebPage,
+      name);
+
+    queueContents_.insert( QueueContents::value_type(name,queueContentFunction) );
+  }
+  else
+  {
+    pos->second = queueContentFunction;
+  }
+}
+
+
+template<class Configuration,class StateMachine>
+void evb::EvBApplication<Configuration,StateMachine>::queueWebPage
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
   using namespace cgicc;
+
+  const std::string name = in->getenv("PATH_INFO");
+  const QueueContents::const_iterator pos = queueContents_.find(name);
+
+  cgicc::div queueDetail;
+  if ( pos == queueContents_.end() )
+    queueDetail.add(p("No callback found for queue "+name));
+  else
+    queueDetail = pos->second();
+
+  webPageHeader(out,name);
 
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
-  layoutTable.add(colgroup()
-    .add(col())
-    .add(col().set("class","xdaq-evb-arrow"))
-    .add(col()));
   layoutTable.add(tr()
-    .add(td(getWebPageBanner()).set("colspan","3")));
-
-  addMainWebPage(layoutTable);
+    .add(td(getWebPageBanner())));
+  layoutTable.add(tr()
+    .add(td(queueDetail)));
 
   *out << layoutTable;
 }
@@ -602,16 +650,6 @@ void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
   *out << "</title>"                                                                  << std::endl;
   *out << "</head>"                                                                   << std::endl;
   *out << "<body>"                                                                    << std::endl;
-}
-
-
-template<class Configuration,class StateMachine>
-void evb::EvBApplication<Configuration,StateMachine>::webPageBanner
-(
-  xgi::Output* out
-) const
-{
-  *out << getWebPageBanner();
 }
 
 

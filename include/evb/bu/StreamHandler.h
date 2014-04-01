@@ -17,6 +17,8 @@
 
 namespace evb {
 
+  class BU;
+
   namespace bu { // namespace evb::bu
 
     /**
@@ -30,8 +32,8 @@ namespace evb {
 
       StreamHandler
       (
-        const std::string& streamFileName,
-        ConfigurationPtr
+        BU*,
+        const std::string& streamFileName
       );
 
       ~StreamHandler();
@@ -58,6 +60,11 @@ namespace evb {
        */
       bool getFileStatistics(FileStatisticsPtr&);
 
+      /**
+       * Return the content of the FileStatisticsFIFO as cgicc snipped
+       */
+      cgicc::div getHtmlSnippedForFileStatisticsFIFO() const
+      { return fileStatisticsFIFO_.getHtmlSnipped(); }
 
     private:
 

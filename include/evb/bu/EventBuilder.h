@@ -85,9 +85,9 @@ namespace evb {
       void stopProcessing();
 
       /**
-       * Return the number of builders doing work
+       * Return monitoring information as cgicc snipped
        */
-      uint16_t getNumberOfActiveBuilders() const;
+      cgicc::div getHtmlSnipped() const;
 
     private:
 

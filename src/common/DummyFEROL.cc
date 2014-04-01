@@ -17,7 +17,7 @@
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
 EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/rui64x64.gif"),
 doProcessing_(false),
-fragmentFIFO_("fragmentFIFO")
+fragmentFIFO_(this,"fragmentFIFO")
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );
 
@@ -78,26 +78,22 @@ void evb::test::DummyFEROL::do_updateMonitoringInfo()
   dataMonitoring_.reset();
 }
 
-
-void evb::test::DummyFEROL::bindNonDefaultXgiCallbacks()
-{
-  xgi::bind
-    (
-      this,
-      &evb::test::DummyFEROL::fragmentFIFOWebPage,
-      "fragmentFIFO"
-    );
-}
-
-void evb::test::DummyFEROL::addMainWebPage
-(
-  cgicc::table& table
-) const
+cgicc::table evb::test::DummyFEROL::getMainWebPage() const
 {
   using namespace cgicc;
 
-  table.add(tr()
-    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
+  table layoutTable;
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(colgroup()
+    .add(col())
+    .add(col().set("class","xdaq-evb-arrow"))
+    .add(col()));
+  layoutTable.add(tr()
+    .add(td(this->getWebPageBanner())));
+  layoutTable.add(tr()
+    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component")));
+
+  return layoutTable;
 }
 
 
@@ -152,41 +148,12 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
   }
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(fragmentFIFO_.getHtmlSnipped(urn_))));
+      .add(fragmentFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("FEROL"));
   div.add(table);
   return div;
-}
-
-
-void evb::test::DummyFEROL::fragmentFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "fragmentFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  fragmentFIFO_.printVerticalHtml(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
 }
 
 

@@ -35,26 +35,22 @@ namespace evb {
      * \brief Event fragment input handler of EVM
      */
 
-    class EVMinput : public readoutunit::Input<readoutunit::Configuration>
+    class EVMinput : public readoutunit::Input<EVM,readoutunit::Configuration>
     {
 
     public:
 
-      EVMinput
-      (
-        xdaq::ApplicationStub* app,
-        boost::shared_ptr<readoutunit::Configuration> configuration
-      ) :
-      readoutunit::Input<readoutunit::Configuration>(app,configuration) {};
+      EVMinput(EVM* evm) :
+      readoutunit::Input<EVM,readoutunit::Configuration>(evm) {};
 
     private:
 
-      class FEROLproxy : public readoutunit::Input<readoutunit::Configuration>::FEROLproxy
+      class FEROLproxy : public readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy
       {
       public:
 
         FEROLproxy(EVMinput* input)
-        : readoutunit::Input<readoutunit::Configuration>::FEROLproxy(input) {};
+        : readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy(input) {};
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
         virtual void configure(boost::shared_ptr<readoutunit::Configuration>);
@@ -67,12 +63,12 @@ namespace evb {
 
       };
 
-      class DummyInputData : public readoutunit::Input<readoutunit::Configuration>::DummyInputData
+      class DummyInputData : public readoutunit::Input<EVM,readoutunit::Configuration>::DummyInputData
       {
       public:
 
         DummyInputData(EVMinput* input)
-        : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
+        : readoutunit::Input<EVM,readoutunit::Configuration>::DummyInputData(input) {};
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
         {

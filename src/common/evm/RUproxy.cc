@@ -21,7 +21,7 @@ evb::evm::RUproxy::RUproxy
 ) :
 evm_(evm),
 fastCtrlMsgPool_(fastCtrlMsgPool),
-allocateFIFO_("allocateFIFO"),
+allocateFIFO_(evm,"allocateFIFO"),
 doProcessing_(false),
 assignEventsActive_(false),
 tid_(0)
@@ -366,7 +366,7 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(allocateFIFO_.getHtmlSnipped(evm_->getURN()))));
+      .add(allocateFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("RUproxy"));

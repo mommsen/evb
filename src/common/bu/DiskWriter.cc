@@ -66,7 +66,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   {
     std::ostringstream fileName;
     fileName << streamFileName.string() << std::hex << i;
-    StreamHandlerPtr streamHandler( new StreamHandler(fileName.str(),configuration_) );
+    StreamHandlerPtr streamHandler( new StreamHandler(bu_,fileName.str()) );
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
@@ -474,6 +474,18 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     table.add(tr()
       .add(td("current lumi section"))
       .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
+  }
+
+  StreamHandlers::const_iterator it = streamHandlers_.begin();
+  while ( it != streamHandlers_.end() ) // streamHandlers might get cleared while looping over them
+  {
+    try
+    {
+      table.add(tr()
+        .add(td(it->second->getHtmlSnippedForFileStatisticsFIFO()).set("colspan","2")));
+      ++it;
+    }
+    catch(...) {}
   }
 
   cgicc::div div;

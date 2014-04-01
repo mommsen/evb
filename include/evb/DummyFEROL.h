@@ -68,8 +68,7 @@ namespace evb {
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
       virtual void do_updateMonitoringInfo();
 
-      virtual void bindNonDefaultXgiCallbacks();
-      virtual void addMainWebPage(cgicc::table&) const;
+      virtual cgicc::table getMainWebPage() const;
       cgicc::div getHtmlSnipped() const;
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
 

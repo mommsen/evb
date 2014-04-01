@@ -190,9 +190,31 @@ namespace evb {
       xdata::Vector<xdata::UnsignedInteger64> payloadPerRU_;
     };
 
-
   } //namespace evb::bu
 
+  namespace detail
+  {
+    template <>
+    inline void formatter
+    (
+      bu::FragmentChainPtr fragmentChain,
+      std::ostringstream* out
+    )
+    {
+      if ( fragmentChain.get() )
+      {
+        toolbox::mem::Reference* bufRef = fragmentChain->head();
+        if ( bufRef )
+        {
+          msg::I2O_DATA_BLOCK_MESSAGE_FRAME* msg =
+            (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+          *out << *msg;
+        }
+      }
+      else
+        *out << "n/a";
+    }
+  } // namespace detail
 
 } //namespace evb
 

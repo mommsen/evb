@@ -69,33 +69,6 @@ void evb::InfoSpaceItems::putIntoInfoSpace(xdata::InfoSpace* s, xdata::ActionLis
 }
 
 
-void evb::InfoSpaceItems::printHtml(const std::string& title, xgi::Output* out) const
-{
-  *out << "<tr>"                                                  << std::endl;
-  *out << "<th colspan=\"2\"><br/>" << title << "</th>"           << std::endl;
-  *out << "</tr>"                                                 << std::endl;
-
-  for (Items::const_iterator it = items_.begin(), itEnd = items_.end(); it != itEnd; ++it)
-  {
-    *out << "<tr>"                                                << std::endl;
-    *out << "<td>"                                                << std::endl;
-    *out << it->first                                             << std::endl;
-    *out << "</td>"                                               << std::endl;
-    *out << "<td>"                                                << std::endl;
-    try
-    {
-      *out << it->second.first->toString()                        << std::endl;
-    }
-    catch(xdata::exception::Exception)
-    {
-      *out << "n/a"                                               << std::endl;
-    }
-    *out << "</td>"                                               << std::endl;
-    *out << "</tr>"                                               << std::endl;
-  }
-}
-
-
 /// emacs configuration
 /// Local Variables: -
 /// mode: c++ -

@@ -35,36 +35,32 @@ namespace evb {
      * \brief Event fragment input handler of RU
      */
 
-    class RUinput : public readoutunit::Input<readoutunit::Configuration>
+    class RUinput : public readoutunit::Input<RU,readoutunit::Configuration>
     {
 
     public:
 
-      RUinput
-      (
-        xdaq::ApplicationStub* app,
-        boost::shared_ptr<readoutunit::Configuration> configuration
-      ) :
-      readoutunit::Input<readoutunit::Configuration>(app,configuration) {};
+      RUinput(RU* ru) :
+      readoutunit::Input<RU,readoutunit::Configuration>(ru) {};
 
     private:
 
-      class FEROLproxy : public readoutunit::Input<readoutunit::Configuration>::FEROLproxy
+      class FEROLproxy : public readoutunit::Input<RU,readoutunit::Configuration>::FEROLproxy
       {
       public:
 
         FEROLproxy(RUinput* input)
-        : readoutunit::Input<readoutunit::Configuration>::FEROLproxy(input) {};
+        : readoutunit::Input<RU,readoutunit::Configuration>::FEROLproxy(input) {};
 
         virtual bool getSuperFragmentWithEvBid(const EvBid&, readoutunit::FragmentChainPtr&);
       };
 
-      class DummyInputData : public readoutunit::Input<readoutunit::Configuration>::DummyInputData
+      class DummyInputData : public readoutunit::Input<RU,readoutunit::Configuration>::DummyInputData
       {
       public:
 
         DummyInputData(RUinput* input)
-        : readoutunit::Input<readoutunit::Configuration>::DummyInputData(input) {};
+        : readoutunit::Input<RU,readoutunit::Configuration>::DummyInputData(input) {};
 
         virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
         { return createSuperFragment(evbId,superFragment); }

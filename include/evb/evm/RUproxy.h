@@ -106,12 +106,6 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
-      /**
-       * Print the content of the allocation FIFO as HTML snipped
-       */
-      inline void printAllocateFIFO(xgi::Output* out) const
-      { allocateFIFO_.printVerticalHtml(out); }
-
 
     private:
 

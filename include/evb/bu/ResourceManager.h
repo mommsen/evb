@@ -127,24 +127,6 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
-      /**
-       * Print the content of the free resource FIFO as HTML snipped
-       */
-      inline void printFreeResourceFIFO(xgi::Output* out)
-      { freeResourceFIFO_.printVerticalHtml(out); }
-
-      /**
-       * Print the content of the blocked resource FIFO as HTML snipped
-       */
-      inline void printBlockedResourceFIFO(xgi::Output* out)
-      { blockedResourceFIFO_.printVerticalHtml(out); }
-
-      /**
-       * Print the content of the lumi-section account FIFO as HTML snipped
-       */
-      inline void printLumiSectionAccountFIFO(xgi::Output* out)
-      { lumiSectionAccountFIFO_.printVerticalHtml(out); }
-
 
     private:
 

@@ -106,12 +106,6 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
-      /**
-       * Print the content of the fragment-request FIFO as HTML snipped
-       */
-      inline void printFragmentRequestFIFO(xgi::Output* out) const
-      { fragmentRequestFIFO_.printVerticalHtml(out); }
-
 
     private:
 
@@ -194,7 +188,7 @@ readoutUnit_(readoutUnit),
 configuration_(readoutUnit->getConfiguration()),
 tid_(0),
 doProcessing_(false),
-fragmentRequestFIFO_("fragmentRequestFIFO")
+fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
   {
@@ -799,7 +793,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(fragmentRequestFIFO_.getHtmlSnipped(readoutUnit_->getURN()))));
+      .add(fragmentRequestFIFO_.getHtmlSnipped())));
 
   table.add(tr()
     .add(td().set("colspan","2")

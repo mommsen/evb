@@ -47,7 +47,7 @@ namespace evb {
         const std::string& appIcon
       );
 
-      typedef boost::shared_ptr< Input<Configuration> > InputPtr;
+      typedef boost::shared_ptr< Input<Unit,Configuration> > InputPtr;
       InputPtr getInput() const
       { return input_; }
 
@@ -75,10 +75,9 @@ namespace evb {
       virtual void do_handleItemRetrieveEvent(const std::string& item);
 
       virtual void bindNonDefaultXgiCallbacks();
-      virtual void addMainWebPage(cgicc::table&) const;
+      virtual cgicc::table getMainWebPage() const;
+      virtual void addComponentsToWebPage(cgicc::table&) const;
 
-      void fragmentRequestFIFOWebPage(xgi::Input*, xgi::Output*);
-      void superFragmentFIFOWebPage(xgi::Input*, xgi::Output*);
       void eventCountForLumiSection(xgi::Input*, xgi::Output*);
 
       xdata::UnsignedInteger32 eventRate_;
@@ -265,18 +264,6 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
 {
   xgi::bind(
     this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage,
-    "fragmentRequestFIFO"
-  );
-
-  xgi::bind(
-    this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage,
-    "superFragmentFIFO"
-  );
-
-  xgi::bind(
-    this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountForLumiSection,
     "eventCountForLumiSection"
   );
@@ -284,77 +271,21 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
 
 
 template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::addMainWebPage
-(
-  cgicc::table& table
-) const
+cgicc::table evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::getMainWebPage() const
 {
   using namespace cgicc;
 
-  table.add(tr()
-    .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif")))
-    .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
-}
+  table layoutTable;
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(colgroup()
+    .add(col())
+    .add(col().set("class","xdaq-evb-arrow"))
+    .add(col()));
+  layoutTable.add(tr()
+    .add(td(this->getWebPageBanner()).set("colspan","3")));
+  addComponentsToWebPage(layoutTable);
 
-
-template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::fragmentRequestFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  this->webPageHeader(out, "fragmentRequestFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  this->webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  buProxy_->printFragmentRequestFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::superFragmentFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  this->webPageHeader(out, "fragmentRequestFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  this->webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  input_->printSuperFragmentFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
+  return layoutTable;
 }
 
 

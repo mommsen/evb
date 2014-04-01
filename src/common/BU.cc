@@ -156,139 +156,40 @@ void evb::BU::I2O_BU_CACHE_Callback
 }
 
 
-void evb::BU::bindNonDefaultXgiCallbacks()
-{
-  xgi::bind
-    (
-      this,
-      &evb::BU::freeResourceFIFOWebPage,
-      "freeResourceFIFO"
-    );
-
-  xgi::bind
-    (
-      this,
-      &evb::BU::blockedResourceFIFOWebPage,
-      "blockedResourceFIFO"
-    );
-
-  xgi::bind
-    (
-      this,
-      &evb::BU::lumiSectionAccountFIFOWebPage,
-      "lumiSectionAccountFIFO"
-    );
-}
-
-
-void evb::BU::addMainWebPage
-(
-  cgicc::table& table
-) const
+cgicc::table evb::BU::getMainWebPage() const
 {
   using namespace cgicc;
 
-  table.add(tr()
+  table layoutTable;
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(colgroup()
+    .add(col())
+    .add(col().set("class","xdaq-evb-arrow"))
+    .add(col())
+    .add(col().set("class","xdaq-evb-arrow"))
+    .add(col()));
+  layoutTable.add(tr()
+    .add(td(this->getWebPageBanner()).set("colspan","5")));
+
+  layoutTable.add(tr()
     .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
     .add(td(img().set("src","/evb/images/arrow_e.gif")))
-    .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component")));
+    .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+    .add(td(img().set("src","/evb/images/arrow_w.gif")))
+    .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
 
-  table.add(tr()
+  layoutTable.add(tr()
     .add(td())
-    .add(td(img().set("src","/evb/images/arrow_n.gif"))));
+    .add(td(img().set("src","/evb/images/arrow_ns.gif")))
+    .add(td()));
 
-  table.add(tr()
+  layoutTable.add(tr()
     .add(td(img().set("src","/evb/images/arrow_e.gif")))
-    .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component")));
+    .add(td(eventBuilder_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+    .add(td(img().set("src","/evb/images/arrow_e.gif"))));
+
+  return layoutTable;
 }
-
-
-void evb::BU::freeResourceFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "freeResourceFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  resourceManager_->printFreeResourceFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::blockedResourceFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "blockedResourceFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  resourceManager_->printBlockedResourceFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
-
-void evb::BU::lumiSectionAccountFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "lumiSectionAccountFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  resourceManager_->printLumiSectionAccountFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
-}
-
 
 /**
  * Provides the factory method for the instantiation of RU applications.

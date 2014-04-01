@@ -8,7 +8,7 @@ evb::RU::RU(xdaq::ApplicationStub* app) :
 ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 {
   this->stateMachine_.reset( new ru::RUStateMachine(this) );
-  this->input_.reset( new ru::RUinput(app,this->configuration_) );
+  this->input_.reset( new ru::RUinput(this) );
   this->buProxy_.reset( new readoutunit::BUproxy<RU>(this) );
 
   this->initialize();
@@ -56,6 +56,20 @@ namespace evb {
       }
 
       return true;
+    }
+
+    template<>
+    void ru::ReadoutUnit::addComponentsToWebPage
+    (
+      cgicc::table& table
+    ) const
+    {
+      using namespace cgicc;
+
+      table.add(tr()
+        .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }
 }

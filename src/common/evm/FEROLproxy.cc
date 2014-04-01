@@ -1,4 +1,5 @@
 #include "interface/shared/GlobalEventNumber.h"
+#include "evb/EVM.h"
 #include "evb/evm/EVMinput.h"
 
 
@@ -44,7 +45,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
 
 void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Configuration> configuration)
 {
-  readoutunit::Input<readoutunit::Configuration>::FEROLproxy::configure(configuration);
+  readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy::configure(configuration);
 
   masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
   if ( masterFED_ == fragmentFIFOs_.end() )

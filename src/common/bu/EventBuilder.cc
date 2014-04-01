@@ -53,7 +53,7 @@ void evb::bu::EventBuilder::configure()
   {
     std::ostringstream fifoName;
     fifoName << "superFragmentFIFO_" << i;
-    SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(fifoName.str()) );
+    SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(bu_,fifoName.str()) );
     superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
   }
@@ -303,11 +303,36 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
   return eventPos;
 }
 
-
-uint16_t evb::bu::EventBuilder::getNumberOfActiveBuilders() const
+cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 {
-  boost::mutex::scoped_lock sl(processesActiveMutex_);
-  return processesActive_.count();
+  using namespace cgicc;
+
+  table table;
+
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+
+    table.add(tr()
+      .add(td("# of active builders"))
+      .add(td(boost::lexical_cast<std::string>(processesActive_.count()))));
+  }
+
+  SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();
+  while ( it != superFragmentFIFOs_.end() )
+  {
+    try
+    {
+      table.add(tr()
+        .add(td(it->second->getHtmlSnipped()).set("colspan","2")));
+      ++it;
+    }
+    catch(...) {}
+  }
+
+  cgicc::div div;
+  div.add(p("EventBuilder"));
+  div.add(table);
+  return div;
 }
 
 

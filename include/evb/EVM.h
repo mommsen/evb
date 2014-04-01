@@ -42,8 +42,6 @@ namespace evb {
     std::vector<I2O_TID>& getRUtids() const
     { return ruProxy_->getRUtids(); }
 
-    void allocateFIFOWebPage(xgi::Input*, xgi::Output*);
-
   private:
 
     boost::shared_ptr<evm::RUproxy> ruProxy_;

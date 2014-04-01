@@ -5,7 +5,11 @@
 #include <stdint.h>
 #include <vector>
 
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/type_traits/is_pointer.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/Exception.h"
@@ -28,7 +32,8 @@ namespace evb {
   {
   public:
 
-    OneToOneQueue(const std::string& name);
+    template <class C>
+    OneToOneQueue(C* evbApplication, const std::string& name);
 
     ~OneToOneQueue();
 
@@ -90,35 +95,10 @@ namespace evb {
     /**
      * Return a cgicc snipped representing the queue
      */
-    cgicc::div getHtmlSnipped(const toolbox::net::URN& urn) const;
+    cgicc::div getHtmlSnipped() const;
 
     /**
-     * Print summary icon as HTML.
-     */
-    void printHtml(xgi::Output*, const toolbox::net::URN& urn) const;
-
-    /**
-     * Print horizontally all elements as HTML.
-     */
-    void printHorizontalHtml(xgi::Output*) const;
-
-    /**
-     * Print horizontally upto nbElementsToPrint as HTML.
-     */
-    void printHorizontalHtml(xgi::Output*, const uint32_t nbElementsToPrint) const;
-
-    /**
-     * Print vertically all elements as HTML.
-     */
-    void printVerticalHtml(xgi::Output*) const;
-
-    /**
-     * Print vertically upto nbElementsToPrint as HTML.
-     */
-    void printVerticalHtml(xgi::Output*, const uint32_t nbElementsToPrint) const;
-
-    /**
-     * Return a cgicc snipped showing all elements horizontally
+      * Return a cgicc snipped showing all elements horizontally
      */
     cgicc::div getHtmlSnippedHorizontal() const;
 
@@ -140,12 +120,8 @@ namespace evb {
 
   private:
 
-    /**
-     * Format passed element information into the ostringstream.
-     */
-    void formatter(T, std::ostringstream*) const;
-
     const std::string name_;
+    const toolbox::net::URN urn_;
     volatile uint32_t readPointer_;
     volatile uint32_t writePointer_;
     T* container_;
@@ -157,14 +133,45 @@ namespace evb {
   // Implementation follows
   //------------------------------------------------------------------
 
+  namespace detail
+  {
+    template <class U>
+    struct is_shared_ptr
+      : boost::mpl::false_ {};
+    template <class U>
+    struct is_shared_ptr<boost::shared_ptr<U> >
+      : boost::mpl::true_ {};
+
+    template<typename T>
+    typename boost::disable_if<is_shared_ptr<T> >::type
+    formatter(T element, std::ostringstream* out)
+    {
+      *out << element;
+    }
+
+    template<typename T>
+    typename boost::enable_if<is_shared_ptr<T> >::type
+    formatter(T element, std::ostringstream* out)
+    {
+      if ( element.get() )
+        *out << element;
+    }
+  } // namespace detail
+
+
   template <class T>
-  OneToOneQueue<T>::OneToOneQueue(const std::string& name) :
+  template <class C>
+  OneToOneQueue<T>::OneToOneQueue(C* evbApplication,const std::string& name) :
   name_(name),
+  urn_(evbApplication->getURN()),
   readPointer_(0),
   writePointer_(0),
   container_(0),
   size_(1)
-  {}
+  {
+    evbApplication->registerQueueCallback(name,
+      boost::bind(&OneToOneQueue<T>::getHtmlSnippedVertical,this));
+  }
 
 
   template <class T>
@@ -285,56 +292,7 @@ namespace evb {
 
 
   template <class T>
-  void OneToOneQueue<T>::printHtml(xgi::Output *out, const toolbox::net::URN& urn) const
-  {
-    *out << getHtmlSnipped(urn);
-  }
-
-
-  template <class T>
-  void OneToOneQueue<T>::printHorizontalHtml
-  (
-    xgi::Output *out
-  ) const
-  {
-    *out << getHtmlSnippedHorizontal();
-  }
-
-
-  template <class T>
-  void OneToOneQueue<T>::printHorizontalHtml
-  (
-    xgi::Output *out,
-    const uint32_t nbElementsToPrint
-  ) const
-  {
-    *out << getHtmlSnippedHorizontal(nbElementsToPrint);
-  }
-
-
-  template <class T>
-  void OneToOneQueue<T>::printVerticalHtml
-  (
-    xgi::Output *out
-  ) const
-  {
-    *out << getHtmlSnippedVertical();
-  }
-
-
-  template <class T>
-  void OneToOneQueue<T>::printVerticalHtml
-  (
-    xgi::Output  *out,
-    const uint32_t nbElementsToPrint
-  ) const
-  {
-    *out << getHtmlSnippedVertical(nbElementsToPrint);
-  }
-
-
-  template <class T>
-  cgicc::div OneToOneQueue<T>::getHtmlSnipped(const toolbox::net::URN& urn) const
+  cgicc::div OneToOneQueue<T>::getHtmlSnipped() const
   {
     // cache values which might change during the printout
     const uint32_t cachedSize = size();
@@ -347,7 +305,7 @@ namespace evb {
 
     table queueTable;
     queueTable
-      .set("onclick","window.open('/"+urn.toString()+"/"+name_ +"','_blank')")
+      .set("onclick","window.open('/"+urn_.toString()+"/"+name_ +"','_blank')")
       .set("onmouseover","this.style.cursor = 'pointer'; document.getElementById('"+name_+"').style.visibility = 'visible';")
       .set("onmouseout","document.getElementById('"+name_+"').style.visibility = 'hidden';");
     queueTable.add(colgroup()
@@ -403,7 +361,7 @@ namespace evb {
     for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
     {
       uint32_t pos = i % cachedSize;
-      headerRow.add(th(boost::lexical_cast<std::string>(pos)));
+      headerRow.add(th(boost::lexical_cast<std::string>(pos)).set("style","width:5em"));
 
       if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
            ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
@@ -411,14 +369,14 @@ namespace evb {
         std::ostringstream content;
         try
         {
-          formatter(container_[pos], &content);
+          detail::formatter(container_[pos], &content);
         }
         catch(...)
         {
           content << "n/a";
         }
 
-        tableRow.add(td(content.str()).set("style","background:#51ef9e"));
+        tableRow.add(td(content.str()));
       }
       else
       {
@@ -428,7 +386,7 @@ namespace evb {
 
     cgicc::div queueDetail;
     queueDetail.set("class","xdaq-evb-queuedetail");
-    queueDetail.add(table()
+    queueDetail.add(table().set("class","xdaq-table")
       .add(headerRow)
       .add(tableRow));
 
@@ -459,6 +417,10 @@ namespace evb {
     using namespace cgicc;
 
     table table;
+    table.set("class","xdaq-table-vertical").set("style","width:100%");
+    table.add(colgroup()
+      .add(col().set("style","width:5em"))
+      .add(col()));
 
     std::ostringstream str;
     str << name_ << "<br/>";
@@ -483,14 +445,14 @@ namespace evb {
         std::ostringstream content;
         try
         {
-          formatter(container_[pos], &content);
+          detail::formatter(container_[pos], &content);
         }
         catch(...)
         {
           content << "n/a";
         }
 
-        tr.add(td(content.str()).set("style","background:#51ef9e"));
+        tr.add(td(content.str()));
       }
       else
       {
@@ -505,14 +467,6 @@ namespace evb {
 
     return queueDetail;
   }
-
-
-  template <class T>
-  inline void OneToOneQueue<T>::formatter(T element, std::ostringstream* out) const
-  {
-    *out << element;
-  }
-
 
 } // namespace evb
 

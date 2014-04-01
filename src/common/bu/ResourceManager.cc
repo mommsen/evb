@@ -23,9 +23,9 @@ bu_(bu),
 configuration_(bu->getConfiguration()),
 nbResources_(1),
 resourcesToBlock_(1),
-freeResourceFIFO_("freeResourceFIFO"),
-blockedResourceFIFO_("blockedResourceFIFO"),
-lumiSectionAccountFIFO_("lumiSectionAccountFIFO"),
+freeResourceFIFO_(bu,"freeResourceFIFO"),
+blockedResourceFIFO_(bu,"blockedResourceFIFO"),
+lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO"),
 currentLumiSectionAccount_(new LumiSectionAccount(0))
 {
   resetMonitoringCounters();
@@ -500,15 +500,15 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(freeResourceFIFO_.getHtmlSnipped(bu_->getURN()))));
+      .add(freeResourceFIFO_.getHtmlSnipped())));
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(blockedResourceFIFO_.getHtmlSnipped(bu_->getURN()))));
+      .add(blockedResourceFIFO_.getHtmlSnipped())));
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(lumiSectionAccountFIFO_.getHtmlSnipped(bu_->getURN()))));
+      .add(lumiSectionAccountFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("ResourceManager"));

@@ -13,42 +13,13 @@ evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
   this->stateMachine_.reset( new evm::EVMStateMachine(this) );
-  this->input_.reset( new evm::EVMinput(app,this->configuration_) );
+  this->input_.reset( new evm::EVMinput(this) );
   this->ruProxy_.reset( new evm::RUproxy(this,fastCtrlMsgPool) );
   this->buProxy_.reset( new readoutunit::BUproxy<EVM>(this) );
 
   this->initialize();
 
   LOG4CPLUS_INFO(this->getApplicationLogger(), "End of constructor");
-}
-
-
-void evb::EVM::allocateFIFOWebPage
-(
-  xgi::Input  *in,
-  xgi::Output *out
-)
-{
-  webPageHeader(out, "allocateFIFO");
-
-  *out << "<table class=\"layout\">"                            << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  webPageBanner(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "<tr>"                                                << std::endl;
-  *out << "<td>"                                                << std::endl;
-  ruProxy_->printAllocateFIFO(out);
-  *out << "</td>"                                               << std::endl;
-  *out << "</tr>"                                               << std::endl;
-
-  *out << "</table>"                                            << std::endl;
-
-  *out << "</body>"                                             << std::endl;
-  *out << "</html>"                                             << std::endl;
 }
 
 
@@ -145,21 +116,8 @@ namespace evb {
     }
 
 
-    // template<>
-    // void evm::ReadoutUnit::bindNonDefaultXgiCallbacks()
-    // {
-    //   ReadoutUnit::bindNonDefaultXgiCallbacks();
-
-    //   // xgi::bind(
-    //   //   this,
-    //   //   &evb::EVM::allocateFIFOWebPage,
-    //   //   "allocateFIFO"
-    //   // );
-    // }
-
-
     template<>
-    void evm::ReadoutUnit::addMainWebPage
+    void evm::ReadoutUnit::addComponentsToWebPage
     (
       cgicc::table& table
     ) const

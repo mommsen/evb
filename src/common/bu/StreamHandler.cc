@@ -1,21 +1,22 @@
 #include <sstream>
 
+#include "evb/BU.h"
 #include "evb/bu/StreamHandler.h"
 #include "evb/Exception.h"
 
 
 evb::bu::StreamHandler::StreamHandler
 (
-  const std::string& streamFileName,
-  ConfigurationPtr configuration
+  BU* bu,
+  const std::string& streamFileName
 ) :
 streamFileName_(streamFileName),
-configuration_(configuration),
+configuration_(bu->getConfiguration()),
 index_(0),
 currentFileStatistics_(new FileStatistics(0,"")),
-fileStatisticsFIFO_("currentFileStatisticsFIFO")
+fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1))
 {
-  fileStatisticsFIFO_.resize(configuration->fileStatisticsFIFOCapacity);
+  fileStatisticsFIFO_.resize(configuration_->fileStatisticsFIFOCapacity);
 }
 
 

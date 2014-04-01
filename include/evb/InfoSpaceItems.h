@@ -3,7 +3,6 @@
 
 #include "xdata/InfoSpace.h"
 #include "xdata/Serializable.h"
-#include "xgi/Output.h"
 
 #include <utility>
 #include <vector>
@@ -43,11 +42,6 @@ namespace evb {
      * Puts the parameters into the specified info space.
      */
     void putIntoInfoSpace(xdata::InfoSpace*, xdata::ActionListener*) const;
-
-    /**
-     * Print the parameters as HTML snipped
-     */
-    void printHtml(const std::string& title, xgi::Output*) const;
 
   private:
 
