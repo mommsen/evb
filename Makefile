@@ -142,7 +142,7 @@ TestLibraryDirs = \
         $(XDAQ2RC_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Werror #-fno-omit-frame-pointer #-std=c++0x
+UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
 
 # These libraries can be platform specific and
 # potentially need conditional processing
