@@ -79,6 +79,7 @@ namespace evb {
       virtual void addComponentsToWebPage(cgicc::table&) const;
 
       void eventCountForLumiSection(xgi::Input*, xgi::Output*);
+      void writeNextFragmentsToFile(xgi::Input*, xgi::Output*);
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -149,6 +150,10 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   if (item == "inputSource")
   {
     input_->inputSourceChanged();
+  }
+  else if (item == "writeNextFragmentsToFile")
+  {
+    input_->writeNextFragmentsToFile(this->configuration_->writeNextFragmentsToFile);
   }
 }
 
@@ -267,6 +272,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountForLumiSection,
     "eventCountForLumiSection"
   );
+
+  xgi::bind(
+    this,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFragmentsToFile,
+    "writeNextFragmentsToFile"
+  );
 }
 
 
@@ -286,6 +297,23 @@ cgicc::table evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::get
   addComponentsToWebPage(layoutTable);
 
   return layoutTable;
+}
+
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFragmentsToFile
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+{
+  cgicc::Cgicc cgi(in);
+  uint32_t count = 1;
+
+  if ( xgi::Utils::hasFormElement(cgi,"count") )
+    count = xgi::Utils::getFormElement(cgi, "count")->getIntegerValue();
+
+  input_->writeNextFragmentsToFile(count);
 }
 
 

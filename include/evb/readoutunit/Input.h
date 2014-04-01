@@ -6,6 +6,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <fstream>
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <math.h>
@@ -145,6 +147,12 @@ namespace evb {
       void checkEventFragment(toolbox::mem::Reference*);
 
       /**
+       * Write the next count FED fragment to a text file
+       */
+      void writeNextFragmentsToFile(const uint32_t count)
+      { writeNextFragmentsToFile_ += count; }
+
+      /**
        * Return the readout unit associated with this input
        */
       ReadoutUnit* getReadoutUnit() const
@@ -254,7 +262,7 @@ namespace evb {
     private:
 
       void resetMonitoringCounters();
-      void dumpFragmentToLogger(toolbox::mem::Reference*) const;
+      void writeFragmentToFile(const uint16_t fedId,const uint32_t eventNumber,toolbox::mem::Reference*) const;
       void updateSuperFragmentCounters(const FragmentChainPtr&);
       cgicc::table getFedTable() const;
 
@@ -265,6 +273,9 @@ namespace evb {
       typedef std::map<uint32_t,uint32_t> LumiCounterMap;
       LumiCounterMap lumiCounterMap_;
       LumiCounterMap::iterator currentLumiCounter_;
+
+      uint32_t runNumber_;
+      uint32_t writeNextFragmentsToFile_;
 
       struct InputMonitoring
       {
@@ -306,7 +317,9 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 ) :
 configuration_(readoutUnit->getConfiguration()),
 readoutUnit_(readoutUnit),
-handler_(new Handler(this))
+handler_(new Handler(this)),
+runNumber_(0),
+writeNextFragmentsToFile_(0)
 {}
 
 
@@ -323,10 +336,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::superFragmentReady(toolbox::mem::Reference* bufRef)
 {
   checkEventFragment(bufRef);
-
-  if ( configuration_->dumpFragmentsToLogger )
-    dumpFragmentToLogger(bufRef);
-
   handler_->superFragmentReady(bufRef);
 }
 
@@ -339,10 +348,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 )
 {
   checkEventFragment(bufRef);
-
-  if ( configuration_->dumpFragmentsToLogger )
-    dumpFragmentToLogger(bufRef);
-
   handler_->rawDataAvailable(bufRef,cache);
 }
 
@@ -549,22 +554,40 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
   }
   catch(exception::DataCorruption& e)
   {
-    dumpFragmentToLogger(bufRef);
+    writeFragmentToFile(fedId,eventNumber,bufRef);
 
     std::ostringstream msg;
     msg << "Received a corrupted event " << eventNumber;
-    msg << " from " << frame->PvtMessageFrame.StdMessageFrame.InitiatorAddress;
+    msg << " from FED " << fedId;
+    msg << " in run " << runNumber_;
     XCEPT_RETHROW(exception::DataCorruption,msg.str(),e);
+  }
+
+  if ( configuration_->writeFragmentsToFile || writeNextFragmentsToFile_ > 0 )
+  {
+    writeFragmentToFile(fedId,eventNumber,bufRef);
+    --writeNextFragmentsToFile_;
   }
 }
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::dumpFragmentToLogger(toolbox::mem::Reference* bufRef) const
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeFragmentToFile
+(
+  const uint16_t fedId,
+  const uint32_t eventNumber,
+  toolbox::mem::Reference* bufRef
+) const
 {
-  std::ostringstream oss;
-  DumpUtility::dump(oss, bufRef);
-  LOG4CPLUS_INFO(readoutUnit_->getApplicationContext()->getLogger(), oss.str());
+  std::ostringstream fileName;
+  fileName << "/tmp/dump_run" << std::setfill('0') << std::setw(6) << runNumber_
+    << "_event" << std::setw(8) << eventNumber
+    << "_fed" << std::setw(4) << fedId
+    << ".txt";
+  std::ofstream dumpFile;
+  dumpFile.open(fileName.str().c_str());
+  DumpUtility::dump(dumpFile, bufRef);
+  dumpFile.close();
 }
 
 
@@ -643,6 +666,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
 
   resetMonitoringCounters();
   handler_->startProcessing(runNumber);
+  runNumber_ = runNumber;
 }
 
 
