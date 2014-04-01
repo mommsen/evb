@@ -1,12 +1,22 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string>
 
+#include <boost/function.hpp>
 #include <boost/thread/thread.hpp>
 
+#include "cgicc/HTMLClasses.h"
 #include "evb/OneToOneQueue.h"
 
+class EvBApplication
+{
+public:
+  void registerQueueCallback(const std::string name, boost::function<cgicc::div()>) {};
+  std::string getURN() { return "dummy"; }
+} evbApplication;
 
-evb::OneToOneQueue<uint32_t> queue("queue");
+
+evb::OneToOneQueue<uint32_t> queue(&evbApplication,"queue");
 volatile bool generating(false);
 volatile bool consuming(false);
 const size_t queueSize(2048);
