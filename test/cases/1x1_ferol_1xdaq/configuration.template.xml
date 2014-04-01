@@ -21,6 +21,7 @@
       <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
       <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
         <fedId xsi:type="xsd:unsignedInt">512</fedId>
+        <fedSize xsi:type="xsd:unsignedInt">2048</fedSize>
         <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
         <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
       </properties>

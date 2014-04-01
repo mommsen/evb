@@ -75,5 +75,15 @@ then
   exit 1
 fi
 
+rm -f /tmp/dump_run000000_event*_fed0512.txt
+setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 writeNextFragmentsToFile unsignedInt 4
+sleep 1
+dumpFiles=`ls  /tmp/dump_run000000_event*_fed0512.txt |wc -l`
+if [[ $dumpFiles -ne 4 ]]
+then
+    echo "Test failed: did not find 4 dump files"
+    exit 1
+fi
+
 echo "Test launched successfully"
 exit 0
