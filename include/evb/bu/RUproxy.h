@@ -197,7 +197,7 @@ namespace evb {
     template <>
     inline void formatter
     (
-      bu::FragmentChainPtr fragmentChain,
+      const bu::FragmentChainPtr fragmentChain,
       std::ostringstream* out
     )
     {
