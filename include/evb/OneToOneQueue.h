@@ -144,14 +144,14 @@ namespace evb {
 
     template<typename T>
     typename boost::disable_if<is_shared_ptr<T> >::type
-    formatter(T element, std::ostringstream* out)
+    inline formatter(const T element, std::ostringstream* out)
     {
       *out << element;
     }
 
     template<typename T>
     typename boost::enable_if<is_shared_ptr<T> >::type
-    formatter(T element, std::ostringstream* out)
+    inline formatter(const T element, std::ostringstream* out)
     {
       if ( element.get() )
         *out << element;

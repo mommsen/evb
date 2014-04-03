@@ -1298,7 +1298,7 @@ namespace evb
     template <>
     inline void formatter
     (
-      readoutunit::FragmentChainPtr fragmentChain,
+      const readoutunit::FragmentChainPtr fragmentChain,
       std::ostringstream* out
     )
     {
@@ -1324,7 +1324,7 @@ namespace evb
     template <>
     inline void formatter
     (
-      readoutunit::FragmentChain::FragmentPtr fragment,
+      const readoutunit::FragmentChain::FragmentPtr fragment,
       std::ostringstream* out
     )
     {
