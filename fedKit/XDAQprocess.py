@@ -28,6 +28,9 @@ class XDAQprocess:
             os.kill(self._process.pid,signal.SIGKILL)
             self._logfile.flush()
 
+    def getURL(self):
+        return "http://"+self._host+":"+str(self._port)
+
     def addApplication(self,app,instance):
         self._applications.append((app,instance))
 
@@ -35,7 +38,6 @@ class XDAQprocess:
         runArgs = ["xdaq.exe",
                    "-p "+str(self._port),
                    "-c "+xmlConfig]
-        print("Running "+str(runArgs))
         self._process = subprocess.Popen(runArgs,stdout=self._logfile,stderr=subprocess.STDOUT)
 
     def kill(self):

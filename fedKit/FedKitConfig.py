@@ -1,4 +1,4 @@
-import os
+import socket
 import ConfigParser
 
 import XDAQprocess
@@ -158,7 +158,7 @@ class FedKitConfig:
 
 
     def getConfiguration(self,fedId,soapBasePort,frlBasePort,useBU=True,useDummyFEROL=True):
-        hostname = os.uname()[1]
+        hostname = socket.gethostbyaddr(socket.gethostname())[0]
 
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
 
