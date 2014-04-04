@@ -89,9 +89,13 @@ cgicc::table evb::test::DummyFEROL::getMainWebPage() const
     .add(col().set("class","xdaq-evb-arrow"))
     .add(col()));
   layoutTable.add(tr()
-    .add(td(this->getWebPageBanner())));
+    .add(td(this->getWebPageBanner()))
+    .add(td(" "))
+    .add(td(" ")));
   layoutTable.add(tr()
-    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component")));
+    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component"))
+    .add(td(" "))
+    .add(td(" ")));
 
   return layoutTable;
 }
