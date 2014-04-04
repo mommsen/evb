@@ -149,8 +149,7 @@ namespace evb {
       /**
        * Write the next count FED fragment to a text file
        */
-      void writeNextFragmentsToFile(const uint32_t count)
-      { writeNextFragmentsToFile_ += count; }
+      void writeNextFragmentsToFile(const uint16_t count, const uint16_t fedId=FED_COUNT+1);
 
       /**
        * Return the readout unit associated with this input
@@ -275,7 +274,9 @@ namespace evb {
       LumiCounterMap::iterator currentLumiCounter_;
 
       uint32_t runNumber_;
-      uint32_t writeNextFragmentsToFile_;
+
+      typedef std::pair<uint16_t,uint16_t> CountAndFedId;
+      CountAndFedId writeNextFragmentsForFedId_;
 
       struct InputMonitoring
       {
@@ -318,8 +319,7 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 configuration_(readoutUnit->getConfiguration()),
 readoutUnit_(readoutUnit),
 handler_(new Handler(this)),
-runNumber_(0),
-writeNextFragmentsToFile_(0)
+runNumber_(0)
 {}
 
 
@@ -563,10 +563,13 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
     XCEPT_RETHROW(exception::DataCorruption,msg.str(),e);
   }
 
-  if ( configuration_->writeFragmentsToFile || writeNextFragmentsToFile_ > 0 )
+  if ( configuration_->writeFragmentsToFile ||
+    (writeNextFragmentsForFedId_.first > 0 &&
+      (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
+
   {
     writeFragmentToFile(fedId,eventNumber,bufRef);
-    --writeNextFragmentsToFile_;
+    --writeNextFragmentsForFedId_.first;
   }
 }
 
@@ -792,9 +795,22 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits");
   }
 
+  writeNextFragmentsToFile(0);
+
   handler_->configure(configuration_);
 
   resetMonitoringCounters();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeNextFragmentsToFile
+(
+  const uint16_t count,
+  const uint16_t fedId
+)
+{
+  writeNextFragmentsForFedId_ = CountAndFedId(count,fedId);
 }
 
 
@@ -852,6 +868,9 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
       .add(getFedTable())));
 
   cgicc::div div;
+  const std::string javaScript = "function dumpFragments(fedid,count) { var options = { url:'/" +
+    readoutUnit_->getURN().toString() + "/writeNextFragmentsToFile?fedid='+fedid+'&count='+count }; xdaqAJAX(options,null); }";
+  div.add(script(javaScript).set("type","text/javascript"));
   div.add(p("Input - "+configuration_->inputSource.toString()));
   div.add(table);
   return div;
@@ -868,9 +887,9 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   table fedTable;
 
   fedTable.add(tr()
-    .add(th("Statistics per FED").set("colspan","4")));
+    .add(th("Statistics per FED").set("colspan","5")));
   fedTable.add(tr()
-    .add(td("FED id"))
+    .add(td("FED id").set("colspan","2"))
     .add(td("Last event"))
     .add(td("Size (kB)"))
     .add(td("B/w (MB/s)")));
@@ -882,9 +901,13 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
     std::ostringstream str;
     str.setf(std::ios::fixed);
     str.precision(1);
+    const std::string fedId = boost::lexical_cast<std::string>(it->first);
 
     tr row;
-    row.add(td(boost::lexical_cast<std::string>(it->first)));
+    row.add(td(fedId));
+    row.add(td()
+      .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
+        .set("onclick","dumpFragments("+fedId+",1);")));
     row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
     str << it->second.eventSize / 1e3 << " +/- " << it->second.eventSizeStdDev / 1e3;
     row.add(td(str.str()));

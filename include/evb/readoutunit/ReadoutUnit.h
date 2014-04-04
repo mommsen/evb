@@ -308,12 +308,20 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFr
 )
 {
   cgicc::Cgicc cgi(in);
-  uint32_t count = 1;
+  uint16_t count = 1;
 
   if ( xgi::Utils::hasFormElement(cgi,"count") )
     count = xgi::Utils::getFormElement(cgi, "count")->getIntegerValue();
 
-  input_->writeNextFragmentsToFile(count);
+  if ( xgi::Utils::hasFormElement(cgi,"fedid") )
+  {
+    const uint16_t fedId = xgi::Utils::getFormElement(cgi, "fedid")->getIntegerValue();
+    input_->writeNextFragmentsToFile(count,fedId);
+  }
+  else
+  {
+    input_->writeNextFragmentsToFile(count);
+  }
 }
 
 
