@@ -15,7 +15,7 @@
 #include <pthread.h>
 
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
-EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/rui64x64.gif"),
+EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
 doProcessing_(false),
 fragmentFIFO_(this,"fragmentFIFO")
 {
