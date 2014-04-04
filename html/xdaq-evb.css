@@ -1,9 +1,3 @@
-html, body {
-    margin:0px;
-    padding:4px;
-    color:#000;
-    background:#eee;
-}
 .xdaq-evb-banner {
     width:100%;
 }
@@ -33,7 +27,7 @@ html, body {
 }
 .xdaq-evb-component {
     vertical-align:top;
-    background:#f7f8f9;
+    background:#f6f6f6;
     border: thin solid #bbb;
     border-collapse:separate;
     padding-bottom:20px;
