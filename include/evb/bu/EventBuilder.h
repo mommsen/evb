@@ -89,6 +89,12 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
+      /**
+       * Write the next count events to a text file
+       */
+      void writeNextEventsToFile(const uint16_t count);
+
+
     private:
 
       typedef std::map<EvBid,EventPtr> EventMap;
@@ -119,6 +125,9 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       mutable boost::mutex processesActiveMutex_;
+
+      mutable uint16_t writeNextEventsToFile_;
+      mutable boost::mutex writeNextEventsToFileMutex_;
 
     }; // EventBuilder
 

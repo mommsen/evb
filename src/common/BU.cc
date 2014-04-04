@@ -8,6 +8,8 @@
 #include "evb/bu/StateMachine.h"
 #include "evb/InfoSpaceItems.h"
 #include "toolbox/task/WorkLoopFactory.h"
+#include "xgi/Method.h"
+#include "xgi/Utils.h"
 
 #include <math.h>
 
@@ -156,6 +158,16 @@ void evb::BU::I2O_BU_CACHE_Callback
 }
 
 
+void evb::BU::bindNonDefaultXgiCallbacks()
+{
+  xgi::bind(
+    this,
+    &evb::BU::writeNextEventsToFile,
+    "writeNextEventsToFile"
+  );
+}
+
+
 cgicc::table evb::BU::getMainWebPage() const
 {
   using namespace cgicc;
@@ -189,6 +201,18 @@ cgicc::table evb::BU::getMainWebPage() const
     .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
 
   return layoutTable;
+}
+
+
+void evb::BU::writeNextEventsToFile(xgi::Input* in,xgi::Output* out)
+{
+  cgicc::Cgicc cgi(in);
+  uint16_t count = 1;
+
+  if ( xgi::Utils::hasFormElement(cgi,"count") )
+    count = xgi::Utils::getFormElement(cgi, "count")->getIntegerValue();
+
+  eventBuilder_->writeNextEventsToFile(count);
 }
 
 /**

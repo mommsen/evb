@@ -23,7 +23,8 @@ bu_(bu),
 diskWriter_(diskWriter),
 resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
-doProcessing_(false)
+doProcessing_(false),
+writeNextEventsToFile_(0)
 {
   builderAction_ =
     toolbox::task::bind(this, &evb::bu::EventBuilder::process,
@@ -45,6 +46,7 @@ void evb::bu::EventBuilder::addSuperFragment
 void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
+  writeNextEventsToFile_ = 0;
 
   processesActive_.clear();
   processesActive_.resize(configuration_->numberOfBuilders.value_);
@@ -250,6 +252,16 @@ inline void evb::bu::EventBuilder::buildEvent
           event->checkEvent(configuration_->checkCRC);
           resourceManager_->eventCompleted(event);
 
+          if ( writeNextEventsToFile_ > 0 )
+          {
+            boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+            if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
+            {
+              event->dumpEventToFile();
+              --writeNextEventsToFile_;
+            }
+          }
+
           if ( ! configuration_->dropEventData )
             streamHandler->writeEvent(event);
 
@@ -303,6 +315,14 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
   return eventPos;
 }
 
+
+void evb::bu::EventBuilder:: writeNextEventsToFile(const uint16_t count)
+{
+  boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+  writeNextEventsToFile_ = count;
+}
+
+
 cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 {
   using namespace cgicc;
@@ -332,6 +352,14 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   cgicc::div div;
   div.add(p("EventBuilder"));
   div.add(table);
+
+  div.add(br());
+  const std::string javaScript = "function dumpEvents(count) { var options = { url:'/" +
+    bu_->getURN().toString() + "/writeNextEventsToFile?count='+count }; xdaqAJAX(options,null); }";
+  div.add(script(javaScript).set("type","text/javascript"));
+  div.add(button("dump next event").set("type","button").set("title","dump the next event to /tmp")
+      .set("onclick","dumpEvents(1);"));
+
   return div;
 }
 

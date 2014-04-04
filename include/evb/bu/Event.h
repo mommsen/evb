@@ -70,6 +70,11 @@ namespace evb {
       void writeToDisk(FileHandlerPtr, const bool calculateAdler32) const;
 
       /**
+       * Write the event as binary dump to a text file
+       */
+      void dumpEventToFile(const uint32_t badChunk=-1) const;
+
+      /**
        * Return the event-builder id of the event
        */
       EvBid getEvBid() const

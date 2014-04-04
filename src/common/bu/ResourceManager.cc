@@ -483,19 +483,22 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     .add(td("# FU cores available"))
     .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
 
-  table.add(tr()
-    .add(th("Output disk usage").set("colspan","2")));
-
-  for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
-        it != itEnd; ++it)
+  if ( ! diskUsageMonitors_.empty() )
   {
-    std::ostringstream str;
-    str.setf(std::ios::fixed);
-    str.precision(1);
-    str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
     table.add(tr()
-      .add(td((*it)->path().string()))
-      .add(td(str.str())));
+      .add(th("Output disk usage").set("colspan","2")));
+
+    for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+          it != itEnd; ++it)
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
+      table.add(tr()
+        .add(td((*it)->path().string()))
+        .add(td(str.str())));
+    }
   }
 
   table.add(tr()

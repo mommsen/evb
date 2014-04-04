@@ -7,6 +7,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>

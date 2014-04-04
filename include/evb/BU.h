@@ -15,6 +15,7 @@
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xgi/Input.h"
 #include "xgi/Output.h"
 
 
@@ -56,7 +57,9 @@ namespace evb {
 
     virtual void do_handleItemRetrieveEvent(const std::string& item);
 
+    virtual void bindNonDefaultXgiCallbacks();
     virtual cgicc::table getMainWebPage() const;
+    void writeNextEventsToFile(xgi::Input*,xgi::Output*);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;

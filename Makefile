@@ -143,6 +143,7 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX)
 
 UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
+#UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
 # potentially need conditional processing
