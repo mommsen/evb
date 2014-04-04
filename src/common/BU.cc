@@ -173,20 +173,20 @@ cgicc::table evb::BU::getMainWebPage() const
 
   layoutTable.add(tr()
     .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
     .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_w.gif")))
+    .add(td(img().set("src","/evb/images/arrow_w.gif").set("alt","")))
     .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
 
   layoutTable.add(tr()
-    .add(td())
-    .add(td(img().set("src","/evb/images/arrow_ns.gif")))
-    .add(td()));
+    .add(td(" "))
+    .add(td(img().set("src","/evb/images/arrow_ns.gif").set("alt","")))
+    .add(td(" ")));
 
   layoutTable.add(tr()
-    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
     .add(td(eventBuilder_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif"))));
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
 
   return layoutTable;
 }

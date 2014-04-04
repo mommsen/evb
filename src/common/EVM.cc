@@ -126,11 +126,11 @@ namespace evb {
 
       table.add(tr()
         .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","2"))
-        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
         .add(td(dynamic_cast<const EVM*>(this)->getRUproxy()->getHtmlSnipped()).set("class","xdaq-evb-component")));
 
       table.add(tr()
-        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
         .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }
