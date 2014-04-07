@@ -17,10 +17,10 @@
 #include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
-#include "evb/LumiBarrier.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
+#include "evb/readoutunit/LumiBarrier.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
@@ -766,6 +766,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table.add(tr()
     .add(td("last evt number to BUs"))
     .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+  table.add(tr()
+    .add(td("last lumi section to BUs"))
+    .add(td(boost::lexical_cast<std::string>(lumiBarrier_->getLastLumiSection()))));
 
   table.add(tr()
     .add(th("BU requests").set("colspan","2")));
