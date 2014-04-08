@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <stdint.h>
 
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
@@ -20,7 +19,6 @@ namespace evb {
 
       LumiBarrier(const uint16_t threadCount) :
       threadCount_(threadCount),
-      lockTimeOut_(60),
       count_(threadCount),
       lastLumiSection_(0)
       {
@@ -43,16 +41,7 @@ namespace evb {
           }
 
           while ( lumiSection == lastLumiSection_+1 )
-          {
-            // Not all threads might see requests when BUs stops asking events.
-            // Assure that threads still having events proceed after some time.
-            // This time out needs to be long compared to the LS duration.
-            if ( !cond_.timed_wait(lock,lockTimeOut_) )
-            { //timed out
-              ++count_; // this thread coming back with a later LS has to be accounted again
-              return;
-            }
-          }
+            cond_.wait(lock);
         }
       }
 
@@ -74,7 +63,6 @@ namespace evb {
       boost::mutex mutex_;
       boost::condition_variable cond_;
       const uint16_t threadCount_;
-      const boost::posix_time::seconds lockTimeOut_;
       uint16_t count_;
       uint32_t lastLumiSection_;
 
