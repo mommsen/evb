@@ -128,7 +128,7 @@ namespace evb {
         const uint32_t superFragmentSize,
         const uint32_t currentFragmentSize
       ) const;
-      bool isEmpty() const;
+      bool isEmpty();
       cgicc::table getStatisticsPerBU() const;
 
       ReadoutUnit* readoutUnit_;

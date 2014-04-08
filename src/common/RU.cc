@@ -60,8 +60,9 @@ namespace evb {
 
 
     template<>
-    bool BUproxy<RU>::isEmpty() const
+    bool BUproxy<RU>::isEmpty()
     {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
       return ( fragmentRequestFIFO_.empty() && processesActive_.none() );
     }
 

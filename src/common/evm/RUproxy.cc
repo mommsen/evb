@@ -58,7 +58,7 @@ void evb::evm::RUproxy::drain() const
 
 bool evb::evm::RUproxy::isEmpty() const
 {
-  return ( allocateFIFO_.empty() &&  !assignEventsActive_ );
+  return ( allocateFIFO_.empty() && !assignEventsActive_ );
 }
 
 
