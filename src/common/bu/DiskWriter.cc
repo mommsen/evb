@@ -188,7 +188,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
   while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
   {
     const uint32_t totalEventsInLumiSection =
-      ruProxy_->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
+      bu_->getRUproxy()->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
 
     if ( lumiSectionAccount->nbEvents == 0 )
     {

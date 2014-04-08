@@ -128,6 +128,7 @@ namespace evb {
         const uint32_t superFragmentSize,
         const uint32_t currentFragmentSize
       ) const;
+      bool isEmpty() const;
       cgicc::table getStatisticsPerBU() const;
 
       ReadoutUnit* readoutUnit_;
@@ -142,6 +143,7 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       boost::mutex processesActiveMutex_;
+      uint32_t nbActiveProcesses_;
       boost::scoped_ptr<LumiBarrier> lumiBarrier_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
@@ -188,6 +190,7 @@ readoutUnit_(readoutUnit),
 configuration_(readoutUnit->getConfiguration()),
 tid_(0),
 doProcessing_(false),
+nbActiveProcesses_(0),
 fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
@@ -249,7 +252,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
-  while ( processesActive_.any() )
+  while ( ! isEmpty() )
   {
     lumiBarrier_->unblockCurrentLumiSection();
     ::usleep(1000);
@@ -728,6 +731,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
       payloadPerBU_.push_back(it->second);
     }
   }
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    nbActiveProcesses_ = processesActive_.count();
+  }
 }
 
 
@@ -766,9 +773,15 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table.add(tr()
     .add(td("last evt number to BUs"))
     .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+
+  const uint32_t lumiSection = lumiBarrier_.get() ? lumiBarrier_->getLastLumiSection() : 0;
   table.add(tr()
     .add(td("last lumi section to BUs"))
-    .add(td(boost::lexical_cast<std::string>(lumiBarrier_->getLastLumiSection()))));
+    .add(td(boost::lexical_cast<std::string>(lumiSection))));
+
+  table.add(tr()
+    .add(td("# of active responders"))
+    .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
 
   table.add(tr()
     .add(th("BU requests").set("colspan","2")));

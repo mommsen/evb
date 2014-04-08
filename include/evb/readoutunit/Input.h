@@ -130,7 +130,7 @@ namespace evb {
       /**
        * Drain the remainig events
        */
-      void drain();
+      void drain() const;
 
       /**
        * Stop processing events
@@ -181,8 +181,9 @@ namespace evb {
 
         virtual void configure(boost::shared_ptr<Configuration>) {};
         virtual void startProcessing(const uint32_t runNumber) {};
-        virtual void drain() {};
+        virtual void drain() const {};
         virtual void stopProcessing() {};
+        virtual bool isEmpty() const { return true; }
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const { return cgicc::div(" "); }
 
       protected:
@@ -203,8 +204,9 @@ namespace evb {
         virtual void superFragmentReady(toolbox::mem::Reference*);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
-        virtual void drain();
+        virtual void drain() const;
         virtual void stopProcessing();
+        virtual bool isEmpty() const;
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const;
 
       protected:
@@ -632,14 +634,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
   }
 
   const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
-  if ( lumiSection > currentLumiCounter_->first )
+  for(uint32_t ls = currentLumiCounter_->first+1; ls <= lumiSection; ++ls)
   {
     const std::pair<LumiCounterMap::iterator,bool> result =
-      lumiCounterMap_.insert(LumiCounterMap::value_type(lumiSection,0));
+      lumiCounterMap_.insert(LumiCounterMap::value_type(ls,0));
     if ( ! result.second )
     {
       std::ostringstream msg;
-      msg << "Received an event from lumi section " << lumiSection;
+      msg << "Received an event from lumi section " << ls;
       msg << " for which an entry in lumiCounterMap already exists.";
       XCEPT_RAISE(exception::EventOrder,msg.str());
     }
@@ -675,7 +677,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain()
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain() const
 {
   handler_->drain();
 }
@@ -892,16 +894,13 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   fedTable.add(tr()
     .add(td("FED id").set("colspan","2"))
     .add(td("Last event"))
-    .add(td("Size (kB)"))
+    .add(td("Size (Bytes)"))
     .add(td("B/w (MB/s)")));
 
   typename InputMonitors::const_iterator it, itEnd;
   for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
        it != itEnd; ++it)
   {
-    std::ostringstream str;
-    str.setf(std::ios::fixed);
-    str.precision(1);
     const std::string fedId = boost::lexical_cast<std::string>(it->first);
 
     tr row;
@@ -910,11 +909,15 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
       .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
         .set("onclick","dumpFragments("+fedId+",1);")));
     row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
-    str << it->second.eventSize / 1e3 << " +/- " << it->second.eventSizeStdDev / 1e3;
-    row.add(td(str.str()));
-    str.str(std::string());
+    row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSize))
+        +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSizeStdDev))));
+
+    std::ostringstream str;
+    str.setf(std::ios::fixed);
+    str.precision(1);
     str << it->second.bandwidth / 1e6;
     row.add(td(str.str()));
+
     fedTable.add(row);
   }
 
@@ -1055,26 +1058,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProces
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain()
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain() const
 {
-  while ( ! superFragmentFIFO_.empty() ) ::usleep(1000);
-
-  bool workDone;
-
-  do
-  {
-    workDone = false;
-
-    for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
-         it != itEnd; ++it)
-    {
-      if ( ! it->second->empty() )
-      {
-        workDone = true;
-        ::usleep(1000);
-      }
-    }
-  } while ( workDone );
+  while ( ! isEmpty() ) ::usleep(1000);
 }
 
 
@@ -1082,6 +1068,21 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::stopProcessing()
 {
   this->doProcessing_ = false;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::isEmpty() const
+{
+  if ( ! superFragmentFIFO_.empty() ) return false;
+
+  for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    if ( ! it->second->empty() ) return false;
+  }
+
+  return true;
 }
 
 

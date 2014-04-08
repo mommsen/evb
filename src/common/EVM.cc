@@ -85,6 +85,13 @@ namespace evb {
 
 
     template<>
+    bool BUproxy<EVM>::isEmpty() const
+    {
+      return ( processesActive_.none() && readoutUnit_->getRUproxy()->isEmpty() );
+    }
+
+
+    template<>
     void Configuring<EVM>::doConfigure()
     {
       my_state::outermost_context_type& stateMachine = this->outermost_context();

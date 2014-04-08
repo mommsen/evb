@@ -58,6 +58,14 @@ namespace evb {
       return true;
     }
 
+
+    template<>
+    bool BUproxy<RU>::isEmpty() const
+    {
+      return ( fragmentRequestFIFO_.empty() && processesActive_.none() );
+    }
+
+
     template<>
     void ru::ReadoutUnit::addComponentsToWebPage
     (

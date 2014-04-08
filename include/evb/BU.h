@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <stdint.h>
 #include <string>
 
 #include "cgicc/HTMLClasses.h"
@@ -42,6 +43,9 @@ namespace evb {
     BU(xdaq::ApplicationStub*);
 
     virtual ~BU() {};
+
+    boost::shared_ptr<bu::RUproxy> getRUproxy() const
+    { return ruProxy_; }
 
     XDAQ_INSTANTIATOR();
 

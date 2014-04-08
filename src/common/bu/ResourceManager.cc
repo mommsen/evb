@@ -322,8 +322,15 @@ void evb::bu::ResourceManager::updateResources()
     overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
 
-  const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
-  resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
+  if ( overThreshold >= 1 )
+  {
+    resourcesToBlock_ = nbResources_;
+  }
+  else
+  {
+    const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
+    resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
+  }
 }
 
 

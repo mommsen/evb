@@ -26,7 +26,6 @@ namespace evb {
 
   namespace bu { // namespace evb::bu
 
-    class RUproxy;
     class ResourceManager;
     class StateMachine;
 
@@ -68,12 +67,6 @@ namespace evb {
        * Configure
        */
       void configure();
-
-      /**
-       * Register the RU proxy
-       */
-      void registerRUproxy(boost::shared_ptr<RUproxy> ruProxy)
-      { ruProxy_ = ruProxy; }
 
       /**
        * Register the state machine
@@ -144,7 +137,6 @@ namespace evb {
       void defineEoR(const boost::filesystem::path& jsdDir);
 
       BU* bu_;
-      boost::shared_ptr<RUproxy> ruProxy_;
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
       const ConfigurationPtr configuration_;
