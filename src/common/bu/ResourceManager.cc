@@ -364,8 +364,12 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
   eventRate_ = eventMonitoring_.perf.logicalRate();
   bandwidth_ = eventMonitoring_.perf.bandwidth();
-  eventSize_ = eventMonitoring_.perf.size();
-  eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
+  const uint32_t eventSize = eventMonitoring_.perf.size();
+  if ( eventSize > 0 )
+  {
+    eventSize_ = eventSize;
+    eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
+  }
 
   eventMonitoring_.perf.reset();
 }
