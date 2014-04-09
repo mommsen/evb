@@ -2,7 +2,7 @@
 
 function sendCmdToEVM
 {
-  response=`sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 $1`
+  response=$(sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 $1)
   if [[ ! $response =~ stateName=\"$2\" ]]
   then
     echo "EVM did not respond with expected '$2', but with: $response"
@@ -12,14 +12,14 @@ function sendCmdToEVM
 
 function sendCmdToRUs
 {
-  response=`sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 $1`
+  response=$(sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 $1)
   if [[ ! $response =~ stateName=\"$2\" ]]
   then
     echo "RU1 did not respond with expected '$2', but with: $response"
     exit 1
   fi
 
-  response=`sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 $1`
+  response=$(sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 $1)
   if [[ ! $response =~ stateName=\"$2\" ]]
   then
     echo "RU2 did not respond with expected '$2', but with: $response"
@@ -29,14 +29,14 @@ function sendCmdToRUs
 
 function sendCmdToBUs
 {
-  response=`sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 $1`
+  response=$(sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 $1)
   if [[ ! $response =~ stateName=\"$2\" ]]
   then
     echo "BU0 did not respond with expected '$2', but with: $response"
     exit 1
   fi
 
-  response=`sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 $1`
+  response=$(sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 $1)
   if [[ ! $response =~ stateName=\"$2\" ]]
   then
     echo "BU1 did not respond with expected '$2', but with: $response"
@@ -48,7 +48,7 @@ function changeStates
 {
   if [[ $1 == "Enable" ]]
   then
-    runNumber=`date "+%s"`
+    runNumber=$(date "+%s")
     setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $runNumber
     setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $runNumber
     setParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 runNumber unsignedInt $runNumber
@@ -65,35 +65,35 @@ function changeStates
 
 function checkStates
 {
-  state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+  state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
   echo "RU0 state=$state"
   if [[ $state != $1 ]]
   then
     echo "Test failed"
     exit 1
   fi
-  state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+  state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
   echo "RU1 state=$state"
   if [[ $state != $1 ]]
   then
     echo "Test failed"
     exit 1
   fi
-  state=`getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 stateName xsd:string`
+  state=$(getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 stateName xsd:string)
   echo "RU2 state=$state"
   if [[ $state != $1 ]]
   then
     echo "Test failed"
     exit 1
   fi
-  state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+  state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
   echo "BU0 state=$state"
   if [[ $state != $1 ]]
   then
     echo "Test failed"
     exit 1
   fi
-  state=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 stateName xsd:string`
+  state=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 stateName xsd:string)
   echo "BU1 state=$state"
   if [[ $state != $1 ]]
   then
@@ -190,8 +190,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
@@ -226,8 +226,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
@@ -250,7 +250,7 @@ echo "Stop EVM"
 sendCmdToEVM Stop Draining
 sleep 1
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "RU0 state=$state"
 if [[ $state != "Ready" ]]
 then
@@ -259,7 +259,7 @@ then
 fi
 
 # stop RUs and BUs
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU1 state=$state"
 if [[ $state != "Enabled" ]]
 then
@@ -267,7 +267,7 @@ then
   exit 1
 fi
 
-state=`getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 stateName xsd:string`
+state=$(getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 stateName xsd:string)
 echo "RU2 state=$state"
 if [[ $state != "Enabled" ]]
 then
@@ -275,7 +275,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU0 state=$state"
 if [[ $state != "Enabled" ]]
 then
@@ -283,7 +283,7 @@ then
   exit 1
 fi
 
-state=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 stateName xsd:string`
+state=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 stateName xsd:string)
 echo "BU1 state=$state"
 if [[ $state != "Enabled" ]]
 then
@@ -305,8 +305,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
-nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
@@ -326,7 +326,7 @@ fi
 # fail the EVM
 sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Fail
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Failed" ]]
 then

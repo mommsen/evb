@@ -92,8 +92,6 @@ namespace evb {
 
     virtual void bindNonDefaultXgiCallbacks() {};
     virtual cgicc::table getMainWebPage() const = 0;
-
-    void webPageHeader(xgi::Output*, const std::string& name="") const;
     cgicc::div getWebPageBanner() const;
 
     toolbox::mem::Pool* getFastControlMsgPool() const;
@@ -137,6 +135,7 @@ namespace evb {
 
     void defaultWebPage(xgi::Input*, xgi::Output*);
     void queueWebPage(xgi::Input*, xgi::Output*);
+    cgicc::div getWebPageHeader() const;
     std::string getCurrentTimeUTC() const;
 
     typedef std::map<std::string,QueueContentFunction> QueueContents;
@@ -569,7 +568,7 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
   xgi::Output *out
 )
 {
-  webPageHeader(out);
+  *out << getWebPageHeader();
   *out << getMainWebPage();
 }
 
@@ -615,8 +614,6 @@ void evb::EvBApplication<Configuration,StateMachine>::queueWebPage
   else
     queueDetail = pos->second();
 
-  webPageHeader(out,name);
-
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(tr()
@@ -624,32 +621,19 @@ void evb::EvBApplication<Configuration,StateMachine>::queueWebPage
   layoutTable.add(tr()
     .add(td(queueDetail)));
 
+  *out << getWebPageHeader();
   *out << layoutTable;
 }
 
 
 template<class Configuration,class StateMachine>
-void evb::EvBApplication<Configuration,StateMachine>::webPageHeader
-(
-  xgi::Output* out,
-  const std::string& name
-) const
+cgicc::div evb::EvBApplication<Configuration,StateMachine>::getWebPageHeader() const
 {
-  *out << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""          << std::endl;
-  *out << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"          << std::endl;
+  using namespace cgicc;
 
-  *out << "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">" << std::endl;
-  *out << "<head>"                                                                    << std::endl;
-  *out << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>"   << std::endl;
-  *out << "<link type=\"text/css\" rel=\"stylesheet\"";
-  *out << " href=\"/evb/html/xdaq-evb.css\"/>"                                        << std::endl;
-  *out << "<title>"                                                                   << std::endl;
-  *out << xmlClass_ << " " << instance_.value_;
-  if ( !name.empty() ) *out << " - " << name;
-  *out << std::endl;
-  *out << "</title>"                                                                  << std::endl;
-  *out << "</head>"                                                                   << std::endl;
-  *out << "<body>"                                                                    << std::endl;
+  cgicc::div div;
+  div.add(script("$(\"head\").append(\"<link href=\\\"/evb/html/xdaq-evb.css\\\" rel=\\\"stylesheet\\\"/>\");"));
+  return div;
 }
 
 

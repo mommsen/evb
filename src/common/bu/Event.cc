@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -79,6 +81,14 @@ bool evb::bu::Event::appendSuperFragment
 
   DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
   dataLocations_.push_back(dataLocation);
+
+  #ifdef EVB_DEBUG_CORRUPT_EVENT
+  unsigned char* posToCorrupt = const_cast<unsigned char*>(fragmentPos + 23);
+  if ( size_t(posToCorrupt) & 0x10 )
+  {
+    *posToCorrupt ^= 1;
+  }
+  #endif //EVB_DEBUG_CORRUPT_EVENT
 
   // erase at the very end. Otherwise the event might be considered complete
   // before the last chunk has been fully treated
@@ -189,26 +199,39 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
   }
   catch(xcept::Exception& e)
   {
+    dumpEventToFile(chunk);
+
     std::ostringstream oss;
-
     oss << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
-    for ( uint32_t i = 0; i < dataLocations_.size(); ++i )
-    {
-      if ( i == chunk )
-      {
-        oss << toolbox::toString("Bad chunk %2d: ", i);
-        oss << std::string(112,'*') << std::endl;
-      }
-      else
-      {
-        oss << toolbox::toString("Chunk %2d : ",i);
-        oss << std::string(115,'-') << std::endl;
-      }
-      DumpUtility::dumpBlockData(oss,dataLocations_[i]->location,dataLocations_[i]->length);
-    }
-
     XCEPT_RETHROW(exception::DataCorruption, oss.str(), e);
   }
+}
+
+
+void evb::bu::Event::dumpEventToFile(const uint32_t badChunk) const
+{
+  std::ostringstream fileName;
+  fileName << "/tmp/dump_run" << std::setfill('0') << std::setw(6) << runNumber()
+    << "_event" << std::setw(8) << eventNumber()
+    << ".txt";
+  std::ofstream dumpFile;
+  dumpFile.open(fileName.str().c_str());
+
+  for ( uint32_t i = 0; i < dataLocations_.size(); ++i )
+  {
+    if ( i == badChunk )
+    {
+      dumpFile << toolbox::toString("Bad chunk %2d: ", i);
+      dumpFile << std::string(112,'*') << std::endl;
+    }
+    else
+    {
+      dumpFile << toolbox::toString("Chunk %2d : ",i);
+      dumpFile << std::string(115,'-') << std::endl;
+    }
+    DumpUtility::dumpBlockData(dumpFile,dataLocations_[i]->location,dataLocations_[i]->length);
+  }
+  dumpFile.close();
 }
 
 

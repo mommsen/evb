@@ -5,7 +5,6 @@
     <i2o:target class="evb::BU" instance="0" tid="30"/>
   </i2o:protocol>
 
-
   <xc:Context url="http://FEROL0_SOAP_HOST_NAME:FEROL0_SOAP_PORT">
 
     <xc:Endpoint protocol="ftcp" service="frl" hostname="FEROL0_FRL_HOST_NAME" port="FEROL0_FRL_PORT" network="ferol00" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
@@ -26,15 +25,12 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
 
@@ -101,10 +97,8 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="1" network="local"/>
-
     <xc:Module>/usr/lib64/libdat2.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
@@ -112,7 +106,6 @@
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://BU0_SOAP_HOST_NAME:BU0_SOAP_PORT">
 
@@ -141,9 +134,6 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="2" network="local"/>
-
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>

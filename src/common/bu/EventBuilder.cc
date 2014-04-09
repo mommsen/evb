@@ -23,7 +23,8 @@ bu_(bu),
 diskWriter_(diskWriter),
 resourceManager_(resourceManager),
 configuration_(bu->getConfiguration()),
-doProcessing_(false)
+doProcessing_(false),
+writeNextEventsToFile_(0)
 {
   builderAction_ =
     toolbox::task::bind(this, &evb::bu::EventBuilder::process,
@@ -45,9 +46,11 @@ void evb::bu::EventBuilder::addSuperFragment
 void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
+  writeNextEventsToFile_ = 0;
 
   processesActive_.clear();
   processesActive_.resize(configuration_->numberOfBuilders.value_);
+  lumiBarrier_.reset( new LumiBarrier(configuration_->numberOfBuilders.value_) );
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -99,9 +102,11 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 
 void evb::bu::EventBuilder::drain()
 {
-  while ( processesActive_.any() ) ::usleep(1000);
-
-  doProcessing_ = false;
+  while ( processesActive_.any() )
+  {
+    lumiBarrier_->unblockCurrentLumiSection();
+    ::usleep(1000);
+  }
 }
 
 
@@ -109,7 +114,7 @@ void evb::bu::EventBuilder::stopProcessing()
 {
   doProcessing_ = false;
 
-  while ( processesActive_.any() ) ::usleep(1000);
+  drain();
 
   for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
@@ -145,24 +150,23 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
     while ( doProcessing_ )
     {
       if ( superFragmentFIFO->deq(superFragments) )
+        buildEvent(superFragments,eventMap);
+
+      if ( eventMap->empty() )
       {
-        buildEvent(superFragments,eventMap,streamHandler);
+        // If we're idling, let other threads advance to the current lumi section
+        lumiBarrier_->reachedLumiSection(resourceManager_->getCurrentLumiSection());
+
+        boost::mutex::scoped_lock sl(processesActiveMutex_);
+        processesActive_.reset(builderId);
+        sl.unlock();
+        ::usleep(1000);
+        sl.lock();
+        processesActive_.set(builderId);
       }
       else
       {
-        if ( eventMap->empty() )
-        {
-          boost::mutex::scoped_lock sl(processesActiveMutex_);
-          processesActive_.reset(builderId);
-          sl.unlock();
-          ::usleep(1000);
-          sl.lock();
-          processesActive_.set(builderId);
-        }
-        else
-        {
-          ::usleep(10);
-        }
+        handleCompleteEvents(eventMap,streamHandler);
       }
     }
   }
@@ -207,8 +211,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 inline void evb::bu::EventBuilder::buildEvent
 (
   FragmentChainPtr& superFragments,
-  EventMapPtr& eventMap,
-  StreamHandlerPtr& streamHandler
+  EventMapPtr& eventMap
 ) const
 {
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
@@ -237,26 +240,11 @@ inline void evb::bu::EventBuilder::buildEvent
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
 
-      const EventPtr& event = eventPos->second;
-      if ( event->appendSuperFragment(ruTid,bufRef->duplicate(),
+      if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
           payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )
       {
         // the super fragment is complete
         ++superFragmentCount;
-
-        if ( event->isComplete() )
-        {
-          // the event is complete
-          event->checkEvent(configuration_->checkCRC);
-          resourceManager_->eventCompleted(event);
-
-          if ( ! configuration_->dropEventData )
-            streamHandler->writeEvent(event);
-
-          resourceManager_->discardEvent(event);
-          eventMap->erase(eventPos);
-        }
-
         eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
       }
 
@@ -303,6 +291,57 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
   return eventPos;
 }
 
+
+void evb::bu::EventBuilder::handleCompleteEvents
+(
+  EventMapPtr& eventMap,
+  StreamHandlerPtr& streamHandler
+) const
+{
+  EventMap::iterator pos = eventMap->begin();
+  const uint32_t lowestLumiSection = pos->first.lumiSection();
+  lumiBarrier_->reachedLumiSection(lowestLumiSection);
+
+  while ( pos != eventMap->end() )
+  {
+    const EventPtr& event = pos->second;
+
+    if ( event->isComplete() && pos->first.lumiSection() == lowestLumiSection )
+    {
+      event->checkEvent(configuration_->checkCRC);
+      resourceManager_->eventCompleted(event);
+
+      if ( writeNextEventsToFile_ > 0 )
+      {
+        boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+        if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
+        {
+          event->dumpEventToFile();
+          --writeNextEventsToFile_;
+        }
+      }
+
+      if ( ! configuration_->dropEventData )
+        streamHandler->writeEvent(event);
+
+      resourceManager_->discardEvent(event);
+      eventMap->erase(pos++);
+    }
+    else
+    {
+      ++pos;
+    }
+  }
+}
+
+
+void evb::bu::EventBuilder::writeNextEventsToFile(const uint16_t count)
+{
+  boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+  writeNextEventsToFile_ = count;
+}
+
+
 cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 {
   using namespace cgicc;
@@ -332,6 +371,14 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   cgicc::div div;
   div.add(p("EventBuilder"));
   div.add(table);
+
+  div.add(br());
+  const std::string javaScript = "function dumpEvents(count) { var options = { url:'/" +
+    bu_->getURN().toString() + "/writeNextEventsToFile?count='+count }; xdaqAJAX(options,null); }";
+  div.add(script(javaScript).set("type","text/javascript"));
+  div.add(button("dump next event").set("type","button").set("title","dump the next event to /tmp")
+      .set("onclick","dumpEvents(1);"));
+
   return div;
 }
 

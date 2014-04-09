@@ -50,9 +50,15 @@ void evb::evm::RUproxy::startProcessing()
 }
 
 
-void evb::evm::RUproxy::drain()
+void evb::evm::RUproxy::drain() const
 {
-  while ( !allocateFIFO_.empty() || assignEventsActive_ ) ::usleep(1000);
+  while ( !isEmpty() ) ::usleep(1000);
+}
+
+
+bool evb::evm::RUproxy::isEmpty() const
+{
+  return ( allocateFIFO_.empty() && !assignEventsActive_ );
 }
 
 

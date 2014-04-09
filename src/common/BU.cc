@@ -8,6 +8,8 @@
 #include "evb/bu/StateMachine.h"
 #include "evb/InfoSpaceItems.h"
 #include "toolbox/task/WorkLoopFactory.h"
+#include "xgi/Method.h"
+#include "xgi/Utils.h"
 
 #include <math.h>
 
@@ -24,7 +26,6 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
   stateMachine_.reset( new bu::StateMachine(this,
       ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
-  diskWriter_->registerRUproxy(ruProxy_);
   diskWriter_->registerStateMachine(stateMachine_);
   eventBuilder_->registerStateMachine(stateMachine_);
   ruProxy_->registerStateMachine(stateMachine_);
@@ -156,6 +157,16 @@ void evb::BU::I2O_BU_CACHE_Callback
 }
 
 
+void evb::BU::bindNonDefaultXgiCallbacks()
+{
+  xgi::bind(
+    this,
+    &evb::BU::writeNextEventsToFile,
+    "writeNextEventsToFile"
+  );
+}
+
+
 cgicc::table evb::BU::getMainWebPage() const
 {
   using namespace cgicc;
@@ -173,22 +184,34 @@ cgicc::table evb::BU::getMainWebPage() const
 
   layoutTable.add(tr()
     .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
     .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_w.gif")))
+    .add(td(img().set("src","/evb/images/arrow_w.gif").set("alt","")))
     .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
 
   layoutTable.add(tr()
-    .add(td())
-    .add(td(img().set("src","/evb/images/arrow_ns.gif")))
-    .add(td()));
+    .add(td(" "))
+    .add(td(img().set("src","/evb/images/arrow_ns.gif").set("alt","")))
+    .add(td(" ")));
 
   layoutTable.add(tr()
-    .add(td(img().set("src","/evb/images/arrow_e.gif")))
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
     .add(td(eventBuilder_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif"))));
+    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
 
   return layoutTable;
+}
+
+
+void evb::BU::writeNextEventsToFile(xgi::Input* in,xgi::Output* out)
+{
+  cgicc::Cgicc cgi(in);
+  uint16_t count = 1;
+
+  if ( xgi::Utils::hasFormElement(cgi,"count") )
+    count = xgi::Utils::getFormElement(cgi, "count")->getIntegerValue();
+
+  eventBuilder_->writeNextEventsToFile(count);
 }
 
 /**

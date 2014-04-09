@@ -7,6 +7,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -129,7 +130,7 @@ namespace evb {
       /**
        * Drain the remainig events
        */
-      void drain();
+      void drain() const;
 
       /**
        * Stop processing events
@@ -149,8 +150,7 @@ namespace evb {
       /**
        * Write the next count FED fragment to a text file
        */
-      void writeNextFragmentsToFile(const uint32_t count)
-      { writeNextFragmentsToFile_ += count; }
+      void writeNextFragmentsToFile(const uint16_t count, const uint16_t fedId=FED_COUNT+1);
 
       /**
        * Return the readout unit associated with this input
@@ -181,8 +181,9 @@ namespace evb {
 
         virtual void configure(boost::shared_ptr<Configuration>) {};
         virtual void startProcessing(const uint32_t runNumber) {};
-        virtual void drain() {};
+        virtual void drain() const {};
         virtual void stopProcessing() {};
+        virtual bool isEmpty() const { return true; }
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const { return cgicc::div(" "); }
 
       protected:
@@ -203,8 +204,9 @@ namespace evb {
         virtual void superFragmentReady(toolbox::mem::Reference*);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
-        virtual void drain();
+        virtual void drain() const;
         virtual void stopProcessing();
+        virtual bool isEmpty() const;
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const;
 
       protected:
@@ -275,7 +277,9 @@ namespace evb {
       LumiCounterMap::iterator currentLumiCounter_;
 
       uint32_t runNumber_;
-      uint32_t writeNextFragmentsToFile_;
+
+      typedef std::pair<uint16_t,uint16_t> CountAndFedId;
+      CountAndFedId writeNextFragmentsForFedId_;
 
       struct InputMonitoring
       {
@@ -318,8 +322,7 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 configuration_(readoutUnit->getConfiguration()),
 readoutUnit_(readoutUnit),
 handler_(new Handler(this)),
-runNumber_(0),
-writeNextFragmentsToFile_(0)
+runNumber_(0)
 {}
 
 
@@ -563,10 +566,13 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
     XCEPT_RETHROW(exception::DataCorruption,msg.str(),e);
   }
 
-  if ( configuration_->writeFragmentsToFile || writeNextFragmentsToFile_ > 0 )
+  if ( configuration_->writeFragmentsToFile ||
+    (writeNextFragmentsForFedId_.first > 0 &&
+      (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
+
   {
     writeFragmentToFile(fedId,eventNumber,bufRef);
-    --writeNextFragmentsToFile_;
+    --writeNextFragmentsForFedId_.first;
   }
 }
 
@@ -628,14 +634,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
   }
 
   const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
-  if ( lumiSection > currentLumiCounter_->first )
+  for(uint32_t ls = currentLumiCounter_->first+1; ls <= lumiSection; ++ls)
   {
     const std::pair<LumiCounterMap::iterator,bool> result =
-      lumiCounterMap_.insert(LumiCounterMap::value_type(lumiSection,0));
+      lumiCounterMap_.insert(LumiCounterMap::value_type(ls,0));
     if ( ! result.second )
     {
       std::ostringstream msg;
-      msg << "Received an event from lumi section " << lumiSection;
+      msg << "Received an event from lumi section " << ls;
       msg << " for which an entry in lumiCounterMap already exists.";
       XCEPT_RAISE(exception::EventOrder,msg.str());
     }
@@ -671,7 +677,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain()
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain() const
 {
   handler_->drain();
 }
@@ -792,9 +798,22 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits");
   }
 
+  writeNextFragmentsToFile(0);
+
   handler_->configure(configuration_);
 
   resetMonitoringCounters();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeNextFragmentsToFile
+(
+  const uint16_t count,
+  const uint16_t fedId
+)
+{
+  writeNextFragmentsForFedId_ = CountAndFedId(count,fedId);
 }
 
 
@@ -852,6 +871,9 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
       .add(getFedTable())));
 
   cgicc::div div;
+  const std::string javaScript = "function dumpFragments(fedid,count) { var options = { url:'/" +
+    readoutUnit_->getURN().toString() + "/writeNextFragmentsToFile?fedid='+fedid+'&count='+count }; xdaqAJAX(options,null); }";
+  div.add(script(javaScript).set("type","text/javascript"));
   div.add(p("Input - "+configuration_->inputSource.toString()));
   div.add(table);
   return div;
@@ -868,29 +890,34 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   table fedTable;
 
   fedTable.add(tr()
-    .add(th("Statistics per FED").set("colspan","4")));
+    .add(th("Statistics per FED").set("colspan","5")));
   fedTable.add(tr()
-    .add(td("FED id"))
+    .add(td("FED id").set("colspan","2"))
     .add(td("Last event"))
-    .add(td("Size (kB)"))
+    .add(td("Size (Bytes)"))
     .add(td("B/w (MB/s)")));
 
   typename InputMonitors::const_iterator it, itEnd;
   for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
        it != itEnd; ++it)
   {
+    const std::string fedId = boost::lexical_cast<std::string>(it->first);
+
+    tr row;
+    row.add(td(fedId));
+    row.add(td()
+      .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
+        .set("onclick","dumpFragments("+fedId+",1);")));
+    row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
+    row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSize))
+        +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSizeStdDev))));
+
     std::ostringstream str;
     str.setf(std::ios::fixed);
     str.precision(1);
-
-    tr row;
-    row.add(td(boost::lexical_cast<std::string>(it->first)));
-    row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
-    str << it->second.eventSize / 1e3 << " +/- " << it->second.eventSizeStdDev / 1e3;
-    row.add(td(str.str()));
-    str.str(std::string());
     str << it->second.bandwidth / 1e6;
     row.add(td(str.str()));
+
     fedTable.add(row);
   }
 
@@ -1031,26 +1058,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProces
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain()
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain() const
 {
-  while ( ! superFragmentFIFO_.empty() ) ::usleep(1000);
-
-  bool workDone;
-
-  do
-  {
-    workDone = false;
-
-    for (typename FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
-         it != itEnd; ++it)
-    {
-      if ( ! it->second->empty() )
-      {
-        workDone = true;
-        ::usleep(1000);
-      }
-    }
-  } while ( workDone );
+  while ( ! isEmpty() ) ::usleep(1000);
 }
 
 
@@ -1058,6 +1068,21 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::stopProcessing()
 {
   this->doProcessing_ = false;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::isEmpty() const
+{
+  if ( ! superFragmentFIFO_.empty() ) return false;
+
+  for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    if ( ! it->second->empty() ) return false;
+  }
+
+  return true;
 }
 
 

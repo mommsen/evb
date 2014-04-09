@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <stdint.h>
 #include <string>
 
 #include "cgicc/HTMLClasses.h"
@@ -15,6 +16,7 @@
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xgi/Input.h"
 #include "xgi/Output.h"
 
 
@@ -42,6 +44,9 @@ namespace evb {
 
     virtual ~BU() {};
 
+    boost::shared_ptr<bu::RUproxy> getRUproxy() const
+    { return ruProxy_; }
+
     XDAQ_INSTANTIATOR();
 
 
@@ -56,7 +61,9 @@ namespace evb {
 
     virtual void do_handleItemRetrieveEvent(const std::string& item);
 
+    virtual void bindNonDefaultXgiCallbacks();
     virtual cgicc::table getMainWebPage() const;
+    void writeNextEventsToFile(xgi::Input*,xgi::Output*);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;

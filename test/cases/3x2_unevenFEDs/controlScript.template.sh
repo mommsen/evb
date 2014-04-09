@@ -76,7 +76,7 @@ sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable
 echo "Sending data for 5 seconds"
 sleep 5
 
-superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
 echo "EVM superFragmentSize: $superFragmentSizeEVM"
 if [[ $superFragmentSizeEVM -ne 14336 ]]
 then
@@ -84,7 +84,7 @@ then
   exit 1
 fi
 
-superFragmentSizeRU1=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt`
+superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
 echo "RU1 superFragmentSize: $superFragmentSizeRU1"
 if [[ $superFragmentSizeRU1 -ne 24576 ]]
 then
@@ -92,7 +92,7 @@ then
   exit 1
 fi
 
-superFragmentSizeRU2=`getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt`
+superFragmentSizeRU2=$(getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt)
 echo "RU2 superFragmentSize: $superFragmentSizeRU2"
 if [[ $superFragmentSizeRU2 -ne 18432 ]]
 then
@@ -100,7 +100,7 @@ then
   exit 1
 fi
 
-eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
 echo "EVM eventRate: $eventRateEVM"
 if [[ $eventRateEVM -lt 1000 ]]
 then
@@ -108,7 +108,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
@@ -116,7 +116,7 @@ then
   exit 1
 fi
 
-eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
 echo "BU0 eventSize: $eventSizeBU0"
 if [[ $eventSizeBU0 -ne 57344 ]]
 then
@@ -124,7 +124,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
 if [[ $nbEventsBuiltBU1 -lt 1000 ]]
 then
@@ -132,7 +132,7 @@ then
   exit 1
 fi
 
-eventSizeBU1=`getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 eventSize xsd:unsignedInt`
+eventSizeBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 eventSize xsd:unsignedInt)
 echo "BU1 eventSize: $eventSizeBU1"
 if [[ $eventSizeBU1 -ne 57344 ]]
 then

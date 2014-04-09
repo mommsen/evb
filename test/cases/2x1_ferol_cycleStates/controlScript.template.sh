@@ -47,7 +47,7 @@ function run
   echo "Sending data for 5 seconds"
   sleep 5
 
-  superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+  superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
   echo "EVM superFragmentSize: $superFragmentSizeEVM"
   if [[ $superFragmentSizeEVM -ne 8192 ]]
   then
@@ -55,7 +55,7 @@ function run
     exit 1
   fi
 
-  superFragmentSizeRU1=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt`
+  superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
   echo "RU1 superFragmentSize: $superFragmentSizeRU1"
   if [[ $superFragmentSizeRU1 -ne 8192 ]]
   then
@@ -63,7 +63,7 @@ function run
     exit 1
   fi
 
-  eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+  eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
   echo "EVM eventRate: $eventRateEVM"
   if [[ $eventRateEVM -lt 500 ]]
   then
@@ -71,7 +71,7 @@ function run
     exit 1
   fi
 
-  eventCountEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt`
+  eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
   echo "EVM eventCount: $eventCountEVM"
   if [[ $eventCountEVM -lt 500 ]]
   then
@@ -79,7 +79,7 @@ function run
     exit 1
   fi
 
-  nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+  nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
   echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
   if [[ $nbEventsBuiltBU0 -lt 1000 ]]
   then
@@ -87,7 +87,7 @@ function run
     exit 1
   fi
 
-  eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+  eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
   echo "BU0 eventSize: $eventSizeBU0"
   if [[ $eventSizeBU0 -ne 16384 ]]
   then
@@ -221,7 +221,7 @@ run 1
 echo "Halt the system"
 changeStates Halt
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -229,7 +229,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -237,7 +237,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -248,8 +248,8 @@ fi
 echo "Restart run 2"
 run 2
 
-while [[ `getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt` > \
-         `getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt` ]]
+while [[ $(getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt) > \
+         $(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt) ]]
 do
   sleep 1
 done
@@ -257,7 +257,7 @@ done
 changeStates Stop
 sleep 2
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Ready" ]]
 then
@@ -265,7 +265,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Ready" ]]
 then
@@ -273,7 +273,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Ready" ]]
 then
@@ -281,8 +281,8 @@ then
   exit 1
 fi
 
-eventCountEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt`
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then
   echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"
@@ -292,7 +292,7 @@ fi
 echo "Halt the system"
 changeStates Halt
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -300,7 +300,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -308,7 +308,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -319,8 +319,8 @@ fi
 echo "Restart run 3"
 run 3
 
-while [[ `getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt` > \
-         `getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt` ]]
+while [[ $(getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt) > \
+         $(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt) ]]
 do
   sleep 1
 done
@@ -328,7 +328,7 @@ done
 echo "Halt the system"
 changeStates Halt
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -336,7 +336,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -344,7 +344,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Halted" ]]
 then
@@ -352,8 +352,8 @@ then
   exit 1
 fi
 
-eventCountEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt`
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then
   echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"

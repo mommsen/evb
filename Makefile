@@ -50,6 +50,7 @@ Sources=\
 	bu/Event.cc \
 	bu/EventBuilder.cc \
 	bu/FileHandler.cc \
+	bu/LumiBarrier.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
@@ -143,6 +144,7 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX)
 
 UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
+#UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
 # potentially need conditional processing

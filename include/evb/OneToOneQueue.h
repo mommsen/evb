@@ -309,8 +309,8 @@ namespace evb {
       .set("onmouseover","this.style.cursor = 'pointer'; document.getElementById('"+name_+"').style.visibility = 'visible';")
       .set("onmouseout","document.getElementById('"+name_+"').style.visibility = 'hidden';");
     queueTable.add(colgroup()
-      .add(col().set("width",boost::lexical_cast<std::string>(fullWidth)+"%"))
-      .add(col().set("width",boost::lexical_cast<std::string>(emptyWidth)+"%")));
+      .add(col().set("style","width:"+boost::lexical_cast<std::string>(fullWidth)+"%"))
+      .add(col().set("style","width:"+boost::lexical_cast<std::string>(emptyWidth)+"%")));
     queueTable.add(tr()
       .add(th(name_).set("colspan","2")));
     queueTable.add(tr()

@@ -4,7 +4,6 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <set>
@@ -17,7 +16,6 @@
 #include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
-#include "evb/LumiBarrier.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
@@ -128,6 +126,7 @@ namespace evb {
         const uint32_t superFragmentSize,
         const uint32_t currentFragmentSize
       ) const;
+      bool isEmpty();
       cgicc::table getStatisticsPerBU() const;
 
       ReadoutUnit* readoutUnit_;
@@ -142,13 +141,13 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       boost::mutex processesActiveMutex_;
-      boost::scoped_ptr<LumiBarrier> lumiBarrier_;
+      uint32_t nbActiveProcesses_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
       boost::mutex fragmentRequestFIFOmutex_;
 
-      typedef std::map<uint32_t,uint64_t> CountsPerBU;
+      typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
       {
         uint64_t logicalCount;
@@ -188,6 +187,7 @@ readoutUnit_(readoutUnit),
 configuration_(readoutUnit->getConfiguration()),
 tid_(0),
 doProcessing_(false),
+nbActiveProcesses_(0),
 fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
@@ -249,11 +249,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
-  while ( processesActive_.any() )
-  {
-    lumiBarrier_->unblockCurrentLumiSection();
-    ::usleep(1000);
-  }
+  while ( ! isEmpty() ) ::usleep(1000);
 }
 
 
@@ -261,7 +257,6 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
-  drain();
 }
 
 
@@ -475,10 +470,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
   }
 
-  // Assure that all sender threads have sent data for the previous lumi section
-  const uint32_t lumiSection = fragmentRequest->evbIds[0].lumiSection();
-  lumiBarrier_->reachedLumiSection(lumiSection);
-
   xdaq::ApplicationDescriptor* bu = 0;
   try
   {
@@ -658,7 +649,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
   processesActive_.clear();
   processesActive_.resize(configuration_->numberOfResponders);
-  lumiBarrier_.reset( new LumiBarrier(configuration_->numberOfResponders) );
 
   const std::string identifier = readoutUnit_->getIdentifier();
 
@@ -728,6 +718,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
       payloadPerBU_.push_back(it->second);
     }
   }
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    nbActiveProcesses_ = processesActive_.count();
+  }
 }
 
 
@@ -766,6 +760,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table.add(tr()
     .add(td("last evt number to BUs"))
     .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+  table.add(tr()
+    .add(td("# of active responders"))
+    .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
 
   table.add(tr()
     .add(th("BU requests").set("colspan","2")));
@@ -814,9 +811,10 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
   table table;
 
   table.add(tr()
-    .add(th("Statistics per BU").set("colspan","3")));
+    .add(th("Statistics per BU").set("colspan","4")));
   table.add(tr()
     .add(td("Instance"))
+    .add(td("TID"))
     .add(td("Nb requests"))
     .add(td("Data payload (MB)")));
 
@@ -824,7 +822,7 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
   for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
        it != itEnd; ++it)
   {
-    const uint32_t buTID = it->first;
+    const I2O_TID buTID = it->first;
     uint32_t payloadPerBU = 0;
     try
     {
@@ -837,6 +835,7 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
     table.add(tr()
       .add(td()
         .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
+      .add(td(boost::lexical_cast<std::string>(buTID)))
       .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCountPerBU.at(buTID))))
       .add(td(boost::lexical_cast<std::string>(payloadPerBU))));
   }

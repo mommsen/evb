@@ -87,12 +87,6 @@ std::ostream& operator<<
   const I2O_PRIVATE_MESSAGE_FRAME pvtMessageFrame
 )
 {
-  str << "PvtMessageFrame.StdMessageFrame.VersionOffset=";
-  str << pvtMessageFrame.StdMessageFrame.VersionOffset << std::endl;
-
-  str << "PvtMessageFrame.StdMessageFrame.MsgFlags=";
-  str << pvtMessageFrame.StdMessageFrame.MsgFlags << std::endl;
-
   str << "PvtMessageFrame.StdMessageFrame.MessageSize=";
   str << pvtMessageFrame.StdMessageFrame.MessageSize << std::endl;
 

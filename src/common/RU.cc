@@ -58,6 +58,15 @@ namespace evb {
       return true;
     }
 
+
+    template<>
+    bool BUproxy<RU>::isEmpty()
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      return ( fragmentRequestFIFO_.empty() && processesActive_.none() );
+    }
+
+
     template<>
     void ru::ReadoutUnit::addComponentsToWebPage
     (
@@ -68,7 +77,7 @@ namespace evb {
 
       table.add(tr()
         .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
         .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }

@@ -51,14 +51,12 @@ namespace evb {
       EvBid evbId = superFragment->getEvBid();
       fragmentRequest->evbIds.push_back(evbId);
 
-      const uint32_t lumiSectionOfFirstFragment = evbId.lumiSection();
       uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
       const uint32_t maxTries = configuration_->maxTriggerAgeMSec*100;
       uint32_t tries = 0;
       while (
         doProcessing_ &&
         remainingRequests > 0 &&
-        evbId.lumiSection() == lumiSectionOfFirstFragment &&
         tries < maxTries
       )
       {
@@ -81,6 +79,14 @@ namespace evb {
       readoutUnit_->getRUproxy()->sendRequest(fragmentRequest);
 
       return true;
+    }
+
+
+    template<>
+    bool BUproxy<EVM>::isEmpty()
+    {
+      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      return ( processesActive_.none() && readoutUnit_->getRUproxy()->isEmpty() );
     }
 
 
@@ -126,11 +132,11 @@ namespace evb {
 
       table.add(tr()
         .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","2"))
-        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
         .add(td(dynamic_cast<const EVM*>(this)->getRUproxy()->getHtmlSnipped()).set("class","xdaq-evb-component")));
 
       table.add(tr()
-        .add(td(img().set("src","/evb/images/arrow_e.gif")))
+        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
         .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }

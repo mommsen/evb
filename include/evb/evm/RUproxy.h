@@ -88,12 +88,17 @@ namespace evb {
       /**
        * Drain events
        */
-      void drain();
+      void drain() const;
 
       /**
        * Stop processing events
        */
       void stopProcessing();
+
+      /**
+       * Return true if no work is being done
+       */
+      bool isEmpty() const;
 
       /**
        * Return the tids of RUs participating in the event building

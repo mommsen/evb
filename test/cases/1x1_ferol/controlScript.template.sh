@@ -54,7 +54,7 @@ sendSimpleCmdToApp FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 
 echo "Sending data for 5 seconds"
 sleep 5
 
-superFragmentSizeEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt`
+superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
 echo "EVM superFragmentSize: $superFragmentSizeEVM"
 if [[ $superFragmentSizeEVM -ne 2048 ]]
 then
@@ -62,7 +62,7 @@ then
   exit 1
 fi
 
-eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
 echo "EVM eventRate: $eventRateEVM"
 if [[ $eventRateEVM -lt 1000 ]]
 then
@@ -70,7 +70,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt`
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
@@ -78,7 +78,7 @@ then
   exit 1
 fi
 
-eventSizeBU0=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt`
+eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
 echo "BU0 eventSize: $eventSizeBU0"
 if [[ $eventSizeBU0 -ne 2048 ]]
 then
