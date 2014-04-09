@@ -257,7 +257,6 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
-  drain();
 }
 
 
