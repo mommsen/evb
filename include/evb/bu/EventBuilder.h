@@ -2,6 +2,7 @@
 #define _evb_bu_EventBuilder_h_
 
 #include <boost/dynamic_bitset.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -15,6 +16,7 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
+#include "evb/bu/LumiBarrier.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StreamHandler.h"
 #include "toolbox/lang/Class.h"
@@ -102,8 +104,9 @@ namespace evb {
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      void buildEvent(FragmentChainPtr&, EventMapPtr&, StreamHandlerPtr&) const;
+      void buildEvent(FragmentChainPtr&, EventMapPtr&) const;
       EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
+      void handleCompleteEvents(EventMapPtr&, StreamHandlerPtr&) const;
 
       BU* bu_;
       boost::shared_ptr<DiskWriter> diskWriter_;
@@ -125,6 +128,7 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       mutable boost::mutex processesActiveMutex_;
+      boost::scoped_ptr<LumiBarrier> lumiBarrier_;
 
       mutable uint16_t writeNextEventsToFile_;
       mutable boost::mutex writeNextEventsToFileMutex_;

@@ -81,9 +81,15 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
         const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
         if ( index.ruTid == evm_.tid )
-          fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+        {
+          if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
+            fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+        }
         else
-          fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+        {
+          if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
+            fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+        }
         fragmentMonitoring_.payload += payload;
         fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
         ++fragmentMonitoring_.i2oCount;
@@ -559,9 +565,10 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   table table;
 
   table.add(tr()
-    .add(th("Statistics per RU").set("colspan","3")));
+    .add(th("Statistics per RU").set("colspan","4")));
   table.add(tr()
     .add(td("Instance"))
+    .add(td("TID"))
     .add(td("Fragments"))
     .add(td("Payload (MB)")));
 
@@ -582,6 +589,7 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
     table.add(tr()
       .add(td()
         .add(a(label.str()).set("href",url).set("target","_blank")))
+      .add(td(boost::lexical_cast<std::string>(it->first)))
       .add(td(boost::lexical_cast<std::string>(it->second)))
       .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
   }

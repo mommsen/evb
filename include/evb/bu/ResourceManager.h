@@ -72,16 +72,21 @@ namespace evb {
        */
       struct LumiSectionAccount
       {
-        const time_t startTime;
         const uint32_t lumiSection;
+        time_t startTime;
         uint32_t nbEvents;
 
         LumiSectionAccount(const uint32_t ls)
-        : startTime(time(0)),lumiSection(ls),nbEvents(0) {};
+        : lumiSection(ls),startTime(time(0)),nbEvents(0) {};
       };
       typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
 
       bool getNextLumiSectionAccount(LumiSectionAccountPtr&);
+
+      /**
+       * Return current lumi section number
+       */
+      uint32_t getCurrentLumiSection();
 
       /**
        * Start processing messages

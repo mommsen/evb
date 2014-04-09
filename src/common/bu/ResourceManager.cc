@@ -25,8 +25,7 @@ nbResources_(1),
 resourcesToBlock_(1),
 freeResourceFIFO_(bu,"freeResourceFIFO"),
 blockedResourceFIFO_(bu,"blockedResourceFIFO"),
-lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO"),
-currentLumiSectionAccount_(new LumiSectionAccount(0))
+lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO")
 {
   resetMonitoringCounters();
 }
@@ -54,7 +53,6 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
       pos->second.push_back(dataBlockMsg->evbIds[i]);
-      incrementEventsInLumiSection(dataBlockMsg->evbIds[i].lumiSection());
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
@@ -104,26 +102,25 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
 
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
-  if ( configuration_->dropEventData ) return;
-
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
 
-  if ( lumiSection < currentLumiSectionAccount_->lumiSection )
+  if ( ! currentLumiSectionAccount_.get() ) return;
+
+  const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
+  if ( lumiSection < currentLumiSection )
   {
     std::ostringstream oss;
     oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << currentLumiSectionAccount_->lumiSection;
+    oss << " while processing lumi section " << currentLumiSection;
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  if ( lumiSection > currentLumiSectionAccount_->lumiSection )
+  if ( lumiSection > currentLumiSection )
   {
-    if ( currentLumiSectionAccount_->lumiSection > 0 )
-      lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
+    lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
 
     // backfill any skipped lumi sections
-    for (uint32_t ls = currentLumiSectionAccount_->lumiSection+1;
-         ls < lumiSection; ++ls)
+    for (uint32_t ls = currentLumiSection+1; ls < lumiSection; ++ls)
     {
       lumiSectionAccountFIFO_.enqWait(LumiSectionAccountPtr( new LumiSectionAccount(ls) ));
     }
@@ -140,23 +137,48 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
   if ( lumiSectionAccountFIFO_.deq(lumiSectionAcount) ) return true;
 
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
-  if ( currentLumiSectionAccount_->lumiSection > 0 &&
-    time(0) > (currentLumiSectionAccount_->startTime + lumiSectionTimeout_) )
+  if ( currentLumiSectionAccount_.get() )
   {
-    std::ostringstream msg;
-    msg << "Lumisection " <<  currentLumiSectionAccount_->lumiSection << " timed out after " << lumiSectionTimeout_ << "s";
-    LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
-    lumiSectionAcount.swap(currentLumiSectionAccount_);
-    currentLumiSectionAccount_.reset( new LumiSectionAccount(lumiSectionAcount->lumiSection + 1) );
-    return true;
+    if ( blockedResourceFIFO_.full() )
+    {
+      //delay the expiry of current lumi section if we are not requesting any events
+      currentLumiSectionAccount_->startTime = time(0);
+    }
+    else
+    {
+      const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
+      const uint32_t lumiDuration = time(0) - currentLumiSectionAccount_->startTime;
+      if ( currentLumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
+      {
+        std::ostringstream msg;
+        msg.setf(std::ios::fixed);
+        msg.precision(1);
+        msg << "Lumi section " <<  currentLumiSection << " timed out after " << lumiDuration << "s";
+        LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
+        lumiSectionAcount.swap(currentLumiSectionAccount_);
+        currentLumiSectionAccount_.reset( new LumiSectionAccount(currentLumiSection+1) );
+        return true;
+      }
+    }
   }
-
   return false;
+}
+
+
+uint32_t evb::bu::ResourceManager::getCurrentLumiSection()
+{
+  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+  if ( currentLumiSectionAccount_.get() )
+    return currentLumiSectionAccount_->lumiSection;
+  else
+    return 0;
 }
 
 
 void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
+  incrementEventsInLumiSection(event->lumiSection());
+
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
   const uint32_t eventSize = event->eventSize();
@@ -263,10 +285,10 @@ void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
 {
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
 
-  if ( currentLumiSectionAccount_->lumiSection > 0 )
+  if ( currentLumiSectionAccount_.get() )
   {
     lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
-    currentLumiSectionAccount_.reset( new LumiSectionAccount(0) );
+    currentLumiSectionAccount_.reset();
   }
 }
 
@@ -294,7 +316,13 @@ float evb::bu::ResourceManager::getAvailableResources()
         {
           const std::string key = line.substr(0,pos);
           if ( key == "idles" || key == "used" )
-            coreCount += boost::lexical_cast<unsigned int>(line.substr(pos+1));
+          {
+            try
+            {
+              coreCount += boost::lexical_cast<uint32_t>(line.substr(pos+1));
+            }
+            catch(boost::bad_lexical_cast& e) {}
+          }
         }
       }
     }

@@ -51,14 +51,12 @@ namespace evb {
       EvBid evbId = superFragment->getEvBid();
       fragmentRequest->evbIds.push_back(evbId);
 
-      const uint32_t lumiSectionOfFirstFragment = evbId.lumiSection();
       uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
       const uint32_t maxTries = configuration_->maxTriggerAgeMSec*100;
       uint32_t tries = 0;
       while (
         doProcessing_ &&
         remainingRequests > 0 &&
-        evbId.lumiSection() == lumiSectionOfFirstFragment &&
         tries < maxTries
       )
       {
