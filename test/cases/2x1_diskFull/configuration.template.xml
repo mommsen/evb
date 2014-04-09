@@ -25,15 +25,12 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://FEROL1_SOAP_HOST_NAME:FEROL1_SOAP_PORT">
 
@@ -54,15 +51,12 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="1" network="local"/>
-
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://FEROL2_SOAP_HOST_NAME:FEROL2_SOAP_PORT">
 
@@ -83,15 +77,12 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="2" network="local"/>
-
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://FEROL3_SOAP_HOST_NAME:FEROL3_SOAP_PORT">
 
@@ -112,15 +103,12 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="3" network="local"/>
-
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT">
 
@@ -208,9 +196,6 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="0" network="local"/>
-
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
@@ -218,7 +203,6 @@
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://RU1_SOAP_HOST_NAME:RU1_SOAP_PORT">
 
@@ -250,9 +234,6 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="1" network="local"/>
-
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
@@ -260,7 +241,6 @@
     <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
   </xc:Context>
-
 
   <xc:Context url="http://BU0_SOAP_HOST_NAME:BU0_SOAP_PORT">
 
@@ -290,9 +270,6 @@
       </properties>
     </xc:Application>
 
-    <xc:Application class="xmem::probe::Application" id="21" instance="2" network="local"/>
-
-    <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
     <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>

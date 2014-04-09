@@ -100,7 +100,7 @@ sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Configure
 
 sleep 1
 
-runNumber=`date "+%s"`
+runNumber=$(date "+%s")
 
 #Enable EVM
 setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $runNumber
@@ -130,7 +130,7 @@ done
 
 sleep 10
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -138,7 +138,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -146,7 +146,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -157,7 +157,7 @@ fi
 rm -f $testDir/run$runNumber/*.raw
 sleep 5
 
-state=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string`
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -165,7 +165,7 @@ then
   exit 1
 fi
 
-state=`getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 stateName xsd:string`
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 1 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -173,7 +173,7 @@ then
   exit 1
 fi
 
-state=`getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string`
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
 if [[ "$state" != "Enabled" ]]
 then
@@ -181,7 +181,7 @@ then
   exit 1
 fi
 
-eventRateEVM=`getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt`
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
 echo "EVM eventRate: $eventRateEVM"
 if [[ $eventRateEVM -lt 500 ]]
 then

@@ -28,7 +28,7 @@ function checkBuDir {
             exit 1
         fi
 
-        if [[ "x`diff -q $testDir/${hltFile} $runDir/hlt/${hltFile}`" != "x" ]]
+        if [[ "x$(diff -q $testDir/${hltFile} $runDir/hlt/${hltFile})" != "x" ]]
         then
             echo "Test failed: $testDir/${hltFile} $runDir/hlt/${hltFile} differ:"
             diff $testDir/${hltFile} $runDir/hlt/${hltFile}
@@ -40,7 +40,7 @@ function checkBuDir {
     runFileCounter=0;
     runLsCounter=0;
 
-    for eolsFile in `ls $runDir/*_EoLS.jsn`
+    for eolsFile in $(ls $runDir/*_EoLS.jsn)
     do
         lumiSection=$(echo $eolsFile | sed -re 's/.*_ls([0-9]+)_EoLS.jsn/\1/')
         lsEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eolsFile)
