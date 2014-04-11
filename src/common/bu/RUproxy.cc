@@ -577,21 +577,31 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
          itEnd = fragmentMonitoring_.logicalCountPerRU.end();
        it != itEnd; ++it)
   {
-    xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
-    const std::string url = ru->getContextDescriptor()->getURL() + "/" + ru->getURN();
+    try
+    {
+      xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
+      const std::string url = ru->getContextDescriptor()->getURL() + "/" + ru->getURN();
 
-    std::ostringstream label;
-    if ( it->first == evm_.tid )
-      label << "EVM";
-    else
-      label << "RU " << ru->getInstance();
+      const std::string label = (it->first == evm_.tid) ? "EVM" :
+        "RU "+boost::lexical_cast<std::string>(ru->getInstance());
 
-    table.add(tr()
-      .add(td()
-        .add(a(label.str()).set("href",url).set("target","_blank")))
-      .add(td(boost::lexical_cast<std::string>(it->first)))
-      .add(td(boost::lexical_cast<std::string>(it->second)))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+      table.add(tr()
+        .add(td()
+          .add(a(label).set("href",url).set("target","_blank")))
+        .add(td(boost::lexical_cast<std::string>(it->first)))
+        .add(td(boost::lexical_cast<std::string>(it->second)))
+        .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+    }
+    catch (xdaq::exception::ApplicationDescriptorNotFound& e)
+    {
+      const std::string label = (it->first == evm_.tid) ? "EVM" : "RU";
+
+      table.add(tr()
+        .add(td(label))
+        .add(td(boost::lexical_cast<std::string>(it->first)))
+        .add(td(boost::lexical_cast<std::string>(it->second)))
+        .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+    }
   }
   return table;
 }

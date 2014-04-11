@@ -126,6 +126,7 @@ namespace evb {
     volatile uint32_t writePointer_;
     T* container_;
     volatile uint32_t size_;
+    mutable volatile bool printingElements_;
   };
 
 
@@ -167,7 +168,8 @@ namespace evb {
   readPointer_(0),
   writePointer_(0),
   container_(0),
-  size_(1)
+  size_(1),
+  printingElements_(false)
   {
     evbApplication->registerQueueCallback(name,
       boost::bind(&OneToOneQueue<T>::getHtmlSnippedVertical,this));
@@ -216,6 +218,8 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::resize(const uint32_t size)
   {
+    while ( printingElements_ ) {};
+
     if ( !empty() )
     {
       XCEPT_RAISE(exception::FIFO,
@@ -248,6 +252,7 @@ namespace evb {
   template <class T>
   bool OneToOneQueue<T>::enq(const T& element)
   {
+    while ( printingElements_ ) {};
     volatile const uint32_t nextElement = (writePointer_ + 1) % size_;
     if ( nextElement == readPointer_ ) return false;
     new (&container_[writePointer_]) T(element);
@@ -268,6 +273,7 @@ namespace evb {
   {
     if ( empty() ) return false;
 
+    while ( printingElements_ ) {};
     volatile const uint32_t nextElement = (readPointer_ + 1) % size_;
     element = container_[readPointer_];
     container_[readPointer_].~T();
@@ -286,6 +292,7 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::clear()
   {
+    while ( printingElements_ ) {};
     T element;
     while ( deq(element) ) {};
   }
@@ -345,26 +352,20 @@ namespace evb {
   template <class T>
   cgicc::div OneToOneQueue<T>::getHtmlSnippedHorizontal(const uint32_t nbElementsToPrint) const
   {
-    // cache values which might change during the printout
-    // Note: we do not want to lock the queue for the debug
-    // printout. Thus, be prepared that some elements are no
-    // longer there when we want to print them.
-    const uint32_t cachedReadPointer = readPointer_;
-    const uint32_t cachedWritePointer = writePointer_;
-    const uint32_t cachedSize = size();
-    const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
+    printingElements_ = true;
+    const uint32_t nbElements = std::min(nbElementsToPrint, size());
 
     using namespace cgicc;
 
     tr headerRow,tableRow;
 
-    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
+    for (uint32_t i=readPointer_; i < readPointer_+nbElements; ++i)
     {
-      uint32_t pos = i % cachedSize;
+      uint32_t pos = i % size();
       headerRow.add(th(boost::lexical_cast<std::string>(pos)).set("style","width:5em"));
 
-      if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
-           ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
+      if ( ( writePointer_ >= readPointer_ && i < writePointer_ ) ||
+           ( writePointer_ < readPointer_ && i < writePointer_ + size()) )
       {
         std::ostringstream content;
         try
@@ -383,6 +384,7 @@ namespace evb {
         tableRow.add(td("&nbsp;"));
       }
     }
+    printingElements_ = false;
 
     cgicc::div queueDetail;
     queueDetail.set("class","xdaq-evb-queuedetail");
@@ -404,15 +406,8 @@ namespace evb {
   template <class T>
   cgicc::div OneToOneQueue<T>::getHtmlSnippedVertical(const uint32_t nbElementsToPrint) const
   {
-    // cache values which might change during the printout
-    // Note: we do not want to lock the queue for the debug
-    // printout. Thus, be prepared that some elements are no
-    // longer there when we want to print them.
-    const uint32_t cachedReadPointer = readPointer_;
-    const uint32_t cachedWritePointer = writePointer_;
-    const uint32_t cachedElements = elements();
-    const uint32_t cachedSize = size();
-    const uint32_t nbElements = std::min(nbElementsToPrint, cachedSize);
+    printingElements_ = true;
+    const uint32_t nbElements = std::min(nbElementsToPrint, size());
 
     using namespace cgicc;
 
@@ -424,23 +419,23 @@ namespace evb {
 
     std::ostringstream str;
     str << name_ << "<br/>";
-    str << " read="     << cachedReadPointer;
-    str << " write="    << cachedWritePointer;
-    str << " size="     << cachedSize;
-    str << " elements=" << cachedElements;
+    str << " read="     << readPointer_;
+    str << " write="    << writePointer_;
+    str << " size="     << size();
+    str << " elements=" << elements();
 
     table.add(tr()
       .add(th(str.str()).set("colspan","2")));
 
 
-    for (uint32_t i=cachedReadPointer; i < cachedReadPointer+nbElements; ++i)
+    for (uint32_t i=readPointer_; i < readPointer_+nbElements; ++i)
     {
       tr tr;
-      uint32_t pos = i % cachedSize;
+      uint32_t pos = i % size();
       tr.add(th(boost::lexical_cast<std::string>(pos)));
 
-      if ( ( cachedWritePointer >= cachedReadPointer && i < cachedWritePointer ) ||
-           ( cachedWritePointer < cachedReadPointer && i < cachedWritePointer + cachedSize) )
+      if ( ( writePointer_ >= readPointer_ && i < writePointer_ ) ||
+           ( writePointer_ < readPointer_ && i < writePointer_ + size()) )
       {
         std::ostringstream content;
         try
@@ -460,6 +455,7 @@ namespace evb {
       }
       table.add(tr);
     }
+    printingElements_ = false;
 
     cgicc::div queueDetail;
     queueDetail.set("class","xdaq-evb-queuedetail");
