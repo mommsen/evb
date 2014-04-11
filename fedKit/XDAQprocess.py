@@ -29,7 +29,15 @@ class XDAQprocess:
             self._logfile.flush()
 
     def getURL(self):
-        return "http://"+self._host+":"+str(self._port)
+        return self._host+":"+str(self._port)
+
+    def getURN(self,app,instance):
+        try:
+            next(a for a in self._applications if a == (app,instance))
+        except StopIteration:
+            print("I don't know anything about "+app+", instance "+str(instance))
+            return None
+        return "/urn:xdaq-application:class="+app+",instance="+str(instance)
 
     def addApplication(self,app,instance):
         self._applications.append((app,instance))

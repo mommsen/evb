@@ -12,14 +12,16 @@ class FedKitConfig:
         self._config = ConfigParser.RawConfigParser()
         self._config.read('fedKit.cfg')
 
+        runNumber = self.getRunNumber()
         fedId = self.getFedId()
+        writeData = self.getWriteData()
         soapBasePort = self.getSoapBasePort()
         frlBasePort = self.getFrlBasePort()
 
         with open('fedKit.cfg','wb') as configFile:
             self._config.write(configFile)
 
-        self._xmlConfiguration = self.getConfiguration(fedId,soapBasePort,frlBasePort)
+        self._xmlConfiguration = self.getConfiguration(runNumber,fedId,soapBasePort,frlBasePort,writeData)
 
         with open(self.configFilePath,'wb') as xmlFile:
             xmlFile.write(self._xmlConfiguration)
@@ -65,29 +67,21 @@ class FedKitConfig:
     """ % {'host':host,'soapPort':soapPort,'frlPort':frlPort,'fedId':fedId}
 
 
-    def getEvBContext(self,host,soapPort,frlPort,fedId,useBU):
+    def getEvBContext(self,host,soapPort,frlPort,runNumber,fedId,writeData):
         xdaqProcess = XDAQprocess.XDAQprocess(host,soapPort)
         #xdaqProcess.addApplication("pt::frl::Application",1)
         xdaqProcess.addApplication("evb::EVM",0)
-        if useBU:
-            xdaqProcess.addApplication("evb::BU",0)
+        xdaqProcess.addApplication("evb::BU",0)
         self.xdaqProcesses.append(xdaqProcess)
 
-        if useBU:
-            dropInputData = "false"
-            buApplication = """
-        <xc:Application class="evb::BU" id="13" instance="0" network="local">
-          <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
-            <dropEventData xsi:type="xsd:boolean">true</dropEventData>
-            <numberOfBuilders xsi:type="xsd:unsignedInt">1</numberOfBuilders>
-          </properties>
-        </xc:Application>
-    """
-            buTarget = """<i2o:target class="evb::BU" instance="0" tid="30"/>"""
+        if writeData:
+            dropEventData = "false"
+            outputDir = self.getOutputDir()
+            fakeLumiSectionDuration = 60
         else:
-            dropInputData = "true"
-            buApplication = ""
-            buTarget = ""
+            dropEventData = "true"
+            outputDir = "/tmp"
+            fakeLumiSectionDuration = 0
 
         context = """
       <xc:Context url="http://%(host)s:%(soapPort)s">
@@ -129,7 +123,8 @@ class FedKitConfig:
         <xc:Application class="evb::EVM" id="12" instance="0" network="local">
           <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
             <inputSource xsi:type="xsd:string">FEROL</inputSource>
-            <dropInputData xsi:type="xsd:boolean">%(dropInputData)s</dropInputData>
+            <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
+            <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">%(fakeLumiSectionDuration)s</fakeLumiSectionDuration>
             <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
             <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
               <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">%(fedId)s</item>
@@ -137,7 +132,15 @@ class FedKitConfig:
           </properties>
         </xc:Application>
 
-        %(buApplication)s
+        <xc:Application class="evb::BU" id="13" instance="0" network="local">
+          <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
+            <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
+            <dropEventData xsi:type="xsd:boolean">%(dropEventData)s</dropEventData>
+            <numberOfBuilders xsi:type="xsd:unsignedInt">1</numberOfBuilders>
+            <rawDataDir xsi:type="xsd:string">%(outputDir)s</rawDataDir>
+            <metaDataDir xsi:type="xsd:string">%(outputDir)s</metaDataDir>
+          </properties>
+        </xc:Application>
 
         <xc:Module>/usr/lib64/libdat2.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
@@ -150,14 +153,14 @@ class FedKitConfig:
 
       <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
         <i2o:target class="evb::EVM" instance="0" tid="1"/>
-        %(buTarget)s
+        <i2o:target class="evb::BU" instance="0" tid="30"/>
       </i2o:protocol>
-    """ % {'host':host,'soapPort':soapPort,'frlPort':frlPort,'fedId':fedId,'dropInputData':dropInputData,
-           'buApplication':buApplication,'buTarget':buTarget}
+    """ % {'host':host,'soapPort':soapPort,'frlPort':frlPort,'runNumber':runNumber,'fedId':fedId,
+           'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration}
         return context
 
 
-    def getConfiguration(self,fedId,soapBasePort,frlBasePort,useBU=True,useDummyFEROL=True):
+    def getConfiguration(self,runNumber,fedId,soapBasePort,frlBasePort,writeData,useDummyFEROL=True):
         hostname = socket.gethostbyaddr(socket.gethostname())[0]
 
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
@@ -167,7 +170,7 @@ class FedKitConfig:
         else:
             config += self.getFerolControllerContext()
 
-        config += self.getEvBContext(hostname,soapBasePort+1,frlBasePort+1,fedId,useBU)
+        config += self.getEvBContext(hostname,soapBasePort+1,frlBasePort+1,runNumber,fedId,writeData)
 
         config += "</xc:Partition>"
 
@@ -197,16 +200,66 @@ class FedKitConfig:
 
 
     def getFedId(self):
-        fedId = None
         try:
             fedId = self._config.getint('Input','fedId')
-        except ConfigParser.NoSectionError:
-            self._config.add_section('Input')
+        except ConfigParser.NoOptionError:
+            fedId = None
 
         fedId = self.askUserForFedId(fedId)
         self._config.set('Input','fedId',fedId)
 
         return fedId
+
+
+    def getRunNumber(self):
+        try:
+            runNumber = self._config.getint('Input','runNumber') + 1
+        except ConfigParser.NoSectionError:
+            self._config.add_section('Input')
+            runNumber = 1
+
+        self._config.set('Input','runNumber',runNumber)
+
+        return runNumber
+
+
+    def getWriteData(self):
+        try:
+            writeData = self._config.getboolean('Output','writeData')
+        except ConfigParser.NoSectionError:
+            self._config.add_section('Output')
+            writeData = False
+
+        question = "Do you want to write the data to disk? ["
+        if writeData:
+            question += "Yes"
+        else:
+            question += "No"
+        question += "]: "
+        answer = None
+        answer = raw_input(question)
+        if answer:
+            if answer.lower()[0] == 'y':
+                writeData = True
+            elif answer.lower()[0] == 'n':
+                writeData = False
+
+        self._config.set('Output','writeData',writeData)
+
+        return writeData
+
+
+    def getOutputDir(self):
+        try:
+            outputDir = self._config.get('Output','outputDir')
+        except ConfigParser.NoOptionError:
+            pass
+
+        outputDir = raw_input("Please enter the directory where the data shall be written [/tmp]: ")
+        outputDir = outputDir or '/tmp'
+        self._config.set('Output','outputDir',outputDir)
+
+        return outputDir
 
 
     def getSoapBasePort(self):
