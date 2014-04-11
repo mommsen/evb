@@ -524,15 +524,12 @@ void evb::bu::DiskWriter::closeAnyOldRuns() const
 
 void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) const
 {
+  if ( configuration_->hltParameterSetURL.value_.empty() ) return;
+
   const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_ );
   createDir(hltPath);
 
   std::string url(configuration_->hltParameterSetURL.value_);
-
-  if ( url.empty() )
-  {
-    XCEPT_RAISE(exception::Configuration, "hltParameterSetURL for HLT menu not set");
-  }
 
   CURL* curl = curl_easy_init();
   if ( ! curl )
