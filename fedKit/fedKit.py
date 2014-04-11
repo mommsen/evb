@@ -1,12 +1,16 @@
 #!/usr/bin/python
 
 import httplib
+import os
 import time
 
 import FedKitConfig
 import XDAQprocess
 
-
+os.environ["XDAQ_ROOT"] = "/opt/xdaq"
+os.environ["XDAQ_DOCUMENT_ROOT"] = "/opt/xdaq/htdocs"
+os.environ["LD_LIBRARY_PATH"] = "/opt/xdaq/lib:"+os.environ["LD_LIBRARY_PATH"]
+os.environ["PATH"] = "/opt/xdaq/bin:"+os.environ["PATH"]
 
 print("Welcome to the optical FEDkit")
 print("=============================")

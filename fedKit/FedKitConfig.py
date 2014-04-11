@@ -61,7 +61,7 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-        <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
+        <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
     """ % {'host':host,'soapPort':soapPort,'frlPort':frlPort,'fedId':fedId}
@@ -147,7 +147,7 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
-        <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
+        <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
 
