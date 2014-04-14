@@ -86,7 +86,7 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   }
 
   usePlayback_ = usePlayback;
-  fakeLumiSectionDuration_ = fakeLumiSectionDuration;
+  evbIdFactory_.setFakeLumiSectionDuration(fakeLumiSectionDuration);
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -131,7 +131,7 @@ void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& play
 void evb::test::dummyFEROL::FragmentGenerator::reset()
 {
   playbackDataPos_ = playbackData_.begin();
-  evbIdFactory_.reset(0,fakeLumiSectionDuration_);
+  evbIdFactory_.reset(0);
 }
 
 

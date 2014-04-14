@@ -19,6 +19,13 @@ namespace evb {
     ~EvBidFactory();
 
     /**
+     * Set the duration of the fake lumi section in seconds.
+     * Setting it to 0 disables the generation of fake lumi sections.
+     */
+    void setFakeLumiSectionDuration(const uint32_t duration)
+    { fakeLumiSectionDuration_ = boost::posix_time::seconds(duration); }
+
+    /**
      * Return EvBid with a fake eventNumber and lumi section
      */
     EvBid getEvBid();
@@ -36,16 +43,17 @@ namespace evb {
     /**
      * Reset the counters for a new run
      */
-    void reset(const uint32_t runNumber, const uint32_t fakeLumiSectionDuration);
+    void reset(const uint32_t runNumber);
 
   private:
 
     void stopFakeLumiThread();
-    void fakeLumiActivity(const boost::posix_time::seconds fakeLumiSectionDuration);
+    void fakeLumiActivity();
 
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
+    boost::posix_time::seconds fakeLumiSectionDuration_;
     uint32_t fakeLumiSection_;
     boost::shared_ptr<boost::thread> fakeLumiThread_;
 

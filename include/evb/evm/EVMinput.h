@@ -57,7 +57,9 @@ namespace evb {
 
       private:
 
-        virtual uint32_t extractTriggerInformation(const unsigned char*) const;
+        virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
+        virtual uint32_t getLumiSectionFromGTP(const unsigned char*) const;
+        virtual uint32_t getLumiSectionFromGTPe(const unsigned char*) const;
 
         FragmentFIFOs::iterator masterFED_;
 
