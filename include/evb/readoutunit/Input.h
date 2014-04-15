@@ -2,7 +2,6 @@
 #define _evb_readoutunit_Input_h_
 
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -27,7 +26,6 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
-#include "interface/shared/GlobalEventNumber.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -190,7 +188,6 @@ namespace evb {
 
         Input<ReadoutUnit,Configuration>* input_;
         volatile bool doProcessing_;
-        uint32_t fakeLumiSectionDuration_;
 
       };
 
@@ -211,8 +208,7 @@ namespace evb {
 
       protected:
 
-        virtual uint32_t extractTriggerInformation(const unsigned char*) const
-        { return 0; }
+        virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
@@ -222,12 +218,12 @@ namespace evb {
         typedef std::map<uint16_t,FragmentFIFOPtr> FragmentFIFOs;
         FragmentFIFOs fragmentFIFOs_;
 
+        typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
+        EvBidFactories evbIdFactories_;
+
       private:
 
         bool dropInputData_;
-
-        typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
-        EvBidFactories evbIdFactories_;
 
       };
 
@@ -246,7 +242,6 @@ namespace evb {
         bool createSuperFragment(const EvBid&, FragmentChainPtr&);
 
         EvBidFactory evbIdFactory_;
-        uint32_t eventNumber_;
 
       private:
 
@@ -936,7 +931,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(boost::shared_ptr<Configuration> configuration)
 {
   this->doProcessing_ = false;
-  this->fakeLumiSectionDuration_ = configuration->fakeLumiSectionDuration;
   dropInputData_ = configuration->dropInputData;
 
   superFragmentFIFO_.clear();
@@ -985,18 +979,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::superFragme
   const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   const uint16_t fedId = frame->fedid;
   const uint32_t eventNumber = frame->triggerno;
-
-  EvBid evbId;
-
-  if ( this->fakeLumiSectionDuration_ > 0 )
-  {
-    evbId = evbIdFactories_[fedId].getEvBid(eventNumber);
-  }
-  else
-  {
-    const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
-    evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-  }
+  const EvBid evbId = getEvBid(fedId,eventNumber,payload);
 
   FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
 
@@ -1023,19 +1006,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvai
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
-
-
-  EvBid evbId;
-
-  if ( this->fakeLumiSectionDuration_ > 0 )
-  {
-    evbId = evbIdFactories_[fedId].getEvBid(eventNumber);
-  }
-  else
-  {
-    const uint32_t lsNumber = fedId==GTP_FED_ID ? extractTriggerInformation(payload) : 0;
-    evbId = evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-  }
+  const EvBid evbId = getEvBid(fedId,eventNumber,payload);
 
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
 
@@ -1047,11 +1018,23 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvai
 
 
 template<class ReadoutUnit,class Configuration>
+evb::EvBid evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getEvBid
+(
+  const uint16_t fedId,
+  const uint32_t eventNumber,
+  const unsigned char* payload
+)
+{
+  return evbIdFactories_[fedId].getEvBid(eventNumber);
+}
+
+
+template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProcessing(const uint32_t runNumber)
 {
   for (typename EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
         it != itEnd; ++it)
-    it->second.reset(runNumber,this->fakeLumiSectionDuration_);
+    it->second.reset(runNumber);
 
   this->doProcessing_ = true;
 }
@@ -1107,7 +1090,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
 {
   this->doProcessing_ = false;
-  this->fakeLumiSectionDuration_ = configuration->fakeLumiSectionDuration;
+  evbIdFactory_.setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
 
   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
   try
@@ -1277,8 +1260,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::createS
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::startProcessing(const uint32_t runNumber)
 {
-  eventNumber_ = 0;
-  evbIdFactory_.reset(runNumber,this->fakeLumiSectionDuration_);
+  evbIdFactory_.reset(runNumber);
   this->doProcessing_ = true;
 }
 

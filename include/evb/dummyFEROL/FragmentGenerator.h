@@ -117,7 +117,6 @@ namespace evb {
         bool usePlayback_;
         toolbox::mem::Pool* fragmentPool_;
         uint32_t fragmentPoolSize_;
-        uint32_t fakeLumiSectionDuration_;
 
         EvBidFactory evbIdFactory_;
         boost::scoped_ptr<FragmentTracker> fragmentTracker_;

@@ -48,15 +48,43 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
   readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy::configure(configuration);
 
   masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
-  if ( masterFED_ == fragmentFIFOs_.end() )
+  if ( masterFED_ != fragmentFIFOs_.end() ) return;
+
+  masterFED_ = fragmentFIFOs_.find(GTPe_FED_ID);
+  if ( masterFED_ != fragmentFIFOs_.end() ) return;
+
+  // no trigger FED, use the first FED
+  masterFED_ = fragmentFIFOs_.begin();
+  evbIdFactories_[masterFED_->first].setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
+}
+
+
+evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
+(
+  const uint16_t fedId,
+  const uint32_t eventNumber,
+  const unsigned char* payload
+)
+{
+  switch(fedId)
   {
-    // no trigger FED, use the first FED
-    masterFED_ = fragmentFIFOs_.begin();
+    case GTP_FED_ID:
+    {
+      const uint32_t lsNumber = getLumiSectionFromGTP(payload);
+      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+    }
+    case GTPe_FED_ID:
+    {
+      const uint32_t lsNumber = getLumiSectionFromGTPe(payload);
+      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+    }
+    default:
+      return evbIdFactories_[fedId].getEvBid(eventNumber);
   }
 }
 
 
-uint32_t evb::evm::EVMinput::FEROLproxy::extractTriggerInformation(const unsigned char* payload) const
+uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP(const unsigned char* payload) const
 {
   using namespace evtn;
 
@@ -90,6 +118,21 @@ uint32_t evb::evm::EVMinput::FEROLproxy::extractTriggerInformation(const unsigne
   //extract lumi section number
   //use offline numbering scheme where LS starts with 1
   return getlbn(payload) + 1;
+}
+
+
+uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTPe(const unsigned char* payload) const
+{
+  using namespace evtn;
+
+  if (! gtpe_board_sense(payload) )
+  {
+    XCEPT_RAISE(exception::L1Trigger, "Received trigger fragment without GPTe board id.");
+  }
+
+  const uint32_t orbitNumber = gtpe_getorbit(payload);
+
+  return (orbitNumber / ORBITS_PER_LS) + 1;
 }
 
 
