@@ -39,11 +39,9 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
     }
   }
 
-  toolbox::mem::Reference* bufRef = getScalerFragment(evbId);
-  if ( bufRef )
-  {
+  toolbox::mem::Reference* bufRef = 0;
+  if ( getScalerFragment(evbId,bufRef) )
     superFragment->append(bufRef);
-  }
 
   return true;
 }

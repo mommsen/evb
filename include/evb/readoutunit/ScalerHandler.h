@@ -36,7 +36,7 @@ namespace evb {
 
       void stopProcessing();
 
-      toolbox::mem::Reference* fillFragment(const EvBid&);
+      bool fillFragment(const EvBid&, toolbox::mem::Reference*&);
 
 
     private:

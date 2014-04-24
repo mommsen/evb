@@ -75,12 +75,13 @@ void evb::readoutunit::ScalerHandler::stopProcessing()
 }
 
 
-toolbox::mem::Reference* evb::readoutunit::ScalerHandler::fillFragment
+bool evb::readoutunit::ScalerHandler::fillFragment
 (
-  const EvBid& evbId
+  const EvBid& evbId,
+  toolbox::mem::Reference*& bufRef
 )
 {
-  if ( dummyScalFedSize_ == 0 ) return 0;
+  if ( dummyScalFedSize_ == 0 ) return false;
 
   if ( evbId.lumiSection() > currentLumiSection_ )
   {
@@ -89,7 +90,8 @@ toolbox::mem::Reference* evb::readoutunit::ScalerHandler::fillFragment
     dataIsValid_ = false;
   }
 
-  return getFerolFragment(evbId.eventNumber());
+  bufRef = getFerolFragment(evbId.eventNumber());
+  return true;
 }
 
 

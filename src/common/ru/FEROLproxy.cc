@@ -49,11 +49,9 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
     superFragment->append(fragment);
   }
 
-  toolbox::mem::Reference* bufRef = getScalerFragment(evbId);
-  if ( bufRef )
-  {
+  toolbox::mem::Reference* bufRef = 0;
+  if ( getScalerFragment(evbId,bufRef) )
     superFragment->append(bufRef);
-  }
 
   return true;
 }

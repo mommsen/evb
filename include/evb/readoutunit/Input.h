@@ -208,7 +208,7 @@ namespace evb {
       protected:
 
         virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
-        toolbox::mem::Reference* getScalerFragment(const EvBid&);
+        bool getScalerFragment(const EvBid&, toolbox::mem::Reference*&);
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
@@ -1025,14 +1025,19 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvai
 
 
 template<class ReadoutUnit,class Configuration>
-toolbox::mem::Reference* evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getScalerFragment
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getScalerFragment
 (
-  const EvBid& evbId
+  const EvBid& evbId,
+  toolbox::mem::Reference*& bufRef
 )
 {
-  toolbox::mem::Reference* bufRef = scalerHandler_->fillFragment(evbId);
-  this->input_->checkEventFragment(bufRef);
-  return bufRef;
+  if ( scalerHandler_->fillFragment(evbId,bufRef) )
+  {
+    this->input_->checkEventFragment(bufRef);
+    return true;
+  }
+
+  return false;
 }
 
 
