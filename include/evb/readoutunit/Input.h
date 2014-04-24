@@ -3,6 +3,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <fstream>
@@ -26,6 +27,7 @@
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
+#include "evb/readoutunit/ScalerHandler.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -46,9 +48,6 @@
 namespace evb {
 
   namespace readoutunit {
-
-    typedef FragmentChain<I2O_DATA_READY_MESSAGE_FRAME> FragmentChain;
-    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
 
     /**
      * \ingroup xdaqApps
@@ -209,6 +208,7 @@ namespace evb {
       protected:
 
         virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
+        toolbox::mem::Reference* getScalerFragment(const EvBid&);
 
         typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
         SuperFragmentFIFO superFragmentFIFO_;
@@ -223,6 +223,7 @@ namespace evb {
 
       private:
 
+        boost::scoped_ptr<ScalerHandler> scalerHandler_;
         bool dropInputData_;
 
       };
@@ -276,7 +277,7 @@ namespace evb {
       typedef std::pair<uint16_t,uint16_t> CountAndFedId;
       CountAndFedId writeNextFragmentsForFedId_;
 
-      struct InputMonitoring
+      struct InputMonitor
       {
         uint32_t lastEventNumber;
         uint32_t eventCount;
@@ -285,12 +286,15 @@ namespace evb {
         double eventSize;
         double eventSizeStdDev;
         double bandwidth;
+
+        InputMonitor() :
+          lastEventNumber(0),eventCount(0),rate(0),eventSize(0),eventSizeStdDev(0),bandwidth(0) {};
       };
-      typedef std::map<uint16_t,InputMonitoring> InputMonitors;
+      typedef std::map<uint16_t,InputMonitor> InputMonitors;
       InputMonitors inputMonitors_;
       mutable boost::mutex inputMonitorsMutex_;
 
-      InputMonitoring superFragmentMonitor_;
+      InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
 
       xdata::UnsignedInteger32 lastEventNumber_;
@@ -763,11 +767,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
     const xdata::Vector<xdata::UnsignedInteger32>::const_iterator itEnd = configuration_->fedSourceIds.end();
     for ( ; it != itEnd ; ++it)
     {
-      InputMonitoring monitor;
-      monitor.lastEventNumber = 0;
-      monitor.rate = 0;
-      monitor.bandwidth = 0;
-      inputMonitors_.insert(typename InputMonitors::value_type(it->value_,monitor));
+      inputMonitors_.insert(typename InputMonitors::value_type(it->value_,InputMonitor()));
+    }
+    if ( configuration_->dummyScalFedSize.value_ > 0 )
+    {
+      inputMonitors_.insert(typename InputMonitors::value_type(configuration_->scalFedId,InputMonitor()));
     }
   }
   {
@@ -923,7 +927,8 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(Input<ReadoutUnit,Configuration>* input) :
 Handler(input),
-superFragmentFIFO_(input->getReadoutUnit(),"superFragmentFIFO")
+superFragmentFIFO_(input->getReadoutUnit(),"superFragmentFIFO"),
+scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
 {}
 
 
@@ -959,6 +964,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
     fragmentFIFOs_.insert( typename FragmentFIFOs::value_type(fedId,fragmentFIFO) );
     evbIdFactories_.insert( typename EvBidFactories::value_type(fedId,EvBidFactory()) );
   }
+
+  scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
 }
 
 
@@ -1018,6 +1025,18 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvai
 
 
 template<class ReadoutUnit,class Configuration>
+toolbox::mem::Reference* evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getScalerFragment
+(
+  const EvBid& evbId
+)
+{
+  toolbox::mem::Reference* bufRef = scalerHandler_->fillFragment(evbId);
+  this->input_->checkEventFragment(bufRef);
+  return bufRef;
+}
+
+
+template<class ReadoutUnit,class Configuration>
 evb::EvBid evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getEvBid
 (
   const uint16_t fedId,
@@ -1036,6 +1055,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProces
         it != itEnd; ++it)
     it->second.reset(runNumber);
 
+  scalerHandler_->startProcessing(runNumber);
+
   this->doProcessing_ = true;
 }
 
@@ -1051,6 +1072,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::stopProcessing()
 {
   this->doProcessing_ = false;
+  scalerHandler_->stopProcessing();
 }
 
 

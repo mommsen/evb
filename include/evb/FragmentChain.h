@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "evb/EvBid.h"
+#include "evb/I2OMessages.h"
+#include "interface/shared/i2ogevb2g.h"
 #include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
@@ -102,6 +104,7 @@ namespace evb {
 
     uint32_t calculateSize(toolbox::mem::Reference*) const;
     bool checkResourceId(const uint32_t resourceId);
+    void chainFragment(toolbox::mem::Reference*);
 
     EvBid evbId_;
     ResourceList resourceList_;
@@ -109,10 +112,26 @@ namespace evb {
     toolbox::mem::Reference* head_;
     toolbox::mem::Reference* tail_;
 
+    typedef std::vector<toolbox::mem::Reference*> BufRefs;
+    BufRefs bufRefs_;
+
     typedef std::vector<FragmentPtr> Fragments;
     Fragments fragments_;
 
   }; // FragmentChain
+
+
+  namespace readoutunit
+  {
+    typedef FragmentChain<I2O_DATA_READY_MESSAGE_FRAME> FragmentChain;
+    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
+  }
+
+  namespace bu
+  {
+    typedef FragmentChain<msg::I2O_DATA_BLOCK_MESSAGE_FRAME> FragmentChain;
+    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
+  }
 
 } // namespace evb
 
@@ -169,8 +188,14 @@ head_(fragment->bufRef),tail_(fragment->bufRef)
 template<class T>
 evb::FragmentChain<T>::~FragmentChain()
 {
-  if ( fragments_.empty() && head_ ) head_->release();
-
+  for ( BufRefs::iterator it = bufRefs_.begin(), itEnd = bufRefs_.end();
+        it != itEnd; ++it )
+  {
+    // break any chain
+    (*it)->setNextReference(0);
+    (*it)->release();
+  }
+  bufRefs_.clear();
   fragments_.clear();
 }
 
@@ -206,18 +231,8 @@ void evb::FragmentChain<T>::append
   toolbox::mem::Reference* bufRef
 )
 {
-  if ( ! head_ )
-    head_ = bufRef;
-  else
-    tail_->setNextReference(bufRef);
-
-  do
-  {
-    size_ += calculateSize(bufRef);
-    tail_ = bufRef;
-    bufRef = bufRef->getNextReference();
-  }
-  while (bufRef);
+  chainFragment(bufRef);
+  bufRefs_.push_back(bufRef);
 }
 
 
@@ -227,8 +242,7 @@ void evb::FragmentChain<T>::append
   FragmentPtr& fragment
 )
 {
-  append(fragment->bufRef);
-
+  chainFragment(fragment->bufRef);
   fragments_.push_back(fragment);
 }
 
@@ -246,6 +260,26 @@ bool evb::FragmentChain<T>::checkResourceId(const uint32_t resourceId)
   return true;
 }
 
+
+template<class T>
+void evb::FragmentChain<T>::chainFragment
+(
+  toolbox::mem::Reference* bufRef
+)
+{
+  if ( ! head_ )
+    head_ = bufRef;
+  else
+    tail_->setNextReference(bufRef);
+
+  do
+  {
+    size_ += calculateSize(bufRef);
+    tail_ = bufRef;
+    bufRef = bufRef->getNextReference();
+  }
+  while (bufRef);
+}
 
 #endif // _evb_ru_FragmentChain_h_
 

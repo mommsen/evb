@@ -44,6 +44,8 @@ namespace evb {
       xdata::UnsignedInteger32 dummyFedSizeStdDev;           // Standard deviation of the FED sizes when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
+      xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
+      xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
@@ -70,6 +72,8 @@ namespace evb {
         dummyFedSizeStdDev(0),
         dummyFedSizeMin(8), // minimum is 8 Bytes
         dummyFedSizeMax(0), // no limitation
+        dummyScalFedSize(0),
+        scalFedId(999),
         fragmentPoolSize(200000000),
         frameSize(32768),
         maxTriggerAgeMSec(1000),
@@ -104,6 +108,8 @@ namespace evb {
         params.add("dummyFedSizeStdDev", &dummyFedSizeStdDev);
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
+        params.add("dummyScalFedSize", &dummyScalFedSize);
+        params.add("scalFedId", &scalFedId);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds);

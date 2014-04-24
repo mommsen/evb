@@ -36,9 +36,6 @@ namespace evb {
     class ResourceManager;
     class StateMachine;
 
-    typedef FragmentChain<msg::I2O_DATA_BLOCK_MESSAGE_FRAME> FragmentChain;
-    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
-
     /**
      * \ingroup xdaqApps
      * \brief Proxy for EVM-BU communication
