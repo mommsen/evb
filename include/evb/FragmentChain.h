@@ -232,7 +232,13 @@ void evb::FragmentChain<T>::append
 )
 {
   chainFragment(bufRef);
-  bufRefs_.push_back(bufRef);
+
+  do
+  {
+    bufRefs_.push_back(bufRef);
+    bufRef = bufRef->getNextReference();
+  }
+  while (bufRef);
 }
 
 
