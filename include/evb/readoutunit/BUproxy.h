@@ -658,7 +658,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
     for (uint16_t i=workLoops_.size(); i < configuration_->numberOfResponders; ++i)
     {
       std::ostringstream workLoopName;
-      workLoopName << identifier << "Responder_" << i;
+      workLoopName << identifier << "/Responder_" << i;
       toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
 
       if ( ! wl->isActive() ) wl->activate();

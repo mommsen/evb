@@ -75,7 +75,7 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
     for (uint16_t i=builderWorkLoops_.size(); i < configuration_->numberOfBuilders; ++i)
     {
       std::ostringstream workLoopName;
-      workLoopName << identifier << "Builder_" << i;
+      workLoopName << identifier << "/Builder_" << i;
       toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
 
       if ( ! wl->isActive() ) wl->activate();
