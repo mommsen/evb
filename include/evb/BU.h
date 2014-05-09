@@ -53,7 +53,7 @@ namespace evb {
   private:
 
     virtual void do_bindI2oCallbacks();
-    inline void I2O_BU_CACHE_Callback(toolbox::mem::Reference*);
+    inline void I2O_BU_CACHE_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
 
     virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
     virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
@@ -63,7 +63,7 @@ namespace evb {
 
     virtual void bindNonDefaultXgiCallbacks();
     virtual cgicc::table getMainWebPage() const;
-    void writeNextEventsToFile(xgi::Input*,xgi::Output*);
+    void writeNextEventsToFile(xgi::Input*,xgi::Output*) throw (xgi::exception::Exception);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;
     boost::shared_ptr<bu::ResourceManager> resourceManager_;

@@ -1203,7 +1203,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::createS
     uint32_t packetNumber = 0;
     uint32_t remainingFedSize = fedSize;
 
-    for (uint16_t frame = 0; frame < frameCount; ++frame)
+    for (uint16_t frameNb = 0; frameNb < frameCount; ++frameNb)
     {
       toolbox::mem::Reference* bufRef = 0;
       const uint32_t bufSize = frameSize_+sizeof(I2O_DATA_READY_MESSAGE_FRAME);

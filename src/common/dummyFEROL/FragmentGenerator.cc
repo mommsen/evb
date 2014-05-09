@@ -14,7 +14,6 @@
 #include "xcept/tools.h"
 
 #include <assert.h>
-#include <byteswap.h>
 #include <math.h>
 #include <sstream>
 #include <sys/time.h>
