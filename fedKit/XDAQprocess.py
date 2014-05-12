@@ -20,7 +20,7 @@ class XDAQprocess:
         self._port = port
         self._process = None
         self._applications = []
-        self._logfile = open('fedKit.log','w')
+        self._logfile = open('fedKit_'+str(port)+'.log','w')
         self._soapTemplate ="""<SOAP-ENV:Envelope SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"><SOAP-ENV:Header/><SOAP-ENV:Body>%s</SOAP-ENV:Body></SOAP-ENV:Envelope>"""
 
     def __del__(self):
@@ -46,7 +46,7 @@ class XDAQprocess:
         runArgs = ["xdaq.exe",
                    "-p "+str(self._port),
                    "-c "+xmlConfig]
-        self._process = subprocess.Popen(runArgs,stdout=self._logfile,stderr=subprocess.STDOUT)
+        self._process = subprocess.Popen(runArgs,stdout=self._logfile,stderr=self._logfile)
 
     def kill(self):
         if self._process is not None:
@@ -110,7 +110,7 @@ class XDAQprocess:
                 elif state == 'Failed':
                     raise(StateException(app[0]+":"+str(app[1])+" has failed"))
                 tries += 1
-                if tries > 10:
+                if tries > 30:
                     raise(StateException(app[0]+":"+str(app[1])+" has not reached Ready state: "+state))
 
     def enable(self):
