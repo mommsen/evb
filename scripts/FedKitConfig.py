@@ -6,10 +6,11 @@ import XDAQprocess
 
 class FedKitConfig:
 
-    def __init__(self,configFile,fullConfig):
+    def __init__(self,configFile,fullConfig,useDummyFerol):
         self.xdaqProcesses = []
         self.configFilePath = "/tmp/fedKit.xml"
-        self._config = ConfigParser.RawConfigParser()
+        self._config = ConfigParser.ConfigParser()
+        self._config.optionxform=str
         self._config.read(configFile)
         self._fullConfig = fullConfig
 
@@ -19,7 +20,6 @@ class FedKitConfig:
         runNumber = self.getRunNumber()
         fedId = self.getFedId()
         writeData = self.getWriteData()
-        useDummyFerol = self.getUseDummyFerol()
         xdaqPort = self.getXdaqPort()
         ferolSourceIP = self.getFerolSourceIP()
         ferolDestIP = self.getFerolDestIP()
@@ -440,20 +440,6 @@ class FedKitConfig:
         self._config.set('XDAQ','ferolDestPort',ferolDestPort)
 
         return ferolDestPort
-
-
-    def getUseDummyFerol(self):
-        useDummyFerol = False
-        try:
-            useDummyFerol = self._config.getboolean('XDAQ','useDummyFerol')
-        except ConfigParser.NoSectionError:
-            self._config.add_section('XDAQ')
-        except ConfigParser.NoOptionError:
-            pass
-
-        self._config.set('XDAQ','useDummyFerol',useDummyFerol)
-
-        return useDummyFerol
 
 
 if __name__ == "__main__":

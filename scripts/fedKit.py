@@ -11,7 +11,13 @@ import XDAQprocess
 
 
 def usage():
-    print "fedKit.py [-c <configfile>] [--reconfigure]"
+    print """
+fedKit.py [--config <configfile>] [--reconfigure] [--dummyFerol]
+          -h --help:         print this message and exit
+          -c --config:       path to a config file (default ./fedKit.cfg)
+          -r --reconfigure:  ask for all configuration options (default takes them from configfile if it exists)
+          -d --dummyFerol:   use a software emulator of the FEROL (default uses the real h/w FEROL)
+    """
 
 
 def main(argv):
@@ -22,9 +28,10 @@ def main(argv):
 
     configfile = "fedKit.cfg"
     reconfigure = False;
+    useDummyFerol = False;
 
     try:
-        opts,args = getopt.getopt(argv,"rc:",["reconfigure","config="])
+        opts,args = getopt.getopt(argv,"c:rd",["config=","reconfigure","dummyFerol"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -36,12 +43,14 @@ def main(argv):
             configfile = arg
         elif opt in ("-r", "--reconfigure"):
             reconfigure = True
+        elif opt in ("-d", "--dummyFerol"):
+            useDummyFerol = True
 
     print("Welcome to the optical FEDkit")
     print("=============================")
 
     reconfigure = reconfigure or not os.path.isfile(configfile)
-    fedKitConfig = FedKitConfig.FedKitConfig(configfile,reconfigure)
+    fedKitConfig = FedKitConfig.FedKitConfig(configfile,reconfigure,useDummyFerol)
 
     print("Starting run...")
 
