@@ -1,5 +1,9 @@
 .svn
+bin
+lib
 rpm
+tmp
 src/linux
 test/linux
 test/tmp
+*.pyc
