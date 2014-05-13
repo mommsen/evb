@@ -69,8 +69,6 @@ namespace evb {
 
     void processSoapEvent(const std::string& event, std::string& newStateName);
     std::string processFSMEvent(const boost::statechart::event_base&);
-    void processEvent(const boost::statechart::event_base&);
-    void fail(xcept::Exception&);
 
     void appendConfigurationItems(InfoSpaceItems&);
     void appendMonitoringItems(InfoSpaceItems&);
@@ -296,27 +294,6 @@ std::string evb::EvBStateMachine<MostDerived,InitialState>::processFSMEvent
 
 
 template <class MostDerived,class InitialState>
-void evb::EvBStateMachine<MostDerived,InitialState>::processEvent
-(
-  const boost::statechart::event_base& event
-)
-{
-  boost::shared_lock<boost::shared_mutex> eventSharedLock(eventMutex_);
-  this->process_event(event);
-}
-
-
-template <class MostDerived,class InitialState>
-void evb::EvBStateMachine<MostDerived,InitialState>::fail
-(
-  xcept::Exception& sentinelException
-)
-{
-  this->post_event( Fail(sentinelException) );
-}
-
-
-template <class MostDerived,class InitialState>
 void evb::EvBStateMachine<MostDerived,InitialState>::appendConfigurationItems
 (
   InfoSpaceItems& params
@@ -369,9 +346,23 @@ void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
   LOG4CPLUS_FATAL(getLogger(),
     "Failed: " << evt.getReason() << ". " << reasonForFailed_);
 
-  rcmsStateNotifier_.stateChanged("Failed", evt.getReason());
+  try
+  {
+    rcmsStateNotifier_.stateChanged("Failed", evt.getReason());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(getLogger(),"Failed to notify RCMS that we failed!");
+  }
 
-  app_->notifyQualified("fatal", evt.getException());
+  try
+  {
+    app_->notifyQualified("fatal", evt.getException());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(getLogger(),"Failed to notify the sentinel that we failed!");
+  }
 
   boost::unique_lock<boost::shared_mutex> stateNameUniqueLock(stateNameMutex_);
   stateName_ = "Failed";

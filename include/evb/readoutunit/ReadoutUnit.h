@@ -63,9 +63,9 @@ namespace evb {
     private:
 
       virtual void do_bindI2oCallbacks();
-      inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*);
-      inline void I2O_SUPER_FRAGMENT_READY_Callback(toolbox::mem::Reference*);
-      inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*);
+      inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*) throw (pt::frl::exception::Exception);
+      inline void I2O_SUPER_FRAGMENT_READY_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
+      inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
 
       virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
       virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
@@ -78,8 +78,8 @@ namespace evb {
       virtual cgicc::table getMainWebPage() const;
       virtual void addComponentsToWebPage(cgicc::table&) const;
 
-      void eventCountForLumiSection(xgi::Input*, xgi::Output*);
-      void writeNextFragmentsToFile(xgi::Input*, xgi::Output*);
+      void eventCountForLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+      void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
 
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -239,6 +239,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvai
   int originator,
   tcpla::MemoryCache* cache
 )
+throw (pt::frl::exception::Exception)
 {
   input_->rawDataAvailable(bufRef,cache);
 }
@@ -249,6 +250,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SUPER_F
 (
   toolbox::mem::Reference *bufRef
 )
+throw (i2o::exception::Exception)
 {
   input_->superFragmentReady(bufRef);
 }
@@ -259,6 +261,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FR
 (
   toolbox::mem::Reference *bufRef
 )
+throw (i2o::exception::Exception)
 {
   buProxy_->readoutMsgCallback(bufRef);
 }
@@ -306,6 +309,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFr
   xgi::Input  *in,
   xgi::Output *out
 )
+throw (xgi::exception::Exception)
 {
   cgicc::Cgicc cgi(in);
   uint16_t count = 1;
@@ -331,6 +335,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountF
   xgi::Input  *in,
   xgi::Output *out
 )
+throw (xgi::exception::Exception)
 {
   cgicc::Cgicc cgi(in);
 

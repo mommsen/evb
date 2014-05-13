@@ -152,6 +152,7 @@ void evb::BU::I2O_BU_CACHE_Callback
 (
   toolbox::mem::Reference * bufRef
 )
+throw (i2o::exception::Exception)
 {
   ruProxy_->superFragmentCallback(bufRef);
 }
@@ -204,6 +205,7 @@ cgicc::table evb::BU::getMainWebPage() const
 
 
 void evb::BU::writeNextEventsToFile(xgi::Input* in,xgi::Output* out)
+throw (xgi::exception::Exception)
 {
   cgicc::Cgicc cgi(in);
   uint16_t count = 1;
