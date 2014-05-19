@@ -97,17 +97,14 @@ class XDAQprocess:
 
     def configure(self):
         for app in self._applications:
-            if self.getParam("stateName","string",*app) != 'Halted':
+            if self.getParam("stateName","string",*app) not in ('Halted','uninitialized'):
                 raise(StateException(app[0]+":"+str(app[1])+" is not in Halted state"))
-            self.sendSimpleCommand("Configure",*app)
-            configured = False
+            state = self.sendSimpleCommand("Configure",*app)
             tries=0
-            while not configured:
+            while not state in ('Ready','Configured'):
                 time.sleep(1)
                 state = self.getParam("stateName","string",*app)
-                if state in ('Ready','Configured'):
-                    configured = True
-                elif state == 'Failed':
+                if state == 'Failed':
                     raise(StateException(app[0]+":"+str(app[1])+" has failed"))
                 tries += 1
                 if tries > 30:
@@ -117,15 +114,12 @@ class XDAQprocess:
         for app in self._applications:
             if self.getParam("stateName","string",*app) not in ('Ready','Configured'):
                 raise(StateException(app[0]+":"+str(app[1])+" is not in Configured state"))
-            self.sendSimpleCommand("Enable",*app)
-            enabled = False
+            state = self.sendSimpleCommand("Enable",*app)
             tries=0
-            while not enabled:
+            while not state in ('Enabled'):
                 time.sleep(1)
                 state = self.getParam("stateName","string",*app)
-                if state == 'Enabled':
-                    enabled = True
-                elif state == 'Failed':
+                if state == 'Failed':
                     raise(StateException(app[0]+":"+str(app[1])+" has failed"))
                 tries += 1
                 if tries > 10:
