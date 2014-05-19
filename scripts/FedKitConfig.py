@@ -1,4 +1,5 @@
 import socket
+import os
 import ConfigParser
 
 import XDAQprocess
@@ -8,7 +9,7 @@ class FedKitConfig:
 
     def __init__(self,configFile,fullConfig,useDummyFerol):
         self.xdaqProcesses = []
-        self.configFilePath = "/tmp/fedKit.xml"
+        self.configFilePath = "/tmp/fedKit_"+str(os.getpid())+".xml"
         self._config = ConfigParser.ConfigParser()
         self._config.optionxform=str
         self._config.read(configFile)
@@ -24,17 +25,22 @@ class FedKitConfig:
         ferolSourceIP = self.getFerolSourceIP()
         ferolDestIP = self.getFerolDestIP()
         ferolDestPort = self.getFerolDestPort()
+        dataSource = self.getDataSource()
 
         with open(configFile,'wb') as configFile:
             self._config.write(configFile)
 
-        self._xmlConfiguration = self.getConfiguration(runNumber,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
+        self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
 
         with open(self.configFilePath,'wb') as xmlFile:
             xmlFile.write(self._xmlConfiguration)
 
 
-    def getFerolControllerContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,fedId,ferolSourceIP):
+    def __del__(self):
+        os.remove(self.configFilePath)
+
+
+    def getFerolControllerContext(self,xdaqHost,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("ferol::FerolController",0)
         self.xdaqProcesses.append(xdaqProcess)
@@ -43,51 +49,68 @@ class FedKitConfig:
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
         <xc:Application class="ferol::FerolController" id="11" instance="0" network="local" service="ferolcontroller">
           <properties xmlns="urn:xdaq-application:ferol::FerolController" xsi:type="soapenc:Struct">
-            <N_Descriptors_FRL xsi:type="xsd:unsignedInt">2048</N_Descriptors_FRL>
-            <N_Descriptors_FED0 xsi:type="xsd:unsignedInt">4</N_Descriptors_FED0>
+            <slotNumber xsi:type="xsd:unsignedInt">0</slotNumber>
+            <expectedFedId_0 xsi:type="xsd:unsignedInt">%(fedId)s</expectedFedId_0>
+            <expectedFedId_1 xsi:type="xsd:unsignedInt">1</expectedFedId_1>
+            <SourceIP xsi:type="xsd:string">%(ferolSourceIP)s</SourceIP>
+            <TCP_SOURCE_PORT_FED0 xsi:type="xsd:unsignedInt">10</TCP_SOURCE_PORT_FED0>
+            <TCP_SOURCE_PORT_FED1 xsi:type="xsd:unsignedInt">11</TCP_SOURCE_PORT_FED1>
+            <enableStream0 xsi:type="xsd:boolean">true</enableStream0>
+            <enableStream1 xsi:type="xsd:boolean">true</enableStream1>
+            <OperationMode xsi:type="xsd:string">FEDKIT_MODE</OperationMode>
+            <DataSource xsi:type="xsd:string">%(dataSource)s</DataSource>
+            <FrlTriggerMode xsi:type="xsd:string">FRL_AUTO_TRIGGER_MODE</FrlTriggerMode>
+            <DestinationIP xsi:type="xsd:string">%(ferolDestIP)s</DestinationIP>
+            <TCP_DESTINATION_PORT_FED0 xsi:type="xsd:unsignedInt">%(ferolDestPort)s</TCP_DESTINATION_PORT_FED0>
+            <TCP_DESTINATION_PORT_FED1 xsi:type="xsd:unsignedInt">%(ferolDestPort)s</TCP_DESTINATION_PORT_FED1>
+            <N_Descriptors_FRL ns2:type="xsd:unsignedInt">8192</N_Descriptors_FRL>
+            <Seed_FED0 ns2:type="xsd:unsignedInt">14462</Seed_FED0>
+            <Seed_FED1 ns2:type="xsd:unsignedInt">14463</Seed_FED1>
+            <Event_Length_bytes_FED0 ns2:type="xsd:unsignedInt">2048</Event_Length_bytes_FED0>
+            <Event_Length_bytes_FED1 ns2:type="xsd:unsignedInt">2048</Event_Length_bytes_FED1>
+            <Event_Length_Stdev_bytes_FED0 ns2:type="xsd:unsignedInt">0</Event_Length_Stdev_bytes_FED0>
+            <Event_Length_Stdev_bytes_FED1 ns2:type="xsd:unsignedInt">0</Event_Length_Stdev_bytes_FED1>
+            <Event_Length_Max_bytes_FED0 ns2:type="xsd:unsignedInt">65000</Event_Length_Max_bytes_FED0>
+            <Event_Length_Max_bytes_FED1 ns2:type="xsd:unsignedInt">65000</Event_Length_Max_bytes_FED1>
+            <Event_Delay_ns_FED0 ns2:type="xsd:unsignedInt">20</Event_Delay_ns_FED0>
+            <Event_Delay_ns_FED1 ns2:type="xsd:unsignedInt">20</Event_Delay_ns_FED1>
+            <Event_Delay_Stdev_ns_FED0 ns2:type="xsd:unsignedInt">0</Event_Delay_Stdev_ns_FED0>
+            <Event_Delay_Stdev_ns_FED1 ns2:type="xsd:unsignedInt">0</Event_Delay_Stdev_ns_FED1>
+            <TCP_CWND_FED0 ns2:type="xsd:unsignedInt">80000</TCP_CWND_FED0>
+            <TCP_CWND_FED1 ns2:type="xsd:unsignedInt">80000</TCP_CWND_FED1>
+            <ENA_PAUSE_FRAME ns2:type="xsd:boolean">true</ENA_PAUSE_FRAME>
+            <MAX_ARP_Tries ns2:type="xsd:unsignedInt">20</MAX_ARP_Tries>
+            <ARP_Timeout_Ms ns2:type="xsd:unsignedInt">1500</ARP_Timeout_Ms>
+            <Connection_Timeout_Ms ns2:type="xsd:unsignedInt">7000</Connection_Timeout_Ms>
+            <SourceMACAddressMol ns2:type="xsd:unsignedLong">234945892</SourceMACAddressMol>
+            <enableSpy ns2:type="xsd:boolean">false</enableSpy>
+            <deltaTMonMs ns2:type="xsd:unsignedInt">1000</deltaTMonMs>
+            <TCP_CONFIGURATION_FED0 ns2:type="xsd:unsignedInt">16384</TCP_CONFIGURATION_FED0>
+            <TCP_CONFIGURATION_FED1 ns2:type="xsd:unsignedInt">16384</TCP_CONFIGURATION_FED1>
+            <TCP_OPTIONS_MSS_SCALE_FED0 ns2:type="xsd:unsignedInt">74496</TCP_OPTIONS_MSS_SCALE_FED0>
+            <TCP_OPTIONS_MSS_SCALE_FED1 ns2:type="xsd:unsignedInt">74496</TCP_OPTIONS_MSS_SCALE_FED1>
+            <TCP_TIMER_RTT_FED0 ns2:type="xsd:unsignedInt">312500</TCP_TIMER_RTT_FED0>
+            <TCP_TIMER_RTT_FED1 ns2:type="xsd:unsignedInt">312500</TCP_TIMER_RTT_FED1>
+            <TCP_TIMER_RTT_SYN_FED0 ns2:type="xsd:unsignedInt">312500000</TCP_TIMER_RTT_SYN_FED0>
+            <TCP_TIMER_RTT_SYN_FED1 ns2:type="xsd:unsignedInt">312500000</TCP_TIMER_RTT_SYN_FED1>
+            <TCP_TIMER_PERSIST_FED0 ns2:type="xsd:unsignedInt">40000</TCP_TIMER_PERSIST_FED0>
+            <TCP_TIMER_PERSIST_FED1 ns2:type="xsd:unsignedInt">40000</TCP_TIMER_PERSIST_FED1>
+            <TCP_REXMTTHRESH_FED0 ns2:type="xsd:unsignedInt">3</TCP_REXMTTHRESH_FED0>
+            <TCP_REXMTTHRESH_FED1 ns2:type="xsd:unsignedInt">3</TCP_REXMTTHRESH_FED1>
+            <TCP_REXMTCWND_SHIFT_FED0 ns2:type="xsd:unsignedInt">6</TCP_REXMTCWND_SHIFT_FED0>
+            <TCP_REXMTCWND_SHIFT_FED1 ns2:type="xsd:unsignedInt">6</TCP_REXMTCWND_SHIFT_FED1>
+            <!--N_Descriptors_FED0 xsi:type="xsd:unsignedInt">4</N_Descriptors_FED0>
             <TCP_SOCKET_BUFFER_DDR xsi:type="xsd:boolean">false</TCP_SOCKET_BUFFER_DDR>
             <DDR_memory_mask xsi:type="xsd:unsignedInt">0x0fffffff</DDR_memory_mask>
             <QDR_memory_mask xsi:type="xsd:unsignedInt">0x007fffff</QDR_memory_mask>
-            <OperationMode xsi:type="xsd:string">FEDKIT_MODE</OperationMode>
-            <SLINK_INPUT xsi:type="xsd:string">SLINK_CORE_GENERATOR_MODE</SLINK_INPUT>
-            <FrlTriggerMode xsi:type="xsd:string">FRL_AUTO_TRIGGER_MODE</FrlTriggerMode>
-            <DestinationIP xsi:type="xsd:string">%(ferolDestIP)s</DestinationIP>
-            <SourceIP xsi:type="xsd:string">%(ferolSourceIP)s</SourceIP>
-            <MAX_ARP_Tries xsi:type="xsd:unsignedInt">20</MAX_ARP_Tries>
-            <ARP_Timeout_Ms xsi:type="xsd:unsignedInt">1500</ARP_Timeout_Ms>
-            <Connection_Timeout_Ms xsi:type="xsd:unsignedInt">30000</Connection_Timeout_Ms>
-            <SourceMACAddressMol xsi:type="xsd:unsignedLong">234945892</SourceMACAddressMol>
-            <lightStop xsi:type="xsd:boolean">false</lightStop>
-            <enableStream0 xsi:type="xsd:boolean">true</enableStream0>
-            <enableStream1 xsi:type="xsd:boolean">false</enableStream1>
-            <enableSpy xsi:type="xsd:boolean">false</enableSpy>
-            <MolMode xsi:type="xsd:boolean">false</MolMode>
-            <slotNumber xsi:type="xsd:unsignedInt">0</slotNumber>
-            <expectedFedId_0 xsi:type="xsd:unsignedInt">%(fedId)s</expectedFedId_0>
-            <TCP_DESTINATION_PORT_FED0 xsi:type="xsd:unsignedInt">%(ferolDestPort)s</TCP_DESTINATION_PORT_FED0>
-            <TCP_SOURCE_PORT_FED0 xsi:type="xsd:unsignedInt">10</TCP_SOURCE_PORT_FED0>
-            <ENA_PAUSE_FRAME xsi:type="xsd:boolean">true</ENA_PAUSE_FRAME>
-            <deltaTMonMs xsi:type="xsd:unsignedInt">1000</deltaTMonMs>
-            <TCP_CONFIGURATION_FED0 xsi:type="xsd:unsignedInt">16384</TCP_CONFIGURATION_FED0>
-            <TCP_OPTIONS_MSS_SCALE_FED0 xsi:type="xsd:unsignedInt">74496</TCP_OPTIONS_MSS_SCALE_FED0>
-            <TCP_CWND_FED0 xsi:type="xsd:unsignedInt">300000</TCP_CWND_FED0>
-            <TCP_TIMER_RTT_FED0 xsi:type="xsd:unsignedInt">312500</TCP_TIMER_RTT_FED0>
-            <TCP_TIMER_RTT_SYN_FED0 xsi:type="xsd:unsignedInt">312500000</TCP_TIMER_RTT_SYN_FED0>
-            <TCP_TIMER_PERSIST_FED0 xsi:type="xsd:unsignedInt">625000</TCP_TIMER_PERSIST_FED0>
-            <TCP_REXMTTHRESH_FED0 xsi:type="xsd:unsignedInt">3</TCP_REXMTTHRESH_FED0>
-            <TCP_REXMTCWND_SHIFT_FED0 xsi:type="xsd:unsignedInt">6</TCP_REXMTCWND_SHIFT_FED0>
-            <Event_Length_bytes_FED0 xsi:type="xsd:unsignedInt">32</Event_Length_bytes_FED0>
-            <Event_Length_Stdev_bytes_FED0 xsi:type="xsd:unsignedInt">0</Event_Length_Stdev_bytes_FED0>
-            <Event_Length_Max_bytes_FED0 xsi:type="xsd:unsignedInt">65536</Event_Length_Max_bytes_FED0>
-            <Event_Delay_ns_FED0 xsi:type="xsd:unsignedInt">20</Event_Delay_ns_FED0>
-            <Event_Delay_Stdev_ns_FED0 xsi:type="xsd:unsignedInt">0</Event_Delay_Stdev_ns_FED0>
+            <lightStop xsi:type="xsd:boolean">false</lightStop-->
           </properties>
         </xc:Application>
 
         <xc:Module>$XDAQ_ROOT/lib/libFerolController.so</xc:Module>
 
       </xc:Context>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
 
 
     def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolDestPort,fedId):
@@ -216,7 +239,7 @@ class FedKitConfig:
         return context
 
 
-    def getConfiguration(self,runNumber,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFEROL):
+    def getConfiguration(self,runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFEROL):
         hostname = socket.gethostbyaddr(socket.gethostname())[0]
 
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
@@ -224,7 +247,7 @@ class FedKitConfig:
         if useDummyFEROL:
             config += self.getDummyFerolContext(hostname,xdaqPort,ferolDestPort,fedId);
         else:
-            config += self.getFerolControllerContext(hostname,xdaqPort,ferolDestIP,ferolDestPort,fedId,ferolSourceIP)
+            config += self.getFerolControllerContext(hostname,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP)
 
         config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,runNumber,fedId,writeData)
 
@@ -232,6 +255,8 @@ class FedKitConfig:
 
         return config
 
+    def getDataSource(self):
+        return "L6G_CORE_GENERATOR_SOURCE"
 
     def askUserForFedId(self,defaultFedId):
         question = "Please enter the FED id you want to read out"
