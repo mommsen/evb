@@ -156,13 +156,13 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
   xdaq::ApplicationStub* app,
   const std::string& appIcon
 ) :
-xdaq::Application(app),
-xgi::framework::UIManager(this),
-configuration_(new Configuration()),
-soapParameterExtractor_(this),
-urn_(getApplicationDescriptor()->getURN()),
-xmlClass_(getApplicationDescriptor()->getClassName()),
-instance_(getApplicationDescriptor()->getInstance())
+  xdaq::Application(app),
+  xgi::framework::UIManager(this),
+  configuration_(new Configuration()),
+  soapParameterExtractor_(this),
+  urn_(getApplicationDescriptor()->getURN()),
+  xmlClass_(getApplicationDescriptor()->getClassName()),
+  instance_(getApplicationDescriptor()->getInstance())
 {
   getApplicationDescriptor()->setAttribute("icon", appIcon);
   getApplicationDescriptor()->setAttribute("icon16x16", appIcon);
@@ -212,11 +212,11 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
   {
     const std::string msg = "Failed to put parameters into application info space";
     LOG4CPLUS_ERROR(getApplicationLogger(),
-      msg << xcept::stdformat_exception_history(e));
+                    msg << xcept::stdformat_exception_history(e));
 
     // Notify the sentinel
     XCEPT_DECLARE_NESTED(exception::Monitoring,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     notifyQualified("error",sentinelException);
   }
 }
@@ -261,11 +261,11 @@ void evb::EvBApplication<Configuration,StateMachine>::initMonitoringInfoSpace()
   {
     const std::string msg = "Failed to put parameters into monitoring info space";
     LOG4CPLUS_ERROR(getApplicationLogger(),
-      msg << xcept::stdformat_exception_history(e));
+                    msg << xcept::stdformat_exception_history(e));
 
     // Notify the sentinel
     XCEPT_DECLARE_NESTED(exception::Monitoring,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     notifyQualified("error",sentinelException);
   }
 }
@@ -305,21 +305,21 @@ void evb::EvBApplication<Configuration,StateMachine>::actionPerformed(xdata::Eve
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::Monitoring,
-      sentinelException, msg.str(), e);
+                         sentinelException, msg.str(), e);
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
   {
     msg << ": " << e.what();
     XCEPT_DECLARE(exception::Monitoring,
-      sentinelException, msg.str());
+                  sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg << ": unknown exception";
     XCEPT_DECLARE(exception::Monitoring,
-      sentinelException, msg.str());
+                  sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -428,21 +428,21 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::WorkLoop,
-      sentinelException, msg.str(), e);
+                         sentinelException, msg.str(), e);
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
   {
     msg << ": " << e.what();
     XCEPT_DECLARE(exception::WorkLoop,
-      sentinelException, msg.str());
+                  sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg << ": unknown exception";
     XCEPT_DECLARE(exception::WorkLoop,
-      sentinelException, msg.str());
+                  sentinelException, msg.str());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -476,8 +476,8 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::WorkLoop,
-      "Failed to submit action to work loop: " + monitoringWorkLoopName,
-      e);
+                  "Failed to submit action to work loop: " + monitoringWorkLoopName,
+                  e);
   }
 
   try
@@ -487,7 +487,7 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::WorkLoop,
-      "Failed to activate work loop: " + monitoringWorkLoopName, e);
+                  "Failed to activate work loop: " + monitoringWorkLoopName, e);
   }
 }
 
@@ -513,10 +513,10 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
     monitoringInfoSpace_->unlock();
 
     LOG4CPLUS_ERROR(getApplicationLogger(),
-      errorMsg << xcept::stdformat_exception_history(e));
+                    errorMsg << xcept::stdformat_exception_history(e));
 
     XCEPT_DECLARE_NESTED(exception::Monitoring,
-      sentinelException, errorMsg, e);
+                         sentinelException, errorMsg, e);
     notifyQualified("error",sentinelException);
   }
   catch(std::exception &e)
@@ -528,7 +528,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
     LOG4CPLUS_ERROR(getApplicationLogger(), errorMsg);
 
     XCEPT_DECLARE(exception::Monitoring,
-      sentinelException, errorMsg );
+                  sentinelException, errorMsg );
     notifyQualified("error",sentinelException);
   }
   catch(...)
@@ -540,7 +540,7 @@ bool evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo
     LOG4CPLUS_ERROR(getApplicationLogger(), errorMsg);
 
     XCEPT_DECLARE(exception::Monitoring,
-      sentinelException, errorMsg );
+                  sentinelException, errorMsg );
     notifyQualified("error",sentinelException);
   }
 
@@ -555,8 +555,8 @@ template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::bindXgiCallbacks()
 {
   xgi::framework::deferredbind(this, this,
-    &evb::EvBApplication<Configuration,StateMachine>::defaultWebPage,
-    "Default");
+                               &evb::EvBApplication<Configuration,StateMachine>::defaultWebPage,
+                               "Default");
 
   bindNonDefaultXgiCallbacks();
 }
@@ -586,8 +586,8 @@ void evb::EvBApplication<Configuration,StateMachine>::registerQueueCallback
   if ( pos == queueContents_.end() )
   {
     xgi::framework::deferredbind(this, this,
-      &evb::EvBApplication<Configuration,StateMachine>::queueWebPage,
-      name);
+                                 &evb::EvBApplication<Configuration,StateMachine>::queueWebPage,
+                                 name);
 
     queueContents_.insert( QueueContents::value_type(name,queueContentFunction) );
   }
@@ -620,9 +620,9 @@ throw (xgi::exception::Exception)
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(tr()
-    .add(td(getWebPageBanner())));
+                  .add(td(getWebPageBanner())));
   layoutTable.add(tr()
-    .add(td(queueDetail)));
+                  .add(td(queueDetail)));
 
   *out << getWebPageHeader();
   *out << layoutTable;
@@ -645,26 +645,37 @@ cgicc::div evb::EvBApplication<Configuration,StateMachine>::getWebPageBanner() c
 {
   using namespace cgicc;
 
+  table infoSpaceTable;
+  infoSpaceTable.set("align","right");
+  infoSpaceTable.add(tr()
+                     .add(td("InfoSpaces: "))
+                     .add(td()
+                          .add(a("Application")
+                               .set("href","/urn:xdaq-application:service=hyperdaq/infospaceQuery?name="+urn_.toString())))
+                     .add(td()
+                          .add(a("Monitoring")
+                               .set("href","/urn:xdaq-application:service=hyperdaq/infospaceQuery?name="+monitoringInfoSpace_->name()))));
+
   table banner;
   banner.set("class","xdaq-evb-banner");
 
   banner.add(tr()
-    .add(td(getIdentifier()))
-    .add(td(a("XML").set("href","/"+urn_.toString()+"/ParameterQuery"))));
+             .add(td(getIdentifier()))
+             .add(td(infoSpaceTable)));
 
   banner.add(tr()
-    .add(td("run "+boost::lexical_cast<std::string>(stateMachine_->getRunNumber())))
-    .add(td("Version "+evb::version)));
+             .add(td("run "+boost::lexical_cast<std::string>(stateMachine_->getRunNumber())))
+             .add(td("Version "+evb::version)));
 
   const std::string stateName = stateMachine_->getStateName();
   banner.add(tr()
-    .add(td(stateName))
-    .add(td("Page last updated: "+getCurrentTimeUTC()+" UTC")));
+             .add(td(stateName))
+             .add(td("Page last updated: "+getCurrentTimeUTC()+" UTC")));
 
   if ( stateName == "Failed" )
   {
     banner.add(tr().set("class","xdaq-error")
-      .add(td(stateMachine_->getReasonForFailed()).set("colspan","2")));
+               .add(td(stateMachine_->getReasonForFailed()).set("colspan","2")));
   }
 
   cgicc::div div;
@@ -705,8 +716,8 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFs
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::SOAP,
-      "Failed to create FSM SOAP response message for event:" +
-      event + " and result state:" + state,  e);
+                  "Failed to create FSM SOAP response message for event:" +
+                  event + " and result state:" + state,  e);
   }
 }
 
