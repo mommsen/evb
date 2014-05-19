@@ -110,6 +110,7 @@ class XDAQprocess:
                 if tries > 30:
                     raise(StateException(app[0]+":"+str(app[1])+" has not reached Ready state: "+state))
 
+
     def enable(self):
         for app in self._applications:
             if self.getParam("stateName","string",*app) not in ('Ready','Configured'):
@@ -124,6 +125,25 @@ class XDAQprocess:
                 tries += 1
                 if tries > 10:
                     raise(StateException(app[0]+":"+str(app[1])+" has not reached Enabled state: "+state))
+
+
+    def stop(self):
+        for app in self._applications:
+            if self.getParam("stateName","string",*app) not in ('Enabled'):
+                raise(StateException(app[0]+":"+str(app[1])+" is not in Enabled state"))
+            try:
+                state = self.sendSimpleCommand("Stop",*app)
+            except SOAPexception:
+                return
+            tries=0
+            while not state in ('Ready','Configured'):
+                time.sleep(1)
+                state = self.getParam("stateName","string",*app)
+                if state == 'Failed':
+                    raise(StateException(app[0]+":"+str(app[1])+" has failed"))
+                tries += 1
+                if tries > 10:
+                    raise(StateException(app[0]+":"+str(app[1])+" has not reached Ready state: "+state))
 
 
     def start(self):

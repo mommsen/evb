@@ -142,7 +142,6 @@ class FedKitConfig:
 
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-        <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>

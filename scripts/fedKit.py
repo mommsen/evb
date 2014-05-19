@@ -108,7 +108,7 @@ q   stop the run and Quit
 
 
     for xdaq in fedKitConfig.xdaqProcesses:
-        xdaq.kill()
+        xdaq.stop()
 
 
 if __name__ == "__main__":
