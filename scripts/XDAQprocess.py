@@ -142,7 +142,7 @@ class XDAQprocess:
                 if state == 'Failed':
                     raise(StateException(app[0]+":"+str(app[1])+" has failed"))
                 tries += 1
-                if tries > 10:
+                if tries > 30:
                     raise(StateException(app[0]+":"+str(app[1])+" has not reached Ready state: "+state))
 
 
