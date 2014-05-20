@@ -111,7 +111,12 @@ void evb::bu::DiskWriter::stopProcessing()
     writeEoLS(it->second);
 
     if ( it->second->nbEvents > 0 )
+    {
       ++diskWriterMonitoring_.nbLumiSections;
+      const uint32_t lumiSection = it->second->lumiSection;
+      if ( lumiSection > diskWriterMonitoring_.lastLumiSection )
+        diskWriterMonitoring_.lastLumiSection = lumiSection;
+    }
   }
   lumiStatistics_.clear();
 
@@ -220,7 +225,12 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
       writeEoLS(it->second);
 
       if ( it->second->nbEvents > 0 )
+      {
         ++diskWriterMonitoring_.nbLumiSections;
+        const uint32_t lumiSection = it->second->lumiSection;
+        if ( lumiSection > diskWriterMonitoring_.lastLumiSection )
+          diskWriterMonitoring_.lastLumiSection = lumiSection;
+      }
 
       lumiStatistics_.erase(it++);
     }
@@ -358,6 +368,8 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
       diskWriterMonitoring_.lastEventNumberWritten = fileStatistics->lastEventNumberWritten;
     if ( diskWriterMonitoring_.currentLumiSection < fileStatistics->lumiSection )
       diskWriterMonitoring_.currentLumiSection = fileStatistics->lumiSection;
+    if ( diskWriterMonitoring_.lastLumiSection < fileStatistics->lumiSection )
+      diskWriterMonitoring_.lastLumiSection = fileStatistics->lumiSection;
   }
 
   ++(lumiStatistics->second->fileCount);
@@ -408,6 +420,7 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
   diskWriterMonitoring_.nbLumiSections = 0;
   diskWriterMonitoring_.lastEventNumberWritten = 0;
   diskWriterMonitoring_.currentLumiSection = 0;
+  diskWriterMonitoring_.lastLumiSection = 0;
 }
 
 
@@ -471,6 +484,9 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     table.add(tr()
       .add(td("# lumi sections with files"))
       .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
+    table.add(tr()
+      .add(td("last lumi section with files"))
+      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastLumiSection))));
     table.add(tr()
       .add(td("current lumi section"))
       .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
@@ -650,7 +666,8 @@ void evb::bu::DiskWriter::writeEoR() const
   json << "{"                                                                           << std::endl;
   json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
                                    << diskWriterMonitoring_.nbFiles         << "\", \""
-                                   << diskWriterMonitoring_.nbLumiSections  << "\" ],"  << std::endl;
+                                   << diskWriterMonitoring_.nbLumiSections  << "\", \""
+                                   << diskWriterMonitoring_.lastLumiSection << "\" ],"  << std::endl;
   json << "   \"definition\" : \"" << eorDefFile_.string() << "\","                     << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
@@ -725,7 +742,11 @@ void evb::bu::DiskWriter::defineEoR(const boost::filesystem::path& jsdDir)
   json << "      },"                                          << std::endl;
   json << "      {"                                           << std::endl;
   json << "         \"name\" : \"NLumis\","                   << std::endl;
-  json << "         \"operation\" : \"sum\""                  << std::endl;
+  json << "         \"operation\" : \"max\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"LastLumi\","                 << std::endl;
+  json << "         \"operation\" : \"max\""                  << std::endl;
   json << "      }"                                           << std::endl;
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
