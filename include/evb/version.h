@@ -4,7 +4,7 @@
 #include "config/PackageInfo.h"
 
 #define EVB_VERSION_MAJOR 1
-#define EVB_VERSION_MINOR 18
+#define EVB_VERSION_MINOR 19
 #define EVB_VERSION_PATCH 0
 #undef EVB_PREVIOUS_VERSIONS
 
@@ -18,20 +18,20 @@
 
 namespace evb
 {
-    const std::string package = "evb";
-    const std::string versions = EVB_FULL_VERSION_LIST;
-    const std::string version = PACKAGE_VERSION_STRING(EVB_VERSION_MAJOR,EVB_VERSION_MINOR,EVB_VERSION_PATCH);
-    const std::string description = "The CMS event builder";
-    const std::string summary = "Event builder library";
-    const std::string authors = "Remi Mommsen";
-    const std::string link = "";
+  const std::string package = "evb";
+  const std::string versions = EVB_FULL_VERSION_LIST;
+  const std::string version = PACKAGE_VERSION_STRING(EVB_VERSION_MAJOR,EVB_VERSION_MINOR,EVB_VERSION_PATCH);
+  const std::string description = "The CMS event builder";
+  const std::string summary = "Event builder library";
+  const std::string authors = "Remi Mommsen";
+  const std::string link = "";
 
-    config::PackageInfo getPackageInfo();
+  config::PackageInfo getPackageInfo();
 
-    void checkPackageDependencies()
+  void checkPackageDependencies()
     throw (config::PackageInfo::VersionException);
 
-    std::set<std::string, std::less<std::string> > getPackageDependencies();
+  std::set<std::string, std::less<std::string> > getPackageDependencies();
 }
 
 #endif
