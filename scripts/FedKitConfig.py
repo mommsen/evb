@@ -158,7 +158,7 @@ class FedKitConfig:
         if writeData:
             dropEventData = "false"
             outputDir = self.getOutputDir()
-            fakeLumiSectionDuration = 60
+            fakeLumiSectionDuration = 20
         else:
             dropEventData = "true"
             outputDir = "/tmp"
