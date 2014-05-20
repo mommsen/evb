@@ -482,7 +482,7 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
       .add(td("# events written"))
       .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbEventsWritten))));
     table.add(tr()
-      .add(td("# lumi sections with files"))
+      .add(td("# finished lumi sections with files"))
       .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
     table.add(tr()
       .add(td("last lumi section with files"))
