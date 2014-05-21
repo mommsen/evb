@@ -1236,8 +1236,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::startPr
 
 }
 
-template<class Configuration>
-void evb::readoutunit::Input<Configuration>::DummyInputData::drain()
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::drain()
 {
   this->doProcessing_ = false;
 }
