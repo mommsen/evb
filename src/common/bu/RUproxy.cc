@@ -213,10 +213,11 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 
   try
   {
-    uint32_t buResourceId;
+    uint16_t buResourceId;
+    uint16_t eventsToDiscard;
     const uint32_t msgSize = sizeof(msg::ReadoutMsg)+sizeof(I2O_TID);
 
-    while ( resourceManager_->getResourceId(buResourceId) )
+    while ( resourceManager_->getResourceId(buResourceId,eventsToDiscard) )
     {
       toolbox::mem::Reference* rqstBufRef =
         toolbox::mem::getMemoryPoolFactory()->
@@ -239,6 +240,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       readoutMsg->buTid        = tid_;
       readoutMsg->buResourceId = buResourceId;
       readoutMsg->nbRequests   = configuration_->eventsPerRequest;
+      readoutMsg->nbDiscards   = eventsToDiscard;
       readoutMsg->nbRUtids     = 0; // will be filled by EVM
 
       // Send the request to the EVM

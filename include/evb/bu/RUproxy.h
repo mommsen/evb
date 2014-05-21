@@ -64,7 +64,7 @@ namespace evb {
       /**
        * Send request for N trigger data fragments to the RUs
        */
-      void requestFragments(const uint32_t buResourceId, const uint32_t count);
+      void requestFragments(const uint16_t buResourceId, const uint16_t count);
 
       /**
        * Get the total number of events in the given lumi section from the EVM
@@ -150,8 +150,8 @@ namespace evb {
       // Lookup table of data blocks, indexed by RU tid and BU resource id
       struct Index
       {
-        uint32_t ruTid;
-        uint32_t buResourceId;
+        I2O_TID ruTid;
+        uint16_t buResourceId;
 
         inline bool operator< (const Index& other) const
         { return ruTid == other.ruTid ? buResourceId < other.buResourceId : ruTid < other.ruTid; }

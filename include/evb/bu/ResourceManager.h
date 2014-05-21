@@ -64,7 +64,7 @@ namespace evb {
        * Get the next resource id for which to request trigger data.
        * Return false if no free resource id is available.
        */
-      bool getResourceId(uint32_t& resourceId);
+      bool getResourceId(uint16_t& resourceId, uint16_t& eventsToDiscard);
 
       /**
        * Return the next lumi-section account.
@@ -146,13 +146,14 @@ namespace evb {
       uint32_t lumiSectionTimeout_;
 
       typedef std::list<EvBid> EvBidList;
-      typedef std::map<uint32_t, EvBidList> AllocatedResources;
+      typedef std::map<uint16_t, EvBidList> AllocatedResources;
       AllocatedResources allocatedResources_;
       boost::mutex allocatedResourcesMutex_;
+      uint32_t eventsToDiscard_;
 
       uint32_t nbResources_;
       uint32_t resourcesToBlock_;
-      typedef OneToOneQueue<uint32_t> ResourceFIFO;
+      typedef OneToOneQueue<uint16_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
       boost::filesystem::path resourceDirectory_;

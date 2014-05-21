@@ -34,7 +34,7 @@ writeNextEventsToFile_(0)
 
 void evb::bu::EventBuilder::addSuperFragment
 (
-  const uint32_t buResourceId,
+  const uint16_t buResourceId,
   FragmentChainPtr& superFragments
 )
 {

@@ -58,7 +58,7 @@ namespace evb {
       /**
        * Add the super fragment received for the BU resource id
        */
-      void addSuperFragment(const uint32_t buResourceId, FragmentChainPtr&);
+      void addSuperFragment(const uint16_t buResourceId, FragmentChainPtr&);
 
       /**
        * Configure

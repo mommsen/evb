@@ -207,6 +207,8 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
     }
 
     pos->second.remove(event->getEvBid());
+    ++eventsToDiscard_;
+
     if ( pos->second.empty() )
     {
       allocatedResources_.erase(pos);
@@ -225,7 +227,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 }
 
 
-bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
+bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& eventsToDiscard)
 {
   bool gotResource = freeResourceFIFO_.deq(buResourceId);
 
@@ -246,6 +248,9 @@ bool evb::bu::ResourceManager::getResourceId(uint32_t& buResourceId)
         oss << " is already in the allocated resources, while it was also found in the free resources";
         XCEPT_RAISE(exception::EventOrder, oss.str());
       }
+
+      eventsToDiscard = eventsToDiscard_;
+      eventsToDiscard_ = 0;
     }
 
     {
@@ -425,6 +430,8 @@ void evb::bu::ResourceManager::configure()
   diskUsageMonitors_.clear();
   resourceDirectory_.clear();
 
+  eventsToDiscard_ = 0;
+
   lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
@@ -437,13 +444,13 @@ void evb::bu::ResourceManager::configure()
   if ( configuration_->dropEventData )
   {
     resourcesToBlock_ = 0;
-    for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
+    for (uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
       assert( freeResourceFIFO_.enq(buResourceId) );
   }
   else
   {
     resourcesToBlock_ = nbResources_;
-    for (uint32_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
+    for (uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
       assert( blockedResourceFIFO_.enq(buResourceId) );
 
     configureDiskUsageMonitors();
