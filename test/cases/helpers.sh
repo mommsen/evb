@@ -39,6 +39,7 @@ function checkBuDir {
     runEventCounter=0;
     runFileCounter=0;
     runLsCounter=0;
+    lastLumiSection=0;
 
     for eolsFile in $(ls $runDir/*_EoLS.jsn)
     do
@@ -59,6 +60,7 @@ function checkBuDir {
         if [[ $lsFileCount -gt 0 ]]
         then
             ((runLsCounter++))
+            lastLumiSection=$((lumiSection))
 
             for file in `ls $runDir/run${runNumber}_ls${lumiSection}_*raw`
             do
@@ -112,9 +114,10 @@ function checkBuDir {
         exit 1
     fi
 
-    runEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eorFile)
-    runFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)", "[0-9]+" \],/\1/p' $eorFile)
-    runLsCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "([0-9]+)" \],/\1/p' $eorFile)
+    runEventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)", "[0-9]+", "[0-9]+", "[0-9]+" \],/\1/p' $eorFile)
+    runFileCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "([0-9]+)", "[0-9]+", "[0-9]+" \],/\1/p' $eorFile)
+    runLsCount=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "([0-9]+)", "[0-9]+" \],/\1/p' $eorFile)
+    runLastLumiSection=$(sed -nre 's/   "data" : \[ "[0-9]+", "[0-9]+", "[0-9]+", "([0-9]+)" \],/\1/p' $eorFile)
 
     if [[ $runEventCounter != $runEventCount ]]
     then
@@ -129,6 +132,11 @@ function checkBuDir {
     if [[ $runLsCounter != $runLsCount ]]
     then
         echo "Test failed: expected $runLsCount lumi sections for run $runNumber, but found raw data files from $runLsCounter lumi sections"
+        exit 1
+    fi
+    if [[ $runLastLumiSection != $lastLumiSection ]]
+    then
+        echo "Test failed: expected last LS $runLastLumiSection for run $runNumber, but found raw data files up to lumi section $lastLumiSection"
         exit 1
     fi
 }
