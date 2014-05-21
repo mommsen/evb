@@ -5,21 +5,6 @@
 
 bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
 {
-  // if we got a superFragment from pt::frl, use it
-  if ( superFragmentFIFO_.deq(superFragment) )
-  {
-    if ( superFragment->getEvBid() != evbId )
-    {
-      std::ostringstream oss;
-      oss << "Mismatch detected: expected evb id "
-        << evbId << ", but found evb id "
-        << superFragment->getEvBid() << " in data block";
-      XCEPT_RAISE(exception::MismatchDetected, oss.str());
-    }
-
-    return true;
-  }
-
   if ( !fragmentFIFOs_.empty() && fragmentFIFOs_.begin()->second->empty() ) return false;
 
   readoutunit::FragmentChain::FragmentPtr fragment;

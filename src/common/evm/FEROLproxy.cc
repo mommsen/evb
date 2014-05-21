@@ -5,9 +5,6 @@
 
 bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
 {
-  // if we got a superFragment from pt::frl, use it
-  if ( superFragmentFIFO_.deq(superFragment) ) return true;
-
   readoutunit::FragmentChain::FragmentPtr fragment;
 
   if ( ! masterFED_->second->deq(fragment) ) return false;
@@ -95,19 +92,25 @@ uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP(const unsigned ch
   //set the evm board sense
   if (! set_evm_board_sense(payload) )
   {
-    XCEPT_RAISE(exception::L1Trigger, "Cannot decode EVM board sense");
+    std::ostringstream msg;
+    msg << "Cannot decode EVM board sense for GTP FED " << GTP_FED_ID;
+    XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
   //check that we've got the TCS chip
   if (! has_evm_tcs(payload) )
   {
+    std::ostringstream msg;
+    msg << "No TCS chip found in GTP FED " << GTP_FED_ID;
     XCEPT_RAISE(exception::L1Trigger, "No TCS chip found");
   }
 
   //check that we've got the FDL chip
   if (! has_evm_fdl(payload) )
   {
-    XCEPT_RAISE(exception::L1Trigger, "No FDL chip found");
+    std::ostringstream msg;
+    msg << "No FDL chip found in GTP FED " << GTP_FED_ID;
+    XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
   //check that we got the right bunch crossing
@@ -131,7 +134,9 @@ uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTPe(const unsigned c
 
   if (! gtpe_board_sense(payload) )
   {
-    XCEPT_RAISE(exception::L1Trigger, "Received trigger fragment without GPTe board id.");
+    std::ostringstream msg;
+    msg << "Received trigger fragment from GTPe FED " << GTPe_FED_ID << " without GTPe board id.";
+    XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
   const uint32_t orbitNumber = gtpe_getorbit(payload);

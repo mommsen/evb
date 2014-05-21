@@ -70,11 +70,6 @@ namespace evb {
       void inputSourceChanged();
 
       /**
-       * Callback for I2O_SUPER_FRAGMENT_READY messages received from pt::frl
-       */
-      void superFragmentReady(toolbox::mem::Reference*);
-
-      /**
        * Callback for individual FED fragments received from pt::frl
        */
       void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
@@ -164,9 +159,6 @@ namespace evb {
         Handler(Input<ReadoutUnit,Configuration>* input)
         : input_(input), doProcessing_(false) {};
 
-        virtual void superFragmentReady(toolbox::mem::Reference*)
-        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::superFragmentReady is not implemented"); }
-
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::rawDataAvailable is not implemented"); }
 
@@ -197,7 +189,6 @@ namespace evb {
         FEROLproxy(Input<ReadoutUnit,Configuration>*);
 
         virtual void configure(boost::shared_ptr<Configuration>);
-        virtual void superFragmentReady(toolbox::mem::Reference*);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void drain() const;
@@ -209,9 +200,6 @@ namespace evb {
 
         virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
         bool getScalerFragment(const EvBid&, toolbox::mem::Reference*&);
-
-        typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
-        SuperFragmentFIFO superFragmentFIFO_;
 
         typedef OneToOneQueue<FragmentChain::FragmentPtr> FragmentFIFO;
         typedef boost::shared_ptr<FragmentFIFO> FragmentFIFOPtr;
@@ -331,14 +319,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::inputSourceChanged()
   getHandlerForInputSource(handler_);
   configure();
   resetMonitoringCounters();
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::superFragmentReady(toolbox::mem::Reference* bufRef)
-{
-  checkEventFragment(bufRef);
-  handler_->superFragmentReady(bufRef);
 }
 
 
@@ -863,10 +843,6 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
 
   table.add(tr()
     .add(td().set("colspan","2")
-      .add(handler_->getHtmlSnippedForFragmentFIFOs())));
-
-  table.add(tr()
-    .add(td().set("colspan","2")
       .add(getFedTable())));
 
   cgicc::div div;
@@ -927,7 +903,6 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(Input<ReadoutUnit,Configuration>* input) :
 Handler(input),
-superFragmentFIFO_(input->getReadoutUnit(),"superFragmentFIFO"),
 scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
 {}
 
@@ -937,9 +912,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
 {
   this->doProcessing_ = false;
   dropInputData_ = configuration->dropInputData;
-
-  superFragmentFIFO_.clear();
-  superFragmentFIFO_.resize(configuration->fragmentFIFOCapacity);
 
   evbIdFactories_.clear();
   fragmentFIFOs_.clear();
@@ -970,32 +942,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::superFragmentReady
-(
-  toolbox::mem::Reference* bufRef
-)
-{
-  if ( ! this->doProcessing_ )
-  {
-    bufRef->release();
-    return;
-  }
-
-  I2O_DATA_READY_MESSAGE_FRAME* frame =
-    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const unsigned char* payload = (unsigned char*)frame + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  const uint16_t fedId = frame->fedid;
-  const uint32_t eventNumber = frame->triggerno;
-  const EvBid evbId = getEvBid(fedId,eventNumber,payload);
-
-  FragmentChainPtr superFragment( new FragmentChain(evbId,bufRef) );
-
-  if ( ! dropInputData_ )
-    superFragmentFIFO_.enqWait(superFragment);
-}
-
-
-template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvailable
 (
   toolbox::mem::Reference* bufRef,
@@ -1013,7 +959,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvai
   assert( ferolHeader->signature() == FEROL_SIGNATURE );
   const uint16_t fedId = ferolHeader->fed_id();
   const uint32_t eventNumber = ferolHeader->event_number();
-  const EvBid evbId = getEvBid(fedId,eventNumber,payload);
+  const EvBid evbId = getEvBid(fedId,eventNumber,payload+sizeof(ferolh_t));
 
   //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
 
@@ -1084,8 +1030,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::stopProcess
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::isEmpty() const
 {
-  if ( ! superFragmentFIFO_.empty() ) return false;
-
   for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
   {
@@ -1102,7 +1046,6 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getHt
   using namespace cgicc;
 
   cgicc::div queues;
-  queues.add(superFragmentFIFO_.getHtmlSnipped());
 
   for (typename FragmentFIFOs::const_iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)

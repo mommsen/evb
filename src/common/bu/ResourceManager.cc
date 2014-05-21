@@ -136,6 +136,8 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
 {
   if ( lumiSectionAccountFIFO_.deq(lumiSectionAcount) ) return true;
 
+  if ( eventRate_.value_ > 0 ) return false; // don't expire LS when we're still getting events
+
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
   if ( currentLumiSectionAccount_.get() )
   {

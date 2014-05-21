@@ -154,7 +154,14 @@ void evb::BU::I2O_BU_CACHE_Callback
 )
 throw (i2o::exception::Exception)
 {
-  ruProxy_->superFragmentCallback(bufRef);
+  try
+  {
+    ruProxy_->superFragmentCallback(bufRef);
+  }
+  catch(xcept::Exception& e)
+  {
+    stateMachine_->processFSMEvent( Fail(e) );
+  }
 }
 
 
