@@ -20,13 +20,13 @@ evb::bu::DiskWriter::DiskWriter
   BU* bu,
   boost::shared_ptr<ResourceManager> resourceManager
 ) :
-bu_(bu),
-resourceManager_(resourceManager),
-configuration_(bu->getConfiguration()),
-buInstance_(bu->getApplicationDescriptor()->getInstance()),
-doProcessing_(false),
-lumiAccountingActive_(false),
-fileMoverActive_(false)
+  bu_(bu),
+  resourceManager_(resourceManager),
+  configuration_(bu->getConfiguration()),
+  buInstance_(bu->getApplicationDescriptor()->getInstance()),
+  doProcessing_(false),
+  lumiAccountingActive_(false),
+  fileMoverActive_(false)
 {
   resetMonitoringCounters();
   startLumiAccounting();
@@ -139,8 +139,8 @@ void evb::bu::DiskWriter::startLumiAccounting()
 
     lumiAccountingAction_ =
       toolbox::task::bind(this,
-        &evb::bu::DiskWriter::lumiAccounting,
-        bu_->getIdentifier("lumiAccountingAction"));
+                          &evb::bu::DiskWriter::lumiAccounting,
+                          bu_->getIdentifier("lumiAccountingAction"));
   }
   catch(xcept::Exception& e)
   {
@@ -167,14 +167,14 @@ bool evb::bu::DiskWriter::lumiAccounting(toolbox::task::WorkLoop* wl)
   {
     lumiAccountingActive_ = false;
     XCEPT_DECLARE(exception::DiskWriting,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     lumiAccountingActive_ = false;
     XCEPT_DECLARE(exception::DiskWriting,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -254,8 +254,8 @@ void evb::bu::DiskWriter::startFileMover()
 
     fileMoverAction_ =
       toolbox::task::bind(this,
-        &evb::bu::DiskWriter::fileMover,
-        bu_->getIdentifier("fileMoverAction"));
+                          &evb::bu::DiskWriter::fileMover,
+                          bu_->getIdentifier("fileMoverAction"));
   }
   catch(xcept::Exception& e)
   {
@@ -282,14 +282,14 @@ bool evb::bu::DiskWriter::fileMover(toolbox::task::WorkLoop* wl)
   {
     fileMoverActive_ = false;
     XCEPT_DECLARE(exception::DiskWriting,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     fileMoverActive_ = false;
     XCEPT_DECLARE(exception::DiskWriting,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -442,7 +442,7 @@ void evb::bu::DiskWriter::configure()
 void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
 {
   if ( ! boost::filesystem::exists(path) &&
-    ( ! boost::filesystem::create_directories(path) ) )
+       ( ! boost::filesystem::create_directories(path) ) )
   {
     std::ostringstream oss;
     oss << "Failed to create directory " << path.string();
@@ -454,7 +454,7 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
 void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
 {
   if ( boost::filesystem::exists(path) &&
-    ( ! boost::filesystem::remove(path) ) )
+       ( ! boost::filesystem::remove(path) ) )
   {
     std::ostringstream oss;
     oss << "Failed to remove directory " << path.string();
@@ -473,23 +473,23 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
     table.add(tr()
-      .add(td("last evt number written"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastEventNumberWritten))));
+              .add(td("last evt number written"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastEventNumberWritten))));
     table.add(tr()
-      .add(td("# files written"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbFiles))));
+              .add(td("# files written"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbFiles))));
     table.add(tr()
-      .add(td("# events written"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbEventsWritten))));
+              .add(td("# events written"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbEventsWritten))));
     table.add(tr()
-      .add(td("# finished lumi sections with files"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
+              .add(td("# finished lumi sections with files"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
     table.add(tr()
-      .add(td("last lumi section with files"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastLumiSection))));
+              .add(td("last lumi section with files"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastLumiSection))));
     table.add(tr()
-      .add(td("current lumi section"))
-      .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
+              .add(td("current lumi section"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
   }
 
   StreamHandlers::const_iterator it = streamHandlers_.begin();
@@ -498,7 +498,7 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     try
     {
       table.add(tr()
-        .add(td(it->second->getHtmlSnippedForFileStatisticsFIFO()).set("colspan","2")));
+                .add(td(it->second->getHtmlSnippedForFileStatisticsFIFO()).set("colspan","2")));
       ++it;
     }
     catch(...) {}
@@ -633,9 +633,10 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
   json << "{"                                                              << std::endl;
-  json << "   \"data\" : [ \""     << lumiInfo->nbEventsWritten << "\", \""
-                                   << lumiInfo->fileCount << "\", \""
-                                   << lumiInfo->totalEvents << "\" ],"     << std::endl;
+  json << "   \"data\" : [ \""
+    << lumiInfo->nbEventsWritten << "\", \""
+    << lumiInfo->fileCount << "\", \""
+    << lumiInfo->totalEvents << "\" ],"     << std::endl;
   json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
   json << "}"                                                              << std::endl;
@@ -664,10 +665,11 @@ void evb::bu::DiskWriter::writeEoR() const
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
   json << "{"                                                                           << std::endl;
-  json << "   \"data\" : [ \""     << diskWriterMonitoring_.nbEventsWritten << "\", \""
-                                   << diskWriterMonitoring_.nbFiles         << "\", \""
-                                   << diskWriterMonitoring_.nbLumiSections  << "\", \""
-                                   << diskWriterMonitoring_.lastLumiSection << "\" ],"  << std::endl;
+  json << "   \"data\" : [ \""
+    << diskWriterMonitoring_.nbEventsWritten << "\", \""
+    << diskWriterMonitoring_.nbFiles         << "\", \""
+    << diskWriterMonitoring_.nbLumiSections  << "\", \""
+    << diskWriterMonitoring_.lastLumiSection << "\" ],"  << std::endl;
   json << "   \"definition\" : \"" << eorDefFile_.string() << "\","                     << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;

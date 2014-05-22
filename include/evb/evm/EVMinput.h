@@ -98,7 +98,7 @@ namespace evb {
         else
         {
           XCEPT_RAISE(exception::Configuration,
-            "Unknown input source " + inputSource + " requested");
+                      "Unknown input source " + inputSource + " requested");
         }
       }
 

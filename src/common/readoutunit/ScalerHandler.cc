@@ -43,7 +43,7 @@ void evb::readoutunit::ScalerHandler::getFragmentPool(const std::string& identif
   catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for scaler fragments", e);
+                  "Failed to create memory pool for scaler fragments", e);
   }
 }
 
@@ -195,8 +195,8 @@ void evb::readoutunit::ScalerHandler::startRequestWorkloop(const std::string& id
 
     scalerRequestAction_ =
       toolbox::task::bind(this,
-        &evb::readoutunit::ScalerHandler::scalerRequest,
-        identifier+"scalerRequestAction");
+                          &evb::readoutunit::ScalerHandler::scalerRequest,
+                          identifier+"scalerRequestAction");
   }
   catch(xcept::Exception& e)
   {

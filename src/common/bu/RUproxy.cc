@@ -25,14 +25,14 @@ evb::bu::RUproxy::RUproxy
   boost::shared_ptr<ResourceManager> resourceManager,
   toolbox::mem::Pool* fastCtrlMsgPool
 ) :
-bu_(bu),
-eventBuilder_(eventBuilder),
-resourceManager_(resourceManager),
-fastCtrlMsgPool_(fastCtrlMsgPool),
-configuration_(bu->getConfiguration()),
-doProcessing_(false),
-requestFragmentsActive_(false),
-tid_(0)
+  bu_(bu),
+  eventBuilder_(eventBuilder),
+  resourceManager_(resourceManager),
+  fastCtrlMsgPool_(fastCtrlMsgPool),
+  configuration_(bu->getConfiguration()),
+  doProcessing_(false),
+  requestFragmentsActive_(false),
+  tid_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -146,13 +146,13 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
   catch(std::exception& e)
   {
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -192,7 +192,7 @@ void evb::bu::RUproxy::startProcessingWorkLoop()
     {
       requestFragmentsAction_ =
         toolbox::task::bind(this, &evb::bu::RUproxy::requestFragments,
-          bu_->getIdentifier("ruProxyRequestFragments") );
+                            bu_->getIdentifier("ruProxyRequestFragments") );
 
       requestFragmentsWL_->activate();
     }
@@ -279,14 +279,14 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   {
     requestFragmentsActive_ = false;
     XCEPT_DECLARE(exception::I2O,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     requestFragmentsActive_ = false;
     XCEPT_DECLARE(exception::I2O,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -384,7 +384,7 @@ void evb::bu::RUproxy::getApplicationDescriptors()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application", e);
+                  "Failed to get I2O TID for this application", e);
   }
 
   getApplicationDescriptorForEVM();
@@ -410,13 +410,13 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     catch(xcept::Exception& e)
     {
       XCEPT_RETHROW(exception::Configuration,
-        "Failed to get EVM application descriptor", e);
+                    "Failed to get EVM application descriptor", e);
     }
 
     if ( evmDescriptors.empty() )
     {
       XCEPT_RAISE(exception::Configuration,
-        "Failed to get EVM application descriptor");
+                  "Failed to get EVM application descriptor");
     }
 
     evm_.descriptor = *(evmDescriptors.begin());
@@ -429,7 +429,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
         bu_->getApplicationContext()->
         getDefaultZone()->
         getApplicationDescriptor("evb::EVM",
-          configuration_->evmInstance.value_);
+                                 configuration_->evmInstance.value_);
     }
     catch(xcept::Exception& e)
     {
@@ -447,7 +447,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get the I2O TID of the EVM", e);
+                  "Failed to get the I2O TID of the EVM", e);
   }
 
   evmURL_ = evm_.descriptor->getContextDescriptor()->getURL()
@@ -512,44 +512,44 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
     table.add(tr()
-      .add(td("last event number from EVM"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromEVM))));
+              .add(td("last event number from EVM"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromEVM))));
     table.add(tr()
-      .add(td("last event number from RUs"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromRUs))));
+              .add(td("last event number from RUs"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.lastEventNumberFromRUs))));
     table.add(tr()
-      .add(td("# incomplete super fragments"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.incompleteSuperFragments))));
+              .add(td("# incomplete super fragments"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.incompleteSuperFragments))));
     table.add(tr()
-      .add(th("Event data").set("colspan","2")));
+              .add(th("Event data").set("colspan","2")));
     table.add(tr()
-      .add(td("payload (MB)"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payload / 1000000))));
+              .add(td("payload (MB)"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payload / 1000000))));
     table.add(tr()
-      .add(td("logical count"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.logicalCount))));
+              .add(td("logical count"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.logicalCount))));
     table.add(tr()
-      .add(td("I2O count"))
-      .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oCount))));
+              .add(td("I2O count"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oCount))));
   }
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     table.add(tr()
-      .add(th("Event data").set("colspan","2")));
+              .add(th("Event data").set("colspan","2")));
     table.add(tr()
-      .add(td("payload (kB)"))
-      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+              .add(td("payload (kB)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
     table.add(tr()
-      .add(td("logical count"))
-      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+              .add(td("logical count"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
     table.add(tr()
-      .add(td("I2O count"))
-      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+              .add(td("I2O count"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
   }
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(getStatisticsPerRU())));
+            .add(td().set("colspan","2")
+                 .add(getStatisticsPerRU())));
 
   cgicc::div div;
   div.add(p("RUproxy"));
@@ -567,12 +567,12 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   table table;
 
   table.add(tr()
-    .add(th("Statistics per RU").set("colspan","4")));
+            .add(th("Statistics per RU").set("colspan","4")));
   table.add(tr()
-    .add(td("Instance"))
-    .add(td("TID"))
-    .add(td("Fragments"))
-    .add(td("Payload (MB)")));
+            .add(td("Instance"))
+            .add(td("TID"))
+            .add(td("Fragments"))
+            .add(td("Payload (MB)")));
 
   CountsPerRU::const_iterator it, itEnd;
   for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
@@ -588,21 +588,21 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
         "RU "+boost::lexical_cast<std::string>(ru->getInstance());
 
       table.add(tr()
-        .add(td()
-          .add(a(label).set("href",url).set("target","_blank")))
-        .add(td(boost::lexical_cast<std::string>(it->first)))
-        .add(td(boost::lexical_cast<std::string>(it->second)))
-        .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td()
+                     .add(a(label).set("href",url).set("target","_blank")))
+                .add(td(boost::lexical_cast<std::string>(it->first)))
+                .add(td(boost::lexical_cast<std::string>(it->second)))
+                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
     }
     catch (xdaq::exception::ApplicationDescriptorNotFound& e)
     {
       const std::string label = (it->first == evm_.tid) ? "EVM" : "RU";
 
       table.add(tr()
-        .add(td(label))
-        .add(td(boost::lexical_cast<std::string>(it->first)))
-        .add(td(boost::lexical_cast<std::string>(it->second)))
-        .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td(label))
+                .add(td(boost::lexical_cast<std::string>(it->first)))
+                .add(td(boost::lexical_cast<std::string>(it->second)))
+                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
     }
   }
   return table;

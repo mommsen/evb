@@ -77,7 +77,7 @@ namespace evb {
         uint32_t nbEvents;
 
         LumiSectionAccount(const uint32_t ls)
-        : lumiSection(ls),startTime(time(0)),nbEvents(0) {};
+          : lumiSection(ls),startTime(time(0)),nbEvents(0) {};
       };
       typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
 

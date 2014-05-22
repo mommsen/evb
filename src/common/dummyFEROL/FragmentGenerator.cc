@@ -19,9 +19,9 @@
 #include <sys/time.h>
 
 evb::test::dummyFEROL::FragmentGenerator::FragmentGenerator() :
-frameSize_(0),
-fedSize_(0),
-usePlayback_(false)
+  frameSize_(0),
+  fedSize_(0),
+  usePlayback_(false)
 {
   reset();
 }
@@ -105,7 +105,7 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for dummy fragments", e);
+                  "Failed to create memory pool for dummy fragments", e);
   }
 
   fragmentTracker_.reset(
@@ -160,7 +160,7 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
   try
   {
     bufRef = toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fragmentPool_,frameSize_);
+      getFrame(fragmentPool_,frameSize_);
   }
   catch(xcept::Exception& e)
   {

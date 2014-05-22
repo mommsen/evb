@@ -12,7 +12,7 @@ void evb::InfoSpaceItems::add
 )
 {
   items_.push_back(std::make_pair(name,
-      std::make_pair(item, listener)));
+                                  std::make_pair(item, listener)));
 }
 
 

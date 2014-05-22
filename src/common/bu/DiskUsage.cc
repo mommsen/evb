@@ -17,11 +17,11 @@ evb::bu::DiskUsage::DiskUsage
   const float highWaterMark,
   const bool deleteFiles
 ) :
-path_(path),
-lowWaterMark_(lowWaterMark),
-highWaterMark_(highWaterMark),
-deleteFiles_(deleteFiles),
-valid_(false)
+  path_(path),
+  lowWaterMark_(lowWaterMark),
+  highWaterMark_(highWaterMark),
+  deleteFiles_(deleteFiles),
+  valid_(false)
 {
   if ( lowWaterMark >= highWaterMark )
   {

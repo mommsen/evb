@@ -32,7 +32,7 @@ namespace evb {
       tcpla::MemoryCache* cache;
 
       Fragment(EvBid evbId, toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-      : evbId(evbId),bufRef(bufRef),cache(cache) {};
+        : evbId(evbId),bufRef(bufRef),cache(cache) {};
 
       ~Fragment()
       {
@@ -142,15 +142,15 @@ namespace evb {
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain() :
-size_(0),
-head_(0),tail_(0)
+  size_(0),
+  head_(0),tail_(0)
 {}
 
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const uint32_t resourceCount) :
-size_(0),
-head_(0),tail_(0)
+  size_(0),
+  head_(0),tail_(0)
 {
   for (uint32_t i = 1; i <= resourceCount; ++i)
   {
@@ -169,9 +169,9 @@ head_(0),tail_(0)
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference* bufRef) :
-evbId_(evbId),
-size_(calculateSize(bufRef)),
-head_(bufRef),tail_(bufRef)
+  evbId_(evbId),
+  size_(calculateSize(bufRef)),
+  head_(bufRef),tail_(bufRef)
 {}
 
 

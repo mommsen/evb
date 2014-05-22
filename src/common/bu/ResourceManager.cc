@@ -19,13 +19,13 @@ evb::bu::ResourceManager::ResourceManager
 (
   BU* bu
 ) :
-bu_(bu),
-configuration_(bu->getConfiguration()),
-nbResources_(1),
-resourcesToBlock_(1),
-freeResourceFIFO_(bu,"freeResourceFIFO"),
-blockedResourceFIFO_(bu,"blockedResourceFIFO"),
-lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO")
+  bu_(bu),
+  configuration_(bu->getConfiguration()),
+  nbResources_(1),
+  resourcesToBlock_(1),
+  freeResourceFIFO_(bu,"freeResourceFIFO"),
+  blockedResourceFIFO_(bu,"blockedResourceFIFO"),
+  lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO")
 {
   resetMonitoringCounters();
 }
@@ -436,8 +436,8 @@ void evb::bu::ResourceManager::configure()
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
   nbResources_ = std::max(1U,
-    configuration_->maxEvtsUnderConstruction.value_ /
-    configuration_->eventsPerRequest.value_);
+                          configuration_->maxEvtsUnderConstruction.value_ /
+                          configuration_->eventsPerRequest.value_);
   freeResourceFIFO_.resize(nbResources_);
   blockedResourceFIFO_.resize(nbResources_);
 
@@ -491,22 +491,22 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     table.add(tr()
-      .add(td("# events built"))
-      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsBuilt))));
+              .add(td("# events built"))
+              .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsBuilt))));
     table.add(tr()
-      .add(td("# events in BU"))
-      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsInBU))));
+              .add(td("# events in BU"))
+              .add(td(boost::lexical_cast<std::string>(eventMonitoring_.nbEventsInBU))));
     table.add(tr()
-      .add(td("# outstanding requests"))
-      .add(td(boost::lexical_cast<std::string>(eventMonitoring_.outstandingRequests))));
+              .add(td("# outstanding requests"))
+              .add(td(boost::lexical_cast<std::string>(eventMonitoring_.outstandingRequests))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(2);
       str << bandwidth_.value_ / 1e6;
       table.add(tr()
-        .add(td("throughput (MB/s)"))
-        .add(td(str.str())));
+                .add(td("throughput (MB/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -514,8 +514,8 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       str.precision(4);
       str << eventRate_.value_;
       table.add(tr()
-        .add(td("rate (events/s)"))
-        .add(td(str.str())));
+                .add(td("rate (events/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -523,18 +523,18 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       str.precision(1);
       str << eventSize_.value_ / 1e3 << " +/- " << eventSizeStdDev_.value_ / 1e3;
       table.add(tr()
-        .add(td("event size (kB)"))
-        .add(td(str.str())));
+                .add(td("event size (kB)"))
+                .add(td(str.str())));
     }
   }
   table.add(tr()
-    .add(td("# FU cores available"))
-    .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
+            .add(td("# FU cores available"))
+            .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
 
   if ( ! diskUsageMonitors_.empty() )
   {
     table.add(tr()
-      .add(th("Output disk usage").set("colspan","2")));
+              .add(th("Output disk usage").set("colspan","2")));
 
     for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
           it != itEnd; ++it)
@@ -544,22 +544,22 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       str.precision(1);
       str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
       table.add(tr()
-        .add(td((*it)->path().string()))
-        .add(td(str.str())));
+                .add(td((*it)->path().string()))
+                .add(td(str.str())));
     }
   }
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(freeResourceFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(freeResourceFIFO_.getHtmlSnipped())));
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(blockedResourceFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(blockedResourceFIFO_.getHtmlSnipped())));
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(lumiSectionAccountFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(lumiSectionAccountFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("ResourceManager"));

@@ -19,16 +19,16 @@ evb::bu::EventBuilder::EventBuilder
   boost::shared_ptr<DiskWriter> diskWriter,
   boost::shared_ptr<ResourceManager> resourceManager
 ) :
-bu_(bu),
-diskWriter_(diskWriter),
-resourceManager_(resourceManager),
-configuration_(bu->getConfiguration()),
-doProcessing_(false),
-writeNextEventsToFile_(0)
+  bu_(bu),
+  diskWriter_(diskWriter),
+  resourceManager_(resourceManager),
+  configuration_(bu->getConfiguration()),
+  doProcessing_(false),
+  writeNextEventsToFile_(0)
 {
   builderAction_ =
     toolbox::task::bind(this, &evb::bu::EventBuilder::process,
-      bu_->getIdentifier("eventBuilder") );
+                        bu_->getIdentifier("eventBuilder") );
 }
 
 
@@ -185,7 +185,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       processesActive_.reset(builderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
@@ -195,7 +195,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       processesActive_.reset(builderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -240,8 +240,11 @@ inline void evb::bu::EventBuilder::buildEvent
       payload += sizeof(msg::SuperFragment);
       remainingBufferSize -= sizeof(msg::SuperFragment);
 
-      if ( eventPos->second->appendSuperFragment(ruTid,bufRef->duplicate(),
-          payload,superFragmentMsg->partSize,superFragmentMsg->totalSize) )
+      if ( eventPos->second->appendSuperFragment(ruTid,
+                                                 bufRef->duplicate(),
+                                                 payload,
+                                                 superFragmentMsg->partSize,
+                                                 superFragmentMsg->totalSize) )
       {
         // the super fragment is complete
         ++superFragmentCount;
@@ -352,8 +355,8 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(processesActiveMutex_);
 
     table.add(tr()
-      .add(td("# of active builders"))
-      .add(td(boost::lexical_cast<std::string>(processesActive_.count()))));
+              .add(td("# of active builders"))
+              .add(td(boost::lexical_cast<std::string>(processesActive_.count()))));
   }
 
   SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();
@@ -362,7 +365,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     try
     {
       table.add(tr()
-        .add(td(it->second->getHtmlSnipped()).set("colspan","2")));
+                .add(td(it->second->getHtmlSnipped()).set("colspan","2")));
       ++it;
     }
     catch(...) {}
@@ -377,7 +380,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     bu_->getURN().toString() + "/writeNextEventsToFile?count='+count }; xdaqAJAX(options,null); }";
   div.add(script(javaScript).set("type","text/javascript"));
   div.add(button("dump next event").set("type","button").set("title","dump the next event to /tmp")
-      .set("onclick","dumpEvents(1);"));
+          .set("onclick","dumpEvents(1);"));
 
   return div;
 }

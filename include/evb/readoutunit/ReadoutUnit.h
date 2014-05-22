@@ -33,9 +33,9 @@ namespace evb {
     class Configuration;
 
     /**
-    * \ingroup xdaqApps
-    * \brief Template for the readout units (EVM/RU)
-    */
+     * \ingroup xdaqApps
+     * \brief Template for the readout units (EVM/RU)
+     */
     template<class Unit,class Configuration,class StateMachine>
     class ReadoutUnit : public EvBApplication<Configuration,StateMachine>
     {
@@ -100,7 +100,7 @@ evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::ReadoutUnit
   xdaq::ApplicationStub* app,
   const std::string& appIcon
 ) :
-EvBApplication<Configuration,StateMachine>(app,appIcon)
+  EvBApplication<Configuration,StateMachine>(app,appIcon)
 {}
 
 
@@ -287,11 +287,11 @@ cgicc::table evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::get
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(colgroup()
-    .add(col())
-    .add(col().set("class","xdaq-evb-arrow"))
-    .add(col()));
+                  .add(col())
+                  .add(col().set("class","xdaq-evb-arrow"))
+                  .add(col()));
   layoutTable.add(tr()
-    .add(td(this->getWebPageBanner()).set("colspan","3")));
+                  .add(td(this->getWebPageBanner()).set("colspan","3")));
   addComponentsToWebPage(layoutTable);
 
   return layoutTable;

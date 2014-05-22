@@ -21,12 +21,12 @@ evb::bu::StateMachine::StateMachine
   EventBuilderPtr eventBuilder,
   boost::shared_ptr<ResourceManager> resourceManager
 ):
-EvBStateMachine(bu),
-bu_(bu),
-ruProxy_(ruProxy),
-diskWriter_(diskWriter),
-eventBuilder_(eventBuilder),
-resourceManager_(resourceManager)
+  EvBStateMachine(bu),
+  bu_(bu),
+  ruProxy_(ruProxy),
+  diskWriter_(diskWriter),
+  eventBuilder_(eventBuilder),
+  resourceManager_(resourceManager)
 {}
 
 
@@ -59,7 +59,7 @@ void evb::bu::Configuring::activity()
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
@@ -67,14 +67,14 @@ void evb::bu::Configuring::activity()
     msg += ": ";
     msg += e.what();
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -139,7 +139,7 @@ void evb::bu::Draining::activity()
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
@@ -147,14 +147,14 @@ void evb::bu::Draining::activity()
     msg += ": ";
     msg += e.what();
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
 }

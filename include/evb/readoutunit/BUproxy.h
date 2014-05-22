@@ -80,7 +80,7 @@ namespace evb {
        * Update all values of the items put into the monitoring
        * info space. The caller has to make sure that the info
        * space where the items reside is locked and properly unlocked
-        * after the call.
+       * after the call.
        */
       void updateMonitoringItems();
 
@@ -217,7 +217,7 @@ fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
   catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for super-fragments", e);
+                  "Failed to create memory pool for super-fragments", e);
   }
 
   resetMonitoringCounters();
@@ -229,7 +229,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessingWorkLoop()
 {
   action_ = toolbox::task::bind(this, &evb::readoutunit::BUproxy<ReadoutUnit>::process,
-    readoutUnit_->getIdentifier("process") );
+                                readoutUnit_->getIdentifier("process") );
 }
 
 
@@ -349,7 +349,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
       processesActive_.reset(responderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
@@ -359,7 +359,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
       processesActive_.reset(responderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -642,7 +642,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application", e);
+                  "Failed to get I2O TID for this application", e);
   }
 
   createProcessingWorkLoops();
@@ -766,43 +766,43 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table table;
 
   table.add(tr()
-    .add(td("last evt number to BUs"))
-    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+            .add(td("last evt number to BUs"))
+            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
   table.add(tr()
-    .add(td("# of active responders"))
-    .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
+            .add(td("# of active responders"))
+            .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
 
   table.add(tr()
-    .add(th("BU requests").set("colspan","2")));
+            .add(th("BU requests").set("colspan","2")));
   table.add(tr()
-    .add(td("payload (kB)"))
-    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+            .add(td("payload (kB)"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
   table.add(tr()
-    .add(td("logical count"))
-    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+            .add(td("logical count"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
   table.add(tr()
-    .add(td("I2O count"))
-    .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+            .add(td("I2O count"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
   table.add(tr()
-    .add(th("BU events cache").set("colspan","2")));
+            .add(th("BU events cache").set("colspan","2")));
   table.add(tr()
-    .add(td("payload (MB)"))
-    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
+            .add(td("payload (MB)"))
+            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
   table.add(tr()
-    .add(td("logical count"))
-    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount))));
+            .add(td("logical count"))
+            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount))));
   table.add(tr()
-    .add(td("I2O count"))
-    .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
+            .add(td("I2O count"))
+            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(fragmentRequestFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(fragmentRequestFIFO_.getHtmlSnipped())));
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(getStatisticsPerBU())));
+            .add(td().set("colspan","2")
+                 .add(getStatisticsPerBU())));
 
   cgicc::div div;
   div.add(p("BUproxy"));
@@ -819,12 +819,12 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
   table table;
 
   table.add(tr()
-    .add(th("Statistics per BU").set("colspan","4")));
+            .add(th("Statistics per BU").set("colspan","4")));
   table.add(tr()
-    .add(td("Instance"))
-    .add(td("TID"))
-    .add(td("Nb requests"))
-    .add(td("Data payload (MB)")));
+            .add(td("Instance"))
+            .add(td("TID"))
+            .add(td("Nb requests"))
+            .add(td("Data payload (MB)")));
 
   CountsPerBU::const_iterator it, itEnd;
   for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
@@ -841,11 +841,11 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
     xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(buTID);
     const std::string url = bu->getContextDescriptor()->getURL() + "/" + bu->getURN();
     table.add(tr()
-      .add(td()
-        .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
-      .add(td(boost::lexical_cast<std::string>(buTID)))
-      .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCountPerBU.at(buTID))))
-      .add(td(boost::lexical_cast<std::string>(payloadPerBU))));
+              .add(td()
+                   .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
+              .add(td(boost::lexical_cast<std::string>(buTID)))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCountPerBU.at(buTID))))
+              .add(td(boost::lexical_cast<std::string>(payloadPerBU))));
   }
 
   return table;

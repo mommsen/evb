@@ -21,7 +21,7 @@ namespace evb {
       uint64_t fileSize;
 
       FileStatistics(const uint32_t ls, const std::string& fileName)
-      : creationTime(time(0)),lumiSection(ls),fileName(fileName),nbEventsWritten(0),lastEventNumberWritten(0),fileSize(0) {};
+        : creationTime(time(0)),lumiSection(ls),fileName(fileName),nbEventsWritten(0),lastEventNumberWritten(0),fileSize(0) {};
     };
     typedef boost::shared_ptr<FileStatistics> FileStatisticsPtr;
 

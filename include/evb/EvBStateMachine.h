@@ -129,7 +129,7 @@ namespace evb {
     typedef EvBState my_state;
 
     EvBState(const std::string stateName, typename boost_state::my_context& c) :
-    boost_state(c), stateName_(stateName) {};
+      boost_state(c), stateName_(stateName) {};
     virtual ~EvBState() {};
 
     virtual void entryAction() {};
@@ -147,7 +147,7 @@ namespace evb {
       catch(xcept::Exception& e)
       {
         XCEPT_DECLARE_NESTED(exception::FSM,
-          sentinelException, msg, e);
+                             sentinelException, msg, e);
         this->post_event( Fail(sentinelException) );
       }
       catch(std::exception& e)
@@ -155,14 +155,14 @@ namespace evb {
         msg += ": ";
         msg += e.what();
         XCEPT_DECLARE(exception::FSM,
-          sentinelException, msg );
+                      sentinelException, msg );
         this->post_event( Fail(sentinelException) );
       }
       catch(...)
       {
         msg += ": unknown exception";
         XCEPT_DECLARE(exception::FSM,
-          sentinelException, msg );
+                      sentinelException, msg );
         this->post_event( Fail(sentinelException) );
       }
     };
@@ -177,7 +177,7 @@ namespace evb {
       catch(xcept::Exception& e)
       {
         XCEPT_DECLARE_NESTED(exception::FSM,
-          sentinelException, msg, e);
+                             sentinelException, msg, e);
         this->post_event( Fail(sentinelException) );
       }
       catch(std::exception& e)
@@ -185,14 +185,14 @@ namespace evb {
         msg += ": ";
         msg += e.what();
         XCEPT_DECLARE(exception::FSM,
-          sentinelException, msg );
+                      sentinelException, msg );
         this->post_event( Fail(sentinelException) );
       }
       catch(...)
       {
         msg += ": unknown exception";
         XCEPT_DECLARE(exception::FSM,
-          sentinelException, msg );
+                      sentinelException, msg );
         this->post_event( Fail(sentinelException) );
       }
     };
@@ -210,22 +210,22 @@ evb::EvBStateMachine<MostDerived,InitialState>::EvBStateMachine
 (
   xdaq::Application* app
 ):
-app_(app),
-rcmsStateNotifier_
-(
-  getLogger(),
-  app->getApplicationDescriptor(),
-  app->getApplicationContext()
-),
-runNumber_(0),
-stateName_("Halted"),
-reasonForFailed_("")
+  app_(app),
+  rcmsStateNotifier_
+  (
+    getLogger(),
+    app->getApplicationDescriptor(),
+    app->getApplicationContext()
+  ),
+  runNumber_(0),
+  stateName_("Halted"),
+  reasonForFailed_("")
 {
   xdata::InfoSpace *is = app->getApplicationInfoSpace();
   is->fireItemAvailable("rcmsStateListener",
-    rcmsStateNotifier_.getRcmsStateListenerParameter() );
+                        rcmsStateNotifier_.getRcmsStateListenerParameter() );
   is->fireItemAvailable("foundRcmsStateListener",
-    rcmsStateNotifier_.getFoundRcmsStateListenerParameter() );
+                        rcmsStateNotifier_.getFoundRcmsStateListenerParameter() );
   rcmsStateNotifier_.findRcmsStateListener();
   rcmsStateNotifier_.subscribeToChangesInRcmsStateListener(is);
 
@@ -266,13 +266,13 @@ void evb::EvBStateMachine<MostDerived,InitialState>::do_processSoapEvent
   else if ( soapEvent == "Fail" )
   {
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, "Externally requested by SOAP command" );
+                  sentinelException, "Externally requested by SOAP command" );
     newStateName = processFSMEvent( Fail(sentinelException) );
   }
   else
   {
     XCEPT_DECLARE(exception::FSM, sentinelException,
-      "Received an unknown state machine event '" + soapEvent + "'");
+                  "Received an unknown state machine event '" + soapEvent + "'");
     newStateName = processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -344,7 +344,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
   reasonForFailed_ = evt.getTraceback();
 
   LOG4CPLUS_FATAL(getLogger(),
-    "Failed: " << evt.getReason() << ". " << reasonForFailed_);
+                  "Failed: " << evt.getReason() << ". " << reasonForFailed_);
 
   try
   {
@@ -378,9 +378,9 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
 
   LOG4CPLUS_ERROR(getLogger(),
-    "The " << typeid(evt).name()
-    << " event is not supported from the "
-    << stateName_ << " state!");
+                  "The " << typeid(evt).name()
+                  << " event is not supported from the "
+                  << stateName_ << " state!");
 }
 
 

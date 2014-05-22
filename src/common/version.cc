@@ -13,25 +13,25 @@ GETPACKAGEINFO(evb)
 
 void evb::checkPackageDependencies() throw (config::PackageInfo::VersionException)
 {
-	CHECKDEPENDENCY(config);
-	CHECKDEPENDENCY(pt);
-	CHECKDEPENDENCY(xcept);
-	CHECKDEPENDENCY(xdaq);
-	CHECKDEPENDENCY(xdata);
-	CHECKDEPENDENCY(xoap);
+  CHECKDEPENDENCY(config);
+  CHECKDEPENDENCY(pt);
+  CHECKDEPENDENCY(xcept);
+  CHECKDEPENDENCY(xdaq);
+  CHECKDEPENDENCY(xdata);
+  CHECKDEPENDENCY(xoap);
 }
 
 
 std::set<std::string, std::less<std::string> > evb::getPackageDependencies()
 {
-	std::set<std::string, std::less<std::string> > dependencies;
+  std::set<std::string, std::less<std::string> > dependencies;
 
-	ADDDEPENDENCY(dependencies,config);
-	ADDDEPENDENCY(dependencies,pt);
-	ADDDEPENDENCY(dependencies,xcept);
-	ADDDEPENDENCY(dependencies,xdaq);
-	ADDDEPENDENCY(dependencies,xdata);
-	ADDDEPENDENCY(dependencies,xoap);
+  ADDDEPENDENCY(dependencies,config);
+  ADDDEPENDENCY(dependencies,pt);
+  ADDDEPENDENCY(dependencies,xcept);
+  ADDDEPENDENCY(dependencies,xdaq);
+  ADDDEPENDENCY(dependencies,xdata);
+  ADDDEPENDENCY(dependencies,xoap);
 
-	return dependencies;
+  return dependencies;
 }

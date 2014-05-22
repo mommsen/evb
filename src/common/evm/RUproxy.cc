@@ -19,12 +19,12 @@ evb::evm::RUproxy::RUproxy
   EVM* evm,
   toolbox::mem::Pool* fastCtrlMsgPool
 ) :
-evm_(evm),
-fastCtrlMsgPool_(fastCtrlMsgPool),
-allocateFIFO_(evm,"allocateFIFO"),
-doProcessing_(false),
-assignEventsActive_(false),
-tid_(0)
+  evm_(evm),
+  fastCtrlMsgPool_(fastCtrlMsgPool),
+  allocateFIFO_(evm,"allocateFIFO"),
+  doProcessing_(false),
+  assignEventsActive_(false),
+  tid_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -81,7 +81,7 @@ void evb::evm::RUproxy::startProcessingWorkLoop()
     {
       assignEventsAction_ =
         toolbox::task::bind(this, &evb::evm::RUproxy::assignEvents,
-          evm_->getIdentifier("ruProxyAssignEvents") );
+                            evm_->getIdentifier("ruProxyAssignEvents") );
 
       assignEventsWL_->activate();
     }
@@ -171,14 +171,14 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
   {
     assignEventsActive_ = false;
     XCEPT_DECLARE(exception::I2O,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     assignEventsActive_ = false;
     XCEPT_DECLARE(exception::I2O,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -289,7 +289,7 @@ void evb::evm::RUproxy::getApplicationDescriptors()
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::I2O,
-      "Failed to get I2O TID for this application", e);
+                  "Failed to get I2O TID for this application", e);
   }
 
   // Clear list of participating RUs
@@ -358,22 +358,22 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
     table.add(tr()
-      .add(td("last event number to RUs"))
-      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.lastEventNumberToRUs))));
+              .add(td("last event number to RUs"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.lastEventNumberToRUs))));
     table.add(tr()
-      .add(td("payload (kB)"))
-      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.payload / 1000))));
+              .add(td("payload (kB)"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.payload / 1000))));
     table.add(tr()
-      .add(td("logical count"))
-      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.logicalCount))));
+              .add(td("logical count"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.logicalCount))));
     table.add(tr()
-      .add(td("I2O count"))
-      .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oCount))));
+              .add(td("I2O count"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oCount))));
   }
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(allocateFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(allocateFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("RUproxy"));

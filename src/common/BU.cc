@@ -14,8 +14,8 @@
 #include <math.h>
 
 
-evb::BU::BU(xdaq::ApplicationStub *app) :
-EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif")
+evb::BU::BU(xdaq::ApplicationStub* app) :
+  EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif")
 {
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
@@ -24,7 +24,7 @@ EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif"
   eventBuilder_.reset( new bu::EventBuilder(this, diskWriter_, resourceManager_) );
   ruProxy_.reset( new bu::RUproxy(this, eventBuilder_, resourceManager_, fastCtrlMsgPool) );
   stateMachine_.reset( new bu::StateMachine(this,
-      ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
+                                            ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
   diskWriter_->registerStateMachine(stateMachine_);
   eventBuilder_->registerStateMachine(stateMachine_);
@@ -150,7 +150,7 @@ void evb::BU::do_bindI2oCallbacks()
 
 void evb::BU::I2O_BU_CACHE_Callback
 (
-  toolbox::mem::Reference * bufRef
+  toolbox::mem::Reference* bufRef
 )
 throw (i2o::exception::Exception)
 {
@@ -182,30 +182,30 @@ cgicc::table evb::BU::getMainWebPage() const
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(colgroup()
-    .add(col())
-    .add(col().set("class","xdaq-evb-arrow"))
-    .add(col())
-    .add(col().set("class","xdaq-evb-arrow"))
-    .add(col()));
+                  .add(col())
+                  .add(col().set("class","xdaq-evb-arrow"))
+                  .add(col())
+                  .add(col().set("class","xdaq-evb-arrow"))
+                  .add(col()));
   layoutTable.add(tr()
-    .add(td(this->getWebPageBanner()).set("colspan","5")));
+                  .add(td(this->getWebPageBanner()).set("colspan","5")));
 
   layoutTable.add(tr()
-    .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
-    .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_w.gif").set("alt","")))
-    .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
+                  .add(td(ruProxy_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3"))
+                  .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
+                  .add(td(resourceManager_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+                  .add(td(img().set("src","/evb/images/arrow_w.gif").set("alt","")))
+                  .add(td(diskWriter_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","3")));
 
   layoutTable.add(tr()
-    .add(td(" "))
-    .add(td(img().set("src","/evb/images/arrow_ns.gif").set("alt","")))
-    .add(td(" ")));
+                  .add(td(" "))
+                  .add(td(img().set("src","/evb/images/arrow_ns.gif").set("alt","")))
+                  .add(td(" ")));
 
   layoutTable.add(tr()
-    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
-    .add(td(eventBuilder_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
+                  .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
+                  .add(td(eventBuilder_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+                  .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
 
   return layoutTable;
 }

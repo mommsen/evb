@@ -9,33 +9,33 @@
 
 namespace evb {
 
-class DumpUtility
-{
-public:
+  class DumpUtility
+  {
+  public:
 
-  static void dump
-  (
-    std::ostream&,
-    toolbox::mem::Reference*
-  );
+    static void dump
+    (
+      std::ostream&,
+      toolbox::mem::Reference*
+    );
 
-  static void dumpBlockData
-  (
-    std::ostream&,
-    const unsigned char* data,
-    uint32_t len
-  );
+    static void dumpBlockData
+    (
+      std::ostream&,
+      const unsigned char* data,
+      uint32_t len
+    );
 
-private:
+  private:
 
-  static void dumpBlock
-  (
-    std::ostream&,
-    toolbox::mem::Reference*,
-    const uint32_t bufferCnt
-  );
+    static void dumpBlock
+    (
+      std::ostream&,
+      toolbox::mem::Reference*,
+      const uint32_t bufferCnt
+    );
 
-}; // class DumpUtility
+  }; // class DumpUtility
 
 } // namespace evb
 

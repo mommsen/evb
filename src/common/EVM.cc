@@ -8,7 +8,7 @@
 
 
 evb::EVM::EVM(xdaq::ApplicationStub* app) :
-evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
+  evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
 {
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
@@ -132,13 +132,13 @@ namespace evb {
       using namespace cgicc;
 
       table.add(tr()
-        .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","2"))
-        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
-        .add(td(dynamic_cast<const EVM*>(this)->getRUproxy()->getHtmlSnipped()).set("class","xdaq-evb-component")));
+                .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component").set("rowspan","2"))
+                .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
+                .add(td(dynamic_cast<const EVM*>(this)->getRUproxy()->getHtmlSnipped()).set("class","xdaq-evb-component")));
 
       table.add(tr()
-        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
-        .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
+                .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
+                .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }
 }

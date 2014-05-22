@@ -119,7 +119,7 @@ namespace evb {
         const uint32_t length;
 
         DataLocation(const unsigned char* loc, const uint32_t len) :
-        location(loc),length(len) {};
+          location(loc),length(len) {};
       };
       typedef boost::shared_ptr<DataLocation> DataLocationPtr;
       typedef std::vector<DataLocationPtr> DataLocations;

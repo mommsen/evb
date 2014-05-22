@@ -21,8 +21,8 @@ evb::bu::Event::Event
   const EvBid& evbId,
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
 ) :
-evbId_(evbId),
-buResourceId_(dataBlockMsg->buResourceId)
+  evbId_(evbId),
+  buResourceId_(dataBlockMsg->buResourceId)
 {
   eventInfo_ = new EventInfo(evbId.runNumber(), evbId.lumiSection(), evbId.eventNumber());
   msg::RUtids ruTids;
@@ -354,13 +354,13 @@ evb::bu::Event::EventInfo::EventInfo
   const uint32_t lumi,
   const uint32_t event
 ) :
-version(3),
-runNumber(run),
-lumiSection(lumi),
-eventNumber(event),
-eventSize(0),
-paddingSize(0),
-adler32(::adler32(0L,Z_NULL,0))
+  version(3),
+  runNumber(run),
+  lumiSection(lumi),
+  eventNumber(event),
+  eventSize(0),
+  paddingSize(0),
+  adler32(::adler32(0L,Z_NULL,0))
 {}
 
 

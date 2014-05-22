@@ -142,18 +142,18 @@ static inline bool hasPCLMULQDQ()
 
   // ecx is often an input as well as an output.
   asm volatile("cpuid"
-    : "=a" (eax),
-      "=b" (ebx),
-      "=c" (ecx),
-      "=d" (edx)
-    : "0" (eax), "2" (ecx));
+               : "=a" (eax),
+                 "=b" (ebx),
+                 "=c" (ecx),
+                 "=d" (edx)
+               : "0" (eax), "2" (ecx));
 
   return (ecx & 2);
 }
 
 
 evb::CRCCalculator::CRCCalculator()
-: havePCLMULQDQ_( hasPCLMULQDQ() )
+  : havePCLMULQDQ_( hasPCLMULQDQ() )
 {}
 
 

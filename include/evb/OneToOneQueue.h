@@ -98,7 +98,7 @@ namespace evb {
     cgicc::div getHtmlSnipped() const;
 
     /**
-      * Return a cgicc snipped showing all elements horizontally
+     * Return a cgicc snipped showing all elements horizontally
      */
     cgicc::div getHtmlSnippedHorizontal() const;
 
@@ -163,16 +163,16 @@ namespace evb {
   template <class T>
   template <class C>
   OneToOneQueue<T>::OneToOneQueue(C* evbApplication,const std::string& name) :
-  name_(name),
-  urn_(evbApplication->getURN()),
-  readPointer_(0),
-  writePointer_(0),
-  container_(0),
-  size_(1),
-  printingElements_(false)
+    name_(name),
+    urn_(evbApplication->getURN()),
+    readPointer_(0),
+    writePointer_(0),
+    container_(0),
+    size_(1),
+    printingElements_(false)
   {
     evbApplication->registerQueueCallback(name,
-      boost::bind(&OneToOneQueue<T>::getHtmlSnippedVertical,this));
+                                          boost::bind(&OneToOneQueue<T>::getHtmlSnippedVertical,this));
   }
 
 
@@ -223,7 +223,7 @@ namespace evb {
     if ( !empty() )
     {
       XCEPT_RAISE(exception::FIFO,
-        "Cannot resize the non-empty queue " + name_);
+                  "Cannot resize the non-empty queue " + name_);
     }
 
     toolbox::net::URN urn(name_, "alloc");
@@ -316,16 +316,16 @@ namespace evb {
       .set("onmouseover","this.style.cursor = 'pointer'; document.getElementById('"+name_+"').style.visibility = 'visible';")
       .set("onmouseout","document.getElementById('"+name_+"').style.visibility = 'hidden';");
     queueTable.add(colgroup()
-      .add(col().set("style","width:"+boost::lexical_cast<std::string>(fullWidth)+"%"))
-      .add(col().set("style","width:"+boost::lexical_cast<std::string>(emptyWidth)+"%")));
+                   .add(col().set("style","width:"+boost::lexical_cast<std::string>(fullWidth)+"%"))
+                   .add(col().set("style","width:"+boost::lexical_cast<std::string>(emptyWidth)+"%")));
     queueTable.add(tr()
-      .add(th(name_).set("colspan","2")));
+                   .add(th(name_).set("colspan","2")));
     queueTable.add(tr()
-      .add(td(" ").set("class","xdaq-evb-queue-full"))
-      .add(td(" ").set("class","xdaq-evb-queue-empty")));
+                   .add(td(" ").set("class","xdaq-evb-queue-full"))
+                   .add(td(" ").set("class","xdaq-evb-queue-empty")));
     queueTable.add(tr()
-      .add(td(boost::lexical_cast<std::string>(cachedElements)+" / "+boost::lexical_cast<std::string>(cachedSize))
-        .set("colspan","2")));
+                   .add(td(boost::lexical_cast<std::string>(cachedElements)+" / "+boost::lexical_cast<std::string>(cachedSize))
+                        .set("colspan","2")));
 
     cgicc::div queueFloat;
     queueFloat
@@ -389,8 +389,8 @@ namespace evb {
     cgicc::div queueDetail;
     queueDetail.set("class","xdaq-evb-queuedetail");
     queueDetail.add(table().set("class","xdaq-table")
-      .add(headerRow)
-      .add(tableRow));
+                    .add(headerRow)
+                    .add(tableRow));
 
     return queueDetail;
   }
@@ -414,8 +414,8 @@ namespace evb {
     table table;
     table.set("class","xdaq-table-vertical").set("style","width:100%");
     table.add(colgroup()
-      .add(col().set("style","width:5em"))
-      .add(col()));
+              .add(col().set("style","width:5em"))
+              .add(col()));
 
     std::ostringstream str;
     str << name_ << "<br/>";
@@ -425,7 +425,7 @@ namespace evb {
     str << " elements=" << elements();
 
     table.add(tr()
-      .add(th(str.str()).set("colspan","2")));
+              .add(th(str.str()).set("colspan","2")));
 
 
     for (uint32_t i=readPointer_; i < readPointer_+nbElements; ++i)

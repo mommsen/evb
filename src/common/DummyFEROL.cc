@@ -15,9 +15,9 @@
 #include <pthread.h>
 
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
-EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
-doProcessing_(false),
-fragmentFIFO_(this,"fragmentFIFO")
+  EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
+  doProcessing_(false),
+  fragmentFIFO_(this,"fragmentFIFO")
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );
 
@@ -85,17 +85,17 @@ cgicc::table evb::test::DummyFEROL::getMainWebPage() const
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(colgroup()
-    .add(col())
-    .add(col().set("class","xdaq-evb-arrow"))
-    .add(col()));
+                  .add(col())
+                  .add(col().set("class","xdaq-evb-arrow"))
+                  .add(col()));
   layoutTable.add(tr()
-    .add(td(this->getWebPageBanner()))
-    .add(td(" "))
-    .add(td(" ")));
+                  .add(td(this->getWebPageBanner()))
+                  .add(td(" "))
+                  .add(td(" ")));
   layoutTable.add(tr()
-    .add(td(getHtmlSnipped()).set("class","xdaq-evb-component"))
-    .add(td(" "))
-    .add(td(" ")));
+                  .add(td(getHtmlSnipped()).set("class","xdaq-evb-component"))
+                  .add(td(" "))
+                  .add(td(" ")));
 
   return layoutTable;
 }
@@ -111,16 +111,16 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
     table.add(tr()
-      .add(td("last event number"))
-      .add(td(boost::lexical_cast<std::string>(lastEventNumber_.value_))));
+              .add(td("last event number"))
+              .add(td(boost::lexical_cast<std::string>(lastEventNumber_.value_))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(2);
       str << bandwidth_.value_ / 1e6;
       table.add(tr()
-        .add(td("throughput (MB/s)"))
-        .add(td(str.str())));
+                .add(td("throughput (MB/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -128,8 +128,8 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
       str.precision(2);
       str << frameRate_.value_ ;
       table.add(tr()
-        .add(td("rate (frame/s)"))
-        .add(td(str.str())));
+                .add(td("rate (frame/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -137,8 +137,8 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
       str.precision(2);
       str << fragmentRate_.value_ ;
       table.add(tr()
-        .add(td("rate (fragments/s)"))
-        .add(td(str.str())));
+                .add(td("rate (fragments/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -146,13 +146,13 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
       str.precision(1);
       str << fragmentSize_.value_ / 1e3 << " +/- " << fragmentSizeStdDev_.value_ / 1e3;
       table.add(tr()
-        .add(td("FED size (kB)"))
-        .add(td(str.str())));
+                .add(td("FED size (kB)"))
+                .add(td(str.str())));
     }
   }
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(fragmentFIFO_.getHtmlSnipped())));
+            .add(td().set("colspan","2")
+                 .add(fragmentFIFO_.getHtmlSnipped())));
 
   cgicc::div div;
   div.add(p("FEROL"));
@@ -249,7 +249,7 @@ void evb::test::DummyFEROL::startWorkLoops()
     {
       generatingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
-          getIdentifier("generatingAction") );
+                            getIdentifier("generatingAction") );
 
       generatingWL_->activate();
     }
@@ -269,7 +269,7 @@ void evb::test::DummyFEROL::startWorkLoops()
     {
       sendingAction_ =
         toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
-          getIdentifier("sendingAction") );
+                            getIdentifier("sendingAction") );
 
       sendingWL_->activate();
     }
@@ -332,14 +332,14 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
   {
     generatingActive_ = false;
     XCEPT_DECLARE(exception::DummyData,
-      sentinelException, e.what());
+                  sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     generatingActive_ = false;
     XCEPT_DECLARE(exception::DummyData,
-      sentinelException, "unkown exception");
+                  sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 

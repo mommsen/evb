@@ -357,7 +357,7 @@ void evb::readoutunit::Configuring<Owner>::activity()
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
@@ -365,14 +365,14 @@ void evb::readoutunit::Configuring<Owner>::activity()
     msg += ": ";
     msg += e.what();
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
 }
@@ -437,7 +437,7 @@ void evb::readoutunit::Draining<Owner>::activity()
   catch(xcept::Exception& e)
   {
     XCEPT_DECLARE_NESTED(exception::FSM,
-      sentinelException, msg, e);
+                         sentinelException, msg, e);
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(std::exception& e)
@@ -445,14 +445,14 @@ void evb::readoutunit::Draining<Owner>::activity()
     msg += ": ";
     msg += e.what();
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     msg += ": unknown exception";
     XCEPT_DECLARE(exception::FSM,
-      sentinelException, msg );
+                  sentinelException, msg );
     stateMachine.processFSMEvent( Fail(sentinelException) );
   }
 }

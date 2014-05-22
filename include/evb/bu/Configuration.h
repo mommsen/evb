@@ -19,9 +19,9 @@ namespace evb {
   namespace bu {
 
     /**
-    * \ingroup xdaqApps
-    * \brief Configuration for the builder unit (BU)
-    */
+     * \ingroup xdaqApps
+     * \brief Configuration for the builder unit (BU)
+     */
     struct Configuration
     {
       xdata::Integer32 evmInstance;                        // Instance of the EVM. If not set, discover the EVM over I2O.
@@ -52,32 +52,32 @@ namespace evb {
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
 
       Configuration()
-      : evmInstance(-1), // Explicitly indicate parameter not set
-        maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
-        eventsPerRequest(16),
-        resourcesPerCore(0.1),
-        staleResourceTime(10),
-        superFragmentFIFOCapacity(16384),
-        dropEventData(false),
-        numberOfBuilders(6),
-        rawDataDir("/tmp/fff"),
-        metaDataDir("/tmp/fff"),
-        jsdDirName("jsd"),
-        hltDirName("hlt"),
-        fuLockName("fu.lock"),
-        rawDataHighWaterMark(0.7),
-        rawDataLowWaterMark(0.5),
-        metaDataHighWaterMark(0.9),
-        metaDataLowWaterMark(0.5),
-        checkCRC(true),
-        calculateAdler32(false),
-        deleteRawDataFiles(false),
-        maxEventsPerFile(2000),
-        sleepBetweenEvents(0),
-        fileStatisticsFIFOCapacity(128),
-        lumiSectionFIFOCapacity(128),
-        lumiSectionTimeout(25),
-        hltParameterSetURL("")
+        : evmInstance(-1), // Explicitly indicate parameter not set
+          maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
+          eventsPerRequest(16),
+          resourcesPerCore(0.1),
+          staleResourceTime(10),
+          superFragmentFIFOCapacity(16384),
+          dropEventData(false),
+          numberOfBuilders(6),
+          rawDataDir("/tmp/fff"),
+          metaDataDir("/tmp/fff"),
+          jsdDirName("jsd"),
+          hltDirName("hlt"),
+          fuLockName("fu.lock"),
+          rawDataHighWaterMark(0.7),
+          rawDataLowWaterMark(0.5),
+          metaDataHighWaterMark(0.9),
+          metaDataLowWaterMark(0.5),
+          checkCRC(true),
+          calculateAdler32(false),
+          deleteRawDataFiles(false),
+          maxEventsPerFile(2000),
+          sleepBetweenEvents(0),
+          fileStatisticsFIFOCapacity(128),
+          lumiSectionFIFOCapacity(128),
+          lumiSectionTimeout(25),
+          hltParameterSetURL("")
       {};
 
       void addToInfoSpace

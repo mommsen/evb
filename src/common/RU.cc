@@ -5,7 +5,7 @@
 
 
 evb::RU::RU(xdaq::ApplicationStub* app) :
-ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
+  ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 {
   this->stateMachine_.reset( new ru::RUStateMachine(this) );
   this->input_.reset( new ru::RUinput(this) );
@@ -76,9 +76,9 @@ namespace evb {
       using namespace cgicc;
 
       table.add(tr()
-        .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
-        .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
-        .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
+                .add(td(input_->getHtmlSnipped()).set("class","xdaq-evb-component"))
+                .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
+                .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
     }
   }
 }

@@ -17,7 +17,7 @@ namespace evb {
    */
   struct ApplicationDescriptorAndTid
   {
-    xdaq::ApplicationDescriptor *descriptor;
+    xdaq::ApplicationDescriptor* descriptor;
     I2O_TID tid;
 
     /**
@@ -25,7 +25,7 @@ namespace evb {
      * I2O_TID to 0.
      */
     ApplicationDescriptorAndTid() :
-    descriptor(0),tid(0) {}
+      descriptor(0),tid(0) {}
 
     friend bool operator<(
       const ApplicationDescriptorAndTid& a,

@@ -15,9 +15,9 @@
 
 
 evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
-rawFileName_(rawFileName),
-fileDescriptor_(0),
-fileSize_(0)
+  rawFileName_(rawFileName),
+  fileDescriptor_(0),
+  fileSize_(0)
 {
   if ( boost::filesystem::exists(rawFileName_) )
   {

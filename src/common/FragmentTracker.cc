@@ -19,13 +19,13 @@ evb::FragmentTracker::FragmentTracker
   const uint32_t maxFedSize,
   const bool computeCRC
 ) :
-fedId_(fedId),
-fedSize_(fedSize),
-minFedSize_(minFedSize),
-maxFedSize_(maxFedSize),
-computeCRC_(computeCRC),
-fedCRC_(0xffff),
-typeOfNextComponent_(FED_HEADER)
+  fedId_(fedId),
+  fedSize_(fedSize),
+  minFedSize_(minFedSize),
+  maxFedSize_(maxFedSize),
+  computeCRC_(computeCRC),
+  fedCRC_(0xffff),
+  typeOfNextComponent_(FED_HEADER)
 {
   if (useLogNormal)
   {

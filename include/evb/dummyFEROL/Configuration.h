@@ -34,18 +34,18 @@ namespace evb {
         xdata::UnsignedInteger32 fakeLumiSectionDuration;
 
         Configuration()
-        : destinationClass("evb::RU"),
-          fedSize(2048),
-          computeCRC(true),
-          useLogNormal(false),
-          fedSizeStdDev(0),
-          minFedSize(8), // minimum is 8 Bytes
-          maxFedSize(0), // no limitiation
-          usePlayback(false),
-          playbackDataFile(""),
-          frameSize(0x40000),
-          fragmentFIFOCapacity(32),
-          fakeLumiSectionDuration(23)
+          : destinationClass("evb::RU"),
+            fedSize(2048),
+            computeCRC(true),
+            useLogNormal(false),
+            fedSizeStdDev(0),
+            minFedSize(8), // minimum is 8 Bytes
+            maxFedSize(0), // no limitiation
+            usePlayback(false),
+            playbackDataFile(""),
+            frameSize(0x40000),
+            fragmentFIFOCapacity(32),
+            fakeLumiSectionDuration(23)
         {};
 
         void addToInfoSpace

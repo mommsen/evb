@@ -10,11 +10,11 @@ evb::bu::StreamHandler::StreamHandler
   BU* bu,
   const std::string& streamFileName
 ) :
-streamFileName_(streamFileName),
-configuration_(bu->getConfiguration()),
-index_(0),
-currentFileStatistics_(new FileStatistics(0,"")),
-fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1))
+  streamFileName_(streamFileName),
+  configuration_(bu->getConfiguration()),
+  index_(0),
+  currentFileStatistics_(new FileStatistics(0,"")),
+  fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1))
 {
   fileStatisticsFIFO_.resize(configuration_->fileStatisticsFIFOCapacity);
 }

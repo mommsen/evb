@@ -4,11 +4,11 @@
 #include <boost/bind.hpp>
 
 evb::EvBidFactory::EvBidFactory() :
-runNumber_(0),
-previousEventNumber_(0),
-resyncCount_(0),
-fakeLumiSectionDuration_(0),
-fakeLumiSection_(1)
+  runNumber_(0),
+  previousEventNumber_(0),
+  resyncCount_(0),
+  fakeLumiSectionDuration_(0),
+  fakeLumiSection_(1)
 {}
 
 

@@ -157,7 +157,7 @@ namespace evb {
       public:
 
         Handler(Input<ReadoutUnit,Configuration>* input)
-        : input_(input), doProcessing_(false) {};
+          : input_(input), doProcessing_(false) {};
 
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::rawDataAvailable is not implemented"); }
@@ -523,7 +523,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
       msg << "The received FED id " << fedId;
       msg << " is not in the excepted FED list: ";
       std::copy(configuration_->fedSourceIds.begin(), configuration_->fedSourceIds.end(),
-        std::ostream_iterator<uint16_t>(msg," "));
+                std::ostream_iterator<uint16_t>(msg," "));
       XCEPT_RAISE(exception::Configuration, msg.str());
     }
 
@@ -547,8 +547,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
   }
 
   if ( configuration_->writeFragmentsToFile ||
-    (writeNextFragmentsForFedId_.first > 0 &&
-      (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
+       (writeNextFragmentsForFedId_.first > 0 &&
+        (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
 
   {
     writeFragmentToFile(fedId,eventNumber,bufRef);
@@ -808,19 +808,19 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
     table.add(tr()
-      .add(td("# events"))
-      .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
+              .add(td("# events"))
+              .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
     table.add(tr()
-      .add(td("evt number of last super fragment"))
-      .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));
+              .add(td("evt number of last super fragment"))
+              .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(2);
       str << superFragmentMonitor_.bandwidth / 1e6;
       table.add(tr()
-        .add(td("throughput (MB/s)"))
-        .add(td(str.str())));
+                .add(td("throughput (MB/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -828,8 +828,8 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
       str.precision(4);
       str << superFragmentMonitor_.rate;
       table.add(tr()
-        .add(td("rate (events/s)"))
-        .add(td(str.str())));
+                .add(td("rate (events/s)"))
+                .add(td(str.str())));
     }
     {
       std::ostringstream str;
@@ -837,14 +837,18 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
       str.precision(1);
       str << superFragmentMonitor_.eventSize / 1e3 << " +/- " << superFragmentMonitor_.eventSizeStdDev / 1e3;
       table.add(tr()
-        .add(td("super fragment size (kB)"))
-        .add(td(str.str())));
+                .add(td("super fragment size (kB)"))
+                .add(td(str.str())));
     }
   }
 
   table.add(tr()
-    .add(td().set("colspan","2")
-      .add(getFedTable())));
+            .add(td().set("colspan","2")
+                 .add(getFedTable())));
+
+  table.add(tr()
+            .add(td().set("colspan","2")
+                 .add(handler_->getHtmlSnippedForFragmentFIFOs())));
 
   cgicc::div div;
   const std::string javaScript = "function dumpFragments(fedid,count) { var options = { url:'/" +
@@ -866,12 +870,12 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   table fedTable;
 
   fedTable.add(tr()
-    .add(th("Statistics per FED").set("colspan","5")));
+               .add(th("Statistics per FED").set("colspan","5")));
   fedTable.add(tr()
-    .add(td("FED id").set("colspan","2"))
-    .add(td("Last event"))
-    .add(td("Size (Bytes)"))
-    .add(td("B/w (MB/s)")));
+               .add(td("FED id").set("colspan","2"))
+               .add(td("Last event"))
+               .add(td("Size (Bytes)"))
+               .add(td("B/w (MB/s)")));
 
   typename InputMonitors::const_iterator it, itEnd;
   for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
@@ -882,11 +886,11 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
     tr row;
     row.add(td(fedId));
     row.add(td()
-      .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
-        .set("onclick","dumpFragments("+fedId+",1);")));
+            .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
+                 .set("onclick","dumpFragments("+fedId+",1);")));
     row.add(td(boost::lexical_cast<std::string>(it->second.lastEventNumber)));
     row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSize))
-        +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSizeStdDev))));
+               +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(it->second.eventSizeStdDev))));
 
     std::ostringstream str;
     str.setf(std::ios::fixed);
@@ -903,8 +907,8 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(Input<ReadoutUnit,Configuration>* input) :
-Handler(input),
-scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
+  Handler(input),
+  scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
 {}
 
 
@@ -1004,7 +1008,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProcessing(const uint32_t runNumber)
 {
   for (typename EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
-        it != itEnd; ++it)
+       it != itEnd; ++it)
     it->second.reset(runNumber);
 
   scalerHandler_->startProcessing(runNumber);
@@ -1081,7 +1085,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configu
   catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-      "Failed to create memory pool for dummy fragments", e);
+                  "Failed to create memory pool for dummy fragments", e);
   }
 
   frameSize_ = configuration->frameSize;
@@ -1098,7 +1102,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configu
     oss << "The frame size " << frameSize_ ;
     oss << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
     XCEPT_RAISE(exception::Configuration, oss.str());
-   }
+  }
 
   fragmentTrackers_.clear();
 
@@ -1117,7 +1121,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configu
 
     FragmentTrackerPtr fragmentTracker(
       new FragmentTracker(fedId,configuration->dummyFedSize,configuration->useLogNormal,
-        configuration->dummyFedSizeStdDev,configuration->dummyFedSizeMin,configuration->dummyFedSizeMax,configuration->computeCRC)
+                          configuration->dummyFedSizeStdDev,configuration->dummyFedSizeMin,configuration->dummyFedSizeMax,configuration->computeCRC)
     );
     fragmentTrackers_.insert( FragmentTrackers::value_type(fedId,fragmentTracker) );
   }

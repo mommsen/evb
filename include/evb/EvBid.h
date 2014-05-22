@@ -19,10 +19,10 @@ namespace evb {
   public:
 
     EvBid()
-    : resyncCount_(0), eventNumber_(0), lumiSection_(0), runNumber_(0) {};
+      : resyncCount_(0), eventNumber_(0), lumiSection_(0), runNumber_(0) {};
 
     EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t lumiSection, uint32_t runNumber)
-    : resyncCount_(resyncCount), eventNumber_(eventNumber), lumiSection_(lumiSection), runNumber_(runNumber) {};
+      : resyncCount_(resyncCount), eventNumber_(eventNumber), lumiSection_(lumiSection), runNumber_(runNumber) {};
 
     /**
      * Return the resync count

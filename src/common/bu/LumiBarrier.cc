@@ -4,8 +4,8 @@
 
 
 evb::bu::LumiBarrier::LumiBarrier(const uint16_t threadCount) :
-threadCount_(threadCount),
-lastLumiSection_(0)
+  threadCount_(threadCount),
+  lastLumiSection_(0)
 {
   if (threadCount == 0)
     throw std::invalid_argument("threadCount cannot be zero.");

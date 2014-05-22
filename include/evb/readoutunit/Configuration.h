@@ -21,9 +21,9 @@ namespace evb {
   namespace readoutunit {
 
     /**
-    * \ingroup xdaqApps
-    * \brief Configuration for the readout units (EVM/RU)
-    */
+     * \ingroup xdaqApps
+     * \brief Configuration for the readout units (EVM/RU)
+     */
     struct Configuration
     {
       xdata::String inputSource;                             // Input mode selection: FEROL or Local
@@ -54,30 +54,30 @@ namespace evb {
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
       Configuration()
-      : inputSource("FEROL"),
-        numberOfResponders(4),
-        blockSize(65536),
-        numberOfPreallocatedBlocks(0),
-        fragmentFIFOCapacity(128),
-        fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
-        checkCRC(false),
-        writeFragmentsToFile(false),
-        writeNextFragmentsToFile(0),
-        dropInputData(false),
-        computeCRC(true),
-        usePlayback(false),
-        playbackDataFile(""),
-        dummyFedSize(2048),
-        useLogNormal(false),
-        dummyFedSizeStdDev(0),
-        dummyFedSizeMin(8), // minimum is 8 Bytes
-        dummyFedSizeMax(0), // no limitation
-        dummyScalFedSize(0),
-        scalFedId(999),
-        fragmentPoolSize(200000000),
-        frameSize(32768),
-        maxTriggerAgeMSec(1000),
-        fakeLumiSectionDuration(0)
+        : inputSource("FEROL"),
+          numberOfResponders(4),
+          blockSize(65536),
+          numberOfPreallocatedBlocks(0),
+          fragmentFIFOCapacity(128),
+          fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
+          checkCRC(false),
+          writeFragmentsToFile(false),
+          writeNextFragmentsToFile(0),
+          dropInputData(false),
+          computeCRC(true),
+          usePlayback(false),
+          playbackDataFile(""),
+          dummyFedSize(2048),
+          useLogNormal(false),
+          dummyFedSizeStdDev(0),
+          dummyFedSizeMin(8), // minimum is 8 Bytes
+          dummyFedSizeMax(0), // no limitation
+          dummyScalFedSize(0),
+          scalFedId(999),
+          fragmentPoolSize(200000000),
+          frameSize(32768),
+          maxTriggerAgeMSec(1000),
+          fakeLumiSectionDuration(0)
       {};
 
       void addToInfoSpace
@@ -147,7 +147,7 @@ namespace evb {
         catch(xcept::Exception& e)
         {
           XCEPT_RETHROW(exception::I2O,
-            "Failed to get RU application descriptor", e);
+                        "Failed to get RU application descriptor", e);
         }
 
         for (std::set<xdaq::ApplicationDescriptor*>::const_iterator
@@ -158,7 +158,7 @@ namespace evb {
         }
 
         std::sort(ruInstances.begin(), ruInstances.end(),
-          UnsignedInteger32Less());
+                  UnsignedInteger32Less());
       }
     };
 
