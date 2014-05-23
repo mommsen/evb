@@ -82,7 +82,6 @@ class FedKitConfig:
             <MAX_ARP_Tries xsi:type="xsd:unsignedInt">20</MAX_ARP_Tries>
             <ARP_Timeout_Ms xsi:type="xsd:unsignedInt">1500</ARP_Timeout_Ms>
             <Connection_Timeout_Ms xsi:type="xsd:unsignedInt">7000</Connection_Timeout_Ms>
-            <SourceMACAddressMol xsi:type="xsd:unsignedLong">234945892</SourceMACAddressMol>
             <enableSpy xsi:type="xsd:boolean">false</enableSpy>
             <deltaTMonMs xsi:type="xsd:unsignedInt">1000</deltaTMonMs>
             <TCP_CONFIGURATION_FED0 xsi:type="xsd:unsignedInt">16384</TCP_CONFIGURATION_FED0>
