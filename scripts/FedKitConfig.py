@@ -18,14 +18,14 @@ class FedKitConfig:
         with open("/proc/sys/net/ipv4/ip_local_port_range") as portRange:
             self._validPortsMin,self._validPortsMax = [int(x) for x in portRange.readline().split()]
 
-        runNumber = self.getRunNumber()
+        dataSource = self.getDataSource()
         fedId = self.getFedId()
         writeData = self.getWriteData()
+        runNumber = self.getRunNumber()
         xdaqPort = self.getXdaqPort()
         ferolSourceIP = self.getFerolSourceIP()
         ferolDestIP = self.getFerolDestIP()
         ferolDestPort = self.getFerolDestPort()
-        dataSource = self.getDataSource()
 
         with open(configFile,'wb') as configFile:
             self._config.write(configFile)
@@ -254,8 +254,65 @@ class FedKitConfig:
 
         return config
 
+
+    def askYesNo(self,question,default=None):
+        if default is True:
+            question += " [Yes]"
+        elif default is False:
+            question += " [No]"
+        question += ":"
+
+        answer = None
+        while not answer:
+            answer = raw_input(question)
+            if not answer and default is not None:
+                return default
+            elif answer.lower()[0] == 'y':
+                return True
+            elif answer.lower()[0] == 'n':
+                return False
+
+
     def getDataSource(self):
-        return "L6G_CORE_GENERATOR_SOURCE"
+        dataSource = None
+        possibleDataSources = ('L6G_SOURCE','L6G_CORE_GENERATOR_SOURCE','L6G_LOOPBACK_GENERATOR_SOURCE')
+
+        try:
+            dataSource = self._config.get('Input','dataSource')
+        except ConfigParser.NoSectionError:
+            self._config.add_section('Input')
+        except ConfigParser.NoOptionError:
+            pass
+
+        print("""Please select the data source to be used:
+  1 - Real AMC13 data source        (L6G_SOURCE)
+  2 - Generator core of the AMC13   (L6G_CORE_GENERATOR_SOURCE)
+  3 - Loopback at the FEROL         (L6G_LOOPBACK_GENERATOR_SOURCE)""")
+
+        prompt = "=> "
+        try:
+            default = possibleDataSources.index(dataSource) + 1
+            prompt += '['+str(default)+'] '
+        except ValueError:
+            default = 0
+
+        chosenDataSource = None
+        while chosenDataSource is None:
+            answer = raw_input(prompt)
+            answer = answer or default
+            try:
+                index = int(answer) - 1
+                if index < 0:
+                    raise ValueError
+                chosenDataSource = possibleDataSources[index]
+            except (ValueError,NameError,TypeError,IndexError):
+                print("Please enter a valid choice [1.."+str(len(possibleDataSources))+"]")
+
+        dataSource = chosenDataSource
+        self._config.set('Input','dataSource',dataSource)
+
+        return dataSource
+
 
     def askUserForFedId(self,defaultFedId):
         question = "Please enter the FED id you want to read out"
@@ -338,19 +395,7 @@ class FedKitConfig:
         except ConfigParser.NoOptionError:
             pass
 
-        question = "Do you want to write the data to disk? ["
-        if writeData:
-            question += "Yes"
-        else:
-            question += "No"
-        question += "]: "
-        answer = None
-        answer = raw_input(question)
-        if answer:
-            if answer.lower()[0] == 'y':
-                writeData = True
-            elif answer.lower()[0] == 'n':
-                writeData = False
+        writeData = self.askYesNo("Do you want to write the data to disk?",writeData)
 
         self._config.set('Output','writeData',writeData)
 
