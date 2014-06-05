@@ -45,6 +45,7 @@ namespace evb {
       RUproxy
       (
         EVM*,
+        boost::shared_ptr< readoutunit::StateMachine<EVM> >,
         toolbox::mem::Pool*
       );
 
@@ -73,12 +74,6 @@ namespace evb {
        * Configure
        */
       void configure();
-
-      /**
-       * Register the state machine
-       */
-      void registerStateMachine(boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine)
-      { stateMachine_ = stateMachine; }
 
       /**
        * Start processing events

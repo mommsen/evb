@@ -14,7 +14,7 @@ evb::EVM::EVM(xdaq::ApplicationStub* app) :
 
   this->stateMachine_.reset( new evm::EVMStateMachine(this) );
   this->input_.reset( new evm::EVMinput(this) );
-  this->ruProxy_.reset( new evm::RUproxy(this,fastCtrlMsgPool) );
+  this->ruProxy_.reset( new evm::RUproxy(this,this->stateMachine_,fastCtrlMsgPool) );
   this->buProxy_.reset( new readoutunit::BUproxy<EVM>(this) );
 
   this->initialize();

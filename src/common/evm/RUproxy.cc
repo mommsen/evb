@@ -17,9 +17,11 @@
 evb::evm::RUproxy::RUproxy
 (
   EVM* evm,
+  boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine,
   toolbox::mem::Pool* fastCtrlMsgPool
 ) :
   evm_(evm),
+  stateMachine_(stateMachine),
   fastCtrlMsgPool_(fastCtrlMsgPool),
   allocateFIFO_(evm,"allocateFIFO"),
   doProcessing_(false),
@@ -134,20 +136,11 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
       readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
       readoutMsg->nbRUtids     = ruCount;
 
-      uint32_t lastEventNumberToRUs = 0;
       unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
-      for (uint32_t i = 0; i < requestsCount; ++i)
-      {
-        memcpy(payload,&fragmentRequest->evbIds[i],sizeof(EvBid));
-        payload += sizeof(EvBid);
-        lastEventNumberToRUs = fragmentRequest->evbIds[i].eventNumber();
-      }
+      memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
+      payload += requestsCount*sizeof(EvBid);
 
-      for (uint32_t i = 0; i < ruCount; ++i)
-      {
-        memcpy(payload,&fragmentRequest->ruTids[i],sizeof(I2O_TID));
-        payload += sizeof(I2O_TID);
-      }
+      memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
 
       sendToAllRUs(rqstBufRef, msgSize);
 
@@ -156,7 +149,7 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
 
       boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
-      allocateMonitoring_.lastEventNumberToRUs = lastEventNumberToRUs;
+      allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[requestsCount-1].eventNumber();
       allocateMonitoring_.payload += msgSize*participatingRUs_.size();
       allocateMonitoring_.logicalCount += requestsCount;
       allocateMonitoring_.i2oCount += participatingRUs_.size();
