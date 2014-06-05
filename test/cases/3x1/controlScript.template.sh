@@ -75,17 +75,17 @@ fi
 
 superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
 echo "RU1 superFragmentSize: $superFragmentSizeRU1"
-if [[ $superFragmentSizeRU1 -ne 16384 ]]
+if [[ $superFragmentSizeRU1 -ne 24576 ]]
 then
-  echo "Test failed: expected 16384"
+  echo "Test failed: expected 24576"
   exit 1
 fi
 
 superFragmentSizeRU2=$(getParam RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 superFragmentSize xsd:unsignedInt)
 echo "RU2 superFragmentSize: $superFragmentSizeRU2"
-if [[ $superFragmentSizeRU2 -ne 16384 ]]
+if [[ $superFragmentSizeRU2 -ne 24576 ]]
 then
-  echo "Test failed: expected 16384"
+  echo "Test failed: expected 24576"
   exit 1
 fi
 
@@ -107,9 +107,9 @@ fi
 
 eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
 echo "BU0 eventSize: $eventSizeBU0"
-if [[ $eventSizeBU0 -ne 34816 ]]
+if [[ $eventSizeBU0 -ne 51200 ]]
 then
-  echo "Test failed: expected 34816"
+  echo "Test failed: expected 51200"
   exit 1
 fi
 

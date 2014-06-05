@@ -315,6 +315,16 @@
       <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
         <inputSource xsi:type="xsd:string">FEROL</inputSource>
         <dropInputData xsi:type="xsd:boolean">false</dropInputData>
+        <fedSourceIds soapenc:arrayType="xsd:ur-type[8]" xsi:type="soapenc:Array">
+          <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">0</item>
+          <item soapenc:position="[1]" xsi:type="xsd:unsignedInt">1</item>
+          <item soapenc:position="[2]" xsi:type="xsd:unsignedInt">2</item>
+          <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">3</item>
+          <item soapenc:position="[4]" xsi:type="xsd:unsignedInt">4</item>
+          <item soapenc:position="[5]" xsi:type="xsd:unsignedInt">5</item>
+          <item soapenc:position="[6]" xsi:type="xsd:unsignedInt">6</item>
+          <item soapenc:position="[7]" xsi:type="xsd:unsignedInt">7</item>
+        </fedSourceIds>
       </properties>
     </xc:Application>
 

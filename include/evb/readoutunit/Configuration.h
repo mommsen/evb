@@ -125,10 +125,10 @@ namespace evb {
       {
         fedSourceIds.clear();
 
-        // Default is 8 FEDs per super-fragment
-        // RU0 has 0 to 7, RU1 has 8 to 15, etc.
-        const uint32_t firstSourceId = (instance * 8);
-        const uint32_t lastSourceId  = (instance * 8) + 7;
+        // Default is 12 FEDs per super-fragment
+        // RU0 has 0 to 11, RU1 has 12 to 23, etc.
+        const uint32_t firstSourceId = (instance * 12);
+        const uint32_t lastSourceId  = (instance * 12) + 11;
         for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
         {
           fedSourceIds.push_back(sourceId);
