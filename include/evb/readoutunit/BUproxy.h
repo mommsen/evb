@@ -193,7 +193,7 @@ fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
   {
-    toolbox::net::URN urn("toolbox-mem-pool", "sudapl");
+    toolbox::net::URN urn("toolbox-mem-pool",configuration_->sendPoolName);
     superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
   catch(toolbox::mem::exception::MemoryPoolNotFound)

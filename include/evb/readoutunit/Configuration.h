@@ -26,6 +26,7 @@ namespace evb {
      */
     struct Configuration
     {
+      xdata::String sendPoolName;                            // The pool name used for evb messages
       xdata::String inputSource;                             // Input mode selection: FEROL or Local
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
@@ -54,7 +55,8 @@ namespace evb {
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
       Configuration()
-        : inputSource("FEROL"),
+        : sendPoolName("sudapl"),
+          inputSource("FEROL"),
           numberOfResponders(4),
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
@@ -90,6 +92,7 @@ namespace evb {
         fillDefaultFedSourceIds(instance);
         fillDefaultRUinstances(instance,context);
 
+        params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource, InfoSpaceItems::change);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);

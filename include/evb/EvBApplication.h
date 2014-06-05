@@ -729,7 +729,7 @@ toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastCont
 
   try
   {
-    toolbox::net::URN urn("toolbox-mem-pool", "sudapl");
+    toolbox::net::URN urn("toolbox-mem-pool", configuration_->sendPoolName);
     fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
   catch(toolbox::mem::exception::MemoryPoolNotFound)

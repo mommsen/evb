@@ -24,6 +24,7 @@ namespace evb {
      */
     struct Configuration
     {
+      xdata::String sendPoolName;                          // The pool name used for evb messages
       xdata::Integer32 evmInstance;                        // Instance of the EVM. If not set, discover the EVM over I2O.
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
@@ -52,7 +53,8 @@ namespace evb {
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
 
       Configuration()
-        : evmInstance(-1), // Explicitly indicate parameter not set
+        : sendPoolName("sudapl"),
+          evmInstance(-1), // Explicitly indicate parameter not set
           maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
           eventsPerRequest(16),
           resourcesPerCore(0.1),
@@ -87,6 +89,7 @@ namespace evb {
         xdaq::ApplicationContext* context
       )
       {
+        params.add("sendPoolName", &sendPoolName);
         params.add("evmInstance", &evmInstance);
         params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);
         params.add("eventsPerRequest", &eventsPerRequest);
