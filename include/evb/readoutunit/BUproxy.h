@@ -773,19 +773,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
             .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
 
   table.add(tr()
-            .add(th("BU requests").set("colspan","2")));
-  table.add(tr()
-            .add(td("payload (kB)"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
-  table.add(tr()
-            .add(td("logical count"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
-  table.add(tr()
-            .add(td("I2O count"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
-
-  table.add(tr()
-            .add(th("BU events cache").set("colspan","2")));
+            .add(th("Event data").set("colspan","2")));
   table.add(tr()
             .add(td("payload (MB)"))
             .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
@@ -795,6 +783,18 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table.add(tr()
             .add(td("I2O count"))
             .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
+
+  table.add(tr()
+            .add(th("Event requests").set("colspan","2")));
+  table.add(tr()
+            .add(td("payload (kB)"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+  table.add(tr()
+            .add(td("logical count"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+  table.add(tr()
+            .add(td("I2O count"))
+            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
   table.add(tr()
             .add(td().set("colspan","2")

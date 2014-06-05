@@ -536,7 +536,7 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     table.add(tr()
-              .add(th("Event data").set("colspan","2")));
+              .add(th("Event requests").set("colspan","2")));
     table.add(tr()
               .add(td("payload (kB)"))
               .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
