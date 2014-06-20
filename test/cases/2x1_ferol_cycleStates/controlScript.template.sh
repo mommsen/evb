@@ -71,7 +71,7 @@ function run
     exit 1
   fi
 
-  eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+  eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
   echo "EVM eventCount: $eventCountEVM"
   if [[ $eventCountEVM -lt 500 ]]
   then
@@ -281,7 +281,7 @@ then
   exit 1
 fi
 
-eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
 nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then
@@ -352,7 +352,7 @@ then
   exit 1
 fi
 
-eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
 nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then

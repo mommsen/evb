@@ -168,6 +168,7 @@ namespace evb {
       } dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
 
+      xdata::Boolean isEmpty_;
       xdata::UnsignedInteger64 requestCount_;
       xdata::UnsignedInteger64 fragmentCount_;
       xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
@@ -682,11 +683,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
 {
+  isEmpty_ = true;
   requestCount_ = 0;
   fragmentCount_ = 0;
   requestCountPerBU_.clear();
   payloadPerBU_.clear();
 
+  items.add("isEmpty", &isEmpty_);
   items.add("requestCount", &requestCount_);
   items.add("fragmentCount", &fragmentCount_);
   items.add("requestCountPerBU", &requestCountPerBU_);
@@ -729,6 +732,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     boost::mutex::scoped_lock sl(processesActiveMutex_);
     nbActiveProcesses_ = processesActive_.count();
   }
+  isEmpty_ = isEmpty();
 }
 
 

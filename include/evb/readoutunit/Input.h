@@ -174,6 +174,7 @@ namespace evb {
         virtual void stopProcessing() {};
         virtual bool isEmpty() const { return true; }
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const { return cgicc::div(" "); }
+        virtual uint32_t getInfoFromFragmentFIFOs(xdata::Vector<xdata::UnsignedInteger32>& fedIds) const { return 0; }
 
       protected:
 
@@ -195,6 +196,7 @@ namespace evb {
         virtual void stopProcessing();
         virtual bool isEmpty() const;
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const;
+        virtual uint32_t getInfoFromFragmentFIFOs(xdata::Vector<xdata::UnsignedInteger32>& fedIds) const;
 
       protected:
 
@@ -269,7 +271,7 @@ namespace evb {
       struct InputMonitor
       {
         uint32_t lastEventNumber;
-        uint32_t eventCount;
+        uint64_t eventCount;
         PerformanceMonitor perf;
         double rate;
         double eventSize;
@@ -287,11 +289,13 @@ namespace evb {
       mutable boost::mutex superFragmentMonitorMutex_;
 
       xdata::UnsignedInteger32 lastEventNumber_;
-      xdata::UnsignedInteger32 eventCount_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger32 superFragmentSizeStdDev_;
+      xdata::UnsignedInteger32 incompleteSuperFragmentCount_;
+      xdata::UnsignedInteger64 eventCount_;
       xdata::UnsignedInteger64 dataReadyCount_;
+      xdata::Vector<xdata::UnsignedInteger32> fedIdsWithoutFragments_;
 
     };
 
@@ -674,18 +678,22 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(InfoSpaceItems& items)
 {
   lastEventNumber_ = 0;
-  eventCount_ = 0;
   eventRate_ = 0;
   superFragmentSize_ = 0;
   superFragmentSizeStdDev_ = 0;
+  incompleteSuperFragmentCount_ = 0;
+  eventCount_ = 0;
   dataReadyCount_ = 0;
+  fedIdsWithoutFragments_.clear();
 
   items.add("lastEventNumber", &lastEventNumber_);
-  items.add("eventCount", &eventCount_);
   items.add("eventRate", &eventRate_);
   items.add("superFragmentSize", &superFragmentSize_);
   items.add("superFragmentSizeStdDev", &superFragmentSizeStdDev_);
+  items.add("incompleteSuperFragmentCount", &incompleteSuperFragmentCount_);
+  items.add("eventCount", &eventCount_);
   items.add("dataReadyCount", &dataReadyCount_);
+  items.add("fedIdsWithoutFragments", &fedIdsWithoutFragments_);
 }
 
 
@@ -729,11 +737,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
   }
 
   lastEventNumber_ = superFragmentMonitor_.lastEventNumber;
-  eventCount_ = superFragmentMonitor_.eventCount;
   eventRate_ = superFragmentMonitor_.rate;
   superFragmentSize_ = superFragmentMonitor_.eventSize;
   superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
+  eventCount_ = superFragmentMonitor_.eventCount;
   dataReadyCount_.value_ += dataReadyCount;
+
+  incompleteSuperFragmentCount_ =
+    handler_->getInfoFromFragmentFIFOs(fedIdsWithoutFragments_);
 }
 
 
@@ -766,7 +777,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
     superFragmentMonitor_.eventSizeStdDev = 0;
     superFragmentMonitor_.perf.reset();
   }
-  dataReadyCount_ = 0;
 }
 
 
@@ -943,6 +953,31 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
   }
 
   scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getInfoFromFragmentFIFOs
+(
+  xdata::Vector<xdata::UnsignedInteger32>& fedIds
+) const
+{
+  fedIds.clear();
+  uint32_t maxElements = 0;
+
+  FragmentFIFOs::const_iterator it, itEnd;
+  for (it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    const uint32_t elements = it->second->elements();
+    if ( elements > maxElements )
+      maxElements = elements;
+
+    if ( elements == 0 )
+      fedIds.push_back(it->first);
+  }
+
+  return maxElements;
 }
 
 
