@@ -1,19 +1,22 @@
 <?xml version='1.0'?>
 <xmas:flash xmlns:xmas="http://xdaq.web.cern.ch/xdaq/xsd/2006/xmas-10" id="urn:xdaq-flashlist:EVM" version="$Revision: 15533 $" key="timestamp,context,lid">
-  <xmas:item name="sessionid"               function="session()"     type="string"/>
-  <xmas:item name="timestamp"               function="systime()"     type="time"/>
-  <xmas:item name="context"                 function="context()"     type="string"/>
-  <xmas:item name="lid"                     infospace="urn:evb::EVM" type="string" source="$id"/>
-  <xmas:item name="instance"                infospace="urn:evb::EVM" type="string" source="$instance"/>
-  <xmas:item name="runNumber"               infospace="urn:evb::EVM" type="unsigned int 32"/>
-  <xmas:item name="stateName"               infospace="urn:evb::EVM" type="string"/>
-  <xmas:item name="eventCount"              infospace="urn:evb::EVM" type="unsigned int 32"/>
-  <xmas:item name="eventRate"               infospace="urn:evb::EVM" type="unsigned int 32"/>
-  <xmas:item name="superFragmentSize"       infospace="urn:evb::EVM" type="unsigned int 32"/>
-  <xmas:item name="superFragmentSizeStdDev" infospace="urn:evb::EVM" type="unsigned int 32"/>
-  <xmas:item name="dataReadyCount"          infospace="urn:evb::EVM" type="unsigned int 64"/>
-  <xmas:item name="requestCount"            infospace="urn:evb::EVM" type="unsigned int 64"/>
-  <xmas:item name="requestCountPerBU"       infospace="urn:evb::EVM" type="vector unsigned int 64"/>
-  <xmas:item name="fragmentCount"           infospace="urn:evb::EVM" type="unsigned int 64"/>
-  <xmas:item name="payloadPerBU"            infospace="urn:evb::EVM" type="vector unsigned int 64"/>
+  <xmas:item name="sessionid"                     function="session()"     type="string"/>
+  <xmas:item name="timestamp"                     function="systime()"     type="time"/>
+  <xmas:item name="context"                       function="context()"     type="string"/>
+  <xmas:item name="lid"                           infospace="urn:evb::EVM" type="string" source="$id"/>
+  <xmas:item name="instance"                      infospace="urn:evb::EVM" type="string" source="$instance"/>
+  <xmas:item name="runNumber"                     infospace="urn:evb::EVM" type="unsigned int 32"/>
+  <xmas:item name="stateName"                     infospace="urn:evb::EVM" type="string"/>
+  <xmas:item name="isEmpty"                       infospace="urn:evb::EVM" type="boolean"/>
+  <xmas:item name="eventRate"                     infospace="urn:evb::EVM" type="unsigned int 32"/>
+  <xmas:item name="superFragmentSize"             infospace="urn:evb::EVM" type="unsigned int 32"/>
+  <xmas:item name="superFragmentSizeStdDev"       infospace="urn:evb::EVM" type="unsigned int 32"/>
+  <xmas:item name="incompleteSuperFragmentCount"  infospace="urn:evb::EVM" type="unsigned int 32"/>
+  <xmas:item name="eventCount"                    infospace="urn:evb::EVM" type="unsigned int 64"/>
+  <xmas:item name="dataReadyCount"                infospace="urn:evb::EVM" type="unsigned int 64"/>
+  <xmas:item name="requestCount"                  infospace="urn:evb::EVM" type="unsigned int 64"/>
+  <xmas:item name="requestCountPerBU"             infospace="urn:evb::EVM" type="vector unsigned int 64"/>
+  <xmas:item name="fragmentCount"                 infospace="urn:evb::EVM" type="unsigned int 64"/>
+  <xmas:item name="payloadPerBU"                  infospace="urn:evb::EVM" type="vector unsigned int 64"/>
+  <xmas:item name="fedIdsWithoutFragments"        infospace="urn:evb::EVM" type="vector unsigned int 32"/>
 </xmas:flash>
