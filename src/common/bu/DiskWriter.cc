@@ -529,8 +529,12 @@ void evb::bu::DiskWriter::closeAnyOldRuns() const
       eorPath /= boost::filesystem::path( "run" + fileName.substr(pos+3) + "_ls0000_EoR.jsn" );
       if ( ! boost::filesystem::exists(eorPath) )
       {
-        std::ofstream json(eorPath.string().c_str());
-        json.close();
+        try
+        {
+          std::ofstream json(eorPath.string().c_str());
+          json.close();
+        }
+        catch (...) {} // Ignore any failures in case that the run directory is removed while we try to write
       }
     }
     ++dirIter;
@@ -542,8 +546,8 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
 {
   if ( configuration_->hltParameterSetURL.value_.empty() ) return;
 
-  const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_ );
-  createDir(hltPath);
+  const boost::filesystem::path tmpPath = runDir / "curl";
+  createDir(tmpPath);
 
   std::string url(configuration_->hltParameterSetURL.value_);
 
@@ -558,9 +562,9 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
     char lastChar = *url.rbegin();
     if ( lastChar != '/' ) url += '/';
 
-    retrieveFromURL(curl, url+"HltConfig.py", hltPath/"HltConfig.py");
-    retrieveFromURL(curl, url+"SCRAM_ARCH", hltPath/"SCRAM_ARCH");
-    retrieveFromURL(curl, url+"CMSSW_VERSION", hltPath/"CMSSW_VERSION");
+    retrieveFromURL(curl, url+"HltConfig.py", tmpPath/"HltConfig.py");
+    retrieveFromURL(curl, url+"SCRAM_ARCH", tmpPath/"SCRAM_ARCH");
+    retrieveFromURL(curl, url+"CMSSW_VERSION", tmpPath/"CMSSW_VERSION");
   }
   catch(xcept::Exception& e)
   {
@@ -569,6 +573,9 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
   }
 
   curl_easy_cleanup(curl);
+
+  const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_  );
+  boost::filesystem::rename(tmpPath,hltPath);
 }
 
 
