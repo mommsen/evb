@@ -20,6 +20,7 @@
 #include "toolbox/task/WorkLoopFactory.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
 #include "xgi/Input.h"
 #include "xgi/Method.h"
 #include "xgi/Output.h"
@@ -80,9 +81,10 @@ namespace evb {
       void eventCountForLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
       void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
 
+      xdata::UnsignedInteger32 eventsInRU_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
-      xdata::UnsignedInteger32 eventCount_;
+      xdata::UnsignedInteger64 eventCount_;
       xdata::UnsignedInteger32 lastEventNumber_;
 
     };
@@ -128,6 +130,10 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendMo
   InfoSpaceItems& monitoringParams
 )
 {
+  eventsInRU_ = 0;
+
+  monitoringParams.add("eventsInRU", &eventsInRU_);
+
   input_->appendMonitoringItems(monitoringParams);
   buProxy_->appendMonitoringItems(monitoringParams);
   this->stateMachine_->appendMonitoringItems(monitoringParams);
@@ -139,6 +145,22 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_updateMo
 {
   input_->updateMonitoringItems();
   buProxy_->updateMonitoringItems();
+
+  try
+  {
+    xdata::UnsignedInteger64 eventCount;
+    eventCount.setValue( *this->monitoringInfoSpace_->find("eventCount") );
+
+    xdata::UnsignedInteger64 fragmentCount;
+    fragmentCount.setValue( *this->monitoringInfoSpace_->find("fragmentCount") );
+
+    eventsInRU_ = eventCount>fragmentCount ? eventCount-fragmentCount : 0;
+  }
+  catch(xdata::exception::Exception)
+  {
+    eventsInRU_ = 0;
+  }
+
   this->stateMachine_->updateMonitoringItems();
 }
 

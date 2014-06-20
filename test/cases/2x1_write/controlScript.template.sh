@@ -144,7 +144,7 @@ then
   exit 1
 fi
 
-eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedInt)
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
 echo "EVM eventCount: $eventCountEVM"
 if [[ $eventCountEVM -lt 1000 ]]
 then

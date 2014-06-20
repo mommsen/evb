@@ -362,9 +362,11 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("I2O count"))
               .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oCount))));
+
+    const uint32_t activeRUs = ruTids_.empty() ? 0 : ruTids_.size()-1; //exclude the EVM TID
     table.add(tr()
               .add(td("# active RUs"))
-              .add(td(boost::lexical_cast<std::string>(ruTids_.size()-1))));
+              .add(td(boost::lexical_cast<std::string>(activeRUs))));
   }
 
   table.add(tr()
