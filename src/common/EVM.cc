@@ -86,8 +86,15 @@ namespace evb {
     template<>
     bool BUproxy<EVM>::isEmpty()
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
-      return ( processesActive_.none() && readoutUnit_->getRUproxy()->isEmpty() );
+      {
+        boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+        if ( dataMonitoring_.outstandingEvents != 0 ) return false;
+      }
+      {
+        boost::mutex::scoped_lock sl(processesActiveMutex_);
+        if ( processesActive_.any() ) return false;
+      }
+      return readoutUnit_->getRUproxy()->isEmpty();
     }
 
 
