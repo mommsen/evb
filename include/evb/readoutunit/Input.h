@@ -170,7 +170,7 @@ namespace evb {
 
         virtual void configure(boost::shared_ptr<Configuration>) {};
         virtual void startProcessing(const uint32_t runNumber) {};
-        virtual void drain() const {};
+        virtual void drain() {};
         virtual void stopProcessing() {};
         virtual bool isEmpty() const { return true; }
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const { return cgicc::div(" "); }
@@ -192,7 +192,7 @@ namespace evb {
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
         virtual void startProcessing(const uint32_t runNumber);
-        virtual void drain() const;
+        virtual void drain();
         virtual void stopProcessing();
         virtual bool isEmpty() const;
         virtual cgicc::div getHtmlSnippedForFragmentFIFOs() const;
@@ -1053,7 +1053,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProces
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain() const
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::drain()
 {
   while ( ! isEmpty() ) ::usleep(1000);
 }
