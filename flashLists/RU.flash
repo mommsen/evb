@@ -8,9 +8,11 @@
   <xmas:item name="runNumber"                     infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="stateName"                     infospace="urn:evb::RU" type="string"/>
   <xmas:item name="isEmpty"                       infospace="urn:evb::RU" type="boolean"/>
+  <xmas:item name="lastEventNumber"               infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="eventRate"                     infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="superFragmentSize"             infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="superFragmentSizeStdDev"       infospace="urn:evb::RU" type="unsigned int 32"/>
+  <xmas:item name="eventsInRU"                    infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="incompleteSuperFragmentCount"  infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="eventCount"                    infospace="urn:evb::RU" type="unsigned int 64"/>
   <xmas:item name="dataReadyCount"                infospace="urn:evb::RU" type="unsigned int 64"/>
