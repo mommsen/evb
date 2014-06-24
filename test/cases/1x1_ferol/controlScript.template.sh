@@ -70,7 +70,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then

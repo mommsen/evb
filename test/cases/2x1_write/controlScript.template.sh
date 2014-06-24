@@ -3,7 +3,7 @@
 source EVB_TESTER_HOME/cases/helpers.sh
 
 # Cleanup
-testDir=/tmp/evb_test
+testDir=/tmp/evb_test/ramdisk
 rm -rf $testDir
 mkdir -p $testDir
 echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
@@ -89,7 +89,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then
@@ -152,7 +152,7 @@ then
   exit 1
 fi
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 if [[ $nbEventsBuiltBU0 -lt 1000 ]]
 then

@@ -3,7 +3,7 @@
 source EVB_TESTER_HOME/cases/helpers.sh
 
 # Cleanup
-testDir=/tmp/evb_test
+testDir=/tmp/evb_test/ramdisk
 rm -rf $testDir
 mkdir -p $testDir
 echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
