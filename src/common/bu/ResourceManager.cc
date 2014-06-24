@@ -12,6 +12,7 @@
 #include <math.h>
 #include <string.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
 
 
@@ -136,31 +137,26 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
 {
   if ( lumiSectionAccountFIFO_.deq(lumiSectionAcount) ) return true;
 
-  if ( eventRate_.value_ > 0 ) return false; // don't expire LS when we're still getting events
+  {
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    if ( eventMonitoring_.nbEventsInBU > 0 ) return false; // don't expire LS if we have incomplete events
+  }
 
   boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
   if ( currentLumiSectionAccount_.get() )
   {
-    if ( blockedResourceFIFO_.full() )
+    const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
+    const uint32_t lumiDuration = time(0) - currentLumiSectionAccount_->startTime;
+    if ( currentLumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
     {
-      //delay the expiry of current lumi section if we are not requesting any events
-      currentLumiSectionAccount_->startTime = time(0);
-    }
-    else
-    {
-      const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
-      const uint32_t lumiDuration = time(0) - currentLumiSectionAccount_->startTime;
-      if ( currentLumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
-      {
-        std::ostringstream msg;
-        msg.setf(std::ios::fixed);
-        msg.precision(1);
-        msg << "Lumi section " <<  currentLumiSection << " timed out after " << lumiDuration << "s";
-        LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
-        lumiSectionAcount.swap(currentLumiSectionAccount_);
-        currentLumiSectionAccount_.reset( new LumiSectionAccount(currentLumiSection+1) );
-        return true;
-      }
+      std::ostringstream msg;
+      msg.setf(std::ios::fixed);
+      msg.precision(1);
+      msg << "Lumi section " <<  currentLumiSection << " timed out after " << lumiDuration << "s";
+      LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
+      lumiSectionAcount.swap(currentLumiSectionAccount_);
+      currentLumiSectionAccount_.reset( new LumiSectionAccount(currentLumiSection+1) );
+      return true;
     }
   }
   return false;
@@ -354,6 +350,19 @@ void evb::bu::ResourceManager::updateResources()
   {
     (*it)->update();
 
+    const boost::filesystem::path path = (*it)->path();
+    boost::filesystem::path::const_iterator pathIter = path.begin();
+    while ( pathIter != path.end() )
+    {
+      if ( boost::algorithm::icontains(*pathIter,"ramdisk") )
+      {
+        ramDiskSizeInGB_ = (*it)->diskSizeGB();
+        ramDiskUsed_ = (*it)->relDiskUsage();
+        break;
+      }
+      ++pathIter;
+    }
+
     overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
 
@@ -377,6 +386,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   bandwidth_ = 0;
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
+  outstandingRequests_ = 0;
   fuCoresAvailable_ = 0;
 
   items.add("nbEventsInBU", &nbEventsInBU_);
@@ -385,6 +395,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("bandwidth", &bandwidth_);
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
+  items.add("outstandingRequests", &outstandingRequests_);
   items.add("fuCoresAvailable", &fuCoresAvailable_);
 }
 
@@ -393,20 +404,22 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 {
   updateResources();
 
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-
-  nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
-  nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
-  eventRate_ = eventMonitoring_.perf.logicalRate();
-  bandwidth_ = eventMonitoring_.perf.bandwidth();
-  const uint32_t eventSize = eventMonitoring_.perf.size();
-  if ( eventSize > 0 )
   {
-    eventSize_ = eventSize;
-    eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
-  }
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-  eventMonitoring_.perf.reset();
+    nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
+    nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
+    eventRate_ = eventMonitoring_.perf.logicalRate();
+    bandwidth_ = eventMonitoring_.perf.bandwidth();
+    outstandingRequests_ = eventMonitoring_.outstandingRequests;
+    const uint32_t eventSize = eventMonitoring_.perf.size();
+    if ( eventSize > 0 )
+    {
+      eventSize_ = eventSize;
+      eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
+    }
+    eventMonitoring_.perf.reset();
+  }
 }
 
 
