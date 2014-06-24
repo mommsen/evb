@@ -7,7 +7,7 @@
   <xmas:item name="instance"                      infospace="urn:evb::RU" type="string" source="$instance"/>
   <xmas:item name="runNumber"                     infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="stateName"                     infospace="urn:evb::RU" type="string"/>
-  <xmas:item name="isEmpty"                       infospace="urn:evb::RU" type="boolean"/>
+  <xmas:item name="isEmpty"                       infospace="urn:evb::RU" type="bool"/>
   <xmas:item name="lastEventNumber"               infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="eventRate"                     infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="superFragmentSize"             infospace="urn:evb::RU" type="unsigned int 32"/>
