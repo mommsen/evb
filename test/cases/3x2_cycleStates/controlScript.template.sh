@@ -103,7 +103,7 @@ function checkStates
 }
 
 # Cleanup
-testDir=/tmp/evb_test
+testDir=/tmp/evb_test/ramdisk
 rm -rf $testDir
 mkdir -p $testDir
 echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
@@ -190,8 +190,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
-nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
@@ -226,8 +226,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
-nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
@@ -305,8 +305,8 @@ checkStates "Enabled"
 echo "Building for 2 seconds"
 sleep 2
 
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
-nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
 
 echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
 echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"

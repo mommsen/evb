@@ -79,7 +79,7 @@ function run
     exit 1
   fi
 
-  nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+  nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
   echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
   if [[ $nbEventsBuiltBU0 -lt 1000 ]]
   then
@@ -282,7 +282,7 @@ then
 fi
 
 eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then
   echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"
@@ -353,7 +353,7 @@ then
 fi
 
 eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedInt)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
 if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
 then
   echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"
