@@ -396,9 +396,11 @@ void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbFilesWritten_ = 0;
   nbLumiSections_ = 0;
+  currentLumiSection_ = 0;
 
   items.add("nbFilesWritten", &nbFilesWritten_);
   items.add("nbLumiSections", &nbLumiSections_);
+  items.add("currentLumiSection", &currentLumiSection_);
 }
 
 
@@ -408,6 +410,7 @@ void evb::bu::DiskWriter::updateMonitoringItems()
 
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
   nbLumiSections_ = diskWriterMonitoring_.nbLumiSections;
+  currentLumiSection_ = diskWriterMonitoring_.currentLumiSection;
 }
 
 

@@ -18,6 +18,7 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
+#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xgi/Output.h"
@@ -168,7 +169,7 @@ namespace evb {
 
       struct EventMonitoring
       {
-        uint32_t nbEventsBuilt;
+        uint64_t nbEventsBuilt;
         uint32_t nbEventsInBU;
         uint32_t outstandingRequests;
         PerformanceMonitor perf;
@@ -176,12 +177,15 @@ namespace evb {
       mutable boost::mutex eventMonitoringMutex_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
-      xdata::UnsignedInteger32 nbEventsBuilt_;
+      xdata::UnsignedInteger64 nbEventsBuilt_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger64 bandwidth_;
       xdata::UnsignedInteger32 eventSize_;
       xdata::UnsignedInteger32 eventSizeStdDev_;
+      xdata::UnsignedInteger32 outstandingRequests_;
       xdata::UnsignedInteger32 fuCoresAvailable_;
+      xdata::Double ramDiskSizeInGB_;
+      xdata::Double ramDiskUsed_;
 
     };
 

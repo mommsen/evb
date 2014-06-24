@@ -174,6 +174,7 @@ namespace evb {
 
       xdata::UnsignedInteger32 nbFilesWritten_;
       xdata::UnsignedInteger32 nbLumiSections_;
+      xdata::UnsignedInteger32 currentLumiSection_;
 
     };
 
