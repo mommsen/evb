@@ -157,30 +157,43 @@ sleep 2
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
-if [[ "$state" != "Ready" ]]
+if [[ "$state" != "Draining" ]]
 then
   echo "Test failed"
   exit 1
 fi
 
-#Stop RU
-sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Stop
+#Halt EVM
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Halt
+
+sleep 2
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+#Halt RU
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Halt
 
 state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
-if [[ "$state" != "Ready" ]]
+if [[ "$state" != "Halted" ]]
 then
   echo "Test failed"
   exit 1
 fi
 
-#Stop BU
-sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Stop
-sleep 5
+#Halt BU
+sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Halt
+sleep 2
 
 state=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 stateName xsd:string)
 echo "BU state=$state"
-if [[ "$state" != "Ready" ]]
+if [[ "$state" != "Halted" ]]
 then
   echo "Test failed"
   exit 1
