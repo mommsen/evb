@@ -100,39 +100,43 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         }
       }
 
-      DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
-      if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
       {
-        // new data block
-        if ( dataBlockMsg->blockNb != 1 )
+        boost::mutex::scoped_lock sl(dataBlockMapMutex_);
+
+        DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
+        if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
+        {
+          // new data block
+          if ( dataBlockMsg->blockNb != 1 )
+          {
+            std::ostringstream oss;
+            oss << "Received a first super-fragment block from RU tid " << index.ruTid;
+            oss << " for BU resource id " << index.buResourceId;
+            oss << " which is already block number " <<  dataBlockMsg->blockNb;
+            oss << " of " << dataBlockMsg->nbBlocks;
+            XCEPT_RAISE(exception::SuperFragment, oss.str());
+          }
+
+          FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
+          dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
+        }
+
+        if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
         {
           std::ostringstream oss;
-          oss << "Received a first super-fragment block from RU tid " << index.ruTid;
+          oss << "Received a super-fragment block from RU tid " << index.ruTid;
           oss << " for BU resource id " << index.buResourceId;
-          oss << " which is already block number " <<  dataBlockMsg->blockNb;
-          oss << " of " << dataBlockMsg->nbBlocks;
+          oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
           XCEPT_RAISE(exception::SuperFragment, oss.str());
         }
 
-        FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
-        dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
-      }
+        resourceManager_->underConstruction(dataBlockMsg);
 
-      if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
-      {
-        std::ostringstream oss;
-        oss << "Received a super-fragment block from RU tid " << index.ruTid;
-        oss << " for BU resource id " << index.buResourceId;
-        oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
-        XCEPT_RAISE(exception::SuperFragment, oss.str());
-      }
-
-      resourceManager_->underConstruction(dataBlockMsg);
-
-      if ( dataBlockPos->second->isComplete() )
-      {
-        eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
-        dataBlockMap_.erase(dataBlockPos);
+        if ( dataBlockPos->second->isComplete() )
+        {
+          eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
+          dataBlockMap_.erase(dataBlockPos);
+        }
       }
 
       bufRef = nextRef;
@@ -177,7 +181,11 @@ void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
   while ( requestFragmentsActive_ ) ::usleep(1000);
-  dataBlockMap_.clear();
+
+  {
+    boost::mutex::scoped_lock sl(dataBlockMapMutex_);
+    dataBlockMap_.clear();
+  }
 }
 
 
@@ -366,7 +374,10 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 
 void evb::bu::RUproxy::configure()
 {
-  dataBlockMap_.clear();
+  {
+    boost::mutex::scoped_lock sl(dataBlockMapMutex_);
+    dataBlockMap_.clear();
+  }
 
   getApplicationDescriptors();
 

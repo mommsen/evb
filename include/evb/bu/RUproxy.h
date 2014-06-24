@@ -158,6 +158,7 @@ namespace evb {
       };
       typedef std::map<Index,FragmentChainPtr> DataBlockMap;
       DataBlockMap dataBlockMap_;
+      boost::mutex dataBlockMapMutex_;
 
       typedef std::map<uint32_t,uint64_t> CountsPerRU;
       struct FragmentMonitoring
