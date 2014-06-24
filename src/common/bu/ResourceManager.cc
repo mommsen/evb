@@ -388,6 +388,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   eventSizeStdDev_ = 0;
   outstandingRequests_ = 0;
   fuCoresAvailable_ = 0;
+  ramDiskSizeInGB_ = 0;
+  ramDiskUsed_ = 0;
 
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
@@ -397,6 +399,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("eventSizeStdDev", &eventSizeStdDev_);
   items.add("outstandingRequests", &outstandingRequests_);
   items.add("fuCoresAvailable", &fuCoresAvailable_);
+  items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
+  items.add("ramDiskUsed", &ramDiskUsed_);
 }
 
 
