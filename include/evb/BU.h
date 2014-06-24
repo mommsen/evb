@@ -16,6 +16,7 @@
 #include "toolbox/task/WorkLoop.h"
 #include "xdaq/ApplicationStub.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
 #include "xgi/Input.h"
 #include "xgi/Output.h"
 
@@ -73,7 +74,7 @@ namespace evb {
     xdata::UnsignedInteger32 eventRate_;
     xdata::UnsignedInteger32 eventSize_;
     xdata::UnsignedInteger32 nbEventsInBU_;
-    xdata::UnsignedInteger32 nbEventsBuilt_;
+    xdata::UnsignedInteger64 nbEventsBuilt_;
     xdata::UnsignedInteger32 nbLumiSections_;
   };
 
