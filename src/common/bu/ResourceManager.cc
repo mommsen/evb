@@ -387,6 +387,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
   outstandingRequests_ = 0;
+  nbTotalResources_ = 0;
+  nbBlockedResources_ = 0;
   fuCoresAvailable_ = 0;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
@@ -398,6 +400,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
   items.add("outstandingRequests", &outstandingRequests_);
+  items.add("nbTotalResources", &nbTotalResources_);
+  items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("fuCoresAvailable", &fuCoresAvailable_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
@@ -407,6 +411,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
   updateResources();
+  nbTotalResources_ = nbResources_;
+  nbBlockedResources_ = blockedResourceFIFO_.elements();
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
