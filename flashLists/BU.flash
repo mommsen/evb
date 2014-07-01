@@ -20,8 +20,8 @@
   <xmas:item name="nbFilesWritten"          infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbLumiSections"          infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="currentLumiSection"      infospace="urn:evb::BU" type="unsigned int 32"/>
-  <xmas:item name="nbTotalResources"          infospace="urn:evb::BU" type="unsigned int 32"/>
-  <xmas:item name="nbBlockedResources"        infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="nbTotalResources"        infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="nbBlockedResources"      infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="outstandingRequests"     infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuCoresAvailable"        infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="ramDiskSizeInGB"         infospace="urn:evb::BU" type="double"/>
