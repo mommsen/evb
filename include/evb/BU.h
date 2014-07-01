@@ -64,6 +64,7 @@ namespace evb {
 
     virtual void bindNonDefaultXgiCallbacks();
     virtual cgicc::table getMainWebPage() const;
+    void displayResourceTable(xgi::Input*,xgi::Output*) throw (xgi::exception::Exception);
     void writeNextEventsToFile(xgi::Input*,xgi::Output*) throw (xgi::exception::Exception);
 
     boost::shared_ptr<bu::DiskWriter> diskWriter_;

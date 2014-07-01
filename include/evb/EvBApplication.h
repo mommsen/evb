@@ -92,6 +92,7 @@ namespace evb {
 
     virtual void bindNonDefaultXgiCallbacks() {};
     virtual cgicc::table getMainWebPage() const = 0;
+    cgicc::div getWebPageHeader() const;
     cgicc::div getWebPageBanner() const;
 
     toolbox::mem::Pool* getFastControlMsgPool() const;
@@ -135,7 +136,6 @@ namespace evb {
 
     void defaultWebPage(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
     void queueWebPage(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
-    cgicc::div getWebPageHeader() const;
     std::string getCurrentTimeUTC() const;
 
     typedef std::map<std::string,QueueContentFunction> QueueContents;

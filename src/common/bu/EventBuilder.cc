@@ -34,11 +34,10 @@ evb::bu::EventBuilder::EventBuilder
 
 void evb::bu::EventBuilder::addSuperFragment
 (
-  const uint16_t buResourceId,
+  const uint16_t builderId,
   FragmentChainPtr& superFragments
 )
 {
-  const uint16_t builderId = buResourceId % configuration_->numberOfBuilders;
   superFragmentFIFOs_[builderId]->enqWait(superFragments);
 }
 
@@ -375,7 +374,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     eventMapTable.add(tr()
                       .add(th("Event builders").set("colspan","5")));
     eventMapTable.add(tr()
-                      .add(td("thread"))
+                      .add(td("builder"))
                       .add(td("active"))
                       .add(td("ls"))
                       .add(td("#partial"))
@@ -386,7 +385,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     {
       eventMapTable.add(tr()
                         .add(td(boost::lexical_cast<std::string>(it->first)))
-                        .add(td(processesActive_[it->first]?"Y":"N"))
+                        .add(td(processesActive_[it->first]?"yes":"no"))
                         .add(td(boost::lexical_cast<std::string>(it->second.lowestLumiSection)))
                         .add(td(boost::lexical_cast<std::string>(it->second.partialEvents)))
                         .add(td(boost::lexical_cast<std::string>(it->second.completeEvents))));

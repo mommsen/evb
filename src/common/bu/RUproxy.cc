@@ -130,11 +130,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           XCEPT_RAISE(exception::SuperFragment, oss.str());
         }
 
-        resourceManager_->underConstruction(dataBlockMsg);
+        const uint16_t builderId = resourceManager_->underConstruction(dataBlockMsg);
 
         if ( dataBlockPos->second->isComplete() )
         {
-          eventBuilder_->addSuperFragment(dataBlockMsg->buResourceId,dataBlockPos->second);
+          eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
         }
       }

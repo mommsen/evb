@@ -24,6 +24,7 @@ evb::bu::ResourceManager::ResourceManager
   configuration_(bu->getConfiguration()),
   nbResources_(1),
   resourcesToBlock_(1),
+  builderId_(0),
   freeResourceFIFO_(bu,"freeResourceFIFO"),
   blockedResourceFIFO_(bu,"blockedResourceFIFO"),
   lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO")
@@ -32,7 +33,7 @@ evb::bu::ResourceManager::ResourceManager
 }
 
 
-void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
+uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
 {
   boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
@@ -48,12 +49,13 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  if ( pos->second.empty() )
+  if ( pos->second.evbIdList.empty() )
   {
     // first answer defines the EvBids handled by this resource
+    pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
-      pos->second.push_back(dataBlockMsg->evbIds[i]);
+      pos->second.evbIdList.push_back(dataBlockMsg->evbIds[i]);
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
@@ -62,17 +64,17 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
   else
   {
     // check consistency
-    if ( pos->second.size() != dataBlockMsg->nbSuperFragments )
+    if ( pos->second.evbIdList.size() != dataBlockMsg->nbSuperFragments )
     {
       std::ostringstream oss;
       oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
       oss << " from RU tid " << ruTid;
-      oss << " with an inconsistent number of super fragments: expected " << pos->second.size();
+      oss << " with an inconsistent number of super fragments: expected " << pos->second.evbIdList.size();
       oss << ", but got " << dataBlockMsg->nbSuperFragments;
       XCEPT_RAISE(exception::SuperFragment, oss.str());
     }
     uint32_t index = 0;
-    for (EvBidList::const_iterator it = pos->second.begin(), itEnd = pos->second.end();
+    for (EvBidList::const_iterator it = pos->second.evbIdList.begin(), itEnd = pos->second.evbIdList.end();
          it != itEnd; ++it)
     {
       if ( dataBlockMsg->evbIds[index] != *it )
@@ -98,6 +100,7 @@ void evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSA
       ++index;
     }
   }
+  return pos->second.builderId;
 }
 
 
@@ -202,10 +205,10 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
       XCEPT_RAISE(exception::EventOrder, oss.str());
     }
 
-    pos->second.remove(event->getEvBid());
+    pos->second.evbIdList.remove(event->getEvBid());
     ++eventsToDiscard_;
 
-    if ( pos->second.empty() )
+    if ( pos->second.evbIdList.empty() )
     {
       allocatedResources_.erase(pos);
 
@@ -237,7 +240,7 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
     {
       boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
-      if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,EvBidList())).second )
+      if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,ResourceInfo())).second )
       {
         std::ostringstream oss;
         oss << "The buResourceId " << buResourceId;
@@ -554,6 +557,11 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
             .add(td("# FU cores available"))
             .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
 
+  table.add(tr()
+            .add(td().set("colspan","2")
+                 .add(a("display resource table")
+                      .set("href","/"+bu_->getURN().toString()+"/resourceTable").set("target","_blank"))));
+
   if ( ! diskUsageMonitors_.empty() )
   {
     table.add(tr()
@@ -586,6 +594,71 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
 
   cgicc::div div;
   div.add(p("ResourceManager"));
+  div.add(table);
+  return div;
+}
+
+
+cgicc::div evb::bu::ResourceManager::getHtmlSnippedForResourceTable() const
+{
+  using namespace cgicc;
+
+  table table;
+  table.set("class","xdaq-table-vertical");
+
+  tr row;
+  row.add(th("id")).add(th("builder"));
+  for (uint32_t request = 0; request < configuration_->eventsPerRequest; ++request)
+    row.add(th(boost::lexical_cast<std::string>(request)));
+  table.add(row);
+
+  const std::string colspan = boost::lexical_cast<std::string>(configuration_->eventsPerRequest.value_);
+
+  {
+    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+
+    for ( uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId )
+    {
+      tr row;
+      row.add(td((boost::lexical_cast<std::string>(buResourceId))));
+
+      const AllocatedResources::const_iterator pos = allocatedResources_.find(buResourceId);
+
+      if ( pos != allocatedResources_.end() )
+      {
+        if ( pos->second.evbIdList.empty() )
+        {
+           row.add(td("outstanding").set("colspan",colspan));
+        }
+        else
+        {
+          row.add(td(boost::lexical_cast<std::string>(pos->second.builderId)));
+
+          uint32_t colCount = 0;
+          for ( EvBidList::const_iterator it = pos->second.evbIdList.begin(), itEnd = pos->second.evbIdList.end();
+                it != itEnd; ++it)
+          {
+            std::ostringstream evbid;
+            evbid << *it;
+            row.add(td(evbid.str()));
+            ++colCount;
+          }
+          for ( uint32_t i = colCount; i < configuration_->eventsPerRequest; ++i)
+          {
+            row.add(td(" "));
+          }
+        }
+      }
+      else
+      {
+        row.add(td("unused").set("colspan",colspan));
+      }
+
+      table.add(row);
+    }
+  }
+
+  cgicc::div div;
   div.add(table);
   return div;
 }
