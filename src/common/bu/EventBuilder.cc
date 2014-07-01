@@ -59,6 +59,8 @@ void evb::bu::EventBuilder::configure()
     SuperFragmentFIFOPtr superFragmentFIFO( new SuperFragmentFIFO(bu_,fifoName.str()) );
     superFragmentFIFO->resize(configuration_->superFragmentFIFOCapacity);
     superFragmentFIFOs_.insert( SuperFragmentFIFOs::value_type(i,superFragmentFIFO) );
+
+    eventMapMonitors_.insert( EventMapMonitors::value_type(i,EventMapMonitor()) );
   }
 
   createProcessingWorkLoops();
@@ -140,6 +142,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
 
   EventMapPtr eventMap(new EventMap);
+  EventMapMonitor& eventMapMonitor = eventMapMonitors_[builderId];
 
   StreamHandlerPtr streamHandler;
   if ( ! configuration_->dropEventData )
@@ -166,7 +169,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       }
       else
       {
-        handleCompleteEvents(eventMap,streamHandler);
+        handleCompleteEvents(eventMap,streamHandler,eventMapMonitor);
       }
     }
   }
@@ -298,40 +301,54 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
 void evb::bu::EventBuilder::handleCompleteEvents
 (
   EventMapPtr& eventMap,
-  StreamHandlerPtr& streamHandler
+  StreamHandlerPtr& streamHandler,
+  EventMapMonitor& eventMapMonitor
 ) const
 {
   EventMap::iterator pos = eventMap->begin();
   const uint32_t lowestLumiSection = pos->first.lumiSection();
+  eventMapMonitor.lowestLumiSection = lowestLumiSection;
   lumiBarrier_->reachedLumiSection(lowestLumiSection);
+
+  eventMapMonitor.completeEvents = 0;
+  eventMapMonitor.partialEvents = 0;
 
   while ( pos != eventMap->end() )
   {
     const EventPtr& event = pos->second;
 
-    if ( event->isComplete() && pos->first.lumiSection() == lowestLumiSection )
+    if ( event->isComplete() )
     {
-      event->checkEvent(configuration_->checkCRC);
-      resourceManager_->eventCompleted(event);
-
-      if ( writeNextEventsToFile_ > 0 )
+      if ( pos->first.lumiSection() == lowestLumiSection )
       {
-        boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
-        if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
+        event->checkEvent(configuration_->checkCRC);
+        resourceManager_->eventCompleted(event);
+
+        if ( writeNextEventsToFile_ > 0 )
         {
-          event->dumpEventToFile();
-          --writeNextEventsToFile_;
+          boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+          if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
+          {
+            event->dumpEventToFile();
+            --writeNextEventsToFile_;
+          }
         }
+
+        if ( ! configuration_->dropEventData )
+          streamHandler->writeEvent(event);
+
+        resourceManager_->discardEvent(event);
+        eventMap->erase(pos++);
       }
-
-      if ( ! configuration_->dropEventData )
-        streamHandler->writeEvent(event);
-
-      resourceManager_->discardEvent(event);
-      eventMap->erase(pos++);
+      else
+      {
+        ++eventMapMonitor.completeEvents;
+        ++pos;
+      }
     }
     else
     {
+      ++eventMapMonitor.partialEvents;
       ++pos;
     }
   }
@@ -349,14 +366,33 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::table table;
 
   {
     boost::mutex::scoped_lock sl(processesActiveMutex_);
 
+    cgicc::table eventMapTable;
+    eventMapTable.add(tr()
+                      .add(th("Event builders").set("colspan","5")));
+    eventMapTable.add(tr()
+                      .add(td("thread"))
+                      .add(td("active"))
+                      .add(td("ls"))
+                      .add(td("#partial"))
+                      .add(td("#complete")));
+
+    for ( EventMapMonitors::const_iterator it = eventMapMonitors_.begin(), itEnd = eventMapMonitors_.end();
+          it != itEnd; ++it )
+    {
+      eventMapTable.add(tr()
+                        .add(td(boost::lexical_cast<std::string>(it->first)))
+                        .add(td(processesActive_[it->first]?"Y":"N"))
+                        .add(td(boost::lexical_cast<std::string>(it->second.lowestLumiSection)))
+                        .add(td(boost::lexical_cast<std::string>(it->second.partialEvents)))
+                        .add(td(boost::lexical_cast<std::string>(it->second.completeEvents))));
+    }
     table.add(tr()
-              .add(td("# of active builders"))
-              .add(td(boost::lexical_cast<std::string>(processesActive_.count()))));
+              .add(td(eventMapTable).set("colspan","2")));
   }
 
   SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();

@@ -102,11 +102,21 @@ namespace evb {
       typedef std::map<EvBid,EventPtr> EventMap;
       typedef boost::shared_ptr<EventMap> EventMapPtr;
 
+      struct EventMapMonitor
+      {
+        uint16_t lowestLumiSection;
+        uint32_t completeEvents;
+        uint32_t partialEvents;
+
+        EventMapMonitor() :
+          lowestLumiSection(0),completeEvents(0),partialEvents(0) {};
+      };
+
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
       void buildEvent(FragmentChainPtr&, EventMapPtr&) const;
       EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
-      void handleCompleteEvents(EventMapPtr&, StreamHandlerPtr&) const;
+      void handleCompleteEvents(EventMapPtr&, StreamHandlerPtr&, EventMapMonitor&) const;
 
       BU* bu_;
       boost::shared_ptr<DiskWriter> diskWriter_;
@@ -124,6 +134,9 @@ namespace evb {
       typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
       WorkLoops builderWorkLoops_;
       toolbox::task::ActionSignature* builderAction_;
+
+      typedef std::map<uint16_t,EventMapMonitor> EventMapMonitors;
+      EventMapMonitors eventMapMonitors_;
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
