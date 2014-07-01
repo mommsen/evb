@@ -612,7 +612,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnippedForResourceTable() const
     row.add(th(boost::lexical_cast<std::string>(request)));
   table.add(row);
 
-  const std::string colspan = boost::lexical_cast<std::string>(configuration_->eventsPerRequest.value_);
+  const std::string colspan = boost::lexical_cast<std::string>(configuration_->eventsPerRequest+1);
 
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
