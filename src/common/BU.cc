@@ -167,6 +167,10 @@ throw (i2o::exception::Exception)
 
 void evb::BU::bindNonDefaultXgiCallbacks()
 {
+  xgi::framework::deferredbind(this, this,
+                               &evb::BU::displayResourceTable,
+                               "resourceTable");
+
   xgi::bind(
     this,
     &evb::BU::writeNextEventsToFile,
@@ -208,6 +212,23 @@ cgicc::table evb::BU::getMainWebPage() const
                   .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt",""))));
 
   return layoutTable;
+}
+
+
+void evb::BU::displayResourceTable(xgi::Input* in,xgi::Output* out)
+throw (xgi::exception::Exception)
+{
+  using namespace cgicc;
+  table layoutTable;
+
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(tr()
+                  .add(td(getWebPageBanner())));
+  layoutTable.add(tr()
+                  .add(td(resourceManager_->getHtmlSnippedForResourceTable())));
+
+  *out << getWebPageHeader();
+  *out << layoutTable;
 }
 
 

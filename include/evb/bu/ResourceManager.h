@@ -1,6 +1,7 @@
 #ifndef _evb_bu_ResourceManager_h_
 #define _evb_bu_ResourceManager_h_
 
+#include <list>
 #include <map>
 #include <vector>
 #include <stdint.h>
@@ -47,9 +48,10 @@ namespace evb {
       virtual ~ResourceManager() {};
 
       /**
-       * Mark the resource contained in the passed data block as under construction
+       * Mark the resource contained in the passed data block as under construction.
+       * Returns the builder identifier to be used for building this resource.
        */
-      void underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&);
+      uint16_t underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&);
 
       /**
        * Mark the resouces used by the event as complete
@@ -133,6 +135,11 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
+      /**
+       * Return the resource table as cgicc snipped
+       */
+      cgicc::div getHtmlSnippedForResourceTable() const;
+
 
     private:
 
@@ -147,13 +154,19 @@ namespace evb {
       uint32_t lumiSectionTimeout_;
 
       typedef std::list<EvBid> EvBidList;
-      typedef std::map<uint16_t, EvBidList> AllocatedResources;
+      struct ResourceInfo
+      {
+        uint16_t builderId;
+        EvBidList evbIdList;
+      };
+      typedef std::map<uint16_t,ResourceInfo> AllocatedResources;
       AllocatedResources allocatedResources_;
-      boost::mutex allocatedResourcesMutex_;
+      mutable boost::mutex allocatedResourcesMutex_;
       uint32_t eventsToDiscard_;
 
       uint32_t nbResources_;
       uint32_t resourcesToBlock_;
+      uint16_t builderId_;
       typedef OneToOneQueue<uint16_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
