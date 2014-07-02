@@ -7,7 +7,7 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
 {
   readoutunit::FragmentChain::FragmentPtr fragment;
 
-  if ( ! masterFED_->second->deq(fragment) ) return false;
+  if ( masterFED_ == fragmentFIFOs_.end() || !masterFED_->second->deq(fragment) ) return false;
 
   const EvBid& evbId = fragment->evbId;
   superFragment.reset( new readoutunit::FragmentChain(fragment) );
@@ -56,7 +56,8 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
 
   // no trigger FED, use the first FED
   masterFED_ = fragmentFIFOs_.begin();
-  evbIdFactories_[masterFED_->first].setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
+  if ( masterFED_ != fragmentFIFOs_.end() )
+    evbIdFactories_[masterFED_->first].setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
 }
 
 
