@@ -328,7 +328,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
           boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
           if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
           {
-            event->dumpEventToFile();
+            event->dumpEventToFile("Requested by user");
             --writeNextEventsToFile_;
           }
         }
