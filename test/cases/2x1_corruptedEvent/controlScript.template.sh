@@ -22,18 +22,6 @@ function sendCmdToEvB
   sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 $1
 }
 
-function changeStates
-{
-  if [[ $1 == 'Stop' ]]; then
-    sendCmdToFEROL $1
-    sleep 5
-    sendCmdToEvB $1
-  else
-    sendCmdToEvB $1
-    sendCmdToFEROL $1
-  fi
-}
-
 # Launch executive processes
 sendCmdToLauncher FEROL0_SOAP_HOST_NAME FEROL0_LAUNCHER_PORT STARTXDAQFEROL0_SOAP_PORT
 sendCmdToLauncher FEROL1_SOAP_HOST_NAME FEROL1_LAUNCHER_PORT STARTXDAQFEROL1_SOAP_PORT
@@ -143,14 +131,13 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::utcp::Application 1 Enab
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::utcp::Application 2 Enable
 
 # Configure all applications
-changeStates Configure
+sendCmdToEvB Configure
+sendCmdToFEROL Configure
 sleep 1
 
 #Enable the system
-setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $1
-setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $1
-setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $1
-changeStates Enable
+sendCmdToEvB Enable
+sendCmdToFEROL Enable
 
 echo "Sending data..."
 sleep 1
