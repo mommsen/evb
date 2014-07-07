@@ -251,7 +251,7 @@ namespace evb {
     private:
 
       void resetMonitoringCounters();
-      void writeFragmentToFile(const uint16_t fedId,const uint32_t eventNumber,toolbox::mem::Reference*) const;
+      void writeFragmentToFile(const uint16_t fedId,const uint32_t eventNumber,const std::string& reasonFordump,toolbox::mem::Reference*) const;
       void updateSuperFragmentCounters(const FragmentChainPtr&);
       cgicc::table getFedTable() const;
 
@@ -288,6 +288,12 @@ namespace evb {
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
 
+      typedef std::map<uint16_t,uint32_t> FedErrorCounts;
+      FedErrorCounts fedErrorCounts_;
+      FedErrorCounts previousFedErrorCounts_;
+      mutable boost::mutex fedErrorCountsMutex_;
+      double lastMonitoringTime_;
+
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
@@ -296,6 +302,8 @@ namespace evb {
       xdata::UnsignedInteger64 eventCount_;
       xdata::UnsignedInteger64 dataReadyCount_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithoutFragments_;
+      xdata::Vector<xdata::UnsignedInteger32> fedIdsWithErrors_;
+      xdata::Vector<xdata::UnsignedInteger32> fedErrors_;
 
     };
 
@@ -314,7 +322,8 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 configuration_(readoutUnit->getConfiguration()),
 readoutUnit_(readoutUnit),
 handler_(new Handler(this)),
-runNumber_(0)
+runNumber_(0),
+lastMonitoringTime_(0)
 {}
 
 
@@ -541,13 +550,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
   }
   catch(exception::DataCorruption& e)
   {
-    writeFragmentToFile(fedId,eventNumber,bufRef);
+    writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
 
-    std::ostringstream msg;
-    msg << "Received a corrupted event " << eventNumber;
-    msg << " from FED " << fedId;
-    msg << " in run " << runNumber_;
-    XCEPT_RETHROW(exception::DataCorruption,msg.str(),e);
+    boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
+    ++fedErrorCounts_[fedId];
   }
 
   if ( configuration_->writeFragmentsToFile ||
@@ -555,7 +561,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
         (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
 
   {
-    writeFragmentToFile(fedId,eventNumber,bufRef);
+    writeFragmentToFile(fedId,eventNumber,"Requested by user",bufRef);
     --writeNextFragmentsForFedId_.first;
   }
 }
@@ -566,6 +572,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeFragmentToFile
 (
   const uint16_t fedId,
   const uint32_t eventNumber,
+  const std::string& reasonForDump,
   toolbox::mem::Reference* bufRef
 ) const
 {
@@ -576,7 +583,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeFragmentToFile
     << ".txt";
   std::ofstream dumpFile;
   dumpFile.open(fileName.str().c_str());
-  DumpUtility::dump(dumpFile, bufRef);
+  DumpUtility::dump(dumpFile, reasonForDump, bufRef);
   dumpFile.close();
 }
 
@@ -685,6 +692,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   eventCount_ = 0;
   dataReadyCount_ = 0;
   fedIdsWithoutFragments_.clear();
+  fedIdsWithErrors_.clear();
+  fedErrors_.clear();
 
   items.add("lastEventNumber", &lastEventNumber_);
   items.add("eventRate", &eventRate_);
@@ -694,6 +703,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   items.add("eventCount", &eventCount_);
   items.add("dataReadyCount", &dataReadyCount_);
   items.add("fedIdsWithoutFragments", &fedIdsWithoutFragments_);
+  items.add("fedIdsWithErrors", &fedIdsWithErrors_);
+  items.add("fedErrorCounts", &fedErrors_);
 }
 
 
@@ -745,6 +756,41 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 
   incompleteSuperFragmentCount_ =
     handler_->getInfoFromFragmentFIFOs(fedIdsWithoutFragments_);
+
+  {
+    boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
+
+    fedIdsWithErrors_.clear();
+    fedErrorCounts_.clear();
+
+    struct timeval time;
+    gettimeofday(&time,0);
+    const double now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+    const double deltaT = lastMonitoringTime_>0 ? now - lastMonitoringTime_ : 0;
+
+    for ( FedErrorCounts::const_iterator it = fedErrorCounts_.begin(), itEnd = fedErrorCounts_.end();
+          it != itEnd; ++it)
+    {
+      fedIdsWithErrors_.push_back(it->first);
+      fedErrors_.push_back(it->second);
+
+      const FedErrorCounts::const_iterator pos = previousFedErrorCounts_.find(it->first);
+      if ( deltaT > 0 && pos != previousFedErrorCounts_.end() )
+      {
+        const uint32_t deltaN = it->second - pos->second;
+        const double rate = deltaN / deltaT;
+        if ( rate > configuration_->maxFedErrorRate )
+        {
+          std::ostringstream msg;
+          msg << "FED " << it->first << " has send " << deltaN << " corrupted fragments in the last " << deltaT << " seconds. ";
+          msg << "This FED has sent " << it->second << " corrupted fragments since the start of the run.";
+          XCEPT_RAISE(exception::DataCorruption, msg.str());
+        }
+      }
+    }
+    previousFedErrorCounts_ = fedErrorCounts_;
+    lastMonitoringTime_ = now;
+  }
 }
 
 
@@ -776,6 +822,13 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
     superFragmentMonitor_.eventSize = 0;
     superFragmentMonitor_.eventSizeStdDev = 0;
     superFragmentMonitor_.perf.reset();
+  }
+  {
+    boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
+
+    fedErrorCounts_.clear();
+    previousFedErrorCounts_.clear();
+    lastMonitoringTime_ = 0;
   }
 }
 

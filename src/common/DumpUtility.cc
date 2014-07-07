@@ -5,13 +5,15 @@
 void evb::DumpUtility::dump
 (
   std::ostream& s,
+  const std::string& reasonForDump,
   toolbox::mem::Reference* head
 )
 {
   toolbox::mem::Reference *bufRef = 0;
   uint32_t bufferCnt = 0;
 
-  s << "\n==================== DUMP ======================\n";
+  s << "==================== DUMP ======================" << std::endl;
+  s << "Reason for dump: " << reasonForDump << std::endl;
 
   for (
     bufRef=head, bufferCnt=1;
@@ -22,7 +24,7 @@ void evb::DumpUtility::dump
     dumpBlock(s, bufRef, bufferCnt);
   }
 
-  s << "================ END OF DUMP ===================\n";
+  s << "================ END OF DUMP ===================" << std::endl;
 }
 
 

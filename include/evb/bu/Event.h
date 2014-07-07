@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <limits>
 #include <map>
 #include <stdint.h>
 
@@ -72,7 +73,7 @@ namespace evb {
       /**
        * Write the event as binary dump to a text file
        */
-      void dumpEventToFile(const uint32_t badChunk=-1) const;
+      void dumpEventToFile(const std::string& reasonForDump, const uint32_t badChunk=std::numeric_limits<uint32_t>::max()) const;
 
       /**
        * Return the event-builder id of the event

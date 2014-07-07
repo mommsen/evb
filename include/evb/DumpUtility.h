@@ -16,6 +16,7 @@ namespace evb {
     static void dump
     (
       std::ostream&,
+      const std::string& reasonForDump,
       toolbox::mem::Reference*
     );
 

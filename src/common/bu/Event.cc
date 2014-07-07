@@ -197,18 +197,19 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
 
     } while ( rit != ritEnd );
   }
-  catch(xcept::Exception& e)
+  catch(exception::DataCorruption& e)
   {
-    dumpEventToFile(chunk);
-
     std::ostringstream oss;
     oss << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
+
+    dumpEventToFile(e.message(),chunk);
+
     XCEPT_RETHROW(exception::DataCorruption, oss.str(), e);
   }
 }
 
 
-void evb::bu::Event::dumpEventToFile(const uint32_t badChunk) const
+void evb::bu::Event::dumpEventToFile(const std::string& reasonForDump, const uint32_t badChunk) const
 {
   std::ostringstream fileName;
   fileName << "/tmp/dump_run" << std::setfill('0') << std::setw(6) << runNumber()
@@ -216,6 +217,7 @@ void evb::bu::Event::dumpEventToFile(const uint32_t badChunk) const
     << ".txt";
   std::ofstream dumpFile;
   dumpFile.open(fileName.str().c_str());
+  dumpFile << "Reason for dump: " << reasonForDump << std::endl;
 
   for ( uint32_t i = 0; i < dataLocations_.size(); ++i )
   {

@@ -11,6 +11,7 @@
 #include "xdaq/ApplicationContext.h"
 #include "xdaq/ApplicationDescriptor.h"
 #include "xdata/Boolean.h"
+#include "xdata/Double.h"
 #include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/Vector.h"
@@ -53,6 +54,7 @@ namespace evb {
       xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
+      xdata::Double maxFedErrorRate;                         // Tolerated rate in Hz of FED errors
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -79,7 +81,8 @@ namespace evb {
           fragmentPoolSize(200000000),
           frameSize(32768),
           maxTriggerAgeMSec(1000),
-          fakeLumiSectionDuration(0)
+          fakeLumiSectionDuration(0),
+          maxFedErrorRate(1)
       {};
 
       void addToInfoSpace
@@ -119,6 +122,7 @@ namespace evb {
         params.add("ruInstances", &ruInstances);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
+        params.add("maxFedErrorRate", &maxFedErrorRate);
       }
 
       void fillDefaultFedSourceIds(const uint32_t instance)
