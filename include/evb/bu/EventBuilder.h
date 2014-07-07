@@ -87,6 +87,20 @@ namespace evb {
       void stopProcessing();
 
       /**
+       * Append the info space items to be published in the
+       * monitoring info space to the InfoSpaceItems
+       */
+      void appendMonitoringItems(InfoSpaceItems&);
+
+      /**
+       * Update all values of the items put into the monitoring
+       * info space. The caller has to make sure that the info
+       * space where the items reside is locked and properly unlocked
+       * after the call.
+       */
+      void updateMonitoringItems();
+
+      /**
        * Return monitoring information as cgicc snipped
        */
       cgicc::div getHtmlSnipped() const;
@@ -137,6 +151,7 @@ namespace evb {
 
       typedef std::map<uint16_t,EventMapMonitor> EventMapMonitors;
       EventMapMonitors eventMapMonitors_;
+      uint64_t corruptedEvents_;
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
@@ -145,6 +160,8 @@ namespace evb {
 
       mutable uint16_t writeNextEventsToFile_;
       mutable boost::mutex writeNextEventsToFileMutex_;
+
+      xdata::UnsignedInteger64 nbCorruptedEvents_;
 
     }; // EventBuilder
 

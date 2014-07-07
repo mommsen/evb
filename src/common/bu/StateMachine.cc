@@ -92,8 +92,6 @@ void evb::bu::Running::entryAction()
   outermost_context_type& stateMachine = outermost_context();
   const uint32_t runNumber = stateMachine.getRunNumber();
 
-  stateMachine.resourceManager()->resetMonitoringCounters();
-
   stateMachine.diskWriter()->startProcessing(runNumber);
   stateMachine.resourceManager()->startProcessing();
   stateMachine.eventBuilder()->startProcessing(runNumber);

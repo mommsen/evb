@@ -552,8 +552,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
   {
     writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
 
-    boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
-    ++fedErrorCounts_[fedId];
+    {
+      boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
+      ++fedErrorCounts_[fedId];
+    }
+
+    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+                    xcept::stdformat_exception_history(e));
+    readoutUnit_->notifyQualified("error",e);
   }
 
   if ( configuration_->writeFragmentsToFile ||
@@ -761,7 +767,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
 
     fedIdsWithErrors_.clear();
-    fedErrorCounts_.clear();
+    fedErrors_.clear();
 
     struct timeval time;
     gettimeofday(&time,0);
@@ -933,12 +939,13 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   table fedTable;
 
   fedTable.add(tr()
-               .add(th("Statistics per FED").set("colspan","5")));
+               .add(th("Statistics per FED").set("colspan","6")));
   fedTable.add(tr()
                .add(td("FED id").set("colspan","2"))
                .add(td("Last event"))
                .add(td("Size (Bytes)"))
-               .add(td("B/w (MB/s)")));
+               .add(td("B/w (MB/s)"))
+               .add(td("#err")));
 
   typename InputMonitors::const_iterator it, itEnd;
   for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
@@ -960,6 +967,12 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
     str.precision(1);
     str << it->second.bandwidth / 1e6;
     row.add(td(str.str()));
+
+    const FedErrorCounts::const_iterator pos = fedErrorCounts_.find(it->first);
+    if ( pos == fedErrorCounts_.end() )
+      row.add(td("0"));
+    else
+      row.add(td(boost::lexical_cast<std::string>(pos->second)));
 
     fedTable.add(row);
   }

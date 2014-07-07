@@ -266,6 +266,8 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
 void evb::bu::ResourceManager::startProcessing()
 {
+  resetMonitoringCounters();
+
   if ( ! configuration_->dropEventData )
   {
     boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
