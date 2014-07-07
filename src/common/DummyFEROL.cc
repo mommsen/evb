@@ -38,11 +38,13 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   stopAtEvent_ = 0;
   skipNbEvents_ = 0;
   duplicateNbEvents_ = 0;
+  corruptNbEvents_ = 0;
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
   appInfoSpaceParams.add("skipNbEvents", &skipNbEvents_);
   appInfoSpaceParams.add("duplicateNbEvents", &duplicateNbEvents_);
+  appInfoSpaceParams.add("corruptNbEvents", &corruptNbEvents_);
 }
 
 
@@ -305,6 +307,13 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
           if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
           {
             lastEventNumber_ = lastEventNumber;
+            if ( corruptNbEvents_.value_ > 0 )
+            {
+              unsigned char* payload = (unsigned char*)bufRef->getDataLocation() +
+                ( bufRef->getDataSize() / 2 );
+              *payload ^= 0x1;
+              --corruptNbEvents_;
+            }
             for (uint32_t i = duplicateNbEvents_+1; i > 0; --i)
             {
               if ( i > 1 )
