@@ -597,6 +597,7 @@ void evb::bu::DiskWriter::retrieveFromURL(CURL* curl, const std::string& url, co
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
+  curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
 
   const CURLcode result = curl_easy_perform(curl);
 
