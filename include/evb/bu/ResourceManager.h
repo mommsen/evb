@@ -121,11 +121,6 @@ namespace evb {
       void updateMonitoringItems();
 
       /**
-       * Reset the monitoring counters
-       */
-      void resetMonitoringCounters();
-
-      /**
        * Configure
        */
       void configure();
@@ -143,6 +138,7 @@ namespace evb {
 
     private:
 
+      void resetMonitoringCounters();
       void incrementEventsInLumiSection(const uint32_t lumiSection);
       void enqCurrentLumiSectionAccount();
       void configureDiskUsageMonitors();

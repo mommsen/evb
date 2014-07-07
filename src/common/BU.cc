@@ -46,12 +46,14 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
   nbLumiSections_ = 0;
+  nbCorruptedEvents_ = 0;
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbCorruptedEvents", &nbCorruptedEvents_, InfoSpaceItems::retrieve);
 }
 
 
@@ -62,6 +64,7 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
 {
   diskWriter_->appendMonitoringItems(monitoringParams);
   resourceManager_->appendMonitoringItems(monitoringParams);
+  eventBuilder_->appendMonitoringItems(monitoringParams);
   ruProxy_->appendMonitoringItems(monitoringParams);
   stateMachine_->appendMonitoringItems(monitoringParams);
 }
@@ -71,6 +74,7 @@ void evb::BU::do_updateMonitoringInfo()
 {
   diskWriter_->updateMonitoringItems();
   resourceManager_->updateMonitoringItems();
+  eventBuilder_->updateMonitoringItems();
   ruProxy_->updateMonitoringItems();
   stateMachine_->updateMonitoringItems();
 }
@@ -131,6 +135,17 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
     catch(xdata::exception::Exception& e)
     {
       nbLumiSections_ = 0;
+    }
+  }
+  else if (item == "nbCorruptedEvents")
+  {
+    try
+    {
+      nbCorruptedEvents_.setValue( *(monitoringInfoSpace_->find("nbCorruptedEvents")) );
+    }
+    catch(xdata::exception::Exception& e)
+    {
+      nbCorruptedEvents_ = 0;
     }
   }
 }

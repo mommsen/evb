@@ -23,6 +23,7 @@ evb::bu::EventBuilder::EventBuilder
   diskWriter_(diskWriter),
   resourceManager_(resourceManager),
   configuration_(bu->getConfiguration()),
+  corruptedEvents_(0),
   doProcessing_(false),
   writeNextEventsToFile_(0)
 {
@@ -93,6 +94,7 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
 void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
+  corruptedEvents_ = 0;
   doProcessing_ = true;
   for (uint32_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -168,7 +170,18 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       }
       else
       {
-        handleCompleteEvents(eventMap,streamHandler,eventMapMonitor);
+        try
+        {
+          handleCompleteEvents(eventMap,streamHandler,eventMapMonitor);
+        }
+        catch(exception::DataCorruption& e)
+        {
+          ++corruptedEvents_;
+
+          LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
+                          xcept::stdformat_exception_history(e));
+          bu_->notifyQualified("error",e);
+        }
       }
     }
   }
@@ -320,8 +333,18 @@ void evb::bu::EventBuilder::handleCompleteEvents
     {
       if ( pos->first.lumiSection() == lowestLumiSection )
       {
-        event->checkEvent(configuration_->checkCRC);
         resourceManager_->eventCompleted(event);
+
+        try
+        {
+          event->checkEvent(configuration_->checkCRC);
+        }
+        catch(exception::DataCorruption& e)
+        {
+          resourceManager_->discardEvent(event);
+          eventMap->erase(pos++);
+          throw; // rethrow the exception such that it can be handled outside of critical section
+        }
 
         if ( writeNextEventsToFile_ > 0 )
         {
@@ -354,6 +377,20 @@ void evb::bu::EventBuilder::handleCompleteEvents
 }
 
 
+void evb::bu::EventBuilder::appendMonitoringItems(InfoSpaceItems& items)
+{
+  nbCorruptedEvents_ = 0;
+
+  items.add("nbCorruptedEvents", &nbCorruptedEvents_);
+}
+
+
+void evb::bu::EventBuilder::updateMonitoringItems()
+{
+  nbCorruptedEvents_ = corruptedEvents_;
+}
+
+
 void evb::bu::EventBuilder::writeNextEventsToFile(const uint16_t count)
 {
   boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
@@ -366,6 +403,10 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   using namespace cgicc;
 
   cgicc::table table;
+
+  table.add(tr()
+            .add(td("# corrupted events"))
+            .add(td(boost::lexical_cast<std::string>(corruptedEvents_))));
 
   {
     boost::mutex::scoped_lock sl(processesActiveMutex_);
