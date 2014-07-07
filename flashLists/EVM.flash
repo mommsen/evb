@@ -21,4 +21,6 @@
   <xmas:item name="fragmentCount"                 infospace="urn:evb::EVM" type="unsigned int 64"/>
   <xmas:item name="payloadPerBU"                  infospace="urn:evb::EVM" type="vector unsigned int 64"/>
   <xmas:item name="fedIdsWithoutFragments"        infospace="urn:evb::EVM" type="vector unsigned int 32"/>
+  <xmas:item name="fedIdsWithErrors"              infospace="urn:evb::EVM" type="vector unsigned int 32"/>
+  <xmas:item name="fedErrorCounts"                infospace="urn:evb::EVM" type="vector unsigned int 32"/>
 </xmas:flash>
