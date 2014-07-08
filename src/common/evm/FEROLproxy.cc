@@ -70,6 +70,11 @@ evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
 {
   switch(fedId)
   {
+    case TCDS_FED_ID:
+    {
+      const uint32_t lsNumber = getLumiSectionFromTCDS(payload);
+      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+    }
     case GTP_FED_ID:
     {
       const uint32_t lsNumber = getLumiSectionFromGTP(payload);
@@ -83,6 +88,12 @@ evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
     default:
       return evbIdFactories_[fedId].getEvBid(eventNumber);
   }
+}
+
+
+uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromTCDS(const unsigned char* payload) const
+{
+  return 0;
 }
 
 
