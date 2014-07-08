@@ -103,6 +103,12 @@ evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
 }
 
 
+uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromTCDS(const unsigned char* payload) const
+{
+  return 0;
+}
+
+
 uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP(const unsigned char* payload) const
 {
   using namespace evtn;
