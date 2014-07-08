@@ -245,5 +245,18 @@ then
   exit 1
 fi
 
-echo "Test launched successfully"
+echo "Corrupt 100 events on FED 6"
+setParam FEROL6_SOAP_HOST_NAME FEROL6_SOAP_PORT evb::test::DummyFEROL 6 corruptNbEvents unsignedInt 100
+
+sleep 3
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Test completed successfully"
 exit 0

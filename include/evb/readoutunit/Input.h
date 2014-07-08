@@ -28,6 +28,7 @@
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/ScalerHandler.h"
+#include "evb/readoutunit/StateMachine.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -789,8 +790,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
         {
           std::ostringstream msg;
           msg << "FED " << it->first << " has send " << deltaN << " corrupted fragments in the last " << deltaT << " seconds. ";
-          msg << "This FED has sent " << it->second << " corrupted fragments since the start of the run.";
-          XCEPT_RAISE(exception::DataCorruption, msg.str());
+          msg << "This FED has sent " << it->second << " corrupted fragments since the start of the run";
+          XCEPT_DECLARE(exception::DataCorruption,sentinelException,msg.str());
+          readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
         }
       }
     }
