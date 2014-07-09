@@ -47,6 +47,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   nbEventsBuilt_ = 0;
   nbLumiSections_ = 0;
   nbCorruptedEvents_ = 0;
+  nbEventsWithCRCerrors_ = 0;
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
@@ -54,6 +55,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbCorruptedEvents", &nbCorruptedEvents_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbEventsWithCRCerrors", &nbEventsWithCRCerrors_, InfoSpaceItems::retrieve);
 }
 
 
@@ -146,6 +148,17 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
     catch(xdata::exception::Exception& e)
     {
       nbCorruptedEvents_ = 0;
+    }
+  }
+  else if (item == "nbEventsWithCRCerrors")
+  {
+    try
+    {
+      nbEventsWithCRCerrors_.setValue( *(monitoringInfoSpace_->find("nbEventsWithCRCerrors")) );
+    }
+    catch(xdata::exception::Exception& e)
+    {
+      nbEventsWithCRCerrors_ = 0;
     }
   }
 }

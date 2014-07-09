@@ -55,7 +55,9 @@ namespace evb {
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
       xdata::Boolean getLumiSectionFromTrigger;              // If set to true, try to get the lumi section number from the trigger. Otherwise, use fake LS
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
-      xdata::Double maxFedErrorRate;                         // Tolerated rate in Hz of FED errors
+      xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
+      xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
+      xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -84,7 +86,9 @@ namespace evb {
           maxTriggerAgeMSec(1000),
           getLumiSectionFromTrigger(true),
           fakeLumiSectionDuration(0),
-          maxFedErrorRate(1)
+          tolerateCorruptedEvents(false),
+          maxCRCErrorRate(1000),
+          maxDumpsPerFED(10)
       {};
 
       void addToInfoSpace
@@ -125,7 +129,9 @@ namespace evb {
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
         params.add("getLumiSectionFromTrigger", &getLumiSectionFromTrigger);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
-        params.add("maxFedErrorRate", &maxFedErrorRate);
+        params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
+        params.add("maxCRCErrorRate", &maxCRCErrorRate);
+        params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 
       void fillDefaultFedSourceIds(const uint32_t instance)

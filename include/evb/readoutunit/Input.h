@@ -292,7 +292,15 @@ namespace evb {
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
 
-      typedef std::map<uint16_t,uint32_t> FedErrorCounts;
+      struct FedErrors
+      {
+        uint32_t corruptedEvents;
+        uint32_t crcErrors;
+
+        FedErrors() :
+          corruptedEvents(0),crcErrors(0) {};
+      };
+      typedef std::map<uint16_t,FedErrors> FedErrorCounts;
       FedErrorCounts fedErrorCounts_;
       FedErrorCounts previousFedErrorCounts_;
       mutable boost::mutex fedErrorCountsMutex_;
@@ -307,7 +315,8 @@ namespace evb {
       xdata::UnsignedInteger64 dataReadyCount_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithoutFragments_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithErrors_;
-      xdata::Vector<xdata::UnsignedInteger32> fedErrors_;
+      xdata::Vector<xdata::UnsignedInteger32> fedDataCorruption_;
+      xdata::Vector<xdata::UnsignedInteger32> fedCRCerrors_;
 
     };
 
@@ -527,7 +536,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
         oss << "Wrong CRC checksum:" << std::hex;
         oss << " FED trailer claims 0x" << trailerCRC;
         oss << ", but recalculation gives 0x" << crc;
-        XCEPT_RAISE(exception::DataCorruption, oss.str());
+        XCEPT_RAISE(exception::CRCerror, oss.str());
       }
     }
 
@@ -554,12 +563,36 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
   }
   catch(exception::DataCorruption& e)
   {
-    writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
-
+    uint32_t count = 0;
     {
       boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
-      ++fedErrorCounts_[fedId];
+      count = ++(fedErrorCounts_[fedId].corruptedEvents);
     }
+
+    if ( count <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
+
+    if ( configuration_->tolerateCorruptedEvents )
+    {
+      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+                      xcept::stdformat_exception_history(e));
+      readoutUnit_->notifyQualified("error",e);
+    }
+    else
+    {
+      readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
+    }
+  }
+  catch(exception::CRCerror& e)
+  {
+    uint32_t count = 0;
+    {
+      boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
+      count = ++(fedErrorCounts_[fedId].crcErrors);
+    }
+
+    if ( count <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
 
     LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
                     xcept::stdformat_exception_history(e));
@@ -703,7 +736,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   dataReadyCount_ = 0;
   fedIdsWithoutFragments_.clear();
   fedIdsWithErrors_.clear();
-  fedErrors_.clear();
+  fedDataCorruption_.clear();
+  fedCRCerrors_.clear();
 
   items.add("lastEventNumber", &lastEventNumber_);
   items.add("eventRate", &eventRate_);
@@ -714,7 +748,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   items.add("dataReadyCount", &dataReadyCount_);
   items.add("fedIdsWithoutFragments", &fedIdsWithoutFragments_);
   items.add("fedIdsWithErrors", &fedIdsWithErrors_);
-  items.add("fedErrorCounts", &fedErrors_);
+  items.add("fedDataCorruption", &fedDataCorruption_);
+  items.add("fedCRCerrors", &fedCRCerrors_);
 }
 
 
@@ -771,29 +806,33 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
 
     fedIdsWithErrors_.clear();
-    fedErrors_.clear();
+    fedDataCorruption_.clear();
+    fedCRCerrors_.clear();
 
     struct timeval time;
     gettimeofday(&time,0);
     const double now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
     const double deltaT = lastMonitoringTime_>0 ? now - lastMonitoringTime_ : 0;
 
-    for ( FedErrorCounts::const_iterator it = fedErrorCounts_.begin(), itEnd = fedErrorCounts_.end();
+    for ( typename FedErrorCounts::const_iterator it = fedErrorCounts_.begin(), itEnd = fedErrorCounts_.end();
           it != itEnd; ++it)
     {
       fedIdsWithErrors_.push_back(it->first);
-      fedErrors_.push_back(it->second);
+      fedDataCorruption_.push_back(it->second.corruptedEvents);
+      fedCRCerrors_.push_back(it->second.crcErrors);
 
-      const FedErrorCounts::const_iterator pos = previousFedErrorCounts_.find(it->first);
+      const typename FedErrorCounts::const_iterator pos = previousFedErrorCounts_.find(it->first);
       if ( deltaT > 0 && pos != previousFedErrorCounts_.end() )
       {
-        const uint32_t deltaN = it->second - pos->second;
+        const uint32_t deltaN = it->second.crcErrors - pos->second.crcErrors;
         const double rate = deltaN / deltaT;
-        if ( rate > configuration_->maxFedErrorRate )
+        if ( rate > configuration_->maxCRCErrorRate )
         {
           std::ostringstream msg;
-          msg << "FED " << it->first << " has send " << deltaN << " corrupted fragments in the last " << deltaT << " seconds. ";
-          msg << "This FED has sent " << it->second << " corrupted fragments since the start of the run";
+          msg.setf(std::ios::fixed);
+          msg.precision(1);
+          msg << "FED " << it->first << " has send " << deltaN << " fragments with CRC errors in the last " << deltaT << " seconds. ";
+          msg << "This FED has sent " << it->second.crcErrors << " fragments with CRC errors since the start of the run";
           XCEPT_DECLARE(exception::DataCorruption,sentinelException,msg.str());
           readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
         }
@@ -944,13 +983,14 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   table fedTable;
 
   fedTable.add(tr()
-               .add(th("Statistics per FED").set("colspan","6")));
+               .add(th("Statistics per FED").set("colspan","7")));
   fedTable.add(tr()
                .add(td("FED id").set("colspan","2"))
                .add(td("Last event"))
                .add(td("Size (Bytes)"))
                .add(td("B/w (MB/s)"))
-               .add(td("#err")));
+               .add(td("#CRC"))
+               .add(td("#corrupt")));
 
   typename InputMonitors::const_iterator it, itEnd;
   for (it=inputMonitors_.begin(), itEnd = inputMonitors_.end();
@@ -973,11 +1013,12 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
     str << it->second.bandwidth / 1e6;
     row.add(td(str.str()));
 
-    const FedErrorCounts::const_iterator pos = fedErrorCounts_.find(it->first);
+    const typename FedErrorCounts::const_iterator pos = fedErrorCounts_.find(it->first);
     if ( pos == fedErrorCounts_.end() )
-      row.add(td("0"));
+      row.add(td("0")).add(td("0"));
     else
-      row.add(td(boost::lexical_cast<std::string>(pos->second)));
+      row.add(td(boost::lexical_cast<std::string>(pos->second.crcErrors)))
+        .add(td(boost::lexical_cast<std::string>(pos->second.corruptedEvents)));
 
     fedTable.add(row);
   }

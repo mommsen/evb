@@ -155,6 +155,7 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
   const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
+  std::vector<std::string> crcErrors;
 
   try
   {
@@ -176,8 +177,14 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
         fedInfo.addDataChunk((*rit)->location, remainingLength);
       }
 
-      fedInfo.checkData(evbId_.eventNumber(), computeCRC);
-
+      try
+      {
+        fedInfo.checkData(evbId_.eventNumber(), computeCRC);
+      }
+      catch(exception::CRCerror& e)
+      {
+        crcErrors.push_back(e.message());
+      }
       if ( ! fedIdsSeen.insert( fedInfo.fedId() ).second )
       {
         std::ostringstream oss;
@@ -205,6 +212,19 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
     dumpEventToFile(e.message(),chunk);
 
     XCEPT_RETHROW(exception::DataCorruption, oss.str(), e);
+  }
+
+  if ( ! crcErrors.empty() )
+  {
+    std::ostringstream oss;
+    oss << "Found CRC errors in event with EvB id " << evbId_ << ": " << std::endl;
+    for ( std::vector<std::string>::const_iterator it = crcErrors.begin(), itEnd = crcErrors.end();
+          it != itEnd; ++it)
+    {
+      oss << *it << std::endl;;
+    }
+
+    XCEPT_RAISE(exception::CRCerror, oss.str());
   }
 }
 
@@ -328,7 +348,7 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
       oss << "Wrong CRC checksum in FED trailer for FED " << fedId();
       oss << ": found 0x" << std::hex << trailerCRC;
       oss << ", but calculated 0x" << std::hex << crc;
-      XCEPT_RAISE(exception::DataCorruption, oss.str());
+      XCEPT_RAISE(exception::CRCerror, oss.str());
     }
   }
 }

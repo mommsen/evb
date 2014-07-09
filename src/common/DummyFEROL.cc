@@ -1,6 +1,7 @@
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
 #include "interface/evb/i2oEVBMsgs.h"
+#include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "evb/DummyFEROL.h"
@@ -39,12 +40,14 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   skipNbEvents_ = 0;
   duplicateNbEvents_ = 0;
   corruptNbEvents_ = 0;
+  nbCRCerrors_ = 0;
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
   appInfoSpaceParams.add("skipNbEvents", &skipNbEvents_);
   appInfoSpaceParams.add("duplicateNbEvents", &duplicateNbEvents_);
   appInfoSpaceParams.add("corruptNbEvents", &corruptNbEvents_);
+  appInfoSpaceParams.add("nbCRCerrors", &nbCRCerrors_);
 }
 
 
@@ -309,10 +312,16 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
             lastEventNumber_ = lastEventNumber;
             if ( corruptNbEvents_.value_ > 0 )
             {
+              fedt_t* fedTrailer = (fedt_t*)((unsigned char*)bufRef->getDataLocation() + bufRef->getDataSize() - sizeof(fedt_t));
+              fedTrailer->eventsize ^= 0x10;
+              --corruptNbEvents_;
+            }
+            if ( nbCRCerrors_.value_ > 0 )
+            {
               unsigned char* payload = (unsigned char*)bufRef->getDataLocation() +
                 ( bufRef->getDataSize() / 2 );
               *payload ^= 0x1;
-              --corruptNbEvents_;
+              --nbCRCerrors_;
             }
             for (uint32_t i = duplicateNbEvents_+1; i > 0; --i)
             {

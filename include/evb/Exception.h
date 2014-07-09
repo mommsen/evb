@@ -16,6 +16,11 @@ XCEPT_DEFINE_EXCEPTION(evb, Configuration)
 XCEPT_DEFINE_EXCEPTION(evb, DataCorruption)
 
 /**
+ * Exception raised when detecting a wrong CRC checksum
+ */
+XCEPT_DEFINE_EXCEPTION(evb, CRCerror)
+
+/**
  * Exception raised when failing to write data do disk
  */
 XCEPT_DEFINE_EXCEPTION(evb, DiskWriting)

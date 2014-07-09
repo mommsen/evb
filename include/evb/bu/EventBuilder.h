@@ -152,6 +152,7 @@ namespace evb {
       typedef std::map<uint16_t,EventMapMonitor> EventMapMonitors;
       EventMapMonitors eventMapMonitors_;
       uint64_t corruptedEvents_;
+      uint64_t eventsWithCRCerrors_;
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
@@ -162,6 +163,7 @@ namespace evb {
       mutable boost::mutex writeNextEventsToFileMutex_;
 
       xdata::UnsignedInteger64 nbCorruptedEvents_;
+      xdata::UnsignedInteger64 nbEventsWithCRCerrors_;
 
     }; // EventBuilder
 

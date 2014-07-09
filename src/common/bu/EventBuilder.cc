@@ -24,6 +24,7 @@ evb::bu::EventBuilder::EventBuilder
   resourceManager_(resourceManager),
   configuration_(bu->getConfiguration()),
   corruptedEvents_(0),
+  eventsWithCRCerrors_(0),
   doProcessing_(false),
   writeNextEventsToFile_(0)
 {
@@ -95,6 +96,7 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
   corruptedEvents_ = 0;
+  eventsWithCRCerrors_ = 0;
   doProcessing_ = true;
   for (uint32_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -177,6 +179,14 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         catch(exception::DataCorruption& e)
         {
           ++corruptedEvents_;
+
+          LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
+                          xcept::stdformat_exception_history(e));
+          bu_->notifyQualified("error",e);
+        }
+        catch(exception::CRCerror& e)
+        {
+          ++eventsWithCRCerrors_;
 
           LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
                           xcept::stdformat_exception_history(e));
@@ -345,6 +355,15 @@ void evb::bu::EventBuilder::handleCompleteEvents
           eventMap->erase(pos++);
           throw; // rethrow the exception such that it can be handled outside of critical section
         }
+        catch(exception::CRCerror& e)
+        {
+          if ( ! configuration_->dropEventData )
+            streamHandler->writeEvent(event);
+
+          resourceManager_->discardEvent(event);
+          eventMap->erase(pos++);
+          throw; // rethrow the exception such that it can be handled outside of critical section
+        }
 
         if ( writeNextEventsToFile_ > 0 )
         {
@@ -380,14 +399,17 @@ void evb::bu::EventBuilder::handleCompleteEvents
 void evb::bu::EventBuilder::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbCorruptedEvents_ = 0;
+  nbEventsWithCRCerrors_ = 0;
 
   items.add("nbCorruptedEvents", &nbCorruptedEvents_);
+  items.add("nbEventsWithCRCerrors", &nbEventsWithCRCerrors_);
 }
 
 
 void evb::bu::EventBuilder::updateMonitoringItems()
 {
   nbCorruptedEvents_ = corruptedEvents_;
+  nbEventsWithCRCerrors_ = eventsWithCRCerrors_;
 }
 
 
@@ -407,6 +429,9 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   table.add(tr()
             .add(td("# corrupted events"))
             .add(td(boost::lexical_cast<std::string>(corruptedEvents_))));
+  table.add(tr()
+            .add(td("# events w/ CRC errors"))
+            .add(td(boost::lexical_cast<std::string>(eventsWithCRCerrors_))));
 
   {
     boost::mutex::scoped_lock sl(processesActiveMutex_);
