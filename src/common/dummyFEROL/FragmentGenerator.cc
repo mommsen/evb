@@ -50,11 +50,11 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   const uint32_t fakeLumiSectionDuration
 )
 {
-  if (fedId > FED_SOID_WIDTH)
+  if (fedId > FED_COUNT)
   {
     std::ostringstream oss;
     oss << "The fedSourceId " << fedId;
-    oss << " is larger than maximal value FED_SOID_WIDTH=" << FED_SOID_WIDTH;
+    oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
   fedId_ = fedId;

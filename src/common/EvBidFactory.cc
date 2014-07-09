@@ -70,14 +70,14 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 }
 
 
-evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_t lsNumber)
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_t lumiSection)
 {
   if ( eventNumber <= previousEventNumber_ )
     ++resyncCount_;
 
   previousEventNumber_ = eventNumber;
 
-  return EvBid(resyncCount_,eventNumber,lsNumber,runNumber_);
+  return EvBid(resyncCount_,eventNumber,lumiSection,runNumber_);
 }
 
 

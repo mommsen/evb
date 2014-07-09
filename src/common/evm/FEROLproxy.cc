@@ -1,3 +1,5 @@
+#include <boost/bind.hpp>
+
 #include "interface/shared/GlobalEventNumber.h"
 #include "evb/EVM.h"
 #include "evb/evm/EVMinput.h"
@@ -48,13 +50,35 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
 {
   readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy::configure(configuration);
 
-  masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
-  if ( masterFED_ != fragmentFIFOs_.end() ) return;
+  if ( configuration->getLumiSectionFromTrigger )
+  {
+    masterFED_ = fragmentFIFOs_.find(TCDS_FED_ID);
+    if ( masterFED_ != fragmentFIFOs_.end() )
+    {
+      triggerFedId_ = TCDS_FED_ID;
+      lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromTCDS, this, _1);
+      return;
+    }
 
-  masterFED_ = fragmentFIFOs_.find(GTPe_FED_ID);
-  if ( masterFED_ != fragmentFIFOs_.end() ) return;
+    masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
+    if ( masterFED_ != fragmentFIFOs_.end() )
+    {
+      triggerFedId_ = GTP_FED_ID;
+      lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP, this, _1);
+      return;
+    }
 
-  // no trigger FED, use the first FED
+    masterFED_ = fragmentFIFOs_.find(GTPe_FED_ID);
+    if ( masterFED_ != fragmentFIFOs_.end() )
+    {
+      triggerFedId_ = GTPe_FED_ID;
+      lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTPe, this, _1);
+      return;
+    }
+  }
+
+  // no FED to get LS from. Thus use the first FED and fake the LS
+  triggerFedId_ = FED_COUNT + 1;
   masterFED_ = fragmentFIFOs_.begin();
   if ( masterFED_ != fragmentFIFOs_.end() )
     evbIdFactories_[masterFED_->first].setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
@@ -68,25 +92,14 @@ evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
   const unsigned char* payload
 )
 {
-  switch(fedId)
+  if ( fedId != triggerFedId_ )
   {
-    case TCDS_FED_ID:
-    {
-      const uint32_t lsNumber = getLumiSectionFromTCDS(payload);
-      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-    }
-    case GTP_FED_ID:
-    {
-      const uint32_t lsNumber = getLumiSectionFromGTP(payload);
-      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-    }
-    case GTPe_FED_ID:
-    {
-      const uint32_t lsNumber = getLumiSectionFromGTPe(payload);
-      return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
-    }
-    default:
-      return evbIdFactories_[fedId].getEvBid(eventNumber);
+    return evbIdFactories_[fedId].getEvBid(eventNumber);
+  }
+  else
+  {
+    const uint32_t lsNumber = lumiSectionFunction_(payload);
+    return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
   }
 }
 
