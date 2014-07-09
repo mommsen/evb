@@ -142,18 +142,8 @@ sendCmdToFEROL Enable
 echo "Sending data..."
 sleep 1
 
-echo "Corrupt an event on FED 1"
+echo "Corrupt an event on FED 1 - tolerating"
 setParam FEROL1_SOAP_HOST_NAME FEROL1_SOAP_PORT evb::test::DummyFEROL 1 corruptNbEvents unsignedInt 1
-
-sleep 2
-
-echo "Corrupt 3 events on FED 5"
-setParam FEROL5_SOAP_HOST_NAME FEROL5_SOAP_PORT evb::test::DummyFEROL 5 corruptNbEvents unsignedInt 3
-
-sleep 2
-
-echo "Corrupt 2 events on FED 7"
-setParam FEROL7_SOAP_HOST_NAME FEROL7_SOAP_PORT evb::test::DummyFEROL 7 corruptNbEvents unsignedInt 2
 
 sleep 3
 
@@ -223,38 +213,86 @@ fi
 
 nbCorruptedEventsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbCorruptedEvents xsd:unsignedLong)
 echo "BU0 nbCorruptedEvents: $nbCorruptedEventsBU0"
-if [[ $nbCorruptedEventsBU0 -ne 6 ]]
+if [[ $nbCorruptedEventsBU0 -ne 1 ]]
 then
-  echo "Test failed: expected 6"
+  echo "Test failed: expected 1"
   exit 1
 fi
 
-nbFedDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+_fed000[157].txt'|wc -l)
-echo "Nb of FED dumps=$nbFedDumps"
-if [[ $nbFedDumps -ne 6 ]]
+nbEventsWithCRCerrorsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsWithCRCerrors xsd:unsignedLong)
+echo "BU0 nbEventsWithCRCerrors: $nbEventsWithCRCerrorsBU0"
+if [[ $nbEventsWithCRCerrorsBU0 -ne 0 ]]
 then
-  echo "Test failed"
+  echo "Test failed: expected 0"
+  exit 1
+fi
+
+nbFedDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+_fed0001.txt'|wc -l)
+echo "Nb of FED dumps=$nbFedDumps"
+if [[ $nbFedDumps -ne 1 ]]
+then
+  echo "Test failed: expected 1"
   exit 1
 fi
 
 nbEventDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+.txt'|wc -l)
 echo "Nb of event dumps=$nbEventDumps"
-if [[ $nbEventDumps -ne 6 ]]
+if [[ $nbEventDumps -ne 1 ]]
+then
+  echo "Test failed: expected 1"
+  exit 1
+fi
+
+echo "Corrupt 2 events on FED 6 - not tolerating"
+setParam FEROL6_SOAP_HOST_NAME FEROL6_SOAP_PORT evb::test::DummyFEROL 6 corruptNbEvents unsignedInt 2
+
+sleep 3
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Enabled" ]]
 then
   echo "Test failed"
   exit 1
 fi
-
-echo "Corrupt 100 events on FED 6"
-setParam FEROL6_SOAP_HOST_NAME FEROL6_SOAP_PORT evb::test::DummyFEROL 6 corruptNbEvents unsignedInt 100
-
-sleep 3
 
 state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU state=$state"
 if [[ "$state" != "Failed" ]]
 then
   echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Enabled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+nbCorruptedEventsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbCorruptedEvents xsd:unsignedLong)
+echo "BU0 nbCorruptedEvents: $nbCorruptedEventsBU0"
+if [[ $nbCorruptedEventsBU0 -ne 1 ]]
+then
+  echo "Test failed: expected 1"
+  exit 1
+fi
+
+nbEventsWithCRCerrorsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsWithCRCerrors xsd:unsignedLong)
+echo "BU0 nbEventsWithCRCerrors: $nbEventsWithCRCerrorsBU0"
+if [[ $nbEventsWithCRCerrorsBU0 -ne 0 ]]
+then
+  echo "Test failed: expected 0"
+  exit 1
+fi
+
+nbFedDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+_fed0006.txt'|wc -l)
+echo "Nb of FED dumps=$nbFedDumps"
+if [[ $nbFedDumps -ne 2 ]]
+then
+  echo "Test failed: expected 2"
   exit 1
 fi
 

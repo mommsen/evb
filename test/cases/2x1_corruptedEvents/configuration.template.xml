@@ -297,7 +297,8 @@
           <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">3</item>
         </fedSourceIds>
         <checkCRC xsi:type="xsd:boolean">true</checkCRC>
-       </properties>
+        <tolerateCorruptedEvents xsi:type="xsd:boolean">true</tolerateCorruptedEvents>
+      </properties>
     </xc:Application>
 
     <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
@@ -391,6 +392,7 @@
           <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">7</item>
         </fedSourceIds>
         <checkCRC xsi:type="xsd:boolean">true</checkCRC>
+        <tolerateCorruptedEvents xsi:type="xsd:boolean">false</tolerateCorruptedEvents>
       </properties>
     </xc:Application>
 
