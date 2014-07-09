@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_Input_h_
 #define _evb_readoutunit_Input_h_
 
+#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -210,6 +211,8 @@ namespace evb {
 
         typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
         EvBidFactories evbIdFactories_;
+        uint16_t triggerFedId_;
+        boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
 
       private:
 
@@ -918,6 +921,7 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(Input<ReadoutUnit,Configuration>* input) :
   Handler(input),
+  triggerFedId_(FED_COUNT+1),
   scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
 {}
 
@@ -936,11 +940,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
        it != itEnd; ++it)
   {
     const uint16_t fedId = it->value_;
-    if (fedId > FED_SOID_WIDTH)
+    if (fedId > FED_COUNT)
     {
       std::ostringstream oss;
       oss << "The fedSourceId " << fedId;
-      oss << " is larger than maximal value FED_SOID_WIDTH=" << FED_SOID_WIDTH;
+      oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 
@@ -1146,11 +1150,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configu
        it != itEnd; ++it)
   {
     const uint16_t fedId = it->value_;
-    if (fedId > FED_SOID_WIDTH)
+    if (fedId > FED_COUNT)
     {
       std::ostringstream oss;
       oss << "The fedSourceId " << fedId;
-      oss << " is larger than maximal value FED_SOID_WIDTH=" << FED_SOID_WIDTH;
+      oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
       XCEPT_RAISE(exception::Configuration, oss.str());
     }
 

@@ -38,7 +38,7 @@ namespace evb {
     /**
      * Return EvBid for given eventNumber and lumi section
      */
-    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lsNumber);
+    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lumiSection);
 
     /**
      * Reset the counters for a new run

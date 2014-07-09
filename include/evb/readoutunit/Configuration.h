@@ -52,6 +52,7 @@ namespace evb {
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
       xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
+      xdata::Boolean getLumiSectionFromTrigger;              // If set to true, try to get the lumi section number from the trigger. Otherwise, use fake LS
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
       Configuration()
@@ -79,7 +80,9 @@ namespace evb {
           fragmentPoolSize(200000000),
           frameSize(32768),
           maxTriggerAgeMSec(1000),
-          fakeLumiSectionDuration(0)
+          getLumiSectionFromTrigger(true),
+          fakeLumiSectionDuration(0),
+          maxFedErrorRate(1)
       {};
 
       void addToInfoSpace
@@ -118,6 +121,7 @@ namespace evb {
         params.add("fedSourceIds", &fedSourceIds);
         params.add("ruInstances", &ruInstances);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
+        params.add("getLumiSectionFromTrigger", &getLumiSectionFromTrigger);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
       }
 
