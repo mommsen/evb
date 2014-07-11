@@ -81,7 +81,7 @@ void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getRUtids(evb::msg::RUtids& tids) c
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const I2O_PRIVATE_MESSAGE_FRAME pvtMessageFrame
@@ -109,7 +109,7 @@ std::ostream& operator<<
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::ReadoutMsg readoutMsg
@@ -128,7 +128,7 @@ std::ostream& operator<<
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::SuperFragment superFragment
@@ -144,7 +144,7 @@ std::ostream& operator<<
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME& dataBlockMsg

@@ -75,13 +75,13 @@ void evb::readoutunit::ScalerHandler::stopProcessing()
 }
 
 
-bool evb::readoutunit::ScalerHandler::fillFragment
+uint32_t evb::readoutunit::ScalerHandler::fillFragment
 (
   const EvBid& evbId,
-  toolbox::mem::Reference*& bufRef
+  FedFragmentPtr& fedFragment
 )
 {
-  if ( dummyScalFedSize_ == 0 ) return false;
+  if ( dummyScalFedSize_ == 0 ) return 0;
 
   if ( evbId.lumiSection() > currentLumiSection_ )
   {
@@ -90,14 +90,14 @@ bool evb::readoutunit::ScalerHandler::fillFragment
     dataIsValid_ = false;
   }
 
-  bufRef = getFerolFragment(evbId.eventNumber());
-  return true;
+  return getFerolFragment(evbId.eventNumber(),fedFragment);
 }
 
 
-toolbox::mem::Reference* evb::readoutunit::ScalerHandler::getFerolFragment
+uint32_t evb::readoutunit::ScalerHandler::getFerolFragment
 (
-  const uint32_t eventNumber
+  const uint32_t eventNumber,
+  FedFragmentPtr& fedFragment
 )
 {
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
@@ -179,7 +179,9 @@ toolbox::mem::Reference* evb::readoutunit::ScalerHandler::getFerolFragment
 
   assert( dataOffset == dataForCurrentLumiSection_.size() );
 
-  return bufRef;
+  fedFragment.reset( new FedFragment(bufRef) );
+
+  return fedSize;
 }
 
 

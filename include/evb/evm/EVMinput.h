@@ -49,18 +49,18 @@ namespace evb {
       {
       public:
 
-        FEROLproxy(EVMinput* input)
-        : readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy(input) {};
+        FEROLproxy(EVM* evm)
+        : readoutunit::Input<EVM,readoutunit::Configuration>::FEROLproxy(evm) {};
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr&);
         virtual void configure(boost::shared_ptr<readoutunit::Configuration>);
 
       private:
 
-        virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
-        virtual uint32_t getLumiSectionFromTCDS(const unsigned char*) const;
-        virtual uint32_t getLumiSectionFromGTP(const unsigned char*) const;
-        virtual uint32_t getLumiSectionFromGTPe(const unsigned char*) const;
+        EvBid getEvbIdForMasterFed(const FedFragmentPtr&);
+        uint32_t getLumiSectionFromTCDS(const unsigned char*) const;
+        uint32_t getLumiSectionFromGTP(const unsigned char*) const;
+        uint32_t getLumiSectionFromGTPe(const unsigned char*) const;
 
         FragmentFIFOs::iterator masterFED_;
 
@@ -69,9 +69,6 @@ namespace evb {
       class DummyInputData : public readoutunit::Input<EVM,readoutunit::Configuration>::DummyInputData
       {
       public:
-
-        DummyInputData(EVMinput* input)
-        : readoutunit::Input<EVM,readoutunit::Configuration>::DummyInputData(input) {};
 
         virtual bool getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
         {
@@ -90,11 +87,11 @@ namespace evb {
 
         if ( inputSource == "FEROL" )
         {
-          handler.reset( new FEROLproxy(this) );
+          handler.reset( new FEROLproxy(getReadoutUnit()) );
         }
         else if ( inputSource == "Local" )
         {
-          handler.reset( new DummyInputData(this) );
+          handler.reset( new DummyInputData() );
         }
         else
         {

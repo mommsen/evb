@@ -36,6 +36,7 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
+	FedFragment.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \

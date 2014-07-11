@@ -7,12 +7,12 @@
 
 bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::FragmentChainPtr& superFragment)
 {
-  readoutunit::FragmentChain::FragmentPtr fragment;
+  FedFragmentPtr fragment;
 
   if ( masterFED_ == fragmentFIFOs_.end() || !masterFED_->second->deq(fragment) ) return false;
 
-  const EvBid& evbId = fragment->evbId;
-  superFragment.reset( new readoutunit::FragmentChain(fragment) );
+  const EvBid referenceEvBid = getEvbIdForMasterFed(fragment);
+  superFragment.reset( new readoutunit::FragmentChain(referenceEvBid,fragment) );
 
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
@@ -23,24 +23,10 @@ bool evb::evm::EVMinput::FEROLproxy::getNextAvailableSuperFragment(readoutunit::
 
       if ( ! doProcessing_ ) return false;
 
-      if ( evbId != fragment->evbId )
-      {
-        std::ostringstream oss;
-        oss << "Mismatch detected: expected evb id "
-          << evbId << ", but found evb id "
-          << fragment->evbId
-          << " in data block from FED "
-          << it->first;
-        XCEPT_RAISE(exception::MismatchDetected, oss.str());
-      }
-
-      superFragment->append(fragment);
+      const EvBid evbId = evbIdFactories_[fragment->getFedId()].getEvBid(fragment->getEventNumber());
+      superFragment->append(evbId,fragment);
     }
   }
-
-  toolbox::mem::Reference* bufRef = 0;
-  if ( getScalerFragment(evbId,bufRef) )
-    superFragment->append(bufRef);
 
   return true;
 }
@@ -55,7 +41,6 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
     masterFED_ = fragmentFIFOs_.find(TCDS_FED_ID);
     if ( masterFED_ != fragmentFIFOs_.end() )
     {
-      triggerFedId_ = TCDS_FED_ID;
       lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromTCDS, this, _1);
       return;
     }
@@ -63,7 +48,6 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
     masterFED_ = fragmentFIFOs_.find(GTP_FED_ID);
     if ( masterFED_ != fragmentFIFOs_.end() )
     {
-      triggerFedId_ = GTP_FED_ID;
       lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP, this, _1);
       return;
     }
@@ -71,35 +55,34 @@ void evb::evm::EVMinput::FEROLproxy::configure(boost::shared_ptr<readoutunit::Co
     masterFED_ = fragmentFIFOs_.find(GTPe_FED_ID);
     if ( masterFED_ != fragmentFIFOs_.end() )
     {
-      triggerFedId_ = GTPe_FED_ID;
       lumiSectionFunction_ = boost::bind(&evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTPe, this, _1);
       return;
     }
   }
 
   // no FED to get LS from. Thus use the first FED and fake the LS
-  triggerFedId_ = FED_COUNT + 1;
+  lumiSectionFunction_ = 0;
   masterFED_ = fragmentFIFOs_.begin();
   if ( masterFED_ != fragmentFIFOs_.end() )
     evbIdFactories_[masterFED_->first].setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
 }
 
 
-evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvBid
+evb::EvBid evb::evm::EVMinput::FEROLproxy::getEvbIdForMasterFed
 (
-  const uint16_t fedId,
-  const uint32_t eventNumber,
-  const unsigned char* payload
+  const evb::FedFragmentPtr& fragment
 )
 {
-  if ( fedId != triggerFedId_ )
+  if ( lumiSectionFunction_ )
   {
-    return evbIdFactories_[fedId].getEvBid(eventNumber);
+    unsigned char* payload = (unsigned char*)fragment->getBufRef()
+      + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + sizeof(ferolh_t);
+    const uint32_t lsNumber = lumiSectionFunction_(payload);
+    return evbIdFactories_[masterFED_->first].getEvBid(fragment->getEventNumber(),lsNumber);
   }
   else
   {
-    const uint32_t lsNumber = lumiSectionFunction_(payload);
-    return evbIdFactories_[fedId].getEvBid(eventNumber,lsNumber);
+    return evbIdFactories_[masterFED_->first].getEvBid(fragment->getEventNumber());
   }
 }
 

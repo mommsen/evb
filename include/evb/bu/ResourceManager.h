@@ -200,23 +200,22 @@ namespace evb {
 
     };
 
+    inline std::ostream& operator<<
+    (
+      std::ostream& s,
+      const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
+    )
+    {
+      if ( lumiAccount.get() )
+      {
+        s << "lumiSection=" << lumiAccount->lumiSection << " ";
+        s << "nbEvents=" << lumiAccount->nbEvents;
+      }
+
+      return s;
+    }
+
   } } //namespace evb::bu
-
-
-inline std::ostream& operator<<
-(
-  std::ostream& s,
-  const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
-)
-{
-  if ( lumiAccount.get() )
-  {
-    s << "lumiSection=" << lumiAccount->lumiSection << " ";
-    s << "nbEvents=" << lumiAccount->nbEvents;
-  }
-
-  return s;
-}
 
 
 #endif // _evb_bu_ResourceManager_h_

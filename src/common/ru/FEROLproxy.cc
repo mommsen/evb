@@ -3,12 +3,12 @@
 #include "evb/ru/RUinput.h"
 
 
-bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
+bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& referenceEvBid, readoutunit::FragmentChainPtr& superFragment)
 {
   if ( !fragmentFIFOs_.empty() && fragmentFIFOs_.begin()->second->empty() ) return false;
 
-  readoutunit::FragmentChain::FragmentPtr fragment;
-  superFragment.reset( new readoutunit::FragmentChain(evbId) );
+  FedFragmentPtr fragment;
+  superFragment.reset( new readoutunit::FragmentChain(referenceEvBid) );
 
   for (FragmentFIFOs::iterator it = fragmentFIFOs_.begin(), itEnd = fragmentFIFOs_.end();
        it != itEnd; ++it)
@@ -20,23 +20,9 @@ bool evb::ru::RUinput::FEROLproxy::getSuperFragmentWithEvBid(const EvBid& evbId,
       throw exception::HaltRequested();
     }
 
-    if ( evbId != fragment->evbId )
-    {
-      std::ostringstream oss;
-      oss << "Mismatch detected: expected evb id "
-        << evbId << ", but found evb id "
-        << fragment->evbId
-        << " in data block from FED "
-        << it->first;
-      XCEPT_RAISE(exception::MismatchDetected, oss.str());
-    }
-
-    superFragment->append(fragment);
+    const EvBid evbId = evbIdFactories_[fragment->getFedId()].getEvBid(fragment->getEventNumber());
+    superFragment->append(evbId,fragment);
   }
-
-  toolbox::mem::Reference* bufRef = 0;
-  if ( getScalerFragment(evbId,bufRef) )
-    superFragment->append(bufRef);
 
   return true;
 }

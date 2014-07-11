@@ -49,8 +49,8 @@ namespace evb {
       {
       public:
 
-        FEROLproxy(RUinput* input)
-        : readoutunit::Input<RU,readoutunit::Configuration>::FEROLproxy(input) {};
+        FEROLproxy(RU* ru)
+        : readoutunit::Input<RU,readoutunit::Configuration>::FEROLproxy(ru) {};
 
         virtual bool getSuperFragmentWithEvBid(const EvBid&, readoutunit::FragmentChainPtr&);
       };
@@ -58,9 +58,6 @@ namespace evb {
       class DummyInputData : public readoutunit::Input<RU,readoutunit::Configuration>::DummyInputData
       {
       public:
-
-        DummyInputData(RUinput* input)
-        : readoutunit::Input<RU,readoutunit::Configuration>::DummyInputData(input) {};
 
         virtual bool getSuperFragmentWithEvBid(const EvBid& evbId, readoutunit::FragmentChainPtr& superFragment)
         { return createSuperFragment(evbId,superFragment); }
@@ -73,11 +70,11 @@ namespace evb {
 
         if ( inputSource == "FEROL" )
         {
-          handler.reset( new FEROLproxy(this) );
+          handler.reset( new FEROLproxy(getReadoutUnit()) );
         }
         else if ( inputSource == "Local" )
         {
-          handler.reset( new DummyInputData(this) );
+          handler.reset( new DummyInputData() );
         }
         else
         {

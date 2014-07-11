@@ -17,7 +17,6 @@
 #include <string.h>
 
 #include "cgicc/HTMLClasses.h"
-#include "evb/CRCCalculator.h"
 #include "evb/Constants.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
@@ -30,8 +29,6 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/ScalerHandler.h"
 #include "evb/readoutunit/StateMachine.h"
-#include "interface/shared/fed_header.h"
-#include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "log4cplus/loggingmacros.h"
@@ -137,11 +134,6 @@ namespace evb {
       cgicc::div getHtmlSnipped() const;
 
       /**
-       * Check the consistency of the FED event fragment
-       */
-      void checkEventFragment(toolbox::mem::Reference*);
-
-      /**
        * Write the next count FED fragment to a text file
        */
       void writeNextFragmentsToFile(const uint16_t count, const uint16_t fedId=FED_COUNT+1);
@@ -158,11 +150,10 @@ namespace evb {
       {
       public:
 
-        Handler(Input<ReadoutUnit,Configuration>* input)
-          : input_(input), doProcessing_(false) {};
+        Handler() : doProcessing_(false) {};
 
-        virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*)
-        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::rawDataAvailable is not implemented"); }
+        virtual void addFedFragment(FedFragmentPtr&)
+        { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::addFedFragment is not implemented"); }
 
         virtual bool getNextAvailableSuperFragment(FragmentChainPtr&)
         { XCEPT_RAISE(exception::Configuration, "readoutunit::Input::Handler::getNextAvailableSuperFragment is not implemented"); }
@@ -180,7 +171,6 @@ namespace evb {
 
       protected:
 
-        Input<ReadoutUnit,Configuration>* input_;
         volatile bool doProcessing_;
 
       };
@@ -189,10 +179,10 @@ namespace evb {
       {
       public:
 
-        FEROLproxy(Input<ReadoutUnit,Configuration>*);
+        FEROLproxy(ReadoutUnit*);
 
         virtual void configure(boost::shared_ptr<Configuration>);
-        virtual void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
+        virtual void addFedFragment(FedFragmentPtr&);
         virtual void startProcessing(const uint32_t runNumber);
         virtual void drain();
         virtual void stopProcessing();
@@ -202,22 +192,20 @@ namespace evb {
 
       protected:
 
-        virtual EvBid getEvBid(const uint16_t fedId, const uint32_t eventNumber, const unsigned char* payload);
-        bool getScalerFragment(const EvBid&, toolbox::mem::Reference*&);
 
-        typedef OneToOneQueue<FragmentChain::FragmentPtr> FragmentFIFO;
+        ReadoutUnit* readoutUnit_;
+
+        typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
         typedef boost::shared_ptr<FragmentFIFO> FragmentFIFOPtr;
         typedef std::map<uint16_t,FragmentFIFOPtr> FragmentFIFOs;
         FragmentFIFOs fragmentFIFOs_;
 
         typedef std::map<uint16_t,EvBidFactory> EvBidFactories;
         EvBidFactories evbIdFactories_;
-        uint16_t triggerFedId_;
         boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
 
       private:
 
-        boost::scoped_ptr<ScalerHandler> scalerHandler_;
         bool dropInputData_;
 
       };
@@ -225,8 +213,6 @@ namespace evb {
       class DummyInputData : public Handler
       {
       public:
-
-        DummyInputData(Input<ReadoutUnit,Configuration>* input) : Handler(input) {};
 
         virtual void configure(boost::shared_ptr<Configuration>);
         virtual void startProcessing(const uint32_t runNumber);
@@ -248,20 +234,23 @@ namespace evb {
       };
 
       virtual void getHandlerForInputSource(boost::shared_ptr<Handler>& handler)
-      { handler.reset( new Handler(this) ); }
+      { handler.reset( new Handler() ); }
 
       const boost::shared_ptr<Configuration> configuration_;
 
     private:
 
       void resetMonitoringCounters();
-      void writeFragmentToFile(const uint16_t fedId,const uint32_t eventNumber,const std::string& reasonFordump,toolbox::mem::Reference*) const;
+      void maybeDumpFragmentToFile(const FedFragmentPtr&);
+      void writeFragmentToFile(const FedFragmentPtr&,const std::string& reasonFordump) const;
+      void updateInputMonitors(const FedFragmentPtr&,const uint32_t fedSize);
       void updateSuperFragmentCounters(const FragmentChainPtr&);
+      void maybeAddScalerFragment(FragmentChainPtr&);
       cgicc::table getFedTable() const;
 
       ReadoutUnit* readoutUnit_;
       boost::shared_ptr<Handler> handler_;
-      CRCCalculator crcCalculator_;
+      boost::scoped_ptr<ScalerHandler> scalerHandler_;
 
       typedef std::map<uint32_t,uint32_t> LumiCounterMap;
       LumiCounterMap lumiCounterMap_;
@@ -334,7 +323,8 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 ) :
 configuration_(readoutUnit->getConfiguration()),
 readoutUnit_(readoutUnit),
-handler_(new Handler(this)),
+handler_(new Handler()),
+scalerHandler_(new ScalerHandler(readoutUnit->getIdentifier())),
 runNumber_(0),
 lastMonitoringTime_(0)
 {}
@@ -356,224 +346,28 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
   tcpla::MemoryCache* cache
 )
 {
-  checkEventFragment(bufRef);
-  handler_->rawDataAvailable(bufRef,cache);
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
-(
-  toolbox::mem::Reference* bufRef
-)
-{
-  unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-  uint32_t payloadSize = frame->partLength;
-  const uint16_t fedId = frame->fedid;
-  const uint32_t eventNumber = frame->triggerno;
-  uint16_t crc = 0xffff;
+  FedFragmentPtr fedFragment( new FedFragment(bufRef,cache) );
+  uint32_t fedSize = 0;
 
   try
   {
-    payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-    uint32_t fedSize = 0;
-    uint32_t usedSize = 0;
-    ferolh_t* ferolHeader;
-
-    do
-    {
-      ferolHeader = (ferolh_t*)payload;
-
-      if ( ferolHeader->signature() != FEROL_SIGNATURE )
-      {
-        std::ostringstream msg;
-        msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
-        msg << ", but found " << std::hex << ferolHeader->signature();
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-
-      if ( eventNumber != ferolHeader->event_number() )
-      {
-        std::ostringstream msg;
-        msg << "Mismatch of event number in FEROL header:";
-        msg << " expected " << eventNumber << ", but got " << ferolHeader->event_number();
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-
-      if ( fedId != ferolHeader->fed_id() )
-      {
-        std::ostringstream msg;
-        msg << "Mismatch of FED id in FEROL header:";
-        msg << " expected " << fedId << ", but got " << ferolHeader->fed_id();
-        msg << " for event " << eventNumber;
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-
-      payload += sizeof(ferolh_t);
-
-      if ( ferolHeader->is_first_packet() )
-      {
-        const fedh_t* fedHeader = (fedh_t*)payload;
-
-        if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
-        {
-          std::ostringstream oss;
-          oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-          oss << " but got event id 0x" << std::hex << fedHeader->eventid;
-          oss << " and source id 0x" << std::hex << fedHeader->sourceid;
-          XCEPT_RAISE(exception::DataCorruption, oss.str());
-        }
-
-        const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
-        if ( eventId != eventNumber)
-        {
-          std::ostringstream oss;
-          oss << "FED header \"eventid\" " << eventId << " does not match";
-          oss << " the eventNumber " << eventNumber << " found in I2O_DATA_READY_MESSAGE_FRAME";
-          XCEPT_RAISE(exception::DataCorruption, oss.str());
-        }
-
-        const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
-        if ( sourceId != fedId )
-        {
-          std::ostringstream oss;
-          oss << "FED header \"sourceId\" " << sourceId << " does not match";
-          oss << " the FED id " << fedId << " found in I2O_DATA_READY_MESSAGE_FRAME";
-          XCEPT_RAISE(exception::DataCorruption, oss.str());
-        }
-      }
-
-      const uint32_t dataLength = ferolHeader->data_length();
-
-      if ( configuration_->checkCRC )
-      {
-        if ( ferolHeader->is_last_packet() )
-          crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
-        else
-          crcCalculator_.compute(crc,payload,dataLength);
-      }
-
-      payload += dataLength;
-      fedSize += dataLength;
-      usedSize += dataLength + sizeof(ferolh_t);
-
-      if ( usedSize >= payloadSize && !ferolHeader->is_last_packet() )
-      {
-        usedSize -= payloadSize;
-        bufRef = bufRef->getNextReference();
-
-        if ( ! bufRef )
-        {
-          std::ostringstream msg;
-          msg << "Premature end of FEROL data:";
-          msg << " expected " << usedSize << " more Bytes,";
-          msg << " but toolbox::mem::Reference chain has ended";
-          XCEPT_RAISE(exception::DataCorruption, msg.str());
-        }
-
-        payload = (unsigned char*)bufRef->getDataLocation();
-        frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-        payloadSize = frame->partLength;
-        payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-        if ( fedId != frame->fedid )
-        {
-          std::ostringstream msg;
-          msg << "Inconsistent FED id:";
-          msg << " first I2O_DATA_READY_MESSAGE_FRAME was from FED id " << fedId;
-          msg << " while the current has FED id " << frame->fedid;
-          XCEPT_RAISE(exception::DataCorruption, msg.str());
-        }
-
-        if ( eventNumber != frame->triggerno )
-        {
-          std::ostringstream msg;
-          msg << "Inconsistent event number:";
-          msg << " first I2O_DATA_READY_MESSAGE_FRAME was from event " << eventNumber;
-          msg << " while the current is from event " << frame->triggerno;
-          XCEPT_RAISE(exception::DataCorruption, msg.str());
-        }
-      }
-    }
-    while ( !ferolHeader->is_last_packet() );
-
-    fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
-
-    if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
-    {
-      std::ostringstream oss;
-      oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-      oss << " but got event size 0x" << std::hex << trailer->eventsize;
-      oss << " and conscheck 0x" << std::hex << trailer->conscheck;
-      XCEPT_RAISE(exception::DataCorruption, oss.str());
-    }
-
-    const uint32_t evsz = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
-    if ( evsz != fedSize )
-    {
-      std::ostringstream oss;
-      oss << "Inconsistent event size:";
-      oss << " FED trailer claims " << evsz << " Bytes,";
-      oss << " while sum of FEROL headers yield " << fedSize;
-      XCEPT_RAISE(exception::DataCorruption, oss.str());
-    }
-
-    if ( configuration_->checkCRC )
-    {
-      // Force CRC & R field to zero before re-computing the CRC.
-      // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-      const uint32_t conscheck = trailer->conscheck;
-      trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
-      crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
-      trailer->conscheck = conscheck;
-
-      const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
-      if ( trailerCRC != crc )
-      {
-        std::ostringstream oss;
-        oss << "Wrong CRC checksum:" << std::hex;
-        oss << " FED trailer claims 0x" << trailerCRC;
-        oss << ", but recalculation gives 0x" << crc;
-        XCEPT_RAISE(exception::CRCerror, oss.str());
-      }
-    }
-
-    boost::mutex::scoped_lock sl(inputMonitorsMutex_);
-
-    typename InputMonitors::iterator pos = inputMonitors_.find(fedId);
-    if ( pos == inputMonitors_.end() )
-    {
-      std::ostringstream msg;
-      msg << "The received FED id " << fedId;
-      msg << " is not in the excepted FED list: ";
-      std::copy(configuration_->fedSourceIds.begin(), configuration_->fedSourceIds.end(),
-                std::ostream_iterator<uint16_t>(msg," "));
-      XCEPT_RAISE(exception::Configuration, msg.str());
-    }
-
-    ++(pos->second.perf.i2oCount);
-    pos->second.perf.sumOfSizes += fedSize;
-    pos->second.perf.sumOfSquares += fedSize*fedSize;
-    pos->second.lastEventNumber = eventNumber;
-
-    if ( ferolHeader->is_last_packet() )
-      ++(pos->second.perf.logicalCount);
+    fedSize = FedFragment::checkIntegrity(bufRef,configuration_->checkCRC);
   }
   catch(exception::DataCorruption& e)
   {
     uint32_t count = 0;
     {
       boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
-      count = ++(fedErrorCounts_[fedId].corruptedEvents);
+      count = ++(fedErrorCounts_[fedFragment->getFedId()].corruptedEvents);
     }
 
     if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
+      writeFragmentToFile(fedFragment,e.message());
 
     if ( configuration_->tolerateCorruptedEvents )
     {
+      // fragment.reset( new FedFragment(evbId,0,0) );
+
       LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
                       xcept::stdformat_exception_history(e));
       readoutUnit_->notifyQualified("error",e);
@@ -588,23 +382,63 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
     uint32_t count = 0;
     {
       boost::mutex::scoped_lock sl(fedErrorCountsMutex_);
-      count = ++(fedErrorCounts_[fedId].crcErrors);
+      count = ++(fedErrorCounts_[fedFragment->getFedId()].crcErrors);
     }
 
     if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedId,eventNumber,e.message(),bufRef);
+      writeFragmentToFile(fedFragment,e.message());
 
     LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
                     xcept::stdformat_exception_history(e));
     readoutUnit_->notifyQualified("error",e);
   }
 
+  updateInputMonitors(fedFragment,fedSize);
+  maybeDumpFragmentToFile(fedFragment);
+  handler_->addFedFragment(fedFragment);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateInputMonitors
+(
+  const FedFragmentPtr& fragment,
+  uint32_t fedSize
+)
+{
+  boost::mutex::scoped_lock sl(inputMonitorsMutex_);
+
+  typename InputMonitors::iterator pos = inputMonitors_.find(fragment->getFedId());
+  if ( pos == inputMonitors_.end() )
+  {
+    std::ostringstream msg;
+    msg << "The received FED id " << fragment->getFedId();
+    msg << " is not in the excepted FED list: ";
+    std::copy(configuration_->fedSourceIds.begin(), configuration_->fedSourceIds.end(),
+              std::ostream_iterator<uint16_t>(msg," "));
+    XCEPT_RAISE(exception::Configuration, msg.str());
+  }
+
+  ++(pos->second.perf.i2oCount);
+  ++(pos->second.perf.logicalCount);
+  pos->second.perf.sumOfSizes += fedSize;
+  pos->second.perf.sumOfSquares += fedSize*fedSize;
+  pos->second.lastEventNumber = fragment->getEventNumber();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::maybeDumpFragmentToFile
+(
+  const FedFragmentPtr& fragment
+)
+{
   if ( configuration_->writeFragmentsToFile ||
        (writeNextFragmentsForFedId_.first > 0 &&
-        (writeNextFragmentsForFedId_.second == fedId || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
+        (writeNextFragmentsForFedId_.second == fragment->getFedId() || writeNextFragmentsForFedId_.second == FED_COUNT+1)) )
 
   {
-    writeFragmentToFile(fedId,eventNumber,"Requested by user",bufRef);
+    writeFragmentToFile(fragment,"Requested by user");
     --writeNextFragmentsForFedId_.first;
   }
 }
@@ -613,20 +447,18 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::checkEventFragment
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeFragmentToFile
 (
-  const uint16_t fedId,
-  const uint32_t eventNumber,
-  const std::string& reasonForDump,
-  toolbox::mem::Reference* bufRef
+  const FedFragmentPtr& fragment,
+  const std::string& reasonForDump
 ) const
 {
   std::ostringstream fileName;
   fileName << "/tmp/dump_run" << std::setfill('0') << std::setw(6) << runNumber_
-    << "_event" << std::setw(8) << eventNumber
-    << "_fed" << std::setw(4) << fedId
+    << "_event" << std::setw(8) << fragment->getEventNumber()
+    << "_fed" << std::setw(4) << fragment->getFedId()
     << ".txt";
   std::ofstream dumpFile;
   dumpFile.open(fileName.str().c_str());
-  DumpUtility::dump(dumpFile, reasonForDump, bufRef);
+  DumpUtility::dump(dumpFile, reasonForDump, fragment->getBufRef());
   dumpFile.close();
 }
 
@@ -636,6 +468,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 {
   if ( ! handler_->getNextAvailableSuperFragment(superFragment) ) return false;
 
+  maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
 
   return true;
@@ -647,9 +480,28 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvB
 {
   if ( ! handler_->getSuperFragmentWithEvBid(evbId,superFragment) ) return false;
 
+  maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
 
   return true;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::maybeAddScalerFragment
+(
+  FragmentChainPtr& superFragment
+)
+{
+  FedFragmentPtr fedFragment;
+  const EvBid& evbId = superFragment->getEvBid();
+  const uint32_t fedSize = scalerHandler_->fillFragment(evbId, fedFragment);
+  if ( fedSize > 0 )
+  {
+    updateInputMonitors(fedFragment,fedSize);
+    maybeDumpFragmentToFile(fedFragment);
+    superFragment->append(evbId,fedFragment);
+  }
 }
 
 
@@ -706,6 +558,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
 
   resetMonitoringCounters();
   handler_->startProcessing(runNumber);
+  scalerHandler_->startProcessing(runNumber);
   runNumber_ = runNumber;
 }
 
@@ -721,6 +574,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopProcessing()
 {
   handler_->stopProcessing();
+  scalerHandler_->stopProcessing();
 }
 
 
@@ -894,6 +748,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
   writeNextFragmentsToFile(0);
 
   handler_->configure(configuration_);
+  scalerHandler_->configure(configuration_->scalFedId,configuration_->dummyScalFedSize);
 
   resetMonitoringCounters();
 }
@@ -1028,10 +883,10 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
 
 template<class ReadoutUnit,class Configuration>
-evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(Input<ReadoutUnit,Configuration>* input) :
-  Handler(input),
-  triggerFedId_(FED_COUNT+1),
-  scalerHandler_(new ScalerHandler(input->getReadoutUnit()->getIdentifier()))
+evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::FEROLproxy(ReadoutUnit* readoutUnit) :
+  Handler(),
+  readoutUnit_(readoutUnit),
+  lumiSectionFunction_(0)
 {}
 
 
@@ -1059,13 +914,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::configure(b
 
     std::ostringstream fifoName;
     fifoName << "fragmentFIFO_FED_" << fedId;
-    FragmentFIFOPtr fragmentFIFO( new FragmentFIFO(this->input_->getReadoutUnit(),fifoName.str()) );
+    FragmentFIFOPtr fragmentFIFO( new FragmentFIFO(readoutUnit_,fifoName.str()) );
     fragmentFIFO->resize(configuration->fragmentFIFOCapacity);
     fragmentFIFOs_.insert( typename FragmentFIFOs::value_type(fedId,fragmentFIFO) );
     evbIdFactories_.insert( typename EvBidFactories::value_type(fedId,EvBidFactory()) );
   }
-
-  scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
 }
 
 
@@ -1095,60 +948,13 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getInfo
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::rawDataAvailable
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::addFedFragment
 (
-  toolbox::mem::Reference* bufRef,
-  tcpla::MemoryCache* cache
+  FedFragmentPtr& fedFragment
 )
 {
-  if ( ! this->doProcessing_ )
-  {
-    cache->grantFrame(bufRef);
-    return;
-  }
-
-  unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  ferolh_t* ferolHeader = (ferolh_t*)payload;
-  assert( ferolHeader->signature() == FEROL_SIGNATURE );
-  const uint16_t fedId = ferolHeader->fed_id();
-  const uint32_t eventNumber = ferolHeader->event_number();
-  const EvBid evbId = getEvBid(fedId,eventNumber,payload+sizeof(ferolh_t));
-
-  //std::cout << "**** got EvBid " << evbId << " from FED " << fedId << std::endl;
-
-  FragmentChain::FragmentPtr fragment( new FragmentChain::Fragment(evbId,bufRef,cache) );
-
-  if ( ! dropInputData_ )
-    fragmentFIFOs_[fedId]->enqWait(fragment);
-}
-
-
-template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getScalerFragment
-(
-  const EvBid& evbId,
-  toolbox::mem::Reference*& bufRef
-)
-{
-  if ( scalerHandler_->fillFragment(evbId,bufRef) )
-  {
-    this->input_->checkEventFragment(bufRef);
-    return true;
-  }
-
-  return false;
-}
-
-
-template<class ReadoutUnit,class Configuration>
-evb::EvBid evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::getEvBid
-(
-  const uint16_t fedId,
-  const uint32_t eventNumber,
-  const unsigned char* payload
-)
-{
-  return evbIdFactories_[fedId].getEvBid(eventNumber);
+  if ( this->doProcessing_ && !dropInputData_ )
+    fragmentFIFOs_[fedFragment->getFedId()]->enqWait(fedFragment);
 }
 
 
@@ -1158,8 +964,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::startProces
   for (typename EvBidFactories::iterator it = evbIdFactories_.begin(), itEnd = evbIdFactories_.end();
        it != itEnd; ++it)
     it->second.reset(runNumber);
-
-  scalerHandler_->startProcessing(runNumber);
 
   this->doProcessing_ = true;
 }
@@ -1176,7 +980,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::FEROLproxy::stopProcessing()
 {
   this->doProcessing_ = false;
-  scalerHandler_->stopProcessing();
 }
 
 
@@ -1372,8 +1175,10 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::createS
 
     }
     assert( remainingFedSize == 0 );
-    this->input_->checkEventFragment(fragmentHead);
-    superFragment->append(fragmentHead);
+
+    FedFragmentPtr fedFragment( new FedFragment(fragmentHead) );
+    updateInputMonitors(fedFragment,fedSize);
+    superFragment->append(evbId,fedFragment);
   }
 
   return superFragment->isValid();
@@ -1461,13 +1266,13 @@ namespace evb
     template <>
     inline void formatter
     (
-      const readoutunit::FragmentChain::FragmentPtr fragment,
+      const FedFragmentPtr fragment,
       std::ostringstream* out
     )
     {
       if ( fragment.get() )
       {
-        toolbox::mem::Reference* bufRef = fragment->bufRef;
+        toolbox::mem::Reference* bufRef = fragment->getBufRef();
         if ( bufRef )
         {
           I2O_DATA_READY_MESSAGE_FRAME* msg =
@@ -1476,7 +1281,6 @@ namespace evb
           *out << "  FED id: " << msg->fedid << std::endl;
           *out << "  trigger no: " << msg->triggerno << std::endl;
           *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
-          *out << "  evbId: " << fragment->evbId << std::endl;
         }
       }
       else

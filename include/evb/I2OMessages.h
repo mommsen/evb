@@ -72,36 +72,34 @@ namespace evb {
 
     };
 
+    std::ostream& operator<<
+    (
+      std::ostream& s,
+      const I2O_PRIVATE_MESSAGE_FRAME
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::ReadoutMsg
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::SuperFragment
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME&
+    );
 
   } } // namespace evb::msg
-
-
-std::ostream& operator<<
-(
-  std::ostream& s,
-  const I2O_PRIVATE_MESSAGE_FRAME
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::ReadoutMsg
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::SuperFragment
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME&
-);
 
 
 #endif // _evb_I2OMessages_h_

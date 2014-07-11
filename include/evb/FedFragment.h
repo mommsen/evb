@@ -1,0 +1,61 @@
+#ifndef _evb_FedFragment_h_
+#define _evb_FedFragment_h_
+
+#include <boost/shared_ptr.hpp>
+
+#include <stdint.h>
+
+#include "evb/CRCCalculator.h"
+#include "tcpla/MemoryCache.h"
+#include "toolbox/mem/Reference.h"
+
+
+namespace evb {
+
+  /**
+   * \ingroup xdaqApps
+   * \brief Represent a FED fragment
+   */
+
+  class FedFragment
+  {
+  public:
+
+    FedFragment(toolbox::mem::Reference*, tcpla::MemoryCache* = 0);
+
+    ~FedFragment();
+
+    uint16_t getFedId() const { return fedId_; }
+    uint32_t getEventNumber() const { return eventNumber_; }
+    toolbox::mem::Reference* getBufRef() const { return bufRef_; }
+
+    /**
+     * Check the consistency of the FED event fragment
+     */
+    static uint32_t checkIntegrity(toolbox::mem::Reference*,const bool checkCRC);
+
+  private:
+
+    uint16_t fedId_;
+    uint32_t eventNumber_;
+    toolbox::mem::Reference* bufRef_;
+    tcpla::MemoryCache* cache_;
+
+    static CRCCalculator crcCalculator_;
+
+  };
+
+  typedef boost::shared_ptr<FedFragment> FedFragmentPtr;
+
+} //namespace evb
+
+
+#endif // _evb_FedFragment_h_
+
+
+/// emacs configuration
+/// Local Variables: -
+/// mode: c++ -
+/// c-basic-offset: 2 -
+/// indent-tabs-mode: nil -
+/// End: -

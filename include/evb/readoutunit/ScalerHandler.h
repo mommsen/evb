@@ -7,6 +7,7 @@
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
+#include "evb/FedFragment.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Pool.h"
 #include "toolbox/mem/Reference.h"
@@ -36,14 +37,14 @@ namespace evb {
 
       void stopProcessing();
 
-      bool fillFragment(const EvBid&, toolbox::mem::Reference*&);
+      uint32_t fillFragment(const EvBid&, FedFragmentPtr&);
 
 
     private:
 
       void getFragmentPool(const std::string& identifier);
       void startRequestWorkloop(const std::string& identifier);
-      toolbox::mem::Reference* getFerolFragment(const uint32_t eventNumber);
+      uint32_t getFerolFragment(const uint32_t eventNumber, FedFragmentPtr&);
       bool scalerRequest(toolbox::task::WorkLoop*);
       void requestLastestData();
 
