@@ -22,5 +22,6 @@
   <xmas:item name="payloadPerBU"                  infospace="urn:evb::RU" type="vector unsigned int 64"/>
   <xmas:item name="fedIdsWithoutFragments"        infospace="urn:evb::RU" type="vector unsigned int 32"/>
   <xmas:item name="fedIdsWithErrors"              infospace="urn:evb::RU" type="vector unsigned int 32"/>
-  <xmas:item name="fedErrorCounts"                infospace="urn:evb::RU" type="vector unsigned int 32"/>
+  <xmas:item name="fedDataCorruption"             infospace="urn:evb::RU" type="vector unsigned int 32"/>
+  <xmas:item name="fedCRCerrors"                  infospace="urn:evb::RU" type="vector unsigned int 32"/>
 </xmas:flash>
