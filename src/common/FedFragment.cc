@@ -8,9 +8,6 @@
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::CRCCalculator evb::FedFragment::crcCalculator_;
-
-
 evb::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
   : bufRef_(bufRef),cache_(cache)
 {
@@ -32,9 +29,10 @@ evb::FedFragment::~FedFragment()
 }
 
 
-uint32_t evb::FedFragment::checkIntegrity(toolbox::mem::Reference* bufRef, const bool checkCRC)
+uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 {
-  unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+  toolbox::mem::Reference* currentBufRef = bufRef_;
+  unsigned char* payload = (unsigned char*)currentBufRef->getDataLocation();
   I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
   uint32_t payloadSize = frame->partLength;
   const uint16_t fedId = frame->fedid;
@@ -127,9 +125,9 @@ uint32_t evb::FedFragment::checkIntegrity(toolbox::mem::Reference* bufRef, const
     if ( usedSize >= payloadSize && !ferolHeader->is_last_packet() )
     {
       usedSize -= payloadSize;
-      bufRef = bufRef->getNextReference();
+      currentBufRef = currentBufRef->getNextReference();
 
-      if ( ! bufRef )
+      if ( ! currentBufRef )
       {
         std::ostringstream msg;
         msg << "Premature end of FEROL data:";
@@ -138,7 +136,7 @@ uint32_t evb::FedFragment::checkIntegrity(toolbox::mem::Reference* bufRef, const
         XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
 
-      payload = (unsigned char*)bufRef->getDataLocation();
+      payload = (unsigned char*)currentBufRef->getDataLocation();
       frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
       payloadSize = frame->partLength;
       payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);

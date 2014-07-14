@@ -5,7 +5,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "evb/evm/EVMinput.h"
 #include "evb/evm/RUproxy.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"

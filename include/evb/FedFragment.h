@@ -32,7 +32,7 @@ namespace evb {
     /**
      * Check the consistency of the FED event fragment
      */
-    static uint32_t checkIntegrity(toolbox::mem::Reference*,const bool checkCRC);
+    uint32_t checkIntegrity(const bool checkCRC);
 
   private:
 
@@ -41,7 +41,7 @@ namespace evb {
     toolbox::mem::Reference* bufRef_;
     tcpla::MemoryCache* cache_;
 
-    static CRCCalculator crcCalculator_;
+    CRCCalculator crcCalculator_;
 
   };
 

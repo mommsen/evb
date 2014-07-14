@@ -41,10 +41,8 @@ Sources=\
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
 	EVM.cc \
-	evm/FEROLproxy.cc \
 	evm/RUproxy.cc \
 	RU.cc \
-	ru/FEROLproxy.cc \
 	readoutunit/ScalerHandler.cc \
 	BU.cc \
 	bu/DiskUsage.cc \
