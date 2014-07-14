@@ -81,8 +81,7 @@ namespace evb {
           frameSize(32768),
           maxTriggerAgeMSec(1000),
           getLumiSectionFromTrigger(true),
-          fakeLumiSectionDuration(0),
-          maxFedErrorRate(1)
+          fakeLumiSectionDuration(0)
       {};
 
       void addToInfoSpace
