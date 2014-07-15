@@ -44,7 +44,7 @@ namespace evb {
 
       void getFragmentPool(const std::string& identifier);
       void startRequestWorkloop(const std::string& identifier);
-      uint32_t getFerolFragment(const uint32_t eventNumber, FedFragmentPtr&);
+      uint32_t getFerolFragment(const EvBid&, FedFragmentPtr&);
       bool scalerRequest(toolbox::task::WorkLoop*);
       void requestLastestData();
 

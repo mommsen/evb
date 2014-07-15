@@ -149,10 +149,16 @@ namespace evb {
 
     private:
 
+      void setMasterStream();
       void resetMonitoringCounters();
       void updateSuperFragmentCounters(const FragmentChainPtr&);
       void maybeAddScalerFragment(FragmentChainPtr&);
       cgicc::table getFedTable() const;
+
+      // these methods are only implemented for EVM
+      uint32_t getLumiSectionFromTCDS(const unsigned char*) const;
+      uint32_t getLumiSectionFromGTP(const unsigned char*) const;
+      uint32_t getLumiSectionFromGTPe(const unsigned char*) const;
 
       ReadoutUnit* readoutUnit_;
 
@@ -160,6 +166,7 @@ namespace evb {
       typedef std::map<uint16_t,FerolStreamPtr> FerolStreams;
       FerolStreams ferolStreams_;
       mutable boost::mutex ferolStreamsMutex_;
+      typename FerolStreams::iterator masterStream_;
 
       boost::scoped_ptr<ScalerHandler> scalerHandler_;
 
@@ -224,8 +231,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 {
   FedFragmentPtr fedFragment( new FedFragment(bufRef,cache) );
 
-  boost::mutex::scoped_lock sl(ferolStreamsMutex_);
-
   const typename FerolStreams::iterator pos = ferolStreams_.find(fedFragment->getFedId());
   if ( pos == ferolStreams_.end() )
   {
@@ -244,7 +249,22 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
-  //if ( ! handler_->getNextAvailableSuperFragment(superFragment) ) return false;
+  FedFragmentPtr fedFragment;
+
+  if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
+
+  superFragment.reset( new readoutunit::FragmentChain(fedFragment) );
+
+  for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+       it != itEnd; ++it)
+  {
+    if ( it != masterStream_ )
+    {
+      while ( !it->second->getNextFedFragment(fedFragment) ) {};
+
+      superFragment->append(fedFragment);
+    }
+  }
 
   maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
@@ -256,7 +276,16 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
-  //if ( ! handler_->getSuperFragmentWithEvBid(evbId,superFragment) ) return false;
+  FedFragmentPtr fedFragment;
+  superFragment.reset( new readoutunit::FragmentChain(evbId) );
+
+  for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+       it != itEnd; ++it)
+  {
+    while ( !it->second->getNextFedFragment(fedFragment) ) {};
+
+    superFragment->append(fedFragment);
+  }
 
   maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
@@ -278,7 +307,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::maybeAddScalerFragment
   {
     // updateInputMonitors(fedFragment,fedSize);
     // maybeDumpFragmentToFile(fedFragment);
-    superFragment->append(evbId,fedFragment);
+    superFragment->append(fedFragment);
   }
 }
 
@@ -337,7 +366,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
   resetMonitoringCounters();
 
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
           it != itEnd; ++it)
     {
@@ -354,7 +382,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain() const
 {
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
     for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
           it != itEnd; ++it)
     {
@@ -369,7 +396,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopProcessing()
 {
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
           it != itEnd; ++it)
     {
@@ -488,7 +514,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 {
-  if ( readoutUnit_->getConfiguration()->blockSize % 8 != 0 )
+  const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
+
+  if ( configuration->blockSize % 8 != 0 )
   {
     XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits");
   }
@@ -498,7 +526,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     ferolStreams_.clear();
     xdata::Vector<xdata::UnsignedInteger32>::const_iterator it, itEnd;
-    for (it = readoutUnit_->getConfiguration()->fedSourceIds.begin(), itEnd = readoutUnit_->getConfiguration()->fedSourceIds.end();
+    for (it = configuration->fedSourceIds.begin(), itEnd = configuration->fedSourceIds.end();
          it != itEnd; ++it)
     {
       const uint16_t fedId = it->value_;
@@ -513,7 +541,16 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     }
   }
 
-  scalerHandler_->configure(readoutUnit_->getConfiguration()->scalFedId,readoutUnit_->getConfiguration()->dummyScalFedSize);
+  setMasterStream();
+
+  scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::setMasterStream()
+{
+  masterStream_ = ferolStreams_.end();
 }
 
 
@@ -524,8 +561,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeNextFragmentsToFil
   const uint16_t fedId
 )
 {
-  boost::mutex::scoped_lock sl(ferolStreamsMutex_);
-
   typename FerolStreams::iterator pos;
 
   if ( fedId == FED_COUNT+1 )
@@ -634,7 +669,7 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
        it != itEnd; ++it)
   {
-    fedTable.add( it->second->getFedTableRow() );
+    fedTable.add( it->second->getFedTableRow( it == masterStream_ ) );
   }
 
   return fedTable;

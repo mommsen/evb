@@ -51,7 +51,7 @@ namespace evb {
           superFragments.push_back(superFragment);
         }
       }
-      catch ( exception::HaltRequested )
+      catch(exception::HaltRequested)
       {
         return false;
       }

@@ -18,9 +18,9 @@
 namespace evb {
 
   /**
-   * \ingroup xdaqApps
-   * \brief A chain of event fragment
-   */
+  * \ingroup xdaqApps
+  * \brief A chain of event fragment
+  */
 
   template<class T>
   class FragmentChain
@@ -29,7 +29,7 @@ namespace evb {
 
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
-    FragmentChain(const EvBid&, FedFragmentPtr&);
+    FragmentChain(const FedFragmentPtr&);
     FragmentChain(const EvBid&);
     FragmentChain(const EvBid&, toolbox::mem::Reference*);
 
@@ -49,7 +49,7 @@ namespace evb {
     /**
      * Append the fragment. Keep track of the tcpla::MemoryCache.
      */
-    void append(const EvBid&, FedFragmentPtr&);
+    void append(FedFragmentPtr&);
 
     /**
      * Return the head of the toolbox::mem::Reference chain
@@ -144,9 +144,9 @@ evb::FragmentChain<T>::FragmentChain(const uint32_t resourceCount) :
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const EvBid& evbId) :
-evbId_(evbId),
-head_(0),tail_(0),
-size_(0)
+  evbId_(evbId),
+  head_(0),tail_(0),
+  size_(0)
 {}
 
 
@@ -159,11 +159,11 @@ evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference
 
 
 template<class T>
-evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, FedFragmentPtr& fedFragment) :
-evbId_(evbId),
-head_(fedFragment->getBufRef()),
-tail_(head_),
-size_(calculateSize(head_))
+evb::FragmentChain<T>::FragmentChain(const FedFragmentPtr& fedFragment) :
+  evbId_(fedFragment->getEvBid()),
+  head_(fedFragment->getBufRef()),
+  tail_(head_),
+  size_(calculateSize(head_))
 {
   fedFragments_.push_back(fedFragment);
 }
@@ -229,16 +229,15 @@ void evb::FragmentChain<T>::append
 template<class T>
 void evb::FragmentChain<T>::append
 (
-  const EvBid& evbId,
   FedFragmentPtr& fedFragment
 )
 {
-  if ( evbId != evbId_ )
+  if ( fedFragment->getEvBid() != evbId_ )
   {
     std::ostringstream oss;
     oss << "Mismatch detected: expected evb id "
       << evbId_ << ", but found evb id "
-      << evbId << " in data block from FED "
+      << fedFragment->getEvBid() << " in data block from FED "
       << fedFragment->getFedId();
     XCEPT_RAISE(exception::MismatchDetected, oss.str());
   }

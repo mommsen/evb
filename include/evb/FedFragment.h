@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "evb/CRCCalculator.h"
+#include "evb/EvBid.h"
 #include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
@@ -25,9 +26,13 @@ namespace evb {
 
     ~FedFragment();
 
+    void setEvBid(const EvBid evbId) { evbId_ = evbId; }
+
+    EvBid getEvBid() const { return evbId_; }
     uint16_t getFedId() const { return fedId_; }
     uint32_t getEventNumber() const { return eventNumber_; }
     toolbox::mem::Reference* getBufRef() const { return bufRef_; }
+    unsigned char* getFedPayload() const;
 
     /**
      * Check the consistency of the FED event fragment
@@ -38,6 +43,7 @@ namespace evb {
 
     uint16_t fedId_;
     uint32_t eventNumber_;
+    EvBid evbId_;
     toolbox::mem::Reference* bufRef_;
     tcpla::MemoryCache* cache_;
 

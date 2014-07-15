@@ -20,6 +20,7 @@ namespace evb {
   namespace evm {
     typedef readoutunit::StateMachine<EVM> EVMStateMachine;
     typedef readoutunit::ReadoutUnit<EVM,readoutunit::Configuration,EVMStateMachine> ReadoutUnit;
+    typedef readoutunit::Input<EVM,readoutunit::Configuration> Input;
   }
 
   /**

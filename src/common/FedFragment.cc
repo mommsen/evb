@@ -29,6 +29,13 @@ evb::FedFragment::~FedFragment()
 }
 
 
+unsigned char* evb::FedFragment::getFedPayload() const
+{
+  return (unsigned char*)(bufRef_->getDataLocation())
+    + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + sizeof(ferolh_t);
+}
+
+
 uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 {
   toolbox::mem::Reference* currentBufRef = bufRef_;

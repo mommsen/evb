@@ -7,12 +7,14 @@
 #include <iomanip>
 #include <sstream>
 
+#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/DumpUtility.h"
+#include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 #include "evb/Exception.h"
 #include "evb/FedFragment.h"
@@ -50,6 +52,12 @@ namespace evb {
       bool getNextFedFragment(FedFragmentPtr&);
 
       /**
+       * Define the function to be used to extract the lumi section from the payload
+       * If the function is null, fake lumi sections with fakeLumiSectionDuration are generated
+       */
+      void setLumiSectionFunction(boost::function< uint32_t(const unsigned char*) >& lumiSectionFunction);
+
+      /**
        * Start processing events
        */
       void startProcessing(const uint32_t runNumber);
@@ -82,7 +90,7 @@ namespace evb {
       /**
        * Return a CGI table row with statistics for this FED
        */
-      cgicc::tr getFedTableRow() const;
+      cgicc::tr getFedTableRow(const bool isMasterStream) const;
 
       /**
        * Return the content of the fragment FIFO as HTML snipped
@@ -93,6 +101,7 @@ namespace evb {
 
     private:
 
+      EvBid getEvBid(const FedFragmentPtr&);
       void maybeDumpFragmentToFile(const FedFragmentPtr&);
       void writeFragmentToFile(const FedFragmentPtr&,const std::string& reasonFordump) const;
       void updateInputMonitor(const FedFragmentPtr&,const uint32_t fedSize);
@@ -101,6 +110,7 @@ namespace evb {
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
       const boost::shared_ptr<Configuration> configuration_;
+      boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
       bool doProcessing_;
       uint16_t writeNextFragments_;
       uint32_t runNumber_;
@@ -148,13 +158,18 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   writeNextFragments_(0),
   runNumber_(0),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId))
-{}
+{
+  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
+}
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment(FedFragmentPtr& fedFragment)
 {
   uint32_t fedSize = 0;
+
+  const EvBid evbId = getEvBid(fedFragment);
+  fedFragment->setEvBid(evbId);
 
   try
   {
@@ -205,6 +220,26 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment(Fe
 
   if ( doProcessing_ && !configuration_->dropInputData )
     fragmentFIFO_.enqWait(fedFragment);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::setLumiSectionFunction
+(
+  boost::function< uint32_t(const unsigned char*) >& lumiSectionFunction
+)
+{
+  if ( lumiSectionFunction )
+    lumiSectionFunction_ = lumiSectionFunction;
+  else
+    evbIdFactory_.setFakeLumiSectionDuration(configuration_->fakeLumiSectionDuration);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+evb::EvBid evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getEvBid(const FedFragmentPtr& fedFragment)
+{
+    return evbIdFactory_.getEvBid(fedFragment->getEventNumber());
 }
 
 
@@ -261,6 +296,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::writeFragmentToFi
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragment(FedFragmentPtr& fedFragment)
 {
+  if ( ! doProcessing_ )
+    throw exception::HaltRequested();
+
   return fragmentFIFO_.deq(fedFragment);
 }
 
@@ -349,13 +387,16 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
 
 template<class ReadoutUnit,class Configuration>
-cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow() const
+cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow(const bool isMasterStream) const
 {
   using namespace cgicc;
   const std::string fedId = boost::lexical_cast<std::string>(fedId_);
 
   tr row;
-  row.add(td(fedId));
+  if (isMasterStream)
+    row.add(td(fedId+"*"));
+  else
+    row.add(td(fedId));
   row.add(td()
           .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
                .set("onclick","dumpFragments("+fedId+",1);")));
