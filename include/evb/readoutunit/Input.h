@@ -28,6 +28,7 @@
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/FerolStream.h"
+#include "evb/readoutunit/LocalStream.h"
 #include "evb/readoutunit/InputMonitor.h"
 #include "evb/readoutunit/ScalerHandler.h"
 #include "evb/readoutunit/StateMachine.h"
@@ -62,13 +63,6 @@ namespace evb {
       Input(ReadoutUnit*);
 
       virtual ~Input() {};
-
-      /**
-       * Notify the proxy of an input source change.
-       * The input source is taken from the info space
-       * parameter 'inputSource'.
-       */
-      void inputSourceChanged();
 
       /**
        * Callback for individual FED fragments received from pt::frl
@@ -212,14 +206,6 @@ scalerHandler_(new ScalerHandler(readoutUnit->getIdentifier())),
 runNumber_(0),
 lastMonitoringTime_(0)
 {}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::inputSourceChanged()
-{
-  configure();
-  resetMonitoringCounters();
-}
 
 
 template<class ReadoutUnit,class Configuration>
@@ -537,7 +523,17 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
         oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
         XCEPT_RAISE(exception::Configuration, oss.str());
       }
-      ferolStreams_.insert( typename FerolStreams::value_type(fedId,FerolStreamPtr(new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId))) );
+
+      FerolStreamPtr ferolStream;
+
+      if ( configuration->inputSource == "FEROL" )
+        ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+      else if ( configuration->inputSource == "Local" )
+        ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+      else
+        XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
+
+      ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
     }
   }
 
@@ -674,201 +670,6 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
   return fedTable;
 }
-
-
-// template<class ReadoutUnit,class Configuration>
-// void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::configure(boost::shared_ptr<Configuration> configuration)
-// {
-//   this->doProcessing_ = false;
-//   evbIdFactory_.setFakeLumiSectionDuration(configuration->fakeLumiSectionDuration);
-
-//   toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool");
-//   try
-//   {
-//     toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
-//   }
-//   catch(toolbox::mem::exception::MemoryPoolNotFound)
-//   {
-//     // don't care
-//   }
-
-//   try
-//   {
-//     toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(configuration->fragmentPoolSize.value_);
-//     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
-//   }
-//   catch(toolbox::mem::exception::Exception& e)
-//   {
-//     XCEPT_RETHROW(exception::OutOfMemory,
-//                   "Failed to create memory pool for dummy fragments", e);
-//   }
-
-//   frameSize_ = configuration->frameSize;
-//   if ( frameSize_ < FEROL_BLOCK_SIZE )
-//   {
-//     std::ostringstream oss;
-//     oss << "The frame size " << frameSize_ ;
-//     oss << " must at least hold one FEROL block of " << FEROL_BLOCK_SIZE << " Bytes";
-//     XCEPT_RAISE(exception::Configuration, oss.str());
-//   }
-//   if ( frameSize_ % FEROL_BLOCK_SIZE != 0 )
-//   {
-//     std::ostringstream oss;
-//     oss << "The frame size " << frameSize_ ;
-//     oss << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
-//     XCEPT_RAISE(exception::Configuration, oss.str());
-//   }
-
-//   fragmentTrackers_.clear();
-
-//   xdata::Vector<xdata::UnsignedInteger32>::const_iterator it, itEnd;
-//   for (it = configuration->fedSourceIds.begin(), itEnd = configuration->fedSourceIds.end();
-//        it != itEnd; ++it)
-//   {
-//     const uint16_t fedId = it->value_;
-//     if (fedId > FED_COUNT)
-//     {
-//       std::ostringstream oss;
-//       oss << "The fedSourceId " << fedId;
-//       oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
-//       XCEPT_RAISE(exception::Configuration, oss.str());
-//     }
-
-//     FragmentTrackerPtr fragmentTracker(
-//       new FragmentTracker(fedId,configuration->dummyFedSize,configuration->useLogNormal,
-//                           configuration->dummyFedSizeStdDev,configuration->dummyFedSizeMin,configuration->dummyFedSizeMax,configuration->computeCRC)
-//     );
-//     fragmentTrackers_.insert( FragmentTrackers::value_type(fedId,fragmentTracker) );
-//   }
-// }
-
-
-// template<class ReadoutUnit,class Configuration>
-// bool evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::createSuperFragment
-// (
-//   const EvBid& evbId,
-//   FragmentChainPtr& superFragment
-// )
-// {
-//   superFragment.reset( new FragmentChain(evbId) );
-
-//   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
-
-//   for ( FragmentTrackers::const_iterator it = fragmentTrackers_.begin(), itEnd = fragmentTrackers_.end();
-//         it != itEnd; ++it)
-//   {
-//     toolbox::mem::Reference* fragmentHead = 0;
-//     toolbox::mem::Reference* fragmentTail = 0;
-
-//     const uint32_t fedSize = it->second->startFragment(evbId);
-//     const uint16_t ferolBlocks = ceil( static_cast<double>(fedSize) / ferolPayloadSize );
-//     const uint16_t frameCount = ceil( static_cast<double>(ferolBlocks*FEROL_BLOCK_SIZE) / frameSize_ );
-//     uint32_t packetNumber = 0;
-//     uint32_t remainingFedSize = fedSize;
-
-//     for (uint16_t frameNb = 0; frameNb < frameCount; ++frameNb)
-//     {
-//       toolbox::mem::Reference* bufRef = 0;
-//       const uint32_t bufSize = frameSize_+sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-//       try
-//       {
-//         bufRef = toolbox::mem::getMemoryPoolFactory()->
-//           getFrame(fragmentPool_,bufSize);
-//       }
-//       catch(xcept::Exception)
-//       {
-//         return false;
-//       }
-
-//       bufRef->setDataSize(frameSize_);
-//       memset(bufRef->getDataLocation(), 0, bufSize);
-//       I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
-//         (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-//       dataReadyMsg->totalLength = fedSize + ferolBlocks*sizeof(ferolh_t);
-//       dataReadyMsg->fedid = it->first;
-//       dataReadyMsg->triggerno = evbId.eventNumber();
-//       uint32_t partLength = 0;
-
-//       unsigned char* frame = (unsigned char*)dataReadyMsg
-//         + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-//       while ( remainingFedSize > 0 && partLength+FEROL_BLOCK_SIZE <= frameSize_ )
-//       {
-//         assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
-//         uint32_t length;
-
-//         ferolh_t* ferolHeader = (ferolh_t*)frame;
-//         ferolHeader->set_signature();
-//         ferolHeader->set_packet_number(packetNumber);
-
-//         if (packetNumber == 0)
-//           ferolHeader->set_first_packet();
-
-//         if ( remainingFedSize > ferolPayloadSize )
-//         {
-//           length = ferolPayloadSize;
-//         }
-//         else
-//         {
-//           length = remainingFedSize;
-//           ferolHeader->set_last_packet();
-//         }
-//         remainingFedSize -= length;
-//         frame += sizeof(ferolh_t);
-
-//         const size_t filledBytes = it->second->fillData(frame, length);
-//         ferolHeader->set_data_length(filledBytes);
-//         ferolHeader->set_fed_id(it->first);
-//         ferolHeader->set_event_number(evbId.eventNumber());
-
-//         frame += filledBytes;
-//         partLength += filledBytes + sizeof(ferolh_t);
-
-//         ++packetNumber;
-//         assert(packetNumber < 2048);
-//       }
-
-//       dataReadyMsg->partLength = partLength;
-
-//       if ( ! fragmentHead )
-//         fragmentHead = bufRef;
-//       else
-//         fragmentTail->setNextReference(bufRef);
-//       fragmentTail = bufRef;
-
-//     }
-//     assert( remainingFedSize == 0 );
-
-//     FedFragmentPtr fedFragment( new FedFragment(fragmentHead) );
-//     //updateInputMonitors(fedFragment,fedSize);
-//     superFragment->append(evbId,fedFragment);
-//   }
-
-//   return superFragment->isValid();
-// }
-
-
-// template<class ReadoutUnit,class Configuration>
-// void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::startProcessing(const uint32_t runNumber)
-// {
-//   evbIdFactory_.reset(runNumber);
-//   this->doProcessing_ = true;
-
-// }
-
-// template<class ReadoutUnit,class Configuration>
-// void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::drain()
-// {
-//   this->doProcessing_ = false;
-// }
-
-
-// template<class ReadoutUnit,class Configuration>
-// void evb::readoutunit::Input<ReadoutUnit,Configuration>::DummyInputData::stopProcessing()
-// {
-//   this->doProcessing_ = false;
-// }
 
 
 namespace evb

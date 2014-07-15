@@ -165,10 +165,10 @@ namespace evb {
     template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
+      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
       try
       {
-        boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
-
         // Only get a request if we also have data to go with it.
         // Otherwise, we consume a request at the end of the run which gets lost
         FragmentChainPtr superFragment;

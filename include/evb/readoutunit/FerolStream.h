@@ -19,7 +19,7 @@
 #include "evb/Exception.h"
 #include "evb/FedFragment.h"
 #include "evb/OneToOneQueue.h"
-#include "evb/readoutunit/FerolStream.h"
+#include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/InputMonitor.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "xcept/tools.h"
@@ -29,7 +29,8 @@
 namespace evb {
 
   namespace readoutunit {
-    /**
+
+   /**
     * \ingroup xdaqApps
     * \brief Represent one FEROL data stream
     */
@@ -60,7 +61,7 @@ namespace evb {
       /**
        * Start processing events
        */
-      void startProcessing(const uint32_t runNumber);
+      virtual void startProcessing(const uint32_t runNumber);
 
       /**
        * Drain the remainig events
@@ -99,6 +100,18 @@ namespace evb {
       { return fragmentFIFO_.getHtmlSnipped(); }
 
 
+    protected:
+
+      void addFedFragmentWithEvBid(FedFragmentPtr&);
+
+      ReadoutUnit* readoutUnit_;
+      const uint16_t fedId_;
+      const boost::shared_ptr<Configuration> configuration_;
+      bool doProcessing_;
+
+      EvBidFactory evbIdFactory_;
+
+
     private:
 
       EvBid getEvBid(const FedFragmentPtr&);
@@ -107,18 +120,12 @@ namespace evb {
       void updateInputMonitor(const FedFragmentPtr&,const uint32_t fedSize);
       void resetMonitoringCounters();
 
-      ReadoutUnit* readoutUnit_;
-      const uint16_t fedId_;
-      const boost::shared_ptr<Configuration> configuration_;
       boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
-      bool doProcessing_;
       uint16_t writeNextFragments_;
       uint32_t runNumber_;
 
       typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
-
-      EvBidFactory evbIdFactory_;
 
       InputMonitor inputMonitor_;
       mutable boost::mutex inputMonitorMutex_;
@@ -152,6 +159,7 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   ReadoutUnit* readoutUnit,
   const uint16_t fedId
 ) :
+  readoutUnit_(readoutUnit),
   fedId_(fedId),
   configuration_(readoutUnit->getConfiguration()),
   doProcessing_(false),
@@ -164,12 +172,24 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment(FedFragmentPtr& fedFragment)
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
+(
+  FedFragmentPtr& fedFragment
+)
 {
-  uint32_t fedSize = 0;
-
   const EvBid evbId = getEvBid(fedFragment);
   fedFragment->setEvBid(evbId);
+  addFedFragmentWithEvBid(fedFragment);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWithEvBid
+(
+  FedFragmentPtr& fedFragment
+)
+{
+  uint32_t fedSize = 0;
 
   try
   {

@@ -168,11 +168,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_updateMo
 template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleItemChangedEvent(const std::string& item)
 {
-  if (item == "inputSource")
-  {
-    input_->inputSourceChanged();
-  }
-  else if (item == "writeNextFragmentsToFile")
+  if (item == "writeNextFragmentsToFile")
   {
     input_->writeNextFragmentsToFile(this->configuration_->writeNextFragmentsToFile);
   }

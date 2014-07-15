@@ -100,7 +100,7 @@ namespace evb {
         fillDefaultRUinstances(instance,context);
 
         params.add("sendPoolName", &sendPoolName);
-        params.add("inputSource", &inputSource, InfoSpaceItems::change);
+        params.add("inputSource", &inputSource);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);
         params.add("numberOfPreallocatedBlocks", &numberOfPreallocatedBlocks);
