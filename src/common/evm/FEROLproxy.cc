@@ -121,28 +121,11 @@ uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP(const unsigned ch
     XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
-  //check that we've got the TCS chip
-  if (! has_evm_tcs(payload) )
-  {
-    std::ostringstream msg;
-    msg << "No TCS chip found in GTP FED " << GTP_FED_ID;
-    XCEPT_RAISE(exception::L1Trigger, "No TCS chip found");
-  }
-
   //check that we've got the FDL chip
   if (! has_evm_fdl(payload) )
   {
     std::ostringstream msg;
     msg << "No FDL chip found in GTP FED " << GTP_FED_ID;
-    XCEPT_RAISE(exception::L1Trigger, msg.str());
-  }
-
-  //check that we got the right bunch crossing
-  if ( getfdlbxevt(payload) != 0 )
-  {
-    std::ostringstream msg;
-    msg << "Wrong bunch crossing in event (expect 0): "
-      << getfdlbxevt(payload);
     XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
