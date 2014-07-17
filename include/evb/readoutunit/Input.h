@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <fstream>
 #include <iomanip>
@@ -159,7 +160,7 @@ namespace evb {
       typedef boost::shared_ptr< FerolStream<ReadoutUnit,Configuration> > FerolStreamPtr;
       typedef std::map<uint16_t,FerolStreamPtr> FerolStreams;
       FerolStreams ferolStreams_;
-      mutable boost::mutex ferolStreamsMutex_;
+      mutable boost::shared_mutex ferolStreamsMutex_;
       typename FerolStreams::iterator masterStream_;
 
       boost::scoped_ptr<ScalerHandler> scalerHandler_;
@@ -167,6 +168,7 @@ namespace evb {
       typedef std::map<uint32_t,uint32_t> LumiCounterMap;
       LumiCounterMap lumiCounterMap_;
       LumiCounterMap::iterator currentLumiCounter_;
+      boost::mutex lumiCounterMutex_;
 
       uint32_t runNumber_;
 
@@ -217,6 +219,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 {
   FedFragmentPtr fedFragment( new FedFragment(bufRef,cache) );
 
+  boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
   const typename FerolStreams::iterator pos = ferolStreams_.find(fedFragment->getFedId());
   if ( pos == ferolStreams_.end() )
   {
@@ -235,20 +239,23 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
 {
-  FedFragmentPtr fedFragment;
-
-  if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
-
-  superFragment.reset( new readoutunit::FragmentChain(fedFragment) );
-
-  for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
-       it != itEnd; ++it)
   {
-    if ( it != masterStream_ )
-    {
-      while ( !it->second->getNextFedFragment(fedFragment) ) {};
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+    FedFragmentPtr fedFragment;
 
-      superFragment->append(fedFragment);
+    if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
+
+    superFragment.reset( new readoutunit::FragmentChain(fedFragment) );
+
+    for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+         it != itEnd; ++it)
+    {
+      if ( it != masterStream_ )
+      {
+        while ( !it->second->getNextFedFragment(fedFragment) ) {};
+
+        superFragment->append(fedFragment);
+      }
     }
   }
 
@@ -262,15 +269,18 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
-  FedFragmentPtr fedFragment;
-  superFragment.reset( new readoutunit::FragmentChain(evbId) );
-
-  for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
-       it != itEnd; ++it)
   {
-    while ( !it->second->getNextFedFragment(fedFragment) ) {};
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+    FedFragmentPtr fedFragment;
+    superFragment.reset( new readoutunit::FragmentChain(evbId) );
 
-    superFragment->append(fedFragment);
+    for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+         it != itEnd; ++it)
+    {
+      while ( !it->second->getNextFedFragment(fedFragment) ) {};
+
+      superFragment->append(fedFragment);
+    }
   }
 
   maybeAddScalerFragment(superFragment);
@@ -312,19 +322,23 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
     ++superFragmentMonitor_.eventCount;
   }
 
-  const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
-  for(uint32_t ls = currentLumiCounter_->first+1; ls <= lumiSection; ++ls)
   {
-    const std::pair<LumiCounterMap::iterator,bool> result =
-      lumiCounterMap_.insert(LumiCounterMap::value_type(ls,0));
-    if ( ! result.second )
+    boost::mutex::scoped_lock sl(lumiCounterMutex_);
+
+    const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
+    for(uint32_t ls = currentLumiCounter_->first+1; ls <= lumiSection; ++ls)
     {
-      std::ostringstream msg;
-      msg << "Received an event from lumi section " << ls;
-      msg << " for which an entry in lumiCounterMap already exists.";
-      XCEPT_RAISE(exception::EventOrder,msg.str());
+      const std::pair<LumiCounterMap::iterator,bool> result =
+        lumiCounterMap_.insert(LumiCounterMap::value_type(ls,0));
+      if ( ! result.second )
+      {
+        std::ostringstream msg;
+        msg << "Received an event from lumi section " << ls;
+        msg << " for which an entry in lumiCounterMap already exists.";
+        XCEPT_RAISE(exception::EventOrder,msg.str());
+      }
+      currentLumiCounter_ = result.first;
     }
-    currentLumiCounter_ = result.first;
   }
   ++(currentLumiCounter_->second);
 }
@@ -333,6 +347,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
 template<class ReadoutUnit,class Configuration>
 uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCountForLumiSection(const uint32_t lumiSection)
 {
+  boost::mutex::scoped_lock sl(lumiCounterMutex_);
+
   const LumiCounterMap::const_iterator pos = lumiCounterMap_.find(lumiSection);
 
   if ( pos == lumiCounterMap_.end() )
@@ -345,15 +361,21 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCountForLum
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
-  lumiCounterMap_.clear();
-  currentLumiCounter_ =
-    lumiCounterMap_.insert(LumiCounterMap::value_type(0,0)).first;
+  {
+    boost::mutex::scoped_lock sl(lumiCounterMutex_);
+
+    lumiCounterMap_.clear();
+    currentLumiCounter_ =
+      lumiCounterMap_.insert(LumiCounterMap::value_type(0,0)).first;
+  }
 
   resetMonitoringCounters();
 
   {
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
-          it != itEnd; ++it)
+         it != itEnd; ++it)
     {
       it->second->startProcessing(runNumber);
     }
@@ -368,13 +390,14 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain() const
 {
   {
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
     for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
-          it != itEnd; ++it)
+         it != itEnd; ++it)
     {
       it->second->drain();
     }
   }
-
 }
 
 
@@ -382,6 +405,8 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopProcessing()
 {
   {
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
           it != itEnd; ++it)
     {
@@ -426,7 +451,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
     fedIdsWithoutFragments_.clear();
     fedIdsWithErrors_.clear();
@@ -508,7 +533,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
   }
 
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
+    boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
 
     ferolStreams_.clear();
     xdata::Vector<xdata::UnsignedInteger32>::const_iterator it, itEnd;
@@ -535,9 +560,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
       ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
     }
-  }
 
-  setMasterStream();
+    setMasterStream();
+
+  }
 
   scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
 }
@@ -557,16 +583,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::writeNextFragmentsToFil
   const uint16_t fedId
 )
 {
+  boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
   typename FerolStreams::iterator pos;
 
   if ( fedId == FED_COUNT+1 )
-  {
     pos = ferolStreams_.begin();
-  }
   else
-  {
     pos = ferolStreams_.find(fedId);
-  }
+
   if ( pos != ferolStreams_.end() )
     pos->second->writeNextFragmentsToFile(count);
 }
@@ -617,12 +641,12 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     }
   }
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(getFedTable())));
-
   {
-    boost::mutex::scoped_lock sl(ferolStreamsMutex_);
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
+    table.add(tr()
+              .add(td().set("colspan","2")
+                   .add(getFedTable())));
 
     for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
          it != itEnd; ++it)
@@ -647,8 +671,6 @@ template<class ReadoutUnit,class Configuration>
 cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() const
 {
   using namespace cgicc;
-
-  boost::mutex::scoped_lock sl(ferolStreamsMutex_);
 
   table fedTable;
 

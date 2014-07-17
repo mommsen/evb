@@ -66,12 +66,12 @@ namespace evb {
       /**
        * Drain the remainig events
        */
-      void drain() const;
+      virtual void drain();
 
       /**
        * Stop processing events
        */
-      void stopProcessing();
+      virtual void stopProcessing();
 
       /**
        * Write the next count FED fragments to a text file
@@ -107,9 +107,11 @@ namespace evb {
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
       const boost::shared_ptr<Configuration> configuration_;
-      bool doProcessing_;
 
       EvBidFactory evbIdFactory_;
+
+      typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
+      FragmentFIFO fragmentFIFO_;
 
 
     private:
@@ -123,9 +125,7 @@ namespace evb {
       boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
       uint16_t writeNextFragments_;
       uint32_t runNumber_;
-
-      typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
-      FragmentFIFO fragmentFIFO_;
+      volatile bool doProcessing_;
 
       InputMonitor inputMonitor_;
       mutable boost::mutex inputMonitorMutex_;
@@ -162,10 +162,10 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   readoutUnit_(readoutUnit),
   fedId_(fedId),
   configuration_(readoutUnit->getConfiguration()),
-  doProcessing_(false),
+  fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   writeNextFragments_(0),
   runNumber_(0),
-  fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId))
+  doProcessing_(false)
 {
   fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
 }
@@ -333,7 +333,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(c
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::drain() const
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::drain()
 {
   while ( !fragmentFIFO_.empty() ) ::usleep(1000);
 }
@@ -343,6 +343,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   doProcessing_ = false;
+  fragmentFIFO_.clear();
 }
 
 
