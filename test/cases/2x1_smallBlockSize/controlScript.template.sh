@@ -72,7 +72,7 @@ fi
 
 eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
 echo "EVM eventRate: $eventRateEVM"
-if [[ $eventRateEVM -lt 1000 ]]
+if [[ $eventRateEVM -lt 500 ]]
 then
   echo "Test failed"
   exit 1

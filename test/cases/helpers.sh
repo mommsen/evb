@@ -60,29 +60,33 @@ function checkBuDir {
         if [[ $lsFileCount -gt 0 ]]
         then
             ((runLsCounter++))
-            lastLumiSection=$((lumiSection))
+            lastLumiSection=$(echo $lumiSection | sed -re 's/0*([0-9]+)$/\1/')
 
-            for file in `ls $runDir/run${runNumber}_ls${lumiSection}_*raw`
+            for jsonFile in `ls $runDir/run${runNumber}_ls${lumiSection}_index*jsn`
             do
                 ((fileCounter++))
                 ((runFileCounter++))
-                fileSize=$(stat -c%s $file)
-                expectedEventCount=$(($fileSize/$eventSize))
-
-                jsonFile=$(echo $file | sed -re 's/.raw$/.jsn/')
-                if [[ ! -s $jsonFile ]]
-                then
-                    echo "Test failed: $jsonFile does not exist"
-                    exit 1
-                fi
-
                 eventCount=$(sed -nre 's/   "data" : \[ "([0-9]+)" \],/\1/p' $jsonFile)
-                if [[ $eventCount != $expectedEventCount ]]
-                then
-                    echo "Test failed: expected $expectedEventCount, but found $eventCount events in JSON file $jsonFile"
-                    exit 1
-                fi
                 eventCounter=$(($eventCounter+$eventCount))
+
+                if [[ $eventSize -gt 0 ]]
+                then
+                    rawFile=$(echo $jsonFile | sed -re 's/.jsn$/.raw/')
+                    fileSize=$(stat -c%s $rawFile)
+                    expectedEventCount=$(($fileSize/$eventSize))
+
+                    if [[ ! -s $rawFile ]]
+                    then
+                        echo "Test failed: $rawFile does not exist"
+                        exit 1
+                    fi
+
+                    if [[ $eventCount != $expectedEventCount ]]
+                    then
+                        echo "Test failed: expected $expectedEventCount, but found $eventCount events in JSON file $jsonFile"
+                        exit 1
+                    fi
+                fi
             done
 
         else
@@ -140,4 +144,3 @@ function checkBuDir {
         exit 1
     fi
 }
-

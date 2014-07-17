@@ -391,7 +391,7 @@
           <item soapenc:position="[3]" xsi:type="xsd:unsignedInt">7</item>
         </fedSourceIds>
         <checkCRC xsi:type="xsd:boolean">true</checkCRC>
-        <maxCRCErrorRate xsi:type="xsd:double">1</maxCRCErrorRate>
+        <maxCRCErrorRate xsi:type="xsd:double">10</maxCRCErrorRate>
       </properties>
     </xc:Application>
 

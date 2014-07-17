@@ -183,7 +183,7 @@ echo "BU0 bandwidth: $(($eventRateBU0*$eventSizeBU0))"
 
 #Stop EVM
 sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Stop
-sleep 5
+sleep 10
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
@@ -193,11 +193,13 @@ then
   exit 1
 fi
 
-#Stop RUs
+#Stop RUs & BUs
 sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Stop
 sendSimpleCmdToApp RU2_SOAP_HOST_NAME RU2_SOAP_PORT evb::RU 1 Stop
 sendSimpleCmdToApp RU3_SOAP_HOST_NAME RU3_SOAP_PORT evb::RU 2 Stop
-sleep 1
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Stop
+
+sleep 3
 
 state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
 echo "RU0 state=$state"
@@ -222,10 +224,6 @@ then
   echo "Test failed"
   exit 1
 fi
-
-#Stop BUs
-sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Stop
-sleep 5
 
 state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
