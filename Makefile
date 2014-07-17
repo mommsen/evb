@@ -43,7 +43,6 @@ Sources=\
 	EVM.cc \
 	evm/RUproxy.cc \
 	RU.cc \
-	readoutunit/ScalerHandler.cc \
 	BU.cc \
 	bu/DiskUsage.cc \
 	bu/DiskWriter.cc \

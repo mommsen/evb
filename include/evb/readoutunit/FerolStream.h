@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_FerolStream_h_
 #define _evb_readoutunit_FerolStream_h_
 
+#include <sched.h>
 #include <stdint.h>
 #include <string>
 #include <fstream>
@@ -48,9 +49,14 @@ namespace evb {
       void addFedFragment(FedFragmentPtr&);
 
       /**
-       * Return the next FED fragement. Return false if none is availble
+       * Return the next FED fragement. Return false if none is available
        */
       bool getNextFedFragment(FedFragmentPtr&);
+
+      /**
+       * Append the next FED fragment to the super fragment
+       */
+      virtual void appendFedFragment(FragmentChainPtr&);
 
       /**
        * Define the function to be used to extract the lumi section from the payload
@@ -103,10 +109,13 @@ namespace evb {
     protected:
 
       void addFedFragmentWithEvBid(FedFragmentPtr&);
+      void maybeDumpFragmentToFile(const FedFragmentPtr&);
+      void updateInputMonitor(const FedFragmentPtr&,const uint32_t fedSize);
 
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
       const boost::shared_ptr<Configuration> configuration_;
+      volatile bool doProcessing_;
 
       EvBidFactory evbIdFactory_;
 
@@ -117,15 +126,12 @@ namespace evb {
     private:
 
       EvBid getEvBid(const FedFragmentPtr&);
-      void maybeDumpFragmentToFile(const FedFragmentPtr&);
       void writeFragmentToFile(const FedFragmentPtr&,const std::string& reasonFordump) const;
-      void updateInputMonitor(const FedFragmentPtr&,const uint32_t fedSize);
       void resetMonitoringCounters();
 
       boost::function< uint32_t(const unsigned char*) > lumiSectionFunction_;
       uint16_t writeNextFragments_;
       uint32_t runNumber_;
-      volatile bool doProcessing_;
 
       InputMonitor inputMonitor_;
       mutable boost::mutex inputMonitorMutex_;
@@ -162,10 +168,10 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   readoutUnit_(readoutUnit),
   fedId_(fedId),
   configuration_(readoutUnit->getConfiguration()),
+  doProcessing_(false),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   writeNextFragments_(0),
-  runNumber_(0),
-  doProcessing_(false)
+  runNumber_(0)
 {
   fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
 }
@@ -324,8 +330,19 @@ bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragmen
 
 
 template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment(FragmentChainPtr& superFragment)
+{
+  FedFragmentPtr fedFragment;
+  while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+
+  superFragment->append(fedFragment);
+}
+
+
+template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
+  runNumber_ = runNumber;
   resetMonitoringCounters();
   evbIdFactory_.reset(runNumber);
   doProcessing_ = true;

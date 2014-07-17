@@ -57,7 +57,8 @@ namespace evb {
     private:
 
       bool getFedFragment(const EvBid&,toolbox::mem::Reference*&);
-      void startGeneratorWorkLoop();
+      void createFragmentPool(const std::string& fedId);
+      void startGeneratorWorkLoop(const std::string& fedId);
       bool generating(toolbox::task::WorkLoop*);
 
       toolbox::task::WorkLoop* generatingWorkLoop_;
@@ -95,15 +96,16 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
                    this->configuration_->dummyFedSizeMax,
                    this->configuration_->computeCRC)
 {
-  startGeneratorWorkLoop();
+  const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
+  createFragmentPool(fedIdStr);
+  startGeneratorWorkLoop(fedIdStr);
 }
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWorkLoop()
+void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::createFragmentPool(const std::string& fedIdStr)
 {
-  const std::string fedId = boost::lexical_cast<std::string>(this->fedId_);
-  toolbox::net::URN urn("toolbox-mem-pool", "FragmentPool_"+fedId);
+  toolbox::net::URN urn("toolbox-mem-pool", this->readoutUnit_->getIdentifier("fragmentPool_"+fedIdStr));
 
   try
   {
@@ -124,11 +126,16 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWor
     XCEPT_RETHROW(exception::OutOfMemory,
                   "Failed to create memory pool for dummy fragments", e);
   }
+}
 
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWorkLoop(const std::string& fedIdStr)
+{
   try
   {
     generatingWorkLoop_ =
-      toolbox::task::getWorkLoopFactory()->getWorkLoop(this->readoutUnit_->getIdentifier("generating_"+fedId), "waiting");
+      toolbox::task::getWorkLoopFactory()->getWorkLoop(this->readoutUnit_->getIdentifier("generating_"+fedIdStr), "waiting");
 
     if ( !generatingWorkLoop_->isActive() )
       generatingWorkLoop_->activate();
@@ -136,11 +143,11 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWor
     generatingAction_ =
       toolbox::task::bind(this,
                           &evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating,
-                          this->readoutUnit_->getIdentifier("generatingAction_"+fedId));
+                          this->readoutUnit_->getIdentifier("generatingAction_"+fedIdStr));
   }
   catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start event generation workloop for FED " + fedId;
+    std::string msg = "Failed to start event generation workloop for FED " + fedIdStr;
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -200,42 +207,51 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
 )
 {
   const uint32_t fedSize = fragmentTracker_.startFragment(evbId);
+
+  if ( (fedSize & 0x7) != 0 )
+  {
+    std::ostringstream oss;
+    oss << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
+
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   const uint16_t ferolBlocks = ceil( static_cast<double>(fedSize) / ferolPayloadSize );
   assert(ferolBlocks < 2048);
-  const uint32_t bufSize = ferolBlocks*FEROL_BLOCK_SIZE + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
+  const uint32_t frameSize = ferolSize + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   uint32_t remainingFedSize = fedSize;
 
   try
   {
     bufRef = toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fragmentPool_,bufSize);
+      getFrame(fragmentPool_,frameSize);
   }
   catch(xcept::Exception)
   {
     return false;
   }
 
-  bufRef->setDataSize(bufSize);
-  memset(bufRef->getDataLocation(), 0, bufSize);
-  I2O_DATA_READY_MESSAGE_FRAME* dataReadyMsg =
-    (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  dataReadyMsg->totalLength = fedSize + ferolBlocks*sizeof(ferolh_t);
-  dataReadyMsg->fedid = this->fedId_;
-  dataReadyMsg->triggerno = evbId.eventNumber();
+  bufRef->setDataSize(frameSize);
+  unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+  memset(payload, 0, frameSize);
+  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
+  frame->totalLength = ferolSize;
+  frame->fedid = this->fedId_;
+  frame->triggerno = evbId.eventNumber();
   uint32_t partLength = 0;
 
-  unsigned char* frame = (unsigned char*)dataReadyMsg
-    + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
   for (uint16_t packetNumber=0; packetNumber < ferolBlocks; ++packetNumber)
   {
-    assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
-    uint32_t length;
-
-    ferolh_t* ferolHeader = (ferolh_t*)frame;
+    ferolh_t* ferolHeader = (ferolh_t*)payload;
     ferolHeader->set_signature();
+    ferolHeader->set_fed_id(this->fedId_);
+    ferolHeader->set_event_number(evbId.eventNumber());
     ferolHeader->set_packet_number(packetNumber);
+    payload += sizeof(ferolh_t);
+    uint32_t length = 0;
 
     if (packetNumber == 0)
       ferolHeader->set_first_packet();
@@ -250,18 +266,15 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
       ferolHeader->set_last_packet();
     }
     remainingFedSize -= length;
-    frame += sizeof(ferolh_t);
 
-    const size_t filledBytes = fragmentTracker_.fillData(frame, length);
+    const size_t filledBytes = fragmentTracker_.fillData(payload, length);
     ferolHeader->set_data_length(filledBytes);
-    ferolHeader->set_fed_id(this->fedId_);
-    ferolHeader->set_event_number(evbId.eventNumber());
 
-    frame += filledBytes;
+    payload += filledBytes;
     partLength += filledBytes + sizeof(ferolh_t);
   }
 
-  dataReadyMsg->partLength = partLength;
+  frame->partLength = partLength;
   assert( remainingFedSize == 0 );
 
   return true;
@@ -291,7 +304,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   generateFragments_ = false;
-  while ( generatingActive_ ) ::usleep(1000);
 
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
 }

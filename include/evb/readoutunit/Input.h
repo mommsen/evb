@@ -30,8 +30,8 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/LocalStream.h"
+#include "evb/readoutunit/ScalerStream.h"
 #include "evb/readoutunit/InputMonitor.h"
-#include "evb/readoutunit/ScalerHandler.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
@@ -147,7 +147,6 @@ namespace evb {
       void setMasterStream();
       void resetMonitoringCounters();
       void updateSuperFragmentCounters(const FragmentChainPtr&);
-      void maybeAddScalerFragment(FragmentChainPtr&);
       cgicc::table getFedTable() const;
 
       // these methods are only implemented for EVM
@@ -162,8 +161,6 @@ namespace evb {
       FerolStreams ferolStreams_;
       mutable boost::shared_mutex ferolStreamsMutex_;
       typename FerolStreams::iterator masterStream_;
-
-      boost::scoped_ptr<ScalerHandler> scalerHandler_;
 
       typedef std::map<uint32_t,uint32_t> LumiCounterMap;
       LumiCounterMap lumiCounterMap_;
@@ -204,7 +201,6 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
   ReadoutUnit* readoutUnit
 ) :
 readoutUnit_(readoutUnit),
-scalerHandler_(new ScalerHandler(readoutUnit->getIdentifier())),
 runNumber_(0),
 lastMonitoringTime_(0)
 {}
@@ -252,14 +248,11 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
     {
       if ( it != masterStream_ )
       {
-        while ( !it->second->getNextFedFragment(fedFragment) ) {};
-
-        superFragment->append(fedFragment);
+        it->second->appendFedFragment(superFragment);
       }
     }
   }
 
-  maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
 
   return true;
@@ -269,42 +262,20 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
 {
+  superFragment.reset( new readoutunit::FragmentChain(evbId) );
+
   {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
-    FedFragmentPtr fedFragment;
-    superFragment.reset( new readoutunit::FragmentChain(evbId) );
-
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
          it != itEnd; ++it)
     {
-      while ( !it->second->getNextFedFragment(fedFragment) ) {};
-
-      superFragment->append(fedFragment);
+      it->second->appendFedFragment(superFragment);
     }
   }
 
-  maybeAddScalerFragment(superFragment);
   updateSuperFragmentCounters(superFragment);
 
   return true;
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::maybeAddScalerFragment
-(
-  FragmentChainPtr& superFragment
-)
-{
-  FedFragmentPtr fedFragment;
-  const EvBid& evbId = superFragment->getEvBid();
-  const uint32_t fedSize = scalerHandler_->fillFragment(evbId, fedFragment);
-  if ( fedSize > 0 )
-  {
-    // updateInputMonitors(fedFragment,fedSize);
-    // maybeDumpFragmentToFile(fedFragment);
-    superFragment->append(fedFragment);
-  }
 }
 
 
@@ -361,6 +332,8 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCountForLum
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
+  runNumber_ = runNumber;
+
   {
     boost::mutex::scoped_lock sl(lumiCounterMutex_);
 
@@ -380,9 +353,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
       it->second->startProcessing(runNumber);
     }
   }
-
-  scalerHandler_->startProcessing(runNumber);
-  runNumber_ = runNumber;
 }
 
 
@@ -413,8 +383,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopProcessing()
       it->second->stopProcessing();
     }
   }
-
-  scalerHandler_->stopProcessing();
 }
 
 
@@ -563,9 +531,12 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     setMasterStream();
 
+    if ( configuration->dummyScalFedSize.value_ > 0 )
+    {
+      const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,configuration->scalFedId) );
+      ferolStreams_.insert( typename FerolStreams::value_type(configuration->scalFedId,scalerStream ) );
+    }
   }
-
-  scalerHandler_->configure(configuration->scalFedId,configuration->dummyScalFedSize);
 }
 
 
