@@ -16,7 +16,6 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
-#include "evb/bu/LumiBarrier.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StreamHandler.h"
 #include "toolbox/lang/Class.h"
@@ -157,7 +156,6 @@ namespace evb {
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
       mutable boost::mutex processesActiveMutex_;
-      boost::scoped_ptr<LumiBarrier> lumiBarrier_;
 
       mutable uint16_t writeNextEventsToFile_;
       mutable boost::mutex writeNextEventsToFileMutex_;

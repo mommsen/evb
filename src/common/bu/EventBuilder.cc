@@ -51,7 +51,6 @@ void evb::bu::EventBuilder::configure()
 
   processesActive_.clear();
   processesActive_.resize(configuration_->numberOfBuilders.value_);
-  lumiBarrier_.reset( new LumiBarrier(configuration_->numberOfBuilders.value_) );
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -107,11 +106,7 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 
 void evb::bu::EventBuilder::drain()
 {
-  while ( processesActive_.any() )
-  {
-    lumiBarrier_->unblockCurrentLumiSection();
-    ::usleep(1000);
-  }
+  while ( processesActive_.any() ) ::usleep(1000);
 }
 
 
@@ -160,9 +155,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 
       if ( eventMap->empty() )
       {
-        // If we're idling, let other threads advance to the current lumi section
-        lumiBarrier_->reachedLumiSection(resourceManager_->getCurrentLumiSection());
-
         boost::mutex::scoped_lock sl(processesActiveMutex_);
         processesActive_.reset(builderId);
         sl.unlock();
@@ -327,13 +319,11 @@ void evb::bu::EventBuilder::handleCompleteEvents
   EventMapMonitor& eventMapMonitor
 ) const
 {
-  EventMap::iterator pos = eventMap->begin();
-  const uint32_t lowestLumiSection = pos->first.lumiSection();
-  eventMapMonitor.lowestLumiSection = lowestLumiSection;
-  lumiBarrier_->reachedLumiSection(lowestLumiSection);
+  const uint32_t oldestIncompleteLumiSection = resourceManager_->getOldestIncompleteLumiSection();
 
   eventMapMonitor.completeEvents = 0;
   eventMapMonitor.partialEvents = 0;
+  EventMap::iterator pos = eventMap->begin();
 
   while ( pos != eventMap->end() )
   {
@@ -341,7 +331,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
 
     if ( event->isComplete() )
     {
-      if ( pos->first.lumiSection() == lowestLumiSection )
+      if ( pos->first.lumiSection() == oldestIncompleteLumiSection )
       {
         resourceManager_->eventCompleted(event);
 

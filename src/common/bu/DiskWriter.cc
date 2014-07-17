@@ -93,8 +93,8 @@ void evb::bu::DiskWriter::stopProcessing()
 {
   if ( configuration_->dropEventData ) return;
 
-  while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
   doProcessing_ = false;
+  while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
@@ -110,7 +110,7 @@ void evb::bu::DiskWriter::stopProcessing()
   {
     writeEoLS(it->second);
 
-    if ( it->second->nbEvents > 0 )
+    if ( it->second->nbEventsWritten > 0 )
     {
       ++diskWriterMonitoring_.nbLumiSections;
       const uint32_t lumiSection = it->second->lumiSection;
@@ -224,7 +224,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
     {
       writeEoLS(it->second);
 
-      if ( it->second->nbEvents > 0 )
+      if ( it->second->nbEventsWritten > 0 )
       {
         ++diskWriterMonitoring_.nbLumiSections;
         const uint32_t lumiSection = it->second->lumiSection;
