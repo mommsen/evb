@@ -91,8 +91,8 @@ namespace evb {
       void retrieveMonitoringQuantities(const double deltaT,
                                         uint32_t& dataReadyCount,
                                         uint32_t& queueElements,
-                                        uint32_t& eventsWithDataCorruption,
-                                        uint32_t& eventsWithCRCerrors);
+                                        uint32_t& corruptedEvents,
+                                        uint32_t& crcErrors);
 
       /**
        * Return a CGI table row with statistics for this FED
@@ -379,8 +379,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   const double deltaT,
   uint32_t& dataReadyCount,
   uint32_t& queueElements,
-  uint32_t& eventsWithDataCorruption,
-  uint32_t& eventsWithCRCerrors
+  uint32_t& corruptedEvents,
+  uint32_t& crcErrors
 )
 {
   {
@@ -403,6 +403,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
   {
     boost::mutex::scoped_lock sl(fedErrorsMutex_);
+
+    corruptedEvents = fedErrors_.corruptedEvents;
+    crcErrors = fedErrors_.crcErrors;
 
     if ( deltaT > 0 )
     {

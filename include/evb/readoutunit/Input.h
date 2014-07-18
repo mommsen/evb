@@ -437,10 +437,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
           it != itEnd; ++it)
     {
       uint32_t queueElements = 0;
-      uint32_t eventsWithDataCorruption = 0;
-      uint32_t eventsWithCRCerrors = 0;
+      uint32_t corruptedEvents = 0;
+      uint32_t crcErrors = 0;
 
-      it->second->retrieveMonitoringQuantities(deltaT,dataReadyCount,queueElements,eventsWithDataCorruption,eventsWithCRCerrors);
+      it->second->retrieveMonitoringQuantities(deltaT,dataReadyCount,queueElements,corruptedEvents,crcErrors);
 
       if ( queueElements > maxElements )
         maxElements = queueElements;
@@ -448,11 +448,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       if ( queueElements == 0 )
         fedIdsWithoutFragments_.push_back(it->first);
 
-      if ( eventsWithDataCorruption > 0 || eventsWithCRCerrors > 0 )
+      if ( corruptedEvents > 0 || crcErrors > 0 )
       {
         fedIdsWithErrors_.push_back(it->first);
-        fedDataCorruption_.push_back(eventsWithDataCorruption);
-        fedCRCerrors_.push_back(eventsWithCRCerrors);
+        fedDataCorruption_.push_back(corruptedEvents);
+        fedCRCerrors_.push_back(crcErrors);
       }
     }
     incompleteSuperFragmentCount_ = maxElements;
