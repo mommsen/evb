@@ -9,7 +9,7 @@
 
 
 evb::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-  : bufRef_(bufRef),cache_(cache)
+  : isCorrupted_(false),hasCRCerror_(false),bufRef_(bufRef),cache_(cache)
 {
   assert(bufRef);
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -42,8 +42,6 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
   unsigned char* payload = (unsigned char*)currentBufRef->getDataLocation();
   I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
   uint32_t payloadSize = frame->partLength;
-  const uint16_t fedId = frame->fedid;
-  const uint32_t eventNumber = frame->triggerno;
 
   payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
@@ -58,26 +56,31 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 
     if ( ferolHeader->signature() != FEROL_SIGNATURE )
     {
+      isCorrupted_ = true;
       std::ostringstream msg;
       msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
       msg << ", but found " << std::hex << ferolHeader->signature();
+      msg << " in FED " << std::dec << fedId_;
       XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
 
-    if ( eventNumber != ferolHeader->event_number() )
+    if ( fedId_ != ferolHeader->fed_id() )
     {
-      std::ostringstream msg;
-      msg << "Mismatch of event number in FEROL header:";
-      msg << " expected " << eventNumber << ", but got " << ferolHeader->event_number();
-      XCEPT_RAISE(exception::DataCorruption, msg.str());
-    }
-
-    if ( fedId != ferolHeader->fed_id() )
-    {
+      isCorrupted_ = true;
       std::ostringstream msg;
       msg << "Mismatch of FED id in FEROL header:";
-      msg << " expected " << fedId << ", but got " << ferolHeader->fed_id();
-      msg << " for event " << eventNumber;
+      msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+      msg << " for event " << eventNumber_;
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
+    }
+
+    if ( eventNumber_ != ferolHeader->event_number() )
+    {
+      isCorrupted_ = true;
+      std::ostringstream msg;
+      msg << "Mismatch of event number in FEROL header:";
+      msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
+      msg << " for FED " << fedId_;
       XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
 
@@ -89,28 +92,33 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 
       if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
       {
+        isCorrupted_ = true;
         std::ostringstream oss;
         oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-        oss << " but got event id 0x" << std::hex << fedHeader->eventid;
-        oss << " and source id 0x" << std::hex << fedHeader->sourceid;
+        oss << " but got event id 0x" << fedHeader->eventid;
+        oss << " and source id 0x" << fedHeader->sourceid;
+        oss << " for FED " << std::dec << fedId_;
         XCEPT_RAISE(exception::DataCorruption, oss.str());
       }
 
       const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
-      if ( eventId != eventNumber)
+      if ( eventId != eventNumber_ )
       {
+        isCorrupted_ = true;
         std::ostringstream oss;
         oss << "FED header \"eventid\" " << eventId << " does not match";
-        oss << " the eventNumber " << eventNumber << " found in I2O_DATA_READY_MESSAGE_FRAME";
+        oss << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+        oss << " of FED " << fedId_;
         XCEPT_RAISE(exception::DataCorruption, oss.str());
       }
 
       const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
-      if ( sourceId != fedId )
+      if ( sourceId != fedId_ )
       {
+        isCorrupted_ = true;
         std::ostringstream oss;
         oss << "FED header \"sourceId\" " << sourceId << " does not match";
-        oss << " the FED id " << fedId << " found in I2O_DATA_READY_MESSAGE_FRAME";
+        oss << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
         XCEPT_RAISE(exception::DataCorruption, oss.str());
       }
     }
@@ -136,8 +144,9 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 
       if ( ! currentBufRef )
       {
+        isCorrupted_ = true;
         std::ostringstream msg;
-        msg << "Premature end of FEROL data:";
+        msg << "Premature end of FEROL data for FED " << fedId_ << ":";
         msg << " expected " << usedSize << " more Bytes,";
         msg << " but toolbox::mem::Reference chain has ended";
         XCEPT_RAISE(exception::DataCorruption, msg.str());
@@ -148,20 +157,22 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
       payloadSize = frame->partLength;
       payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
-      if ( fedId != frame->fedid )
+      if ( fedId_ != frame->fedid )
       {
+        isCorrupted_ = true;
         std::ostringstream msg;
         msg << "Inconsistent FED id:";
-        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from FED id " << fedId;
+        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from FED id " << fedId_;
         msg << " while the current has FED id " << frame->fedid;
         XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
 
-      if ( eventNumber != frame->triggerno )
+      if ( eventNumber_ != frame->triggerno )
       {
+        isCorrupted_ = true;
         std::ostringstream msg;
-        msg << "Inconsistent event number:";
-        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from event " << eventNumber;
+        msg << "Inconsistent event number for FED " << fedId_ << ":";
+        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from event " << eventNumber_;
         msg << " while the current is from event " << frame->triggerno;
         XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
@@ -173,18 +184,21 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 
   if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
   {
+    isCorrupted_ = true;
     std::ostringstream oss;
     oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << std::hex << trailer->eventsize;
-    oss << " and conscheck 0x" << std::hex << trailer->conscheck;
+    oss << " but got event size 0x" << trailer->eventsize;
+    oss << " and conscheck 0x" << trailer->conscheck;
+    oss << " for FED " << std::dec << fedId_;
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   const uint32_t evsz = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
   if ( evsz != fedSize )
   {
+    isCorrupted_ = true;
     std::ostringstream oss;
-    oss << "Inconsistent event size:";
+    oss << "Inconsistent event size for FED " << fedId_ << ":";
     oss << " FED trailer claims " << evsz << " Bytes,";
     oss << " while sum of FEROL headers yield " << fedSize;
     XCEPT_RAISE(exception::DataCorruption, oss.str());
@@ -202,8 +216,9 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
     if ( trailerCRC != crc )
     {
+      hasCRCerror_ = true;
       std::ostringstream oss;
-      oss << "Wrong CRC checksum:" << std::hex;
+      oss << "Wrong CRC checksum for FED " << fedId_ << ":" << std::hex;
       oss << " FED trailer claims 0x" << trailerCRC;
       oss << ", but recalculation gives 0x" << crc;
       XCEPT_RAISE(exception::CRCerror, oss.str());

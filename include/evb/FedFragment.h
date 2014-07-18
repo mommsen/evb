@@ -31,6 +31,8 @@ namespace evb {
     EvBid getEvBid() const { return evbId_; }
     uint16_t getFedId() const { return fedId_; }
     uint32_t getEventNumber() const { return eventNumber_; }
+    bool isCorrupted() const { return isCorrupted_; }
+    bool hasCRCerror() const { return hasCRCerror_; }
     toolbox::mem::Reference* getBufRef() const { return bufRef_; }
     unsigned char* getFedPayload() const;
 
@@ -44,6 +46,8 @@ namespace evb {
     uint16_t fedId_;
     uint32_t eventNumber_;
     EvBid evbId_;
+    bool isCorrupted_;
+    bool hasCRCerror_;
     toolbox::mem::Reference* bufRef_;
     tcpla::MemoryCache* cache_;
 

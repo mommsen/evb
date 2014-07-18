@@ -29,9 +29,7 @@ namespace evb {
 
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
-    FragmentChain(const FedFragmentPtr&);
     FragmentChain(const EvBid&);
-    FragmentChain(const EvBid&, toolbox::mem::Reference*);
 
     ~FragmentChain();
 
@@ -81,6 +79,10 @@ namespace evb {
     bool isComplete() const
     { return resourceList_.empty(); }
 
+    typedef std::vector<uint16_t> MissingFedIds;
+    MissingFedIds getMissingFedIds() const
+    { return missingFedIds_; }
+
 
   private:
 
@@ -100,6 +102,8 @@ namespace evb {
 
     typedef std::vector<FedFragmentPtr> FedFragments;
     FedFragments fedFragments_;
+
+    MissingFedIds missingFedIds_;
 
   }; // FragmentChain
 
@@ -148,25 +152,6 @@ evb::FragmentChain<T>::FragmentChain(const EvBid& evbId) :
   head_(0),tail_(0),
   size_(0)
 {}
-
-
-template<class T>
-evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference* bufRef) :
-  evbId_(evbId),
-  head_(bufRef),tail_(bufRef),
-  size_(calculateSize(bufRef))
-{}
-
-
-template<class T>
-evb::FragmentChain<T>::FragmentChain(const FedFragmentPtr& fedFragment) :
-  evbId_(fedFragment->getEvBid()),
-  head_(fedFragment->getBufRef()),
-  tail_(head_),
-  size_(calculateSize(head_))
-{
-  fedFragments_.push_back(fedFragment);
-}
 
 
 template<class T>
@@ -242,8 +227,15 @@ void evb::FragmentChain<T>::append
     XCEPT_RAISE(exception::MismatchDetected, oss.str());
   }
 
-  chainFragment(fedFragment->getBufRef());
-  fedFragments_.push_back(fedFragment);
+  if ( fedFragment->isCorrupted() )
+  {
+    missingFedIds_.push_back(fedFragment->getFedId());
+  }
+  else
+  {
+    chainFragment(fedFragment->getBufRef());
+    fedFragments_.push_back(fedFragment);
+  }
 }
 
 

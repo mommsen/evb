@@ -224,8 +224,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
 
     if ( configuration_->tolerateCorruptedEvents )
     {
-      // fragment.reset( new FedFragment(evbId,0,0) );
-
       LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
                       xcept::stdformat_exception_history(e));
       readoutUnit_->notifyQualified("error",e);

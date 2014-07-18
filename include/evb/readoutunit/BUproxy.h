@@ -124,7 +124,7 @@ namespace evb {
         unsigned char*& payload,
         uint32_t& remainingPayloadSize,
         const uint32_t superFragmentNb,
-        const uint32_t superFragmentSize,
+        const FragmentChainPtr& superFragment,
         const uint32_t currentFragmentSize
       ) const;
       bool isEmpty();
@@ -394,21 +394,19 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid)
-    + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignement
+    + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignment
 
   assert( blockHeaderSize % 8 == 0 );
   assert( blockHeaderSize < configuration_->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
   uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
-  assert( remainingPayloadSize > sizeof(msg::SuperFragment) );
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
     const FragmentChainPtr superFragment = superFragments[i];
-    const uint32_t superFragmentSize = superFragment->getSize();
-    uint32_t remainingSuperFragmentSize = superFragmentSize;
+    uint32_t remainingSuperFragmentSize = superFragment->getSize();
 
-    fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
+    fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
 
     toolbox::mem::Reference* currentFragment = superFragment->head();
 
@@ -458,7 +456,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
           toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
           payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
           remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
-          fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragmentSize,remainingSuperFragmentSize);
+          fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
           tail->setNextReference(nextBlock);
           tail = nextBlock;
         }
@@ -522,17 +520,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     dataBlockMsg->nbRUtids         = nbRUtids;
 
     unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
-    for (uint32_t i=0; i < nbSuperFragments; ++i)
-    {
-      memcpy(payload,&fragmentRequest->evbIds[i],sizeof(EvBid));
-      payload += sizeof(EvBid);
-      lastEventNumberToBUs = fragmentRequest->evbIds[i].eventNumber();
-    }
-    for (uint32_t i=0; i < nbRUtids; ++i)
-    {
-      memcpy(payload,&fragmentRequest->ruTids[i],sizeof(I2O_TID));
-      payload += sizeof(I2O_TID);
-    }
+    size_t size = nbSuperFragments*sizeof(EvBid);
+    memcpy(payload,&fragmentRequest->evbIds[0],size);
+    payload += size;
+    lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments].eventNumber();
+
+    size = nbRUtids*sizeof(I2O_TID);
+    memcpy(payload,&fragmentRequest->ruTids[0],size);
 
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
     ++i2oCount;
@@ -591,11 +585,19 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   unsigned char*& payload,
   uint32_t& remainingPayloadSize,
   const uint32_t superFragmentNb,
-  const uint32_t superFragmentSize,
+  const FragmentChainPtr& superFragment,
   const uint32_t currentFragmentSize
 ) const
 {
-  if ( remainingPayloadSize < sizeof(msg::SuperFragment) )
+  const FragmentChain::MissingFedIds& missingFedIds = superFragment->getMissingFedIds();
+  const uint16_t nbDroppedFeds = missingFedIds.size();
+  const uint32_t headerSize = sizeof(msg::SuperFragment)
+    + ((nbDroppedFeds-1 + 3) / 4) * sizeof(uint64_t);
+  // Keep 64-bit alignment if nbDroppedFeds > 1.
+  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
+  assert( headerSize % 8 == 0 );
+
+  if ( remainingPayloadSize < headerSize )
   {
     remainingPayloadSize = 0;
     return;
@@ -603,13 +605,15 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 
   msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
 
-  payload += sizeof(msg::SuperFragment);
-  remainingPayloadSize -= sizeof(msg::SuperFragment);
+  payload += headerSize;
+  remainingPayloadSize -= headerSize;
 
   superFragmentMsg->superFragmentNb = superFragmentNb;
-  superFragmentMsg->totalSize = superFragmentSize;
-
+  superFragmentMsg->totalSize = superFragment->getSize();
   superFragmentMsg->partSize = currentFragmentSize > remainingPayloadSize ? remainingPayloadSize : currentFragmentSize;
+  superFragmentMsg->nbDroppedFeds = nbDroppedFeds;
+
+  memcpy(&superFragmentMsg->fedIds[0],&missingFedIds[0],nbDroppedFeds*sizeof(uint16_t));
 }
 
 

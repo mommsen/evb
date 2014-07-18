@@ -241,7 +241,8 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 
     if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
 
-    superFragment.reset( new readoutunit::FragmentChain(fedFragment) );
+    superFragment.reset( new readoutunit::FragmentChain(fedFragment->getEvBid()) );
+    superFragment->append(fedFragment);
 
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
          it != itEnd; ++it)

@@ -219,7 +219,8 @@ uint32_t evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragme
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
-  uint16_t ferolBlocks = ceil( static_cast<double>(fedSize) / ferolPayloadSize );
+  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
+  const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   assert(ferolBlocks < 2048);
   const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
   const uint32_t frameSize = ferolSize + sizeof(I2O_DATA_READY_MESSAGE_FRAME);

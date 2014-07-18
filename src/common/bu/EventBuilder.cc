@@ -254,22 +254,20 @@ inline void evb::bu::EventBuilder::buildEvent
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
     {
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-      payload += sizeof(msg::SuperFragment);
-      remainingBufferSize -= sizeof(msg::SuperFragment);
+      const uint32_t headerSize = superFragmentMsg->getHeaderSize();
 
       if ( eventPos->second->appendSuperFragment(ruTid,
                                                  bufRef->duplicate(),
-                                                 payload,
-                                                 superFragmentMsg->partSize,
-                                                 superFragmentMsg->totalSize) )
+                                                 payload) )
       {
         // the super fragment is complete
         ++superFragmentCount;
         eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
       }
 
-      payload += superFragmentMsg->partSize;
-      remainingBufferSize -= superFragmentMsg->partSize;
+      const uint32_t size = headerSize + superFragmentMsg->partSize;
+      payload += size;
+      remainingBufferSize -= size;
       if ( remainingBufferSize < sizeof(msg::SuperFragment) )
         remainingBufferSize = 0;
     }
