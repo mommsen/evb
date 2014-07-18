@@ -213,9 +213,9 @@ fi
 
 nbCorruptedEventsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbCorruptedEvents xsd:unsignedLong)
 echo "BU0 nbCorruptedEvents: $nbCorruptedEventsBU0"
-if [[ $nbCorruptedEventsBU0 -ne 1 ]]
+if [[ $nbCorruptedEventsBU0 -ne 0 ]]
 then
-  echo "Test failed: expected 1"
+  echo "Test failed: expected 0"
   exit 1
 fi
 
@@ -230,14 +230,6 @@ fi
 nbFedDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+_fed0001.txt'|wc -l)
 echo "Nb of FED dumps=$nbFedDumps"
 if [[ $nbFedDumps -ne 1 ]]
-then
-  echo "Test failed: expected 1"
-  exit 1
-fi
-
-nbEventDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+.txt'|wc -l)
-echo "Nb of event dumps=$nbEventDumps"
-if [[ $nbEventDumps -ne 1 ]]
 then
   echo "Test failed: expected 1"
   exit 1
@@ -274,9 +266,9 @@ fi
 
 nbCorruptedEventsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbCorruptedEvents xsd:unsignedLong)
 echo "BU0 nbCorruptedEvents: $nbCorruptedEventsBU0"
-if [[ $nbCorruptedEventsBU0 -ne 1 ]]
+if [[ $nbCorruptedEventsBU0 -ne 0 ]]
 then
-  echo "Test failed: expected 1"
+  echo "Test failed: expected 0"
   exit 1
 fi
 
