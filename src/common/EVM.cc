@@ -45,7 +45,7 @@ namespace evb {
       {
         std::ostringstream msg;
         msg << "Cannot decode EVM board sense for GTP FED " << GTP_FED_ID;
-        XCEPT_RAISE(exception::L1Trigger, msg.str());
+        XCEPT_RAISE(exception::TCDS, msg.str());
       }
 
       //check that we've got the FDL chip
@@ -53,7 +53,7 @@ namespace evb {
       {
         std::ostringstream msg;
         msg << "No FDL chip found in GTP FED " << GTP_FED_ID;
-        XCEPT_RAISE(exception::L1Trigger, msg.str());
+        XCEPT_RAISE(exception::TCDS, msg.str());
       }
 
       //extract lumi section number
@@ -71,7 +71,7 @@ namespace evb {
       {
         std::ostringstream msg;
         msg << "Received trigger fragment from GTPe FED " << GTPe_FED_ID << " without GTPe board id.";
-        XCEPT_RAISE(exception::L1Trigger, msg.str());
+        XCEPT_RAISE(exception::TCDS, msg.str());
       }
 
       const uint32_t orbitNumber = gtpe_getorbit(payload);

@@ -183,8 +183,18 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   FedFragmentPtr& fedFragment
 )
 {
-  const EvBid evbId = getEvBid(fedFragment);
-  fedFragment->setEvBid(evbId);
+  try
+  {
+    const EvBid evbId = getEvBid(fedFragment);
+    fedFragment->setEvBid(evbId);
+  }
+  catch(exception::TCDS& e)
+  {
+    XCEPT_DECLARE_NESTED(exception::TCDS, sentinelException,
+                         "Failed to extract lumi section from TCDS",e);
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+
   addFedFragmentWithEvBid(fedFragment);
 }
 
