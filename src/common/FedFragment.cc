@@ -225,6 +225,20 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
     }
   }
 
+  if ( trailer->conscheck & 0x4 ) // FED CRC error (R bit)
+  {
+    std::ostringstream oss;
+    oss << "Wrong FED CRC checksum for FED " << fedId_ << " found in FED trailer (R bit)";
+    XCEPT_RAISE(exception::FEDerror, oss.str());
+  }
+
+  if ( trailer->conscheck & 0x8000 ) // slink CRC error (C bit)
+  {
+    std::ostringstream oss;
+    oss << "Wrong slink CRC checksum for FED " << fedId_ << " found in FED trailer (C bit)";
+    XCEPT_RAISE(exception::FEDerror, oss.str());
+  }
+
   return fedSize;
 }
 

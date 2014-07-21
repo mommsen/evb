@@ -140,10 +140,11 @@ namespace evb {
       {
         uint32_t corruptedEvents;
         uint32_t crcErrors;
+        uint32_t fedErrors;
 
         FedErrors() { reset(); }
         void reset()
-        { corruptedEvents=0;crcErrors=0; }
+        { corruptedEvents=0;crcErrors=0;fedErrors=0; }
       };
       FedErrors fedErrors_;
       FedErrors previousFedErrors_;
@@ -247,6 +248,21 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
     LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
                     xcept::stdformat_exception_history(e));
     readoutUnit_->notifyQualified("error",e);
+  }
+  catch(exception::FEDerror& e)
+  {
+    uint32_t count = 0;
+    {
+      boost::mutex::scoped_lock sl(fedErrorsMutex_);
+      count = ++(fedErrors_.fedErrors);
+    }
+
+    if ( count <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedFragment,e.message());
+
+    LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),
+                    xcept::stdformat_exception_history(e));
+    readoutUnit_->notifyQualified("warn",e);
   }
 
   updateInputMonitor(fedFragment,fedSize);

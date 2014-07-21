@@ -21,6 +21,11 @@ XCEPT_DEFINE_EXCEPTION(evb, DataCorruption)
 XCEPT_DEFINE_EXCEPTION(evb, CRCerror)
 
 /**
+ * Exception raised when detecting an issue in the FED trailer
+ */
+XCEPT_DEFINE_EXCEPTION(evb, FEDerror)
+
+/**
  * Exception raised when failing to write data do disk
  */
 XCEPT_DEFINE_EXCEPTION(evb, DiskWriting)
