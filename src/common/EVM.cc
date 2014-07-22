@@ -109,7 +109,6 @@ namespace evb {
             if ( masterStream_ != ferolStreams_.end() )
             {
               lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromGTPe, this, _1);
-              return;
             }
           }
         }
