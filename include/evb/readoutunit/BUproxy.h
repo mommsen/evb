@@ -328,14 +328,6 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
       superFragments.clear();
     }
   }
-  catch(exception::MismatchDetected& e)
-  {
-    {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
-      processesActive_.reset(responderId);
-    }
-    readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
-  }
   catch(xcept::Exception& e)
   {
     {

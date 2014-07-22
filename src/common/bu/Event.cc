@@ -80,18 +80,19 @@ bool evb::bu::Event::appendSuperFragment
 
   superFragmentMsg->appendFedIds(missingFedIds_);
 
-  if (superFragmentMsg->partSize == 0) return false;
-
-  DataLocationPtr dataLocation( new DataLocation(payload,superFragmentMsg->partSize) );
-  dataLocations_.push_back(dataLocation);
-
-  #ifdef EVB_DEBUG_CORRUPT_EVENT
-  unsigned char* posToCorrupt = const_cast<unsigned char*>(payload + 23);
-  if ( size_t(posToCorrupt) & 0x10 )
+  if (superFragmentMsg->partSize > 0)
   {
-    *posToCorrupt ^= 1;
+    DataLocationPtr dataLocation( new DataLocation(payload,superFragmentMsg->partSize) );
+    dataLocations_.push_back(dataLocation);
+
+    #ifdef EVB_DEBUG_CORRUPT_EVENT
+    unsigned char* posToCorrupt = const_cast<unsigned char*>(payload + 23);
+    if ( size_t(posToCorrupt) & 0x10 )
+    {
+      *posToCorrupt ^= 1;
+    }
+    #endif //EVB_DEBUG_CORRUPT_EVENT
   }
-  #endif //EVB_DEBUG_CORRUPT_EVENT
 
   // erase at the very end. Otherwise the event might be considered complete
   // before the last chunk has been fully treated

@@ -73,196 +73,199 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Fail,Failed>
+      boost::statechart::in_state_reaction<Fail>
       > reactions;
 
-    Failed(my_context c) : my_state("Failed", c)
-    { safeEntryAction(); }
-    virtual ~Failed()
-    { safeExitAction(); }
+      Failed(my_context c) : my_state("Failed", c)
+      { safeEntryAction(); }
+      virtual ~Failed()
+      { safeExitAction(); }
 
-  };
+      virtual void exitAction()
+      { this->outermost_context().clearError(); }
 
-  /**
-   * The default state AllOk. Initial state of outer-state Outermost
-   */
-  class AllOk: public EvBState<AllOk,Outermost,Halted>
-  {
+    };
 
-  public:
+    /**
+     * The default state AllOk. Initial state of outer-state Outermost
+     */
+    class AllOk: public EvBState<AllOk,Outermost,Halted>
+    {
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
-    > reactions;
+    public:
 
-    AllOk(my_context c) : my_state("AllOk", c)
-    { safeEntryAction(); }
-    virtual ~AllOk()
-    { safeExitAction(); }
+      typedef boost::mpl::list<
+      boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
+      > reactions;
 
-  };
+      AllOk(my_context c) : my_state("AllOk", c)
+      { safeEntryAction(); }
+      virtual ~AllOk()
+      { safeExitAction(); }
 
-
-  /**
-   * The Halted state. Initial state of outer-state AllOk.
-   */
-  class Halted: public EvBState<Halted,AllOk>
-  {
-
-  public:
-
-    typedef boost::mpl::list<
-    boost::statechart::transition<Configure,Active>
-    > reactions;
-
-    Halted(my_context c) : my_state("Halted", c)
-    { safeEntryAction(); }
-    virtual ~Halted()
-    { safeExitAction(); }
-
-  };
+    };
 
 
-  /**
-   * The Active state of outer-state AllOk.
-   */
-  class Active: public EvBState<Active,AllOk,Configuring>
-  {
+    /**
+     * The Halted state. Initial state of outer-state AllOk.
+     */
+    class Halted: public EvBState<Halted,AllOk>
+    {
 
-  public:
+    public:
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Halt,Halted>
-    > reactions;
+      typedef boost::mpl::list<
+      boost::statechart::transition<Configure,Active>
+      > reactions;
 
-    Active(my_context c) : my_state("Active", c)
-    { safeEntryAction(); }
-    virtual ~Active()
-    { safeExitAction(); }
+      Halted(my_context c) : my_state("Halted", c)
+      { safeEntryAction(); }
+      virtual ~Halted()
+      { safeExitAction(); }
 
-  };
-
-
-  /**
-   * The Configuring state. Initial state of outer-state Active.
-   */
-  class Configuring: public EvBState<Configuring,Active>
-  {
-
-  public:
-
-    typedef boost::mpl::list<
-    boost::statechart::transition<ConfigureDone,Ready>
-    > reactions;
-
-    Configuring(my_context c) : my_state("Configuring", c)
-    { safeEntryAction(); }
-    virtual ~Configuring()
-    { safeExitAction(); }
-
-    virtual void entryAction();
-    virtual void exitAction();
-    void activity();
-
-  private:
-    boost::scoped_ptr<boost::thread> configuringThread_;
-    volatile bool doConfiguring_;
-
-  };
+    };
 
 
-  /**
-   * The Ready state of outer-state Active.
-   */
-  class Ready: public EvBState<Ready,Active>
-  {
+    /**
+     * The Active state of outer-state AllOk.
+     */
+    class Active: public EvBState<Active,AllOk,Configuring>
+    {
 
-  public:
+    public:
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<Enable,Running>
-    > reactions;
+      typedef boost::mpl::list<
+      boost::statechart::transition<Halt,Halted>
+      > reactions;
 
-    Ready(my_context c) : my_state("Ready", c)
-    { safeEntryAction(); }
-    virtual ~Ready()
-    { safeExitAction(); }
+      Active(my_context c) : my_state("Active", c)
+      { safeEntryAction(); }
+      virtual ~Active()
+      { safeExitAction(); }
 
-    virtual void entryAction()
-    { outermost_context().notifyRCMS("Ready"); }
-
-  };
+    };
 
 
-  /**
-   * The Running state of the outer-state Active.
-   */
-  class Running: public EvBState<Running,Active,Enabled>
-  {
+    /**
+     * The Configuring state. Initial state of outer-state Active.
+     */
+    class Configuring: public EvBState<Configuring,Active>
+    {
 
-  public:
+    public:
 
-    typedef boost::mpl::list<> reactions;
+      typedef boost::mpl::list<
+      boost::statechart::transition<ConfigureDone,Ready>
+      > reactions;
 
-    Running(my_context c) : my_state("Running", c)
-    { safeEntryAction(); }
-    virtual ~Running()
-    { safeExitAction(); }
+      Configuring(my_context c) : my_state("Configuring", c)
+      { safeEntryAction(); }
+      virtual ~Configuring()
+      { safeExitAction(); }
 
-    virtual void entryAction();
-    virtual void exitAction();
+      virtual void entryAction();
+      virtual void exitAction();
+      void activity();
 
-  };
+    private:
+      boost::scoped_ptr<boost::thread> configuringThread_;
+      volatile bool doConfiguring_;
 
-
-  /**
-   * The Enabled state. Initial state of the outer-state Running.
-   */
-  class Enabled: public EvBState<Enabled,Running>
-  {
-
-  public:
-
-    typedef boost::mpl::list<
-    boost::statechart::transition<Stop,Draining>
-    > reactions;
-
-    Enabled(my_context c) : my_state("Enabled", c)
-    { safeEntryAction(); }
-    virtual ~Enabled()
-    { safeExitAction(); }
-
-  };
+    };
 
 
-  /**
-   * The Draining state of outer-state Running.
-   */
-  class Draining: public EvBState<Draining,Running>
-  {
+    /**
+     * The Ready state of outer-state Active.
+     */
+    class Ready: public EvBState<Ready,Active>
+    {
 
-  public:
+    public:
 
-    typedef boost::mpl::list<
-    boost::statechart::transition<DrainingDone,Ready>
-    > reactions;
+      typedef boost::mpl::list<
+      boost::statechart::transition<Enable,Running>
+      > reactions;
 
-    Draining(my_context c) : my_state("Draining", c)
-    { safeEntryAction(); }
-    virtual ~Draining()
-    { safeExitAction(); }
+      Ready(my_context c) : my_state("Ready", c)
+      { safeEntryAction(); }
+      virtual ~Ready()
+      { safeExitAction(); }
 
-    virtual void entryAction();
-    virtual void exitAction();
-    void activity();
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Ready"); }
 
-  private:
-    boost::scoped_ptr<boost::thread> drainingThread_;
-    volatile bool doDraining_;
+    };
 
-  };
 
-} } //namespace evb::bu
+    /**
+     * The Running state of the outer-state Active.
+     */
+    class Running: public EvBState<Running,Active,Enabled>
+    {
+
+    public:
+
+      typedef boost::mpl::list<> reactions;
+
+      Running(my_context c) : my_state("Running", c)
+      { safeEntryAction(); }
+      virtual ~Running()
+      { safeExitAction(); }
+
+      virtual void entryAction();
+      virtual void exitAction();
+
+    };
+
+
+    /**
+     * The Enabled state. Initial state of the outer-state Running.
+     */
+    class Enabled: public EvBState<Enabled,Running>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<Stop,Draining>
+      > reactions;
+
+      Enabled(my_context c) : my_state("Enabled", c)
+      { safeEntryAction(); }
+      virtual ~Enabled()
+      { safeExitAction(); }
+
+    };
+
+
+    /**
+     * The Draining state of outer-state Running.
+     */
+    class Draining: public EvBState<Draining,Running>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<DrainingDone,Ready>
+      > reactions;
+
+      Draining(my_context c) : my_state("Draining", c)
+      { safeEntryAction(); }
+      virtual ~Draining()
+      { safeExitAction(); }
+
+      virtual void entryAction();
+      virtual void exitAction();
+      void activity();
+
+    private:
+      boost::scoped_ptr<boost::thread> drainingThread_;
+      volatile bool doDraining_;
+
+    };
+
+  } } //namespace evb::bu
 
 #endif //_evb_bu_States_h_
 

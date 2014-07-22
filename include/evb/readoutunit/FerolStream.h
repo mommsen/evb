@@ -141,10 +141,11 @@ namespace evb {
         uint32_t corruptedEvents;
         uint32_t crcErrors;
         uint32_t fedErrors;
+        uint32_t synchLoss;
 
         FedErrors() { reset(); }
         void reset()
-        { corruptedEvents=0;crcErrors=0;fedErrors=0; }
+        { corruptedEvents=0;crcErrors=0;fedErrors=0;synchLoss=0; }
       };
       FedErrors fedErrors_;
       FedErrors previousFedErrors_;
@@ -359,7 +360,23 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   FedFragmentPtr fedFragment;
   while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
 
-  superFragment->append(fedFragment);
+  try
+  {
+    superFragment->append(fedFragment);
+  }
+  catch(exception::MismatchDetected& e)
+  {
+    uint32_t count = 0;
+    {
+      boost::mutex::scoped_lock sl(fedErrorsMutex_);
+      count = ++(fedErrors_.synchLoss);
+    }
+
+    if ( count <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedFragment,e.message());
+
+    readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
+  }
 }
 
 
