@@ -148,7 +148,7 @@ void evb::bu::Event::writeToDisk
 }
 
 
-void evb::bu::Event::checkEvent(const bool computeCRC) const
+void evb::bu::Event::checkEvent(const uint32_t checkCRC) const
 {
   if ( ! isComplete() )
   {
@@ -171,6 +171,7 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
   std::vector<std::string> crcErrors;
+  const bool computeCRC = ( checkCRC > 0 && evbId_.eventNumber() % checkCRC == 0 );
 
   try
   {

@@ -42,7 +42,7 @@ namespace evb {
       xdata::Double rawDataLowWaterMark;
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
-      xdata::Boolean checkCRC;                             // If set to true, check the CRC of the FED fragments
+      xdata::UnsignedInteger32 checkCRC;                   // Check the CRC of the FED fragments for every Nth event
       xdata::Boolean calculateAdler32;                     // If set to true, an adler32 checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
@@ -70,7 +70,7 @@ namespace evb {
           rawDataLowWaterMark(0.5),
           metaDataHighWaterMark(0.9),
           metaDataLowWaterMark(0.5),
-          checkCRC(true),
+          checkCRC(1),
           calculateAdler32(false),
           deleteRawDataFiles(false),
           maxEventsPerFile(2000),

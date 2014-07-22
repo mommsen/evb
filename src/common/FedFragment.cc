@@ -9,7 +9,7 @@
 
 
 evb::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-  : isCorrupted_(false),hasCRCerror_(false),bufRef_(bufRef),cache_(cache)
+  : isCorrupted_(false),bufRef_(bufRef),cache_(cache)
 {
   assert(bufRef);
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
@@ -36,7 +36,7 @@ unsigned char* evb::FedFragment::getFedPayload() const
 }
 
 
-uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
+uint32_t evb::FedFragment::checkIntegrity(const uint32_t checkCRC)
 {
   toolbox::mem::Reference* currentBufRef = bufRef_;
   unsigned char* payload = (unsigned char*)currentBufRef->getDataLocation();
@@ -46,6 +46,7 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
   payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
   uint16_t crc = 0xffff;
+  const bool computeCRC = ( checkCRC > 0 && eventNumber_ % checkCRC == 0 );
   uint32_t fedSize = 0;
   uint32_t usedSize = 0;
   ferolh_t* ferolHeader;
@@ -125,7 +126,7 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
 
     const uint32_t dataLength = ferolHeader->data_length();
 
-    if ( checkCRC )
+    if ( computeCRC )
     {
       if ( ferolHeader->is_last_packet() )
         crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
@@ -204,7 +205,7 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  if ( checkCRC )
+  if ( computeCRC )
   {
     // Force CRC & R field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
@@ -216,7 +217,6 @@ uint32_t evb::FedFragment::checkIntegrity(const bool checkCRC)
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
     if ( trailerCRC != crc )
     {
-      hasCRCerror_ = true;
       std::ostringstream oss;
       oss << "Wrong CRC checksum for FED " << fedId_ << ":" << std::hex;
       oss << " FED trailer claims 0x" << trailerCRC;

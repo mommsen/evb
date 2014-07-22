@@ -34,7 +34,7 @@ namespace evb {
       xdata::UnsignedInteger32 numberOfPreallocatedBlocks;   // Number of blocks pre-allocated during configure
       xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
-      xdata::Boolean checkCRC;                               // If set to true, check the CRC of the FED fragments
+      xdata::UnsignedInteger32 checkCRC;                     // Check the CRC of the FED fragments for every Nth event
       xdata::UnsignedInteger32 writeNextFragmentsToFile;     // Write the next N fragments to text files
       xdata::Boolean dropInputData;                          // If set to true, the input data is dropped
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
@@ -66,7 +66,7 @@ namespace evb {
           numberOfPreallocatedBlocks(0),
           fragmentFIFOCapacity(128),
           fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
-          checkCRC(false),
+          checkCRC(0),
           writeNextFragmentsToFile(0),
           dropInputData(false),
           computeCRC(true),

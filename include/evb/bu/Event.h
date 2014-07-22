@@ -61,7 +61,7 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent(const bool computeCRC) const;
+      void checkEvent(const uint32_t checkCRC) const;
 
       /**
        * Write the event to disk using the handler passed
