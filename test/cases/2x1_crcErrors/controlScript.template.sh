@@ -290,5 +290,100 @@ then
   exit 1
 fi
 
-echo "Test completed successfully"
+# Halt all applications
+sendCmdToEvB Halt
+sendCmdToFEROL Halt
+sleep 1
+
+# Configure all applications
+sendCmdToEvB Configure
+sendCmdToFEROL Configure
+sleep 1
+
+#Enable the system
+sendCmdToEvB Enable
+sendCmdToFEROL Enable
+sleep 3
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Enabled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Enabled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Enabled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
+echo "EVM superFragmentSize: $superFragmentSizeEVM"
+if [[ $superFragmentSizeEVM -ne 8192 ]]
+then
+  echo "Test failed: expected 8192"
+  exit 1
+fi
+
+superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
+echo "RU1 superFragmentSize: $superFragmentSizeRU1"
+if [[ $superFragmentSizeRU1 -ne 8192 ]]
+then
+  echo "Test failed: expected 8192"
+  exit 1
+fi
+
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
+echo "EVM eventRate: $eventRateEVM"
+if [[ $eventRateEVM -lt 500 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
+echo "BU0 eventSize: $eventSizeBU0"
+if [[ $eventSizeBU0 -ne 16384 ]]
+then
+  echo "Test failed: expected 16384"
+  exit 1
+fi
+
+nbCorruptedEventsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbCorruptedEvents xsd:unsignedLong)
+echo "BU0 nbCorruptedEvents: $nbCorruptedEventsBU0"
+if [[ $nbCorruptedEventsBU0 -ne 0 ]]
+then
+  echo "Test failed: expected 0"
+  exit 1
+fi
+
+nbEventsWithCRCerrorsBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsWithCRCerrors xsd:unsignedLong)
+echo "BU0 nbEventsWithCRCerrors: $nbEventsWithCRCerrorsBU0"
+if [[ $nbEventsWithCRCerrorsBU0 -ne 0 ]]
+then
+  echo "Test failed: expected 0"
+  exit 1
+fi
+
+echo "Test launched successfully"
 exit 0

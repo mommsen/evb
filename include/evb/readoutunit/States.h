@@ -82,6 +82,7 @@ namespace evb {
 
       typedef EvBState< Failed<Owner>,Outermost<Owner> > my_state;
       typedef boost::mpl::list<
+        boost::statechart::transition< Halt,Halted<Owner> >,
         boost::statechart::in_state_reaction< Fail >
         > reactions;
 

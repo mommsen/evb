@@ -334,6 +334,88 @@ then
   exit 1
 fi
 
+changeStates Halt Halted
 
-echo "Test completed successfully"
+checkStates "Halted"
+
+changeStates Configure Configuring
+sleep 1
+
+checkStates "Ready"
+
+changeStates Enable Enabled
+
+checkStates "Enabled"
+
+echo "Building for 2 seconds"
+sleep 2
+
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
+
+echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
+
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+then
+ echo "Test failed"
+ exit 1
+fi
+
+if [[ $nbEventsBuiltBU1 -lt 1000 ]]
+then
+ echo "Test failed"
+ exit 1
+fi
+
+checkStates "Enabled"
+
+# fail the RU
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Fail
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+changeStates Halt Halted
+
+checkStates "Halted"
+
+changeStates Configure Configuring
+sleep 1
+
+checkStates "Ready"
+
+changeStates Enable Enabled
+
+checkStates "Enabled"
+
+echo "Building for 2 seconds"
+sleep 2
+
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
+
+echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
+
+if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+then
+ echo "Test failed"
+ exit 1
+fi
+
+if [[ $nbEventsBuiltBU1 -lt 1000 ]]
+then
+ echo "Test failed"
+ exit 1
+fi
+
+checkStates "Enabled"
+
+echo "Test launched successfully"
 exit 0

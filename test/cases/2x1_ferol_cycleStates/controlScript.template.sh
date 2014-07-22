@@ -399,5 +399,139 @@ then
   exit 1
 fi
 
-echo "Test completed successfully"
+echo "Restarting run 5"
+changeStates Configure
+sleep 1
+run 5
+
+# fail the EVM
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Fail
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 6"
+changeStates Configure
+sleep 1
+run 6
+
+# fail the RU
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Fail
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 7"
+changeStates Configure
+sleep 1
+run 7
+
+# fail the BU
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Fail
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 8"
+changeStates Configure
+sleep 1
+run 8
+
+echo "Test launched successfully"
 exit 0

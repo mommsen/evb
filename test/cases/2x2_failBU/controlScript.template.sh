@@ -10,6 +10,85 @@ echo "dummy HLT menu for EvB test" >> $testDir/HltConfig.py
 echo "slc6_amd64_gcc472" >> $testDir/SCRAM_ARCH
 echo "cmssw_noxdaq" >> $testDir/CMSSW_VERSION
 
+function startRun
+{
+  sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Configure
+  sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Configure
+  sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Configure
+  sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Configure
+
+  sleep 1
+
+  runNumber=$(date "+%s")
+
+  #Enable EVM
+  setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $runNumber
+  sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Enable
+
+  #Enable RU
+  setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $runNumber
+  sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Enable
+
+  #Enable BUs
+  setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
+  setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 runNumber unsignedInt $runNumber
+  setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/"
+  setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 hltParameterSetURL string "file://$testDir/"
+  sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
+  sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable
+
+  echo "Sending data for 12 seconds"
+  sleep 12
+
+  superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
+  echo "EVM superFragmentSize: $superFragmentSizeEVM"
+  if [[ $superFragmentSizeEVM -ne 2048 ]]
+  then
+    echo "Test failed: expected 2048"
+    exit 1
+  fi
+
+  superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
+  echo "RU1 superFragmentSize: $superFragmentSizeRU1"
+  if [[ $superFragmentSizeRU1 -ne 24576 ]]
+  then
+    echo "Test failed: expected 24576"
+    exit 1
+  fi
+
+  nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+  echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
+  if [[ $nbEventsBuiltBU0 -lt 1000 ]]
+  then
+    echo "Test failed"
+    exit 1
+  fi
+
+  nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
+  echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
+  if [[ $nbEventsBuiltBU1 -lt 1000 ]]
+  then
+    echo "Test failed"
+    exit 1
+  fi
+
+  eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
+  echo "BU0 eventSize: $eventSizeBU0"
+  if [[ $eventSizeBU0 -ne 26624 ]]
+  then
+    echo "Test failed: expected 26624"
+    exit 1
+  fi
+
+  eventSizeBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 eventSize xsd:unsignedInt)
+  echo "BU1 eventSize: $eventSizeBU1"
+  if [[ $eventSizeBU1 -ne 26624 ]]
+  then
+    echo "Test failed: expected 26624"
+    exit 1
+  fi
+}
+
 # Launch executive processes
 sendCmdToLauncher RU0_SOAP_HOST_NAME RU0_LAUNCHER_PORT STARTXDAQRU0_SOAP_PORT
 sendCmdToLauncher RU1_SOAP_HOST_NAME RU1_LAUNCHER_PORT STARTXDAQRU1_SOAP_PORT
@@ -60,81 +139,7 @@ setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 rawDataDir string $testDir/B
 setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 metaDataDir string $testDir/BU0
 setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 metaDataDir string $testDir/BU1
 
-sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Configure
-sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Configure
-sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Configure
-sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Configure
-
-sleep 1
-
-runNumber=$(date "+%s")
-
-#Enable EVM
-setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $runNumber
-sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Enable
-
-#Enable RU
-setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $runNumber
-sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Enable
-
-#Enable BUs
-setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 runNumber unsignedInt $runNumber
-setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 runNumber unsignedInt $runNumber
-setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "file://$testDir/"
-setParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 hltParameterSetURL string "file://$testDir/"
-sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
-sendSimpleCmdToApp BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 Enable
-
-echo "Sending data for 12 seconds"
-sleep 12
-
-superFragmentSizeEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 superFragmentSize xsd:unsignedInt)
-echo "EVM superFragmentSize: $superFragmentSizeEVM"
-if [[ $superFragmentSizeEVM -ne 2048 ]]
-then
-  echo "Test failed: expected 2048"
-  exit 1
-fi
-
-superFragmentSizeRU1=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 superFragmentSize xsd:unsignedInt)
-echo "RU1 superFragmentSize: $superFragmentSizeRU1"
-if [[ $superFragmentSizeRU1 -ne 24576 ]]
-then
-  echo "Test failed: expected 24576"
-  exit 1
-fi
-
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
-echo "BU0 nbEventsBuilt: $nbEventsBuiltBU0"
-if [[ $nbEventsBuiltBU0 -lt 1000 ]]
-then
-  echo "Test failed"
-  exit 1
-fi
-
-nbEventsBuiltBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 nbEventsBuilt xsd:unsignedLong)
-echo "BU1 nbEventsBuilt: $nbEventsBuiltBU1"
-if [[ $nbEventsBuiltBU1 -lt 1000 ]]
-then
-  echo "Test failed"
-  exit 1
-fi
-
-eventSizeBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 eventSize xsd:unsignedInt)
-echo "BU0 eventSize: $eventSizeBU0"
-if [[ $eventSizeBU0 -ne 26624 ]]
-then
-  echo "Test failed: expected 26624"
-  exit 1
-fi
-
-eventSizeBU1=$(getParam BU1_SOAP_HOST_NAME BU1_SOAP_PORT evb::BU 1 eventSize xsd:unsignedInt)
-echo "BU1 eventSize: $eventSizeBU1"
-if [[ $eventSizeBU1 -ne 26624 ]]
-then
-  echo "Test failed: expected 26624"
-  exit 1
-fi
+startRun
 
 #Fail BU 0
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Fail
@@ -201,5 +206,20 @@ fi
 
 checkBuDir $testDir/BU1/run$runNumber 28672 0
 
-echo "Test completed successfully"
+#Recover failed BU
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Halt
+sleep 2
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+# Restart new run
+startRun
+
+echo "Test launched successfully"
 exit 0

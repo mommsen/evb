@@ -73,6 +73,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
+      boost::statechart::transition<Halt,Halted>,
       boost::statechart::in_state_reaction<Fail>
       > reactions;
 
