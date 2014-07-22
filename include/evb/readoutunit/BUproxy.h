@@ -161,6 +161,7 @@ namespace evb {
       struct DataMonitoring
       {
         uint32_t lastEventNumberToBUs;
+        uint32_t lastLumiSectionToBUs;
         int32_t outstandingEvents;
         uint64_t logicalCount;
         uint64_t payload;
@@ -485,6 +486,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   uint32_t payloadSize = 0;
   uint32_t i2oCount = 0;
   uint32_t lastEventNumberToBUs = 0;
+  uint32_t lastLumiSectionToBUs = 0;
 
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
@@ -515,7 +517,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     size_t size = nbSuperFragments*sizeof(EvBid);
     memcpy(payload,&fragmentRequest->evbIds[0],size);
     payload += size;
-    lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments].eventNumber();
+    lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments-1].eventNumber();
+    lastLumiSectionToBUs = fragmentRequest->evbIds[nbSuperFragments-1].lumiSection();
 
     size = nbRUtids*sizeof(I2O_TID);
     memcpy(payload,&fragmentRequest->ruTids[0],size);
@@ -546,6 +549,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   }
 
   dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
+  dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
   dataMonitoring_.outstandingEvents += nbSuperFragments;
   dataMonitoring_.i2oCount += i2oCount;
   dataMonitoring_.payload += payloadSize;
@@ -747,6 +751,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
   {
     boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
     dataMonitoring_.lastEventNumberToBUs = 0;
+    dataMonitoring_.lastLumiSectionToBUs = 0;
     dataMonitoring_.outstandingEvents = 0;
     dataMonitoring_.payload = 0;
     dataMonitoring_.logicalCount = 0;
@@ -769,6 +774,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   table.add(tr()
             .add(td("last evt number to BUs"))
             .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+  table.add(tr()
+            .add(td("last lumi section to BUs"))
+            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
   table.add(tr()
             .add(td("# of active responders"))
             .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
