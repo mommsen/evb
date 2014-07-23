@@ -415,6 +415,11 @@ void evb::bu::ResourceManager::updateResources()
     const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
     resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
+
+  if ( resourcesToBlock_ == nbResources_ )
+  {
+    bu_->getStateMachine();
+  }
 }
 
 
