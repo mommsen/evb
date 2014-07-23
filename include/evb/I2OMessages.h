@@ -15,6 +15,7 @@ namespace evb {
 
     typedef std::vector<EvBid> EvBids;
     typedef std::vector<I2O_TID> RUtids;
+    typedef std::vector<uint16_t> FedIds;
 
     /**
      * BU to EVM to RU message that contains one or more event-builder ids to be sent
@@ -42,14 +43,18 @@ namespace evb {
     /**
      * A super-fragment containing data from all FEDs connected to the RU
      */
-    typedef struct
+    struct SuperFragment
     {
       uint32_t superFragmentNb;                  // Index of the super fragment
       uint32_t totalSize;                        // Total size of the super fragment
       uint32_t partSize;                         // Partial size of the super-fragment contained in this message
-      uint32_t padding;
+      uint16_t nbDroppedFeds;                    // Number of FEDs dropped from the super fragment
+      uint16_t fedIds[];                         // List of dropped FED ids
 
-    } SuperFragment;
+      uint32_t getHeaderSize() const;
+      void appendFedIds(FedIds&) const;
+
+    };
 
 
     /**
@@ -72,36 +77,34 @@ namespace evb {
 
     };
 
+    std::ostream& operator<<
+    (
+      std::ostream& s,
+      const I2O_PRIVATE_MESSAGE_FRAME
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::ReadoutMsg
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::SuperFragment
+    );
+
+
+    std::ostream& operator<<
+    (
+      std::ostream&,
+      const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME&
+    );
 
   } } // namespace evb::msg
-
-
-std::ostream& operator<<
-(
-  std::ostream& s,
-  const I2O_PRIVATE_MESSAGE_FRAME
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::ReadoutMsg
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::SuperFragment
-);
-
-
-std::ostream& operator<<
-(
-  std::ostream&,
-  const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME&
-);
 
 
 #endif // _evb_I2OMessages_h_

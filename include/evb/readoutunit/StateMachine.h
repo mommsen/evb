@@ -74,11 +74,27 @@ owner_(owner)
 template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected& evt)
 {
-  LOG4CPLUS_ERROR(this->getLogger(), evt.getTraceback());
+  this->reasonForError_ = evt.getTraceback();
 
-  this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
+  LOG4CPLUS_ERROR(this->getLogger(), this->reasonForError_);
 
-  this->app_->notifyQualified("error", evt.getException());
+  try
+  {
+    this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SynchLoss!");
+  }
+
+  try
+  {
+    this->app_->notifyQualified("error", evt.getException());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SynchLoss!");
+  }
 }
 
 

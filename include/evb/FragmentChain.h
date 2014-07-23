@@ -1,55 +1,35 @@
-#ifndef _evb_ru_FragmentChain_h_
-#define _evb_ru_FragmentChain_h_
+#ifndef _evb_FragmentChain_h_
+#define _evb_FragmentChain_h_
 
 #include <boost/shared_ptr.hpp>
 
+#include <sstream>
 #include <stdint.h>
 #include <vector>
 
 #include "evb/EvBid.h"
+#include "evb/Exception.h"
+#include "evb/FedFragment.h"
 #include "evb/I2OMessages.h"
 #include "interface/shared/i2ogevb2g.h"
-#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
 
 namespace evb {
 
   /**
-   * \ingroup xdaqApps
-   * \brief A chain of event fragment
-   */
+  * \ingroup xdaqApps
+  * \brief A chain of event fragment
+  */
 
   template<class T>
   class FragmentChain
   {
   public:
 
-    struct Fragment
-    {
-      const EvBid evbId;
-      toolbox::mem::Reference* bufRef;
-      tcpla::MemoryCache* cache;
-
-      Fragment(EvBid evbId, toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-        : evbId(evbId),bufRef(bufRef),cache(cache) {};
-
-      ~Fragment()
-      {
-        // break any chain
-        bufRef->setNextReference(0);
-        cache->grantFrame(bufRef);
-      }
-    };
-    typedef boost::shared_ptr<Fragment> FragmentPtr;
-
-    typedef std::vector<uint32_t> ResourceList;
-
     FragmentChain();
     FragmentChain(const uint32_t resourceCount);
-    FragmentChain(FragmentPtr&);
     FragmentChain(const EvBid&);
-    FragmentChain(const EvBid&, toolbox::mem::Reference*);
 
     ~FragmentChain();
 
@@ -67,7 +47,7 @@ namespace evb {
     /**
      * Append the fragment. Keep track of the tcpla::MemoryCache.
      */
-    void append(FragmentPtr&);
+    void append(FedFragmentPtr&);
 
     /**
      * Return the head of the toolbox::mem::Reference chain
@@ -99,6 +79,10 @@ namespace evb {
     bool isComplete() const
     { return resourceList_.empty(); }
 
+    typedef std::vector<uint16_t> MissingFedIds;
+    MissingFedIds getMissingFedIds() const
+    { return missingFedIds_; }
+
 
   private:
 
@@ -107,16 +91,19 @@ namespace evb {
     void chainFragment(toolbox::mem::Reference*);
 
     EvBid evbId_;
+    typedef std::vector<uint32_t> ResourceList;
     ResourceList resourceList_;
-    size_t size_;
     toolbox::mem::Reference* head_;
     toolbox::mem::Reference* tail_;
+    size_t size_;
 
     typedef std::vector<toolbox::mem::Reference*> BufRefs;
     BufRefs bufRefs_;
 
-    typedef std::vector<FragmentPtr> Fragments;
-    Fragments fragments_;
+    typedef std::vector<FedFragmentPtr> FedFragments;
+    FedFragments fedFragments_;
+
+    MissingFedIds missingFedIds_;
 
   }; // FragmentChain
 
@@ -142,15 +129,15 @@ namespace evb {
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain() :
-  size_(0),
-  head_(0),tail_(0)
+  head_(0),tail_(0),
+  size_(0)
 {}
 
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const uint32_t resourceCount) :
-  size_(0),
-  head_(0),tail_(0)
+  head_(0),tail_(0),
+  size_(0)
 {
   for (uint32_t i = 1; i <= resourceCount; ++i)
   {
@@ -161,28 +148,10 @@ evb::FragmentChain<T>::FragmentChain(const uint32_t resourceCount) :
 
 template<class T>
 evb::FragmentChain<T>::FragmentChain(const EvBid& evbId) :
-evbId_(evbId),
-size_(0),
-head_(0),tail_(0)
-{}
-
-
-template<class T>
-evb::FragmentChain<T>::FragmentChain(const EvBid& evbId, toolbox::mem::Reference* bufRef) :
   evbId_(evbId),
-  size_(calculateSize(bufRef)),
-  head_(bufRef),tail_(bufRef)
+  head_(0),tail_(0),
+  size_(0)
 {}
-
-
-template<class T>
-evb::FragmentChain<T>::FragmentChain(FragmentPtr& fragment) :
-evbId_(fragment->evbId),
-size_(calculateSize(fragment->bufRef)),
-head_(fragment->bufRef),tail_(fragment->bufRef)
-{
-  fragments_.push_back(fragment);
-}
 
 
 template<class T>
@@ -196,7 +165,7 @@ evb::FragmentChain<T>::~FragmentChain()
     (*it)->release();
   }
   bufRefs_.clear();
-  fragments_.clear();
+  fedFragments_.clear();
 }
 
 
@@ -245,11 +214,28 @@ void evb::FragmentChain<T>::append
 template<class T>
 void evb::FragmentChain<T>::append
 (
-  FragmentPtr& fragment
+  FedFragmentPtr& fedFragment
 )
 {
-  chainFragment(fragment->bufRef);
-  fragments_.push_back(fragment);
+  if ( fedFragment->getEvBid() != evbId_ )
+  {
+    std::ostringstream oss;
+    oss << "Mismatch detected: expected evb id "
+      << evbId_ << ", but found evb id "
+      << fedFragment->getEvBid() << " in data block from FED "
+      << fedFragment->getFedId();
+    XCEPT_RAISE(exception::MismatchDetected, oss.str());
+  }
+
+  if ( fedFragment->isCorrupted() )
+  {
+    missingFedIds_.push_back(fedFragment->getFedId());
+  }
+  else
+  {
+    chainFragment(fedFragment->getBufRef());
+    fedFragments_.push_back(fedFragment);
+  }
 }
 
 
@@ -287,7 +273,7 @@ void evb::FragmentChain<T>::chainFragment
   while (bufRef);
 }
 
-#endif // _evb_ru_FragmentChain_h_
+#endif // _evb_FragmentChain_h_
 
 
 /// emacs configuration

@@ -1,14 +1,15 @@
 #include "evb/RU.h"
 #include "evb/readoutunit/BUproxy.h"
+#include "evb/readoutunit/Configuration.h"
+#include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/States.h"
-#include "evb/ru/RUinput.h"
 
 
 evb::RU::RU(xdaq::ApplicationStub* app) :
   ru::ReadoutUnit(app,"/evb/images/ru64x64.gif")
 {
   this->stateMachine_.reset( new ru::RUStateMachine(this) );
-  this->input_.reset( new ru::RUinput(this) );
+  this->input_.reset( new readoutunit::Input<RU,readoutunit::Configuration>(this) );
   this->buProxy_.reset( new readoutunit::BUproxy<RU>(this) );
 
   this->initialize();
@@ -50,7 +51,7 @@ namespace evb {
           superFragments.push_back(superFragment);
         }
       }
-      catch ( exception::HaltRequested )
+      catch(exception::HaltRequested)
       {
         return false;
       }

@@ -60,8 +60,6 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
   {
     do_closeFile();
   }
-
-  ::usleep(configuration_->sleepBetweenEvents);
 }
 
 

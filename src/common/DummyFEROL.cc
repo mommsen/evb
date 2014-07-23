@@ -18,6 +18,7 @@
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
   doProcessing_(false),
+  generatingActive_(false),
   fragmentFIFO_(this,"fragmentFIFO")
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );

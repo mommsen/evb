@@ -49,9 +49,7 @@ namespace evb {
       (
         const I2O_TID ruTid,
         toolbox::mem::Reference*,
-        const unsigned char* fragmentPos,
-        const uint32_t partSize,
-        const uint32_t totalSize
+        unsigned char* payload
       );
 
       /**
@@ -63,7 +61,7 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent(const bool computeCRC) const;
+      void checkEvent(const uint32_t checkCRC) const;
 
       /**
        * Write the event to disk using the handler passed
@@ -179,6 +177,8 @@ namespace evb {
       const uint16_t buResourceId_;
       typedef std::map<I2O_TID,uint32_t> RUsizes;
       RUsizes ruSizes_;
+
+      msg::FedIds missingFedIds_;
 
     }; // Event
 

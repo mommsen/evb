@@ -27,7 +27,7 @@ evb::bu::ResourceManager::ResourceManager
   builderId_(0),
   freeResourceFIFO_(bu,"freeResourceFIFO"),
   blockedResourceFIFO_(bu,"blockedResourceFIFO"),
-  lumiSectionAccountFIFO_(bu,"lumiSectionAccountFIFO")
+  draining_(false)
 {
   resetMonitoringCounters();
 }
@@ -55,7 +55,9 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
     pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
-      pos->second.evbIdList.push_back(dataBlockMsg->evbIds[i]);
+      const EvBid& evbId = dataBlockMsg->evbIds[i];
+      pos->second.evbIdList.push_back(evbId);
+      incrementEventsInLumiSection(evbId.lumiSection());
     }
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
@@ -104,81 +106,132 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 }
 
 
+uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection()
+{
+  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+
+  if ( lumiSectionAccounts_.empty() )
+    return 0;
+  else
+    return lumiSectionAccounts_.begin()->first;
+}
+
+
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
+  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
-  if ( ! currentLumiSectionAccount_.get() ) return;
+  LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(lumiSection);
 
-  const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
-  if ( lumiSection < currentLumiSection )
+  if ( pos == lumiSectionAccounts_.end() )
+  {
+    // backfill any skipped lumi sections
+    const uint32_t newestLumiSection = lumiSectionAccounts_.empty() ? 0 : lumiSectionAccounts_.rbegin()->first;
+    for ( uint32_t ls = newestLumiSection+1; ls <= lumiSection; ++ls )
+    {
+      LumiSectionAccountPtr lumiAccount( new LumiSectionAccount(ls) );
+      pos = lumiSectionAccounts_.insert(LumiSectionAccounts::value_type(ls,lumiAccount)).first;
+    }
+  }
+
+  if ( pos == lumiSectionAccounts_.end() )
   {
     std::ostringstream oss;
     oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << currentLumiSection;
+    oss << " that has already been closed.";
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  if ( lumiSection > currentLumiSection )
-  {
-    lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
-
-    // backfill any skipped lumi sections
-    for (uint32_t ls = currentLumiSection+1; ls < lumiSection; ++ls)
-    {
-      lumiSectionAccountFIFO_.enqWait(LumiSectionAccountPtr( new LumiSectionAccount(ls) ));
-    }
-
-    currentLumiSectionAccount_.reset( new LumiSectionAccount(lumiSection) );
-  }
-
-  ++(currentLumiSectionAccount_->nbEvents);
+  ++(pos->second->nbEvents);
+  ++(pos->second->incompleteEvents);
 }
 
 
-bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& lumiSectionAcount)
+void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiSection)
 {
-  if ( lumiSectionAccountFIFO_.deq(lumiSectionAcount) ) return true;
+  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
+  LumiSectionAccounts::iterator pos = lumiSectionAccounts_.find(lumiSection);
+
+  if ( pos == lumiSectionAccounts_.end() )
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-    if ( eventMonitoring_.nbEventsInBU > 0 ) return false; // don't expire LS if we have incomplete events
+    std::ostringstream oss;
+    oss << "Completed an event from an unknown lumi section " << lumiSection;
+    XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
-  if ( currentLumiSectionAccount_.get() )
+  --(pos->second->incompleteEvents);
+
+  if ( configuration_->dropEventData &&
+       pos->second->incompleteEvents == 0 &&
+       lumiSectionAccounts_.size() > 1 ) // there are newer lumi sections
   {
-    const uint32_t currentLumiSection = currentLumiSectionAccount_->lumiSection;
-    const uint32_t lumiDuration = time(0) - currentLumiSectionAccount_->startTime;
-    if ( currentLumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
+    lumiSectionAccounts_.erase(pos);
+  }
+}
+
+
+bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& lumiSectionAccount)
+{
+  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+
+  if ( lumiSectionAccounts_.empty() ) return false;
+
+  if ( blockedResourceFIFO_.full() )
+  {
+    // do not expire any lumi section if all resources are blocked
+    time_t now = time(0);
+    for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
+          it != itEnd; ++it)
     {
-      std::ostringstream msg;
-      msg.setf(std::ios::fixed);
-      msg.precision(1);
-      msg << "Lumi section " <<  currentLumiSection << " timed out after " << lumiDuration << "s";
-      LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
-      lumiSectionAcount.swap(currentLumiSectionAccount_);
-      currentLumiSectionAccount_.reset( new LumiSectionAccount(currentLumiSection+1) );
+      it->second->startTime = now;
+    }
+
+    return false;
+  }
+
+  LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
+
+  if ( oldestLumiSection->second->incompleteEvents == 0 )
+  {
+    if ( lumiSectionAccounts_.size() > 1 // there are newer lumi sections
+         || draining_ )
+    {
+      lumiSectionAccount = oldestLumiSection->second;
+      lumiSectionAccounts_.erase(oldestLumiSection);
       return true;
     }
+    else // check if the current lumi section timed out
+    {
+      uint32_t lumiSection = oldestLumiSection->second->lumiSection;
+      const uint32_t lumiDuration = time(0) - oldestLumiSection->second->startTime;
+      if ( lumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
+      {
+        std::ostringstream msg;
+        msg.setf(std::ios::fixed);
+        msg.precision(1);
+        msg << "Lumi section " << lumiSection << " timed out after " << lumiDuration << "s";
+        LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
+        lumiSectionAccount = oldestLumiSection->second;
+        lumiSectionAccounts_.erase(oldestLumiSection);
+
+        // Insert the next lumi section
+        ++lumiSection;
+        LumiSectionAccountPtr lumiAccount( new LumiSectionAccount(lumiSection) );
+        lumiSectionAccounts_.insert(LumiSectionAccounts::value_type(lumiSection,lumiAccount));
+
+        return true;
+      }
+    }
   }
+
   return false;
-}
-
-
-uint32_t evb::bu::ResourceManager::getCurrentLumiSection()
-{
-  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
-  if ( currentLumiSectionAccount_.get() )
-    return currentLumiSectionAccount_->lumiSection;
-  else
-    return 0;
 }
 
 
 void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
-  incrementEventsInLumiSection(event->lumiSection());
+  eventCompletedForLumiSection(event->lumiSection());
 
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
@@ -266,38 +319,20 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
 void evb::bu::ResourceManager::startProcessing()
 {
+  draining_ = false;
   resetMonitoringCounters();
-
-  if ( ! configuration_->dropEventData )
-  {
-    boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
-    currentLumiSectionAccount_.reset( new LumiSectionAccount(1) );
-  }
 }
 
 
 void evb::bu::ResourceManager::drain()
 {
-  enqCurrentLumiSectionAccount();
-  while ( ! lumiSectionAccountFIFO_.empty() ) { ::usleep(1000); }
+  draining_ = true;
 }
 
 
 void evb::bu::ResourceManager::stopProcessing()
 {
-  enqCurrentLumiSectionAccount();
-}
-
-
-void evb::bu::ResourceManager::enqCurrentLumiSectionAccount()
-{
-  boost::mutex::scoped_lock sl(currentLumiSectionAccountMutex_);
-
-  if ( currentLumiSectionAccount_.get() )
-  {
-    lumiSectionAccountFIFO_.enqWait(currentLumiSectionAccount_);
-    currentLumiSectionAccount_.reset();
-  }
+  draining_ = true;
 }
 
 
@@ -454,13 +489,12 @@ void evb::bu::ResourceManager::configure()
   freeResourceFIFO_.clear();
   blockedResourceFIFO_.clear();
   allocatedResources_.clear();
-  lumiSectionAccountFIFO_.clear();
+  lumiSectionAccounts_.clear();
   diskUsageMonitors_.clear();
   resourceDirectory_.clear();
 
   eventsToDiscard_ = 0;
 
-  lumiSectionAccountFIFO_.resize(configuration_->lumiSectionFIFOCapacity);
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
   nbResources_ = std::max(1U,
@@ -590,9 +624,40 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
             .add(td().set("colspan","2")
                  .add(blockedResourceFIFO_.getHtmlSnipped())));
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(lumiSectionAccountFIFO_.getHtmlSnipped())));
+  {
+    boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+
+    if ( ! lumiSectionAccounts_.empty() )
+    {
+      cgicc::table lumiSectionTable;
+      lumiSectionTable.add(tr()
+                           .add(th("Active lumi sections").set("colspan","4")));
+      lumiSectionTable.add(tr()
+                           .add(td("LS"))
+                           .add(td("#events"))
+                           .add(td("#incomplete"))
+                           .add(td("age (s)")));
+
+      time_t now = time(0);
+      for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
+            it != itEnd; ++it)
+      {
+        std::ostringstream str;
+        str.setf(std::ios::fixed);
+        str.precision(1);
+        str << now - it->second->startTime;
+
+        lumiSectionTable.add(tr()
+                             .add(td(boost::lexical_cast<std::string>(it->first)))
+                             .add(td(boost::lexical_cast<std::string>(it->second->nbEvents)))
+                             .add(td(boost::lexical_cast<std::string>(it->second->incompleteEvents)))
+                             .add(td(str.str())));
+      }
+
+      table.add(tr()
+                .add(td(lumiSectionTable).set("colspan","2")));
+    }
+  }
 
   cgicc::div div;
   div.add(p("ResourceManager"));

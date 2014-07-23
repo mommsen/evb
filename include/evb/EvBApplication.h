@@ -672,10 +672,11 @@ cgicc::div evb::EvBApplication<Configuration,StateMachine>::getWebPageBanner() c
              .add(td(stateName))
              .add(td("Page last updated: "+getCurrentTimeUTC()+" UTC")));
 
-  if ( stateName == "Failed" )
+  const std::string reasonForError = stateMachine_->getReasonForError();
+  if ( ! reasonForError.empty() )
   {
     banner.add(tr().set("class","xdaq-error")
-               .add(td(stateMachine_->getReasonForFailed()).set("colspan","2")));
+               .add(td(reasonForError).set("colspan","2")));
   }
 
   cgicc::div div;

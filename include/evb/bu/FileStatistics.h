@@ -25,27 +25,27 @@ namespace evb {
     };
     typedef boost::shared_ptr<FileStatistics> FileStatisticsPtr;
 
+
+    inline std::ostream& operator<<
+    (
+      std::ostream& s,
+      const evb::bu::FileStatisticsPtr fileStatistics
+    )
+    {
+      if ( fileStatistics.get() )
+      {
+        s << "creationTime=" << asctime(gmtime(&fileStatistics->creationTime)) << " GMT ";
+        s << "lumiSection=" << fileStatistics->lumiSection << " ";
+        s << "fileName=" << fileStatistics->fileName << " ";
+        s << "nbEventsWritten=" << fileStatistics->nbEventsWritten << " ";
+        s << "lastEventNumberWritten=" << fileStatistics->lastEventNumberWritten << " ";
+        s << "fileSize=" << fileStatistics->fileSize << " Bytes";
+      }
+
+      return s;
+    }
+
   } } // namespace evb::bu
-
-
-inline std::ostream& operator<<
-(
-  std::ostream& s,
-  const evb::bu::FileStatisticsPtr fileStatistics
-)
-{
-  if ( fileStatistics.get() )
-  {
-    s << "creationTime=" << asctime(gmtime(&fileStatistics->creationTime)) << " GMT ";
-    s << "lumiSection=" << fileStatistics->lumiSection << " ";
-    s << "fileName=" << fileStatistics->fileName << " ";
-    s << "nbEventsWritten=" << fileStatistics->nbEventsWritten << " ";
-    s << "lastEventNumberWritten=" << fileStatistics->lastEventNumberWritten << " ";
-    s << "fileSize=" << fileStatistics->fileSize << " Bytes";
-  }
-
-  return s;
-}
 
 #endif // _evb_bu_FileStatistics_h_
 

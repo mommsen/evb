@@ -36,22 +36,19 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
+	FedFragment.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
 	EVM.cc \
-	evm/FEROLproxy.cc \
 	evm/RUproxy.cc \
 	RU.cc \
-	ru/FEROLproxy.cc \
-	readoutunit/ScalerHandler.cc \
 	BU.cc \
 	bu/DiskUsage.cc \
 	bu/DiskWriter.cc \
 	bu/Event.cc \
 	bu/EventBuilder.cc \
 	bu/FileHandler.cc \
-	bu/LumiBarrier.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \

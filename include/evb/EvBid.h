@@ -57,10 +57,9 @@ namespace evb {
     /**
      * comparison operators
      */
-    bool operator< (const EvBid& other) const;
-    bool operator== (const EvBid& other) const;
-    bool operator!= (const EvBid& other) const;
-
+    bool operator< (const EvBid&) const;
+    bool operator== (const EvBid&) const;
+    bool operator!= (const EvBid&) const;
 
   private:
 
@@ -93,22 +92,17 @@ namespace evb {
     return !( *this == other );
   }
 
+  inline std::ostream& operator<< (std::ostream& s, const evb::EvBid& evbId)
+  {
+    s << "runNumber=" << evbId.runNumber() << " ";
+    s << "lumiSection=" << evbId.lumiSection() << " ";
+    s << "resyncCount=" << evbId.resyncCount() << " ";
+    s << "eventNumber=" << evbId.eventNumber();
+
+    return s;
+  }
+
 } // namespace evb
-
-
-inline std::ostream& operator<<
-(
-  std::ostream& s,
-  const evb::EvBid evbId
-)
-{
-  s << "runNumber=" << evbId.runNumber() << " ";
-  s << "lumiSection=" << evbId.lumiSection() << " ";
-  s << "resyncCount=" << evbId.resyncCount() << " ";
-  s << "eventNumber=" << evbId.eventNumber();
-
-  return s;
-}
 
 
 #endif // _evb_EvBid_h_

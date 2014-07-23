@@ -21,6 +21,11 @@ XCEPT_DEFINE_EXCEPTION(evb, DataCorruption)
 XCEPT_DEFINE_EXCEPTION(evb, CRCerror)
 
 /**
+ * Exception raised when detecting an issue in the FED trailer
+ */
+XCEPT_DEFINE_EXCEPTION(evb, FEDerror)
+
+/**
  * Exception raised when failing to write data do disk
  */
 XCEPT_DEFINE_EXCEPTION(evb, DiskWriting)
@@ -51,9 +56,9 @@ XCEPT_DEFINE_EXCEPTION(evb, FSM)
 XCEPT_DEFINE_EXCEPTION(evb, I2O)
 
 /**
- * Exception raised by the EVM when encountering a L1 trigger problem
+ * Exception raised by the EVM if the TCDS information cannot be extracted
  */
-XCEPT_DEFINE_EXCEPTION(evb, L1Trigger)
+XCEPT_DEFINE_EXCEPTION(evb, TCDS)
 
 /**
  * Exception raised when a super-fragment mismatch occured

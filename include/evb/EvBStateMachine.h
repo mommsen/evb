@@ -81,7 +81,8 @@ namespace evb {
 
     std::string getStateName() const { return stateName_; }
     uint32_t getRunNumber() const { return runNumber_.value_; }
-    std::string getReasonForFailed() const { return reasonForFailed_; }
+    std::string getReasonForError() const { return reasonForError_; }
+    void clearError() { reasonForError_.clear(); }
 
     typedef std::list<std::string> SoapFsmEvents;
     SoapFsmEvents getSoapFsmEvents() const { return soapFsmEvents_; }
@@ -92,6 +93,7 @@ namespace evb {
 
     xdaq::Application* app_;
     xdaq2rc::RcmsStateNotifier rcmsStateNotifier_;
+    std::string reasonForError_;
 
     SoapFsmEvents soapFsmEvents_;
 
@@ -103,7 +105,6 @@ namespace evb {
     xdata::UnsignedInteger32 runNumber_;
     std::string stateName_;
 
-    std::string reasonForFailed_;
     xdata::UnsignedInteger32 monitoringRunNumber_;
     xdata::String monitoringStateName_;
   };
@@ -218,8 +219,7 @@ evb::EvBStateMachine<MostDerived,InitialState>::EvBStateMachine
     app->getApplicationContext()
   ),
   runNumber_(0),
-  stateName_("Halted"),
-  reasonForFailed_("")
+  stateName_("Halted")
 {
   xdata::InfoSpace *is = app->getApplicationInfoSpace();
   is->fireItemAvailable("rcmsStateListener",
@@ -341,10 +341,10 @@ void evb::EvBStateMachine<MostDerived,InitialState>::notifyRCMS
 template <class MostDerived,class InitialState>
 void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
 {
-  reasonForFailed_ = evt.getTraceback();
+  reasonForError_ = evt.getTraceback();
 
   LOG4CPLUS_FATAL(getLogger(),
-                  "Failed: " << evt.getReason() << ". " << reasonForFailed_);
+                  "Failed: " << evt.getReason() << ". " << reasonForError_);
 
   try
   {
@@ -363,9 +363,6 @@ void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
   {
     LOG4CPLUS_FATAL(getLogger(),"Failed to notify the sentinel that we failed!");
   }
-
-  boost::unique_lock<boost::shared_mutex> stateNameUniqueLock(stateNameMutex_);
-  stateName_ = "Failed";
 }
 
 

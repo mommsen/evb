@@ -6,7 +6,7 @@ uint32_t evb::msg::ReadoutMsg::getHeaderSize() const
   return
     sizeof(msg::ReadoutMsg) +
     nbRequests * sizeof(EvBid) +
-    (nbRUtids|0x1) * sizeof(I2O_TID); // there's always an odd number of I2O_TIDs to keep 64-bit alignement
+    (nbRUtids|0x1) * sizeof(I2O_TID); // there's always an odd number of I2O_TIDs to keep 64-bit alignment
 }
 
 
@@ -41,12 +41,35 @@ void evb::msg::ReadoutMsg::getRUtids(evb::msg::RUtids& tids) const
 }
 
 
+uint32_t evb::msg::SuperFragment::getHeaderSize() const
+{
+  return
+    sizeof(msg::SuperFragment) +
+    ((nbDroppedFeds-1 + 3) / 4) * sizeof(uint64_t);
+  // one FED id is accounted in sizeof(msg::SuperFragment)
+  // after that groups of 4 are needed to keep 64-bit alignment
+}
+
+
+void evb::msg::SuperFragment::appendFedIds(evb::msg::FedIds& feds) const
+{
+  unsigned char* payload = (unsigned char*)&fedIds[0];
+
+  for (uint16_t i=0; i < nbDroppedFeds; ++i)
+  {
+    feds.push_back( *(uint16_t*)payload );
+    payload += sizeof(uint16_t);
+  }
+}
+
+
+
 uint32_t evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getHeaderSize() const
 {
   return
     sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) +
     nbSuperFragments * sizeof(EvBid) +
-    ((nbRUtids+1)&~1) * sizeof(I2O_TID); // there's always an even number of I2O_TIDs to keep 64-bit alignement
+    ((nbRUtids+1)&~1) * sizeof(I2O_TID); // there's always an even number of I2O_TIDs to keep 64-bit alignment
 }
 
 
@@ -81,7 +104,7 @@ void evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME::getRUtids(evb::msg::RUtids& tids) c
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const I2O_PRIVATE_MESSAGE_FRAME pvtMessageFrame
@@ -109,7 +132,7 @@ std::ostream& operator<<
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::ReadoutMsg readoutMsg
@@ -128,7 +151,7 @@ std::ostream& operator<<
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::SuperFragment superFragment
@@ -139,12 +162,23 @@ std::ostream& operator<<
   str << "superFragmentNb=" << superFragment.superFragmentNb << std::endl;
   str << "totalSize=" << superFragment.totalSize << std::endl;
   str << "partSize=" << superFragment.partSize << std::endl;
+  str << "nbDroppedFeds=" << superFragment.nbDroppedFeds << std::endl;
+
+  if ( superFragment.nbDroppedFeds > 0 )
+  {
+    evb::msg::FedIds fedIds;
+    fedIds.reserve(superFragment.nbDroppedFeds);
+    superFragment.appendFedIds(fedIds);
+    str << "fedIds:" << std::endl;
+    for (uint32_t i=0; i < superFragment.nbDroppedFeds; ++i)
+      str << "   [" << i << "]: " << fedIds[i] << std::endl;
+  }
 
   return str;
 }
 
 
-std::ostream& operator<<
+std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
   const evb::msg::I2O_DATA_BLOCK_MESSAGE_FRAME& dataBlockMsg

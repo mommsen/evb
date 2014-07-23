@@ -78,18 +78,19 @@ namespace evb {
         const uint32_t lumiSection;
         time_t startTime;
         uint32_t nbEvents;
+        uint32_t incompleteEvents;
 
         LumiSectionAccount(const uint32_t ls)
-          : lumiSection(ls),startTime(time(0)),nbEvents(0) {};
+          : lumiSection(ls),startTime(time(0)),nbEvents(0),incompleteEvents(0) {};
       };
       typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
 
       bool getNextLumiSectionAccount(LumiSectionAccountPtr&);
 
       /**
-       * Return current lumi section number
+       * Return oldest lumi section number for which events are being built
        */
-      uint32_t getCurrentLumiSection();
+      uint32_t getOldestIncompleteLumiSection();
 
       /**
        * Start processing messages
@@ -140,7 +141,7 @@ namespace evb {
 
       void resetMonitoringCounters();
       void incrementEventsInLumiSection(const uint32_t lumiSection);
-      void enqCurrentLumiSectionAccount();
+      void eventCompletedForLumiSection(const uint32_t lumiSection);
       void configureDiskUsageMonitors();
       float getAvailableResources();
       void updateResources();
@@ -171,10 +172,10 @@ namespace evb {
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;
 
-      typedef OneToOneQueue<LumiSectionAccountPtr> LumiSectionAccountFIFO;
-      LumiSectionAccountFIFO lumiSectionAccountFIFO_;
-      LumiSectionAccountPtr currentLumiSectionAccount_;
-      boost::mutex currentLumiSectionAccountMutex_;
+      typedef std::map<uint32_t,LumiSectionAccountPtr> LumiSectionAccounts;
+      LumiSectionAccounts lumiSectionAccounts_;
+      mutable boost::mutex lumiSectionAccountsMutex_;
+      volatile bool draining_;
 
       struct EventMonitoring
       {
@@ -200,23 +201,22 @@ namespace evb {
 
     };
 
+    inline std::ostream& operator<<
+    (
+      std::ostream& s,
+      const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
+    )
+    {
+      if ( lumiAccount.get() )
+      {
+        s << "lumiSection=" << lumiAccount->lumiSection << " ";
+        s << "nbEvents=" << lumiAccount->nbEvents;
+      }
+
+      return s;
+    }
+
   } } //namespace evb::bu
-
-
-inline std::ostream& operator<<
-(
-  std::ostream& s,
-  const evb::bu::ResourceManager::LumiSectionAccountPtr lumiAccount
-)
-{
-  if ( lumiAccount.get() )
-  {
-    s << "lumiSection=" << lumiAccount->lumiSection << " ";
-    s << "nbEvents=" << lumiAccount->nbEvents;
-  }
-
-  return s;
-}
 
 
 #endif // _evb_bu_ResourceManager_h_

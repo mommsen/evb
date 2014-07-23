@@ -82,13 +82,17 @@ namespace evb {
 
       typedef EvBState< Failed<Owner>,Outermost<Owner> > my_state;
       typedef boost::mpl::list<
-        boost::statechart::transition< Fail,Failed<Owner> >
+        boost::statechart::transition< Halt,Halted<Owner> >,
+        boost::statechart::in_state_reaction< Fail >
         > reactions;
 
       Failed(typename my_state::boost_state::my_context c) : my_state("Failed", c)
       { this->safeEntryAction(); }
       virtual ~Failed()
       { this->safeExitAction(); }
+
+      virtual void exitAction()
+      { this->outermost_context().clearError(); }
 
     };
 
@@ -311,13 +315,16 @@ namespace evb {
 
       typedef EvBState< SynchLoss<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
-        boost::statechart::transition< MismatchDetected,SynchLoss<Owner> >
+        boost::statechart::in_state_reaction< MismatchDetected >
         > reactions;
 
       SynchLoss(typename my_state::boost_state::my_context c) : my_state("SynchLoss", c)
       { this->safeEntryAction(); }
       virtual ~SynchLoss()
       { this->safeExitAction(); }
+
+      virtual void exitAction()
+      { this->outermost_context().clearError(); }
 
     };
 

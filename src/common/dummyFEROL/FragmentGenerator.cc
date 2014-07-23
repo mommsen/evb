@@ -174,7 +174,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
   uint32_t usedFrameSize = 0;
   evbId_ = evbIdFactory_.getEvBid();
   uint32_t remainingFedSize = fragmentTracker_->startFragment(evbId_);
-  uint16_t ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
+  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
+  uint16_t ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
 
   while ( (usedFrameSize + remainingFedSize + ferolBlocks*sizeof(ferolh_t)) <= frameSize_ )
   {
@@ -228,7 +229,7 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
 
     evbId_ = evbIdFactory_.getEvBid();
     remainingFedSize = fragmentTracker_->startFragment(evbId_);
-    ferolBlocks = ceil( static_cast<double>(remainingFedSize) / ferolPayloadSize );
+    ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   }
 
   assert( usedFrameSize <= frameSize_ );

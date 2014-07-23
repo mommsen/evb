@@ -43,6 +43,7 @@ evb::bu::RUproxy::RUproxy
     XCEPT_RAISE(exception::DiskWriting, "Could not initialize curl for connection to EVM");
   }
   curl_easy_setopt(curl_, CURLOPT_HEADER, 0);
+  curl_easy_setopt(curl_, CURLOPT_FAILONERROR, true);
   curl_easy_setopt(curl_, CURLOPT_FOLLOWLOCATION, 1L); //allow libcurl to follow redirection
   curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, &evb::bu::RUproxy::curlWriter);
   curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &curlBuffer_);

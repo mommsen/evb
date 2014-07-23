@@ -1,7 +1,6 @@
 #ifndef _evb_ru_h_
 #define _evb_ru_h_
 
-#include "evb/ru/RUinput.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"

@@ -34,6 +34,8 @@ function changeStates
 
 function run
 {
+  rm -f /tmp/dump_*.txt
+
   # Configure all applications
   changeStates Configure
   sleep 1
@@ -211,6 +213,14 @@ then
   exit 1
 fi
 
+nbFedDumps=$(find /tmp -regex '/tmp/dump_run000001_event[0-9]+_fed0005.txt'|wc -l)
+echo "Nb of FED dumps=$nbFedDumps"
+if [[ $nbFedDumps -ne 10 ]]
+then
+  echo "Test failed: expected 10"
+  exit 1
+fi
+
 echo "Halt the system"
 changeStates Halt
 
@@ -250,6 +260,14 @@ echo "RU state=$state"
 if [[ "$state" != "SynchLoss" ]]
 then
   echo "Test failed"
+  exit 1
+fi
+
+nbFedDumps=$(find /tmp -regex '/tmp/dump_run000002_event[0-9]+_fed0004.txt'|wc -l)
+echo "Nb of FED dumps=$nbFedDumps"
+if [[ $nbFedDumps -ne 10 ]]
+then
+  echo "Test failed: expected 10"
   exit 1
 fi
 

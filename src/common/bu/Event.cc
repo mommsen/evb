@@ -51,12 +51,13 @@ bool evb::bu::Event::appendSuperFragment
 (
   const I2O_TID ruTid,
   toolbox::mem::Reference* bufRef,
-  const unsigned char* fragmentPos,
-  const uint32_t partSize,
-  const uint32_t totalSize
+  unsigned char* payload
 )
 {
   myBufRefs_.push_back(bufRef);
+
+  const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
+  payload += superFragmentMsg->getHeaderSize();
 
   const RUsizes::iterator pos = ruSizes_.find(ruTid);
   if ( pos == ruSizes_.end() )
@@ -73,26 +74,29 @@ bool evb::bu::Event::appendSuperFragment
   }
   if ( pos->second == std::numeric_limits<uint32_t>::max() )
   {
-    pos->second = totalSize;
-    eventInfo_->eventSize += totalSize;
+    pos->second = superFragmentMsg->totalSize;
+    eventInfo_->eventSize += superFragmentMsg->totalSize;
   }
 
-  if (partSize == 0) return false;
+  superFragmentMsg->appendFedIds(missingFedIds_);
 
-  DataLocationPtr dataLocation( new DataLocation(fragmentPos,partSize) );
-  dataLocations_.push_back(dataLocation);
-
-  #ifdef EVB_DEBUG_CORRUPT_EVENT
-  unsigned char* posToCorrupt = const_cast<unsigned char*>(fragmentPos + 23);
-  if ( size_t(posToCorrupt) & 0x10 )
+  if (superFragmentMsg->partSize > 0)
   {
-    *posToCorrupt ^= 1;
+    DataLocationPtr dataLocation( new DataLocation(payload,superFragmentMsg->partSize) );
+    dataLocations_.push_back(dataLocation);
+
+    #ifdef EVB_DEBUG_CORRUPT_EVENT
+    unsigned char* posToCorrupt = const_cast<unsigned char*>(payload + 23);
+    if ( size_t(posToCorrupt) & 0x10 )
+    {
+      *posToCorrupt ^= 1;
+    }
+    #endif //EVB_DEBUG_CORRUPT_EVENT
   }
-  #endif //EVB_DEBUG_CORRUPT_EVENT
 
   // erase at the very end. Otherwise the event might be considered complete
   // before the last chunk has been fully treated
-  pos->second -= partSize;
+  pos->second -= superFragmentMsg->partSize;
   if ( pos->second == 0 )
   {
     ruSizes_.erase(pos);
@@ -144,11 +148,22 @@ void evb::bu::Event::writeToDisk
 }
 
 
-void evb::bu::Event::checkEvent(const bool computeCRC) const
+void evb::bu::Event::checkEvent(const uint32_t checkCRC) const
 {
   if ( ! isComplete() )
   {
     XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity");
+  }
+
+  if ( ! missingFedIds_.empty() )
+  {
+    std::cout << "Event " << evbId_ << " is missing data from FEDs: ";
+    for ( msg::FedIds::const_iterator it = missingFedIds_.begin(), itEnd = missingFedIds_.end();
+          it != itEnd; ++it )
+    {
+      std::cout << *it << " ";
+    }
+    std::cout << std::endl;
   }
 
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
@@ -156,6 +171,7 @@ void evb::bu::Event::checkEvent(const bool computeCRC) const
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
   std::vector<std::string> crcErrors;
+  const bool computeCRC = ( checkCRC > 0 && evbId_.eventNumber() % checkCRC == 0 );
 
   try
   {

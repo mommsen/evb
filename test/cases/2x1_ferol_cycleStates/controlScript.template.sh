@@ -34,10 +34,6 @@ function changeStates
 
 function run
 {
-  # Configure all applications
-  changeStates Configure
-  sleep 1
-
   #Enable the system
   setParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 runNumber unsignedInt $1
   setParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 runNumber unsignedInt $1
@@ -216,6 +212,8 @@ sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT pt::utcp::Application 1 Enab
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT pt::utcp::Application 2 Enable
 
 echo "Starting run 1"
+changeStates Configure
+sleep 1
 run 1
 
 echo "Halt the system"
@@ -246,6 +244,8 @@ then
 fi
 
 echo "Restart run 2"
+changeStates Configure
+sleep 1
 run 2
 
 while [[ $(getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt) > \
@@ -254,6 +254,7 @@ do
   sleep 1
 done
 
+echo "Stop the system"
 changeStates Stop
 sleep 2
 
@@ -317,7 +318,53 @@ then
 fi
 
 echo "Restart run 3"
+changeStates Configure
+sleep 1
 run 3
+
+while [[ $(getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt) > \
+         $(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt) ]]
+do
+  sleep 1
+done
+
+echo "Stop the system"
+changeStates Stop
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Ready" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Ready" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Ready" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
+nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
+if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
+then
+  echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"
+  exit 1
+fi
+
+echo "Restart run 4"
+run 4
 
 while [[ $(getParam FEROL0_SOAP_HOST_NAME FEROL0_SOAP_PORT evb::test::DummyFEROL 0 lastEventNumber xsd:unsignedInt) > \
          $(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 lastEventNumber xsd:unsignedInt) ]]
@@ -352,13 +399,139 @@ then
   exit 1
 fi
 
-eventCountEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventCount xsd:unsignedLong)
-nbEventsBuiltBU0=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 nbEventsBuilt xsd:unsignedLong)
-if [[ $eventCountEVM != $nbEventsBuiltBU0 ]]
+echo "Restarting run 5"
+changeStates Configure
+sleep 1
+run 5
+
+# fail the EVM
+sendSimpleCmdToApp RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 Fail
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Failed" ]]
 then
-  echo "Event counts do not match: EVM $eventCountEVM vs BU $nbEventsBuiltBU0"
+  echo "Test failed"
   exit 1
 fi
 
-echo "Test completed successfully"
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 6"
+changeStates Configure
+sleep 1
+run 6
+
+# fail the RU
+sendSimpleCmdToApp RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 Fail
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 7"
+changeStates Configure
+sleep 1
+run 7
+
+# fail the BU
+sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Fail
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Failed" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Halt the system"
+changeStates Halt
+
+state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
+echo "EVM state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam RU1_SOAP_HOST_NAME RU1_SOAP_PORT evb::RU 0 stateName xsd:string)
+echo "RU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Halted" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
+echo "Restarting run 8"
+changeStates Configure
+sleep 1
+run 8
+
+echo "Test launched successfully"
 exit 0
