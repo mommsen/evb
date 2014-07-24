@@ -129,9 +129,23 @@ uint32_t evb::evm::EVMinput::FEROLproxy::getLumiSectionFromGTP(const unsigned ch
     XCEPT_RAISE(exception::L1Trigger, msg.str());
   }
 
+  //check that we got the right bunch crossing
+  if ( getfdlbxevt(payload) != 0 )
+  {
+    std::ostringstream msg;
+    msg << "Wrong bunch crossing in event (expect 0): "
+      << getfdlbxevt(payload);
+    XCEPT_RAISE(exception::L1Trigger, msg.str());
+  }
+
   //extract lumi section number
+  const uint32_t ls = (*(unsigned int*)( payload + sizeof(fedh_t) +
+                                         (EVM_GTFE_BLOCK + EVM_TCS_BLOCK
+                                          + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2) ) * SLINK_WORD_SIZE +
+                                         12 * SLINK_HALFWORD_SIZE) & 0xffff0000 ) >> 16;
+
   //use offline numbering scheme where LS starts with 1
-  return getlbn(payload) + 1;
+  return ls + 1;
 }
 
 
