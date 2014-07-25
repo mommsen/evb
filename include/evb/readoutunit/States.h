@@ -188,7 +188,7 @@ namespace evb {
       void activity();
 
     private:
-      void doConfigure() {};
+      void doConfigure(const Owner*) {};
       boost::scoped_ptr<boost::thread> configuringThread_;
       volatile bool doConfiguring_;
 
@@ -241,8 +241,8 @@ namespace evb {
       virtual void exitAction();
 
     private:
-      void doStartProcessing(const uint32_t runNumber) {};
-      void doStopProcessing() {};
+      void doStartProcessing(const Owner*, const uint32_t runNumber) {};
+      void doStopProcessing(const Owner*) {};
 
     };
 
@@ -297,7 +297,7 @@ namespace evb {
 
     private:
 
-      void doDraining() {};
+      void doDraining(const Owner*) {};
       boost::scoped_ptr<boost::thread> drainingThread_;
       volatile bool doDraining_;
 
@@ -351,13 +351,14 @@ template<class Owner>
 void evb::readoutunit::Configuring<Owner>::activity()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
 
   std::string msg = "Failed to configure the components";
   try
   {
-    if (doConfiguring_) stateMachine.getOwner()->getInput()->configure();
-    if (doConfiguring_) stateMachine.getOwner()->getBUproxy()->configure();
-    if (doConfiguring_) doConfigure();
+    if (doConfiguring_) owner->getInput()->configure();
+    if (doConfiguring_) owner->getBUproxy()->configure();
+    if (doConfiguring_) doConfigure(owner);
 
     if (doConfiguring_) stateMachine.processFSMEvent( ConfigureDone() );
   }
@@ -397,11 +398,12 @@ template<class Owner>
 void evb::readoutunit::Running<Owner>::entryAction()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
   const uint32_t runNumber = stateMachine.getRunNumber();
 
-  stateMachine.getOwner()->getInput()->startProcessing(runNumber);
-  stateMachine.getOwner()->getBUproxy()->startProcessing();
-  doStartProcessing(runNumber);
+  owner->getInput()->startProcessing(runNumber);
+  owner->getBUproxy()->startProcessing();
+  doStartProcessing(owner,runNumber);
 }
 
 
@@ -409,10 +411,11 @@ template<class Owner>
 void evb::readoutunit::Running<Owner>::exitAction()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
 
-  stateMachine.getOwner()->getInput()->stopProcessing();
-  stateMachine.getOwner()->getBUproxy()->stopProcessing();
-  doStopProcessing();
+  owner->getInput()->stopProcessing();
+  owner->getBUproxy()->stopProcessing();
+  doStopProcessing(owner);
 }
 
 
@@ -431,13 +434,14 @@ template<class Owner>
 void evb::readoutunit::Draining<Owner>::activity()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
 
   std::string msg = "Failed to drain the components";
   try
   {
-    if (doDraining_) stateMachine.getOwner()->getInput()->drain();
-    if (doDraining_) stateMachine.getOwner()->getBUproxy()->drain();
-    if (doDraining_) doDraining();
+    if (doDraining_) owner->getInput()->drain();
+    if (doDraining_) owner->getBUproxy()->drain();
+    if (doDraining_) doDraining(owner);
 
     if (doDraining_) stateMachine.processFSMEvent( DrainingDone() );
   }

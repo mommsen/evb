@@ -227,34 +227,30 @@ namespace evb {
 
 
     template<>
-    void Configuring<EVM>::doConfigure()
+    void Configuring<EVM>::doConfigure(const EVM* evm)
     {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->configure();
+      evm->getRUproxy()->configure();
     }
 
 
     template<>
-    void Running<EVM>::doStartProcessing(const uint32_t runNumber)
+    void Running<EVM>::doStartProcessing(const EVM* evm, const uint32_t runNumber)
     {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->startProcessing();
+      evm->getRUproxy()->startProcessing();
     }
 
 
     template<>
-    void Running<EVM>::doStopProcessing()
+    void Running<EVM>::doStopProcessing(const EVM* evm)
     {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->stopProcessing();
+      evm->getRUproxy()->stopProcessing();
     }
 
 
     template<>
-    void Draining<EVM>::doDraining()
+    void Draining<EVM>::doDraining(const EVM* evm)
     {
-      my_state::outermost_context_type& stateMachine = this->outermost_context();
-      stateMachine.getOwner()->getRUproxy()->drain();
+      evm->getRUproxy()->drain();
     }
 
 
