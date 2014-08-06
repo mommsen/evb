@@ -243,12 +243,21 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
       count = ++(fedErrors_.crcErrors);
     }
 
-    if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedFragment,e.message());
+    if ( evb::isFibonacci(count) )
+    {
+      std::ostringstream msg;
+      msg << "received " << count << " events with CRC error ";
 
-    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
-                    xcept::stdformat_exception_history(e));
-    readoutUnit_->notifyQualified("error",e);
+      XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
+      readoutUnit_->notifyQualified("error",sentinelError);
+
+      msg << ": " << xcept::stdformat_exception_history(e);
+
+      if ( count <= configuration_->maxDumpsPerFED )
+        writeFragmentToFile(fedFragment,msg.str());
+
+      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
+    }
   }
   catch(exception::FEDerror& e)
   {
@@ -258,12 +267,21 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
       count = ++(fedErrors_.fedErrors);
     }
 
-    if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedFragment,e.message());
+    if ( evb::isFibonacci(count) )
+    {
+      std::ostringstream msg;
+      msg << "received " << count << " events with a FED error ";
 
-    LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),
-                    xcept::stdformat_exception_history(e));
-    readoutUnit_->notifyQualified("warn",e);
+      XCEPT_DECLARE_NESTED(exception::FEDerror,sentinelError,msg.str(),e);
+      readoutUnit_->notifyQualified("warn",sentinelError);
+
+      msg << ": " << xcept::stdformat_exception_history(e);
+
+      if ( count <= configuration_->maxDumpsPerFED )
+        writeFragmentToFile(fedFragment,msg.str());
+
+      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
+    }
   }
 
   updateInputMonitor(fedFragment,fedSize);

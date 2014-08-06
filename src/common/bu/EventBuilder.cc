@@ -180,9 +180,17 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         {
           ++eventsWithCRCerrors_;
 
-          LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
-                          xcept::stdformat_exception_history(e));
-          bu_->notifyQualified("error",e);
+          if ( evb::isFibonacci(eventsWithCRCerrors_) )
+          {
+            std::ostringstream msg;
+            msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
+
+            XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
+            bu_->notifyQualified("error",sentinelError);
+
+            msg << ": " << xcept::stdformat_exception_history(e);
+            LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
+          }
         }
       }
     }
