@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source EVB_TESTER_HOME/cases/helpers.sh
+source ${EVB_TESTER_HOME}/cases/helpers.sh
 
 # Cleanup
 testDir=/tmp/evb_test/ramdisk
