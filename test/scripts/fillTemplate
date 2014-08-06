@@ -11,7 +11,6 @@ my %symbolNameToValue;
 $symbolNameToValue{"LAUNCHER_BASE_PORT"} = 12222;
 $symbolNameToValue{"SOAP_BASE_PORT"} = 65432;
 $symbolNameToValue{"I2O_BASE_PORT"} = 54320;
-$symbolNameToValue{"EVB_TESTER_HOME"} = $ENV{"EVB_TESTER_HOME"};
 $symbolNameToValue{"XDAQ_PLATFORM"} = $ENV{"XDAQ_PLATFORM"};
 my $symbolMap = $ENV{"TESTS_SYMBOL_MAP"};
 my $hostCount = 0;
