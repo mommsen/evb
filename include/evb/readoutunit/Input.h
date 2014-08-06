@@ -171,6 +171,7 @@ namespace evb {
 
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
+      uint32_t incompleteEvents_;
 
       double lastMonitoringTime_;
 
@@ -292,6 +293,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
     superFragmentMonitor_.perf.sumOfSquares += size*size;
     ++superFragmentMonitor_.perf.logicalCount;
     ++superFragmentMonitor_.eventCount;
+    if ( superFragment->hasMissingFEDs() )
+      ++incompleteEvents_;
   }
 
   {
@@ -488,6 +491,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
 {
   boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
   superFragmentMonitor_.reset();
+
+  incompleteEvents_ = 0;
 }
 
 
@@ -581,6 +586,9 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     table.add(tr()
               .add(td("# events"))
               .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
+    table.add(tr()
+              .add(td("# incomplete events"))
+              .add(td(boost::lexical_cast<std::string>(incompleteEvents_))));
     table.add(tr()
               .add(td("evt number of last super fragment"))
               .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));

@@ -213,11 +213,19 @@ then
   exit 1
 fi
 
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
+echo "EVM eventRate: $eventRateEVM"
+if [[ $eventRateEVM -gt 0 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbFedDumps=$(find /tmp -regex '/tmp/dump_run000001_event[0-9]+_fed0005.txt'|wc -l)
 echo "Nb of FED dumps=$nbFedDumps"
-if [[ $nbFedDumps -ne 10 ]]
+if [[ $nbFedDumps -ne 1 ]]
 then
-  echo "Test failed: expected 10"
+  echo "Test failed: expected 1"
   exit 1
 fi
 
@@ -263,11 +271,19 @@ then
   exit 1
 fi
 
+eventRateEVM=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt)
+echo "EVM eventRate: $eventRateEVM"
+if [[ $eventRateEVM -gt 0 ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 nbFedDumps=$(find /tmp -regex '/tmp/dump_run000002_event[0-9]+_fed0004.txt'|wc -l)
 echo "Nb of FED dumps=$nbFedDumps"
-if [[ $nbFedDumps -ne 10 ]]
+if [[ $nbFedDumps -ne 1 ]]
 then
-  echo "Test failed: expected 10"
+  echo "Test failed: expected 1"
   exit 1
 fi
 

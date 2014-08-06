@@ -79,6 +79,15 @@ namespace evb {
     bool isComplete() const
     { return resourceList_.empty(); }
 
+    /**
+     * Return true if the super fragment is missing some FEDs
+     */
+    bool hasMissingFEDs() const
+    { return !missingFedIds_.empty(); }
+
+    /**
+     * Get list of FED ids missing in the super fragment
+     */
     typedef std::vector<uint16_t> MissingFedIds;
     MissingFedIds getMissingFedIds() const
     { return missingFedIds_; }
@@ -219,6 +228,8 @@ void evb::FragmentChain<T>::append
 {
   if ( fedFragment->getEvBid() != evbId_ )
   {
+    missingFedIds_.push_back(fedFragment->getFedId());
+
     std::ostringstream oss;
     oss << "Mismatch detected: expected evb id "
       << evbId_ << ", but found evb id "
