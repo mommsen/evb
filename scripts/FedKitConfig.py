@@ -56,7 +56,7 @@ class FedKitConfig:
             <TCP_SOURCE_PORT_FED0 xsi:type="xsd:unsignedInt">10</TCP_SOURCE_PORT_FED0>
             <TCP_SOURCE_PORT_FED1 xsi:type="xsd:unsignedInt">11</TCP_SOURCE_PORT_FED1>
             <enableStream0 xsi:type="xsd:boolean">true</enableStream0>
-            <enableStream1 xsi:type="xsd:boolean">true</enableStream1>
+            <enableStream1 xsi:type="xsd:boolean">false</enableStream1>
             <OperationMode xsi:type="xsd:string">FEDKIT_MODE</OperationMode>
             <DataSource xsi:type="xsd:string">%(dataSource)s</DataSource>
             <FrlTriggerMode xsi:type="xsd:string">FRL_AUTO_TRIGGER_MODE</FrlTriggerMode>
@@ -326,9 +326,9 @@ class FedKitConfig:
         except (ValueError,NameError,TypeError):
             fedId=-1
 
-        while fedId < 0 or fedId >= 1024:
+        while fedId < 0 or fedId >= 1350:
             try:
-                fedId=int(raw_input("Please enter a valid FED id [0..1023]: "))
+                fedId=int(raw_input("Please enter a valid FED id [0..1350]: "))
             except (ValueError,NameError,TypeError):
                 fedId=-1
 
@@ -513,4 +513,3 @@ class FedKitConfig:
 if __name__ == "__main__":
     config = FedKitConfig("tmp.cfg")
     print(config._xmlConfiguration)
-
