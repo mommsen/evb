@@ -138,7 +138,7 @@ class XDAQprocess:
             try:
                 state = self.sendSimpleCommand("Stop",*app)
             except SOAPexception:
-                return
+                continue
             tries=0
             while not state in ('Ready','Configured'):
                 time.sleep(1)
@@ -158,5 +158,3 @@ class XDAQprocess:
         ## app = self._applications[1]
         ## print self.getStateName(*app)
         ## self.sendSimpleCommand("Configure",*app)
-
-
