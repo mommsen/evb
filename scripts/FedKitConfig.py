@@ -204,6 +204,7 @@ class FedKitConfig:
             <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
             <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">%(fakeLumiSectionDuration)s</fakeLumiSectionDuration>
             <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
+            <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>
             <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
               <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">%(fedId)s</item>
             </fedSourceIds>
@@ -215,8 +216,11 @@ class FedKitConfig:
             <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
             <dropEventData xsi:type="xsd:boolean">%(dropEventData)s</dropEventData>
             <numberOfBuilders xsi:type="xsd:unsignedInt">1</numberOfBuilders>
+            <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>
             <rawDataDir xsi:type="xsd:string">%(outputDir)s</rawDataDir>
             <metaDataDir xsi:type="xsd:string">%(outputDir)s</metaDataDir>
+            <rawDataHighWaterMark xsi:type="xsd:double">0.99</rawDataHighWaterMark>
+            <rawDataLowWaterMark xsi:type="xsd:double">0.9</rawDataLowWaterMark>
           </properties>
         </xc:Application>
 

@@ -45,6 +45,7 @@ class XDAQprocess:
     def create(self,xmlConfig):
         runArgs = ["xdaq.exe",
                    "-p "+str(self._port),
+                   "-lDEBUG",
                    "-c "+xmlConfig]
         self._process = subprocess.Popen(runArgs,stdout=self._logfile,stderr=self._logfile)
 
