@@ -38,7 +38,7 @@ namespace evb {
     /**
      * Check the consistency of the FED event fragment
      */
-    uint32_t checkIntegrity(const uint32_t checkCRC);
+    void checkIntegrity(uint32_t&fedSize, const uint32_t checkCRC);
 
   private:
 

@@ -212,7 +212,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
 
   try
   {
-    fedSize = fedFragment->checkIntegrity(configuration_->checkCRC);
+    fedFragment->checkIntegrity(fedSize, configuration_->checkCRC);
   }
   catch(exception::DataCorruption& e)
   {

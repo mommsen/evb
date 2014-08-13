@@ -36,7 +36,7 @@ unsigned char* evb::FedFragment::getFedPayload() const
 }
 
 
-uint32_t evb::FedFragment::checkIntegrity(const uint32_t checkCRC)
+void evb::FedFragment::checkIntegrity(uint32_t& fedSize, const uint32_t checkCRC)
 {
   toolbox::mem::Reference* currentBufRef = bufRef_;
   unsigned char* payload = (unsigned char*)currentBufRef->getDataLocation();
@@ -47,7 +47,7 @@ uint32_t evb::FedFragment::checkIntegrity(const uint32_t checkCRC)
 
   uint16_t crc = 0xffff;
   const bool computeCRC = ( checkCRC > 0 && eventNumber_ % checkCRC == 0 );
-  uint32_t fedSize = 0;
+  fedSize = 0;
   uint32_t usedSize = 0;
   ferolh_t* ferolHeader;
 
@@ -238,8 +238,6 @@ uint32_t evb::FedFragment::checkIntegrity(const uint32_t checkCRC)
     oss << "Wrong slink CRC checksum for FED " << fedId_ << " found in FED trailer (C bit)";
     XCEPT_RAISE(exception::FEDerror, oss.str());
   }
-
-  return fedSize;
 }
 
 
