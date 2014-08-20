@@ -181,7 +181,7 @@ namespace evb {
       {
         uint64_t nbEventsBuilt;
         uint32_t nbEventsInBU;
-        uint32_t outstandingRequests;
+        int32_t outstandingRequests;
         PerformanceMonitor perf;
       } eventMonitoring_;
       mutable boost::mutex eventMonitoringMutex_;
