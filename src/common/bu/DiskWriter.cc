@@ -47,6 +47,9 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   resetMonitoringCounters();
   runNumber_ = runNumber;
 
+  doProcessing_ = true;
+  lumiAccountingWorkLoop_->submit(lumiAccountingAction_);
+
   if ( configuration_->dropEventData ) return;
 
   std::ostringstream runDir;
@@ -79,9 +82,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   defineEoLS(jsdDir);
   defineEoR(jsdDir);
 
-  doProcessing_ = true;
   fileMoverWorkLoop_->submit(fileMoverAction_);
-  lumiAccountingWorkLoop_->submit(lumiAccountingAction_);
 }
 
 
@@ -91,10 +92,10 @@ void evb::bu::DiskWriter::drain()
 
 void evb::bu::DiskWriter::stopProcessing()
 {
-  if ( configuration_->dropEventData ) return;
-
   doProcessing_ = false;
   while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
+
+  if ( configuration_->dropEventData ) return;
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
@@ -192,6 +193,8 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
 
   while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
   {
+    if ( configuration_->dropEventData ) continue;
+
     const uint32_t totalEventsInLumiSection =
       bu_->getRUproxy()->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
 

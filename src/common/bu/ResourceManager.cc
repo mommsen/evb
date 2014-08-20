@@ -161,13 +161,6 @@ void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiS
   }
 
   --(pos->second->incompleteEvents);
-
-  if ( configuration_->dropEventData &&
-       pos->second->incompleteEvents == 0 &&
-       lumiSectionAccounts_.size() > 1 ) // there are newer lumi sections
-  {
-    lumiSectionAccounts_.erase(pos);
-  }
 }
 
 
