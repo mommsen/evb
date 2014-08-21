@@ -6,7 +6,6 @@
 
 #include "evb/Exception.h"
 #include "evb/EvBStateMachine.h"
-#include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 #include "xdata/UnsignedInteger32.h"
 
@@ -43,8 +42,6 @@ namespace evb {
         boost::shared_ptr<EventBuilder>,
         boost::shared_ptr<ResourceManager>
       );
-
-      void buCache(toolbox::mem::Reference*);
 
       BU* bu() const { return bu_; }
       boost::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }

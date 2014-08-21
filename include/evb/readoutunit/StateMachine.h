@@ -8,7 +8,6 @@
 #include "evb/EvBStateMachine.h"
 #include "evb/Exception.h"
 #include "log4cplus/loggingmacros.h"
-#include "toolbox/mem/Reference.h"
 #include "xdaq/Application.h"
 
 
