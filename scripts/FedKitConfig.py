@@ -44,6 +44,10 @@ class FedKitConfig:
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("ferol::FerolController",0)
         self.xdaqProcesses.append(xdaqProcess)
+        if dataSource == 'SLINK_SOURCE':
+            operationMode = 'FRL_MODE'
+        else:
+            operationMode = 'FEDKIT_MODE'
 
         return """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
@@ -57,7 +61,7 @@ class FedKitConfig:
             <TCP_SOURCE_PORT_FED1 xsi:type="xsd:unsignedInt">11</TCP_SOURCE_PORT_FED1>
             <enableStream0 xsi:type="xsd:boolean">true</enableStream0>
             <enableStream1 xsi:type="xsd:boolean">false</enableStream1>
-            <OperationMode xsi:type="xsd:string">FEDKIT_MODE</OperationMode>
+            <OperationMode xsi:type="xsd:string">%(operationMode)s</OperationMode>
             <DataSource xsi:type="xsd:string">%(dataSource)s</DataSource>
             <FrlTriggerMode xsi:type="xsd:string">FRL_AUTO_TRIGGER_MODE</FrlTriggerMode>
             <DestinationIP xsi:type="xsd:string">%(ferolDestIP)s</DestinationIP>
@@ -109,7 +113,7 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libFerolController.so</xc:Module>
 
       </xc:Context>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'operationMode':operationMode,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
 
 
     def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolDestPort,fedId):
@@ -278,7 +282,7 @@ class FedKitConfig:
 
     def getDataSource(self):
         dataSource = None
-        possibleDataSources = ('L6G_SOURCE','L6G_CORE_GENERATOR_SOURCE','L6G_LOOPBACK_GENERATOR_SOURCE')
+        possibleDataSources = ('L6G_SOURCE','L6G_CORE_GENERATOR_SOURCE','L6G_LOOPBACK_GENERATOR_SOURCE','SLINK_SOURCE')
 
         try:
             dataSource = self._config.get('Input','dataSource')
@@ -290,7 +294,8 @@ class FedKitConfig:
         print("""Please select the data source to be used:
   1 - Real AMC13 data source        (L6G_SOURCE)
   2 - Generator core of the AMC13   (L6G_CORE_GENERATOR_SOURCE)
-  3 - Loopback at the FEROL         (L6G_LOOPBACK_GENERATOR_SOURCE)""")
+  3 - Loopback at the FEROL         (L6G_LOOPBACK_GENERATOR_SOURCE)
+  4 - SLINK data source             (SLINK_SOURCE)""")
 
         prompt = "=> "
         try:
