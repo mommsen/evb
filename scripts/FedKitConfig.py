@@ -162,10 +162,12 @@ class FedKitConfig:
             dropEventData = "false"
             outputDir = self.getOutputDir()
             fakeLumiSectionDuration = 20
+            lumiSectionTimeout = 30
         else:
             dropEventData = "true"
             outputDir = "/tmp"
             fakeLumiSectionDuration = 0
+            lumiSectionTimeout = 0
 
         context = """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
@@ -219,6 +221,7 @@ class FedKitConfig:
           <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
             <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
             <dropEventData xsi:type="xsd:boolean">%(dropEventData)s</dropEventData>
+            <lumiSectionTimeout xsi:type="xsd:unsignedInt">%(lumiSectionTimeout)s</lumiSectionTimeout>
             <numberOfBuilders xsi:type="xsd:unsignedInt">1</numberOfBuilders>
             <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>
             <rawDataDir xsi:type="xsd:string">%(outputDir)s</rawDataDir>
@@ -241,7 +244,7 @@ class FedKitConfig:
         <i2o:target class="evb::BU" instance="0" tid="30"/>
       </i2o:protocol>
         """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'runNumber':runNumber,'fedId':fedId,
-           'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration}
+           'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration,'lumiSectionTimeout':lumiSectionTimeout}
         return context
 
 
