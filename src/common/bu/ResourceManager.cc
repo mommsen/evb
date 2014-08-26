@@ -198,7 +198,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
     {
       uint32_t lumiSection = oldestLumiSection->second->lumiSection;
       const uint32_t lumiDuration = time(0) - oldestLumiSection->second->startTime;
-      if ( lumiSection > 0 && lumiDuration > lumiSectionTimeout_ )
+      if ( lumiSection > 0 && lumiSectionTimeout_ > 0 && lumiDuration > lumiSectionTimeout_ )
       {
         std::ostringstream msg;
         msg.setf(std::ios::fixed);
