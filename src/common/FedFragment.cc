@@ -207,10 +207,10 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, const uint32_t checkCRC
 
   if ( computeCRC )
   {
-    // Force CRC & R field to zero before re-computing the CRC.
+    // Force C,F,R & CRC field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
-    trailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+    trailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
     crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
@@ -229,6 +229,13 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, const uint32_t checkCRC
   {
     std::ostringstream oss;
     oss << "Wrong FED CRC checksum for FED " << fedId_ << " found in FED trailer (R bit)";
+    XCEPT_RAISE(exception::FEDerror, oss.str());
+  }
+
+  if ( trailer->conscheck & 0x4000 ) // wrong FED id (F bit)
+  {
+    std::ostringstream oss;
+    oss << "The FED " << fedId_ << " given by the FED is not the expected one (F bit)";
     XCEPT_RAISE(exception::FEDerror, oss.str());
   }
 

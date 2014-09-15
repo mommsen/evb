@@ -136,9 +136,9 @@ size_t evb::FragmentTracker::fillData
 
         if ( computeCRC_ )
         {
-          // Force CRC & R field to zero before re-computing the CRC.
+          // Force C,F,R & CRC field to zero before re-computing the CRC.
           // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-          fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+          fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
           crcCalculator_.compute(fedCRC_,payload,sizeof(fedt_t));
           fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
         }

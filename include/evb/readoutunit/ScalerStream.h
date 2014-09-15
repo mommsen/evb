@@ -276,7 +276,7 @@ uint32_t evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragme
       dataLength += sizeof(fedt_t);
 
       fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) | (fedSize>>3);
-      fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+      fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
       crcCalculator_.compute(crc,payload-dataLength,dataLength);
       fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
     }

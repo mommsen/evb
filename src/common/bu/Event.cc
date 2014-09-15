@@ -343,10 +343,10 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
 
   if ( computeCRC )
   {
-    // Force CRC & R field to zero before re-computing the CRC.
+    // Force C,F,R & CRC field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer()->conscheck;
-    trailer()->conscheck &= ~(FED_CRCS_MASK | 0x4);
+    trailer()->conscheck &= ~(FED_CRCS_MASK | 0xC004);
 
     uint16_t crc(0xffff);
     for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();

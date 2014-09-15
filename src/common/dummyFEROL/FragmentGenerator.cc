@@ -368,9 +368,9 @@ void evb::test::dummyFEROL::FragmentGenerator::updateCRC
 {
   // fedt_t* fedTrailer = (fedt_t*)(fedPtr + fedSize_ - sizeof(fedt_t));
 
-  // // Force CRC & R field to zero before re-computing the CRC.
+  // // Force C,F,R & CRC field to zero before re-computing the CRC.
   // // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-  // fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0x4);
+  // fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
 
   // unsigned short crc = compute_crc(fedPtr,fedSize_);
   // fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
