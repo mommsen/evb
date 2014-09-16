@@ -581,10 +581,10 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
     table.add(tr()
-              .add(td("# events"))
+              .add(td("# super fragments"))
               .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
     table.add(tr()
-              .add(td("# incomplete events"))
+              .add(td("# incomplete super fragments"))
               .add(td(boost::lexical_cast<std::string>(incompleteEvents_))));
     table.add(tr()
               .add(td("evt number of last super fragment"))
