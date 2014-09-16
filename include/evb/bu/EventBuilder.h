@@ -117,7 +117,7 @@ namespace evb {
 
       struct EventMapMonitor
       {
-        uint16_t lowestLumiSection;
+        uint32_t lowestLumiSection;
         uint32_t completeEvents;
         uint32_t partialEvents;
 

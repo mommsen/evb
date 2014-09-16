@@ -31,7 +31,13 @@ namespace evb {
     template<>
     uint32_t evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromTCDS(const unsigned char* payload) const
     {
-      return 0;
+      using namespace evtn;
+
+      const uint32_t ls = *(uint32_t*)(payload + sizeof(fedh_t) +
+                                       7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE) & 0xffffffff;
+
+      //use offline numbering scheme where LS starts with 1
+      return ls + 1;
     }
 
 
@@ -66,10 +72,10 @@ namespace evb {
       }
 
       //extract lumi section number
-      const uint32_t ls = (*(unsigned int*)( payload + sizeof(fedh_t) +
-                                             (EVM_GTFE_BLOCK + EVM_TCS_BLOCK
-                                              + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2) ) * SLINK_WORD_SIZE +
-                                             12 * SLINK_HALFWORD_SIZE) & 0xffff0000 ) >> 16;
+      const uint32_t ls = (*(uint32_t*)( payload + sizeof(fedh_t) +
+                                         ( EVM_GTFE_BLOCK + EVM_TCS_BLOCK
+                                           + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2) ) * SLINK_WORD_SIZE +
+                                         12 * SLINK_HALFWORD_SIZE) & 0xffff0000 ) >> 16;
 
       //use offline numbering scheme where LS starts with 1
       return ls + 1;
