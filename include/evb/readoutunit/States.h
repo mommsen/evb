@@ -261,7 +261,10 @@ namespace evb {
         boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::transition< MismatchDetected,SynchLoss<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::mismatchEvent>
+                                       &StateMachine<Owner>::mismatchDetected>,
+        boost::statechart::transition< EventOutOfSequence,SynchLoss<Owner>,
+                                       StateMachine<Owner>,
+                                       &StateMachine<Owner>::eventOutOfSequence>
         > reactions;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
@@ -315,7 +318,8 @@ namespace evb {
 
       typedef EvBState< SynchLoss<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
-        boost::statechart::in_state_reaction< MismatchDetected >
+        boost::statechart::in_state_reaction< MismatchDetected >,
+        boost::statechart::in_state_reaction< EventOutOfSequence >
         > reactions;
 
       SynchLoss(typename my_state::boost_state::my_context c) : my_state("SynchLoss", c)

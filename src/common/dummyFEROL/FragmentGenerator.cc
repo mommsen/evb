@@ -121,7 +121,8 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
 void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& playbackDataFile)
 {
   toolbox::mem::Reference* bufRef = 0;
-  fillData(bufRef);
+  uint32_t dummy = 0;
+  fillData(bufRef,dummy,dummy,dummy,dummy);
   playbackData_.push_back(bufRef);
   playbackDataPos_ = playbackData_.begin();
 }
@@ -131,10 +132,18 @@ void evb::test::dummyFEROL::FragmentGenerator::reset()
 {
   playbackDataPos_ = playbackData_.begin();
   evbIdFactory_.reset(0);
+  evbId_ = evbIdFactory_.getEvBid();
 }
 
 
-bool evb::test::dummyFEROL::FragmentGenerator::getData(toolbox::mem::Reference*& bufRef)
+bool evb::test::dummyFEROL::FragmentGenerator::getData
+(
+  toolbox::mem::Reference*& bufRef,
+  uint32_t& skipNbEvents,
+  uint32_t& duplicateNbEvents,
+  uint32_t& corruptNbEvents,
+  uint32_t& nbCRCerrors
+)
 {
   if ( usePlayback_ )
   {
@@ -150,13 +159,26 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData(toolbox::mem::Reference*&
   }
   else
   {
-    return fillData(bufRef);
+    return fillData(bufRef,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors);
   }
 }
 
 
-bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*& bufRef)
+bool evb::test::dummyFEROL::FragmentGenerator::fillData
+(
+  toolbox::mem::Reference*& bufRef,
+  uint32_t& skipNbEvents,
+  uint32_t& duplicateNbEvents,
+  uint32_t& corruptNbEvents,
+  uint32_t& nbCRCerrors
+)
 {
+  for ( uint32_t i = 0; i < skipNbEvents; ++i )
+  {
+    evbId_ = evbIdFactory_.getEvBid();
+    skipNbEvents = 0;
+  }
+
   try
   {
     bufRef = toolbox::mem::getMemoryPoolFactory()->
@@ -172,7 +194,6 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   uint32_t usedFrameSize = 0;
-  evbId_ = evbIdFactory_.getEvBid();
   uint32_t remainingFedSize = fragmentTracker_->startFragment(evbId_);
   // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
   uint16_t ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
@@ -208,6 +229,14 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
       const size_t filledBytes = fragmentTracker_->fillData(frame, length);
       //const size_t filledBytes = length;
 
+      if ( nbCRCerrors > 0 && packetNumber == 0 )
+      {
+        unsigned char* payload = frame +
+          ( filledBytes / 2 );
+        *payload ^= 0x1;
+        --nbCRCerrors;
+      }
+
       ferolHeader->set_data_length(filledBytes);
       ferolHeader->set_fed_id(fedId_);
       ferolHeader->set_event_number( evbId_.eventNumber() );
@@ -227,7 +256,18 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData(toolbox::mem::Reference*
     }
     assert( packetNumber == ferolBlocks );
 
-    evbId_ = evbIdFactory_.getEvBid();
+    if ( corruptNbEvents > 0 )
+    {
+      fedt_t* fedTrailer = (fedt_t*)(frame - sizeof(fedt_t));
+      fedTrailer->eventsize ^= 0x10;
+      --corruptNbEvents;
+    }
+
+    if ( duplicateNbEvents > 0 )
+      --duplicateNbEvents;
+    else
+      evbId_ = evbIdFactory_.getEvBid();
+
     remainingFedSize = fragmentTracker_->startFragment(evbId_);
     ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   }

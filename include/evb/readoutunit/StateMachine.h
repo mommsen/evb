@@ -30,8 +30,21 @@ namespace evb {
       xcept::Exception& getException() const { return exception_; }
 
     private:
-      mutable xcept::Exception exception_;
+      mutable exception::MismatchDetected exception_;
     };
+
+    class EventOutOfSequence : public boost::statechart::event<EventOutOfSequence>
+    {
+    public:
+      EventOutOfSequence(exception::EventOutOfSequence& exception) : exception_(exception) {};
+      std::string getReason() const { return exception_.message(); }
+      std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
+      xcept::Exception& getException() const { return exception_; }
+
+    private:
+      mutable exception::EventOutOfSequence exception_;
+    };
+
 
     ///////////////////////
     // The state machine //
@@ -45,7 +58,10 @@ namespace evb {
 
       StateMachine(Owner*);
 
-      void mismatchEvent(const MismatchDetected&);
+      // Need to explicitly define the functions, as the standard says:
+      // derived-to-base conversion (4.10) are not applied in function template evaluation
+      void mismatchDetected(const MismatchDetected& evt);
+      void eventOutOfSequence(const EventOutOfSequence& evt);
 
       Owner* getOwner() const
       { return owner_; }
@@ -71,7 +87,34 @@ owner_(owner)
 
 
 template<class Owner>
-void evb::readoutunit::StateMachine<Owner>::mismatchEvent(const MismatchDetected& evt)
+void evb::readoutunit::StateMachine<Owner>::mismatchDetected(const MismatchDetected& evt)
+{
+  this->reasonForError_ = evt.getTraceback();
+
+  LOG4CPLUS_ERROR(this->getLogger(), this->reasonForError_);
+
+  try
+  {
+    this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SynchLoss!");
+  }
+
+  try
+  {
+    this->app_->notifyQualified("error", evt.getException());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SynchLoss!");
+  }
+}
+
+
+template<class Owner>
+void evb::readoutunit::StateMachine<Owner>::eventOutOfSequence(const EventOutOfSequence& evt)
 {
   this->reasonForError_ = evt.getTraceback();
 

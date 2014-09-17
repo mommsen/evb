@@ -228,21 +228,21 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, const uint32_t checkCRC
   if ( trailer->conscheck & 0x4 ) // FED CRC error (R bit)
   {
     std::ostringstream oss;
-    oss << "Wrong FED CRC checksum for FED " << fedId_ << " found in FED trailer (R bit)";
+    oss << "Wrong FED CRC checksum for FED " << fedId_ << " found by the FEROL (FED trailer R bit is set)";
     XCEPT_RAISE(exception::FEDerror, oss.str());
   }
 
   if ( trailer->conscheck & 0x4000 ) // wrong FED id (F bit)
   {
     std::ostringstream oss;
-    oss << "The FED " << fedId_ << " given by the FED is not the expected one (F bit)";
+    oss << "The FED " << fedId_ << " given by the FED is not expected by the FEROL (FED trailer F bit is set bit)";
     XCEPT_RAISE(exception::FEDerror, oss.str());
   }
 
   if ( trailer->conscheck & 0x8000 ) // slink CRC error (C bit)
   {
     std::ostringstream oss;
-    oss << "Wrong slink CRC checksum for FED " << fedId_ << " found in FED trailer (C bit)";
+    oss << "Wrong slink CRC checksum for FED " << fedId_ << " found by the FEROL (FED trailer C bit is set bit)";
     XCEPT_RAISE(exception::FEDerror, oss.str());
   }
 }

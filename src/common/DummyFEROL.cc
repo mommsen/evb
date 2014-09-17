@@ -298,46 +298,18 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
     {
       toolbox::mem::Reference* bufRef = 0;
 
-      if ( fragmentGenerator_.getData(bufRef) )
+      if ( fragmentGenerator_.getData(bufRef,skipNbEvents_.value_,duplicateNbEvents_.value_,corruptNbEvents_.value_,nbCRCerrors_.value_) )
       {
-        if (skipNbEvents_.value_ > 0)
+        const uint32_t lastEventNumber = fragmentGenerator_.getLastEventNumber();
+        if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
         {
-          bufRef->release();
-          --skipNbEvents_;
+          lastEventNumber_ = lastEventNumber;
+          fragmentFIFO_.enqWait(bufRef);
         }
         else
         {
-          const uint32_t lastEventNumber = fragmentGenerator_.getLastEventNumber();
-          if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
-          {
-            lastEventNumber_ = lastEventNumber;
-            if ( corruptNbEvents_.value_ > 0 )
-            {
-              fedt_t* fedTrailer = (fedt_t*)((unsigned char*)bufRef->getDataLocation() + bufRef->getDataSize() - sizeof(fedt_t));
-              fedTrailer->eventsize ^= 0x10;
-              --corruptNbEvents_;
-            }
-            if ( nbCRCerrors_.value_ > 0 )
-            {
-              unsigned char* payload = (unsigned char*)bufRef->getDataLocation() +
-                ( bufRef->getDataSize() / 2 );
-              *payload ^= 0x1;
-              --nbCRCerrors_;
-            }
-            for (uint32_t i = duplicateNbEvents_+1; i > 0; --i)
-            {
-              if ( i > 1 )
-                fragmentFIFO_.enqWait( bufRef->duplicate() );
-              else
-                fragmentFIFO_.enqWait(bufRef);
-            }
-            duplicateNbEvents_ = 0;
-          }
-          else
-          {
-            bufRef->release();
-            doProcessing_ = false;
-          }
+          bufRef->release();
+          doProcessing_ = false;
         }
       }
     }

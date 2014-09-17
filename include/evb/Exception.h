@@ -61,6 +61,11 @@ XCEPT_DEFINE_EXCEPTION(evb, I2O)
 XCEPT_DEFINE_EXCEPTION(evb, TCDS)
 
 /**
+ * Exception raised when an unexpeced event number is received
+ */
+XCEPT_DEFINE_EXCEPTION(evb, EventOutOfSequence)
+
+/**
  * Exception raised when a super-fragment mismatch occured
  */
 XCEPT_DEFINE_EXCEPTION(evb, MismatchDetected)

@@ -1,5 +1,7 @@
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
+#include "evb/Exception.h"
+#include "xcept/tools.h"
 
 #include <boost/bind.hpp>
 
@@ -72,8 +74,27 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_t lumiSection)
 {
-  if ( eventNumber <= previousEventNumber_ )
+  if ( (eventNumber == 1 && previousEventNumber_ > 1) ||
+       (eventNumber == 0 && previousEventNumber_ == (2^24)-1) )
+  {
     ++resyncCount_;
+  }
+  else if ( eventNumber == previousEventNumber_ )
+  {
+    std::ostringstream oss;
+    oss << "Received a duplicate event number " << eventNumber;
+    XCEPT_RAISE(exception::EventOutOfSequence,oss.str());
+  }
+  else if ( eventNumber != previousEventNumber_ + 1 )
+  {
+    std::ostringstream oss;
+    oss << "Skipped from event number " << previousEventNumber_;
+    oss << " to " << eventNumber;
+
+    previousEventNumber_ = eventNumber;
+
+    XCEPT_RAISE(exception::EventOutOfSequence,oss.str());
+  }
 
   previousEventNumber_ = eventNumber;
 

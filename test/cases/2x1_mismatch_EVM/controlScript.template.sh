@@ -279,8 +279,7 @@ then
   exit 1
 fi
 
-# As FED 0 is the master FED, the dump will happen on FED 1
-nbFedDumps=$(find /tmp -regex '/tmp/dump_run000002_event[0-9]+_fed0001.txt'|wc -l)
+nbFedDumps=$(find /tmp -regex '/tmp/dump_run000002_event[0-9]+_fed0000.txt'|wc -l)
 echo "Nb of FED dumps=$nbFedDumps"
 if [[ $nbFedDumps -ne 1 ]]
 then

@@ -90,13 +90,21 @@ namespace evb {
          * Get the next fragment.
          * Returns false if no fragment can be generated
          */
-        bool getData(toolbox::mem::Reference*&);
+        bool getData(toolbox::mem::Reference*&,
+                     uint32_t& skipNbEvents,
+                     uint32_t& duplicateNbEvents,
+                     uint32_t& corruptNbEvents,
+                     uint32_t& nbCRCerrors);
 
 
       private:
 
         void cacheData(const std::string& playbackDataFile);
-        bool fillData(toolbox::mem::Reference*&);
+        bool fillData(toolbox::mem::Reference*&,
+                      uint32_t& skipNbEvents,
+                      uint32_t& duplicateNbEvents,
+                      uint32_t& corruptNbEvents,
+                      uint32_t& nbCRCerrors);
         toolbox::mem::Reference* clone(toolbox::mem::Reference*) const;
         void fillTriggerPayload
         (

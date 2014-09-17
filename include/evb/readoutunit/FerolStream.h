@@ -116,7 +116,7 @@ namespace evb {
       const uint16_t fedId_;
       const boost::shared_ptr<Configuration> configuration_;
       volatile bool doProcessing_;
-      volatile bool mismatchDetected_;
+      volatile bool synchLoss_;
 
       EvBidFactory evbIdFactory_;
 
@@ -190,15 +190,38 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   {
     const EvBid evbId = getEvBid(fedFragment);
     fedFragment->setEvBid(evbId);
+
+    addFedFragmentWithEvBid(fedFragment);
   }
   catch(exception::TCDS& e)
   {
+    std::ostringstream oss;
+    oss << "Failed to extract lumi section from FED " << fedId_;
+
     XCEPT_DECLARE_NESTED(exception::TCDS, sentinelException,
-                         "Failed to extract lumi section from TCDS",e);
+                         oss.str(),e);
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
+  catch(exception::EventOutOfSequence& e)
+  {
+    synchLoss_ = true;
 
-  addFedFragmentWithEvBid(fedFragment);
+    uint32_t count = 0;
+    {
+      boost::mutex::scoped_lock sl(fedErrorsMutex_);
+      count = ++(fedErrors_.synchLoss);
+    }
+
+    if ( count <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedFragment,e.message());
+
+    std::ostringstream oss;
+    oss << "Received an event out of sequence from FED " << fedId_;
+
+    XCEPT_DECLARE_NESTED(exception::EventOutOfSequence, sentinelException,
+                         oss.str(),e);
+    readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
+  }
 }
 
 
@@ -234,6 +257,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
     else
     {
       readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
+      return;
     }
   }
   catch(exception::CRCerror& e)
@@ -369,7 +393,7 @@ bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragmen
   if ( ! doProcessing_ )
     throw exception::HaltRequested();
 
-  if ( mismatchDetected_ ) return false;
+  if ( synchLoss_ ) return false;
 
   return fragmentFIFO_.deq(fedFragment);
 }
@@ -396,7 +420,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
     if ( count <= configuration_->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
 
-    mismatchDetected_ = true;
+    synchLoss_ = true;
 
     readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
   }
@@ -410,7 +434,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(c
   resetMonitoringCounters();
   evbIdFactory_.reset(runNumber);
   doProcessing_ = true;
-  mismatchDetected_ = false;
+  synchLoss_ = false;
 }
 
 
