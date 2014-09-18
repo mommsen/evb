@@ -137,20 +137,8 @@ namespace evb {
       InputMonitor inputMonitor_;
       mutable boost::mutex inputMonitorMutex_;
 
-      struct FedErrors
-      {
-        uint32_t corruptedEvents;
-        uint32_t crcErrors;
-        uint32_t fedErrors;
-        uint32_t synchLoss;
-
-        FedErrors() { reset(); }
-        void reset()
-        { corruptedEvents=0;crcErrors=0;fedErrors=0;synchLoss=0; }
-      };
-      FedErrors fedErrors_;
-      FedErrors previousFedErrors_;
-      mutable boost::mutex fedErrorsMutex_;
+      FedFragment::FedErrors fedErrors_;
+      FedFragment::FedErrors previousFedErrors_;
 
     };
 
@@ -205,15 +193,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   catch(exception::EventOutOfSequence& e)
   {
     synchLoss_ = true;
-
-    uint32_t count = 0;
-    {
-      boost::mutex::scoped_lock sl(fedErrorsMutex_);
-      count = ++(fedErrors_.synchLoss);
-    }
-
-    if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedFragment,e.message());
+    writeFragmentToFile(fedFragment,e.message());
 
     std::ostringstream oss;
     oss << "Received an event out of sequence from FED " << fedId_;
@@ -235,17 +215,11 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
 
   try
   {
-    fedFragment->checkIntegrity(fedSize, configuration_->checkCRC);
+    fedFragment->checkIntegrity(fedSize, fedErrors_, configuration_->checkCRC);
   }
   catch(exception::DataCorruption& e)
   {
-    uint32_t count = 0;
-    {
-      boost::mutex::scoped_lock sl(fedErrorsMutex_);
-      count = ++(fedErrors_.corruptedEvents);
-    }
-
-    if ( count <= configuration_->maxDumpsPerFED )
+    if ( ++fedErrors_.nbDumps <= configuration_->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
 
     if ( configuration_->tolerateCorruptedEvents )
@@ -262,51 +236,21 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
   }
   catch(exception::CRCerror& e)
   {
-    uint32_t count = 0;
-    {
-      boost::mutex::scoped_lock sl(fedErrorsMutex_);
-      count = ++(fedErrors_.crcErrors);
-    }
+    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+                    xcept::stdformat_exception_history(e));
+    readoutUnit_->notifyQualified("error",e);
 
-    if ( evb::isFibonacci(count) )
-    {
-      std::ostringstream msg;
-      msg << "received " << count << " events with CRC error ";
-
-      XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
-      readoutUnit_->notifyQualified("error",sentinelError);
-
-      msg << ": " << xcept::stdformat_exception_history(e);
-
-      if ( count <= configuration_->maxDumpsPerFED )
-        writeFragmentToFile(fedFragment,msg.str());
-
-      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
-    }
+    if ( ++fedErrors_.nbDumps <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedFragment,e.message());
   }
   catch(exception::FEDerror& e)
   {
-    uint32_t count = 0;
-    {
-      boost::mutex::scoped_lock sl(fedErrorsMutex_);
-      count = ++(fedErrors_.fedErrors);
-    }
+    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+                    xcept::stdformat_exception_history(e));
+    readoutUnit_->notifyQualified("error",e);
 
-    if ( evb::isFibonacci(count) )
-    {
-      std::ostringstream msg;
-      msg << "received " << count << " events with a FED error ";
-
-      XCEPT_DECLARE_NESTED(exception::FEDerror,sentinelError,msg.str(),e);
-      readoutUnit_->notifyQualified("warn",sentinelError);
-
-      msg << ": " << xcept::stdformat_exception_history(e);
-
-      if ( count <= configuration_->maxDumpsPerFED )
-        writeFragmentToFile(fedFragment,msg.str());
-
-      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
-    }
+    if ( ++fedErrors_.nbDumps <= configuration_->maxDumpsPerFED )
+      writeFragmentToFile(fedFragment,e.message());
   }
 
   updateInputMonitor(fedFragment,fedSize);
@@ -411,17 +355,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   }
   catch(exception::MismatchDetected& e)
   {
-    uint32_t count = 0;
-    {
-      boost::mutex::scoped_lock sl(fedErrorsMutex_);
-      count = ++(fedErrors_.synchLoss);
-    }
-
-    if ( count <= configuration_->maxDumpsPerFED )
-      writeFragmentToFile(fedFragment,e.message());
-
+    writeFragmentToFile(fedFragment,e.message());
     synchLoss_ = true;
-
     readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
   }
 }
@@ -491,8 +426,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   queueElements = fragmentFIFO_.elements();
 
   {
-    boost::mutex::scoped_lock sl(fedErrorsMutex_);
-
     corruptedEvents = fedErrors_.corruptedEvents;
     crcErrors = fedErrors_.crcErrors;
 
@@ -544,12 +477,8 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
     row.add(td(str.str()));
   }
 
-  {
-    boost::mutex::scoped_lock sl(fedErrorsMutex_);
-
-    row.add(td(boost::lexical_cast<std::string>(fedErrors_.crcErrors)))
-      .add(td(boost::lexical_cast<std::string>(fedErrors_.corruptedEvents)));
-  }
+  row.add(td(boost::lexical_cast<std::string>(fedErrors_.crcErrors)))
+    .add(td(boost::lexical_cast<std::string>(fedErrors_.corruptedEvents)));
 
   return row;
 }

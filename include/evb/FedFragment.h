@@ -35,10 +35,22 @@ namespace evb {
     toolbox::mem::Reference* getBufRef() const { return bufRef_; }
     unsigned char* getFedPayload() const;
 
+    struct FedErrors
+    {
+      uint32_t corruptedEvents;
+      uint32_t crcErrors;
+      uint32_t fedErrors;
+      uint32_t nbDumps;
+
+      FedErrors() { reset(); }
+      void reset()
+      { corruptedEvents=0;crcErrors=0;fedErrors=0;nbDumps=0; }
+    };
+
     /**
      * Check the consistency of the FED event fragment
      */
-    void checkIntegrity(uint32_t&fedSize, const uint32_t checkCRC);
+    void checkIntegrity(uint32_t&fedSize, FedErrors&, const uint32_t checkCRC);
 
   private:
 
