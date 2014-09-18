@@ -129,6 +129,7 @@ namespace evb {
       ) const;
       bool isEmpty();
       cgicc::table getStatisticsPerBU() const;
+      std::string getHelpTextForBuRequests() const;
 
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
@@ -762,64 +763,74 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
 {
   using namespace cgicc;
 
+  cgicc::div div;
+  div.add(p("BUproxy"));
+
   boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
   boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
 
-  table table;
-
-  table.add(tr()
-            .add(td("last evt number to BUs"))
-            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
-  table.add(tr()
-            .add(td("last lumi section to BUs"))
-            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
-  table.add(tr()
-            .add(td("# of active responders"))
-            .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
-
-  const int32_t outstandingEvents = dataMonitoring_.outstandingEvents;
-  if ( outstandingEvents >= 0 )
   {
+    table table;
+    table.set("title","Super fragments are sent to the BUs requesting events.");
+
     table.add(tr()
-              .add(td("# of outstanding events"))
-              .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(outstandingEvents)))));
+              .add(td("last evt number to BUs"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastEventNumberToBUs))));
+    table.add(tr()
+              .add(td("last lumi section to BUs"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
+    table.add(tr()
+              .add(td("# of active responders"))
+              .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
+
+    const int32_t outstandingEvents = dataMonitoring_.outstandingEvents;
+    if ( outstandingEvents >= 0 )
+    {
+      table.add(tr()
+                .add(td("# of outstanding events"))
+                .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(outstandingEvents)))));
+    }
+
+    table.add(tr()
+              .add(th("Event data").set("colspan","2")));
+    table.add(tr()
+              .add(td("payload (MB)"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
+    table.add(tr()
+              .add(td("logical count"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount))));
+    table.add(tr()
+              .add(td("I2O count"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
+
+    div.add(table);
   }
 
-  table.add(tr()
-            .add(th("Event data").set("colspan","2")));
-  table.add(tr()
-            .add(td("payload (MB)"))
-            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.payload / 1000000))));
-  table.add(tr()
-            .add(td("logical count"))
-            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount))));
-  table.add(tr()
-            .add(td("I2O count"))
-            .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oCount))));
+  {
+    table table;
+    table.set("title",getHelpTextForBuRequests());
 
-  table.add(tr()
-            .add(th("Event requests").set("colspan","2")));
-  table.add(tr()
-            .add(td("payload (kB)"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
-  table.add(tr()
-            .add(td("logical count"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
-  table.add(tr()
-            .add(td("I2O count"))
-            .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+    table.add(tr()
+              .add(th("Event requests").set("colspan","2")));
+    table.add(tr()
+              .add(td("payload (kB)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
+    table.add(tr()
+              .add(td("logical count"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
+    table.add(tr()
+              .add(td("I2O count"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(fragmentRequestFIFO_.getHtmlSnipped())));
+    table.add(tr()
+              .add(td().set("colspan","2")
+                   .add(fragmentRequestFIFO_.getHtmlSnipped())));
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(getStatisticsPerBU())));
+    div.add(table);
+  }
 
-  cgicc::div div;
-  div.add(p("BUproxy"));
-  div.add(table);
+  div.add(getStatisticsPerBU());
+
   return div;
 }
 
@@ -830,6 +841,7 @@ cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
   using namespace cgicc;
 
   table table;
+  table.set("title","Number of event requests and sum of payload per BU.");
 
   table.add(tr()
             .add(th("Statistics per BU").set("colspan","4")));

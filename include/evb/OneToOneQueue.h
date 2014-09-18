@@ -357,41 +357,45 @@ namespace evb {
 
     using namespace cgicc;
 
-    tr headerRow,tableRow;
-
-    for (uint32_t i=readPointer_; i < readPointer_+nbElements; ++i)
-    {
-      uint32_t pos = i % size();
-      headerRow.add(th(boost::lexical_cast<std::string>(pos)).set("style","width:5em"));
-
-      if ( ( writePointer_ >= readPointer_ && i < writePointer_ ) ||
-           ( writePointer_ < readPointer_ && i < writePointer_ + size()) )
-      {
-        std::ostringstream content;
-        try
-        {
-          detail::formatter(container_[pos], &content);
-        }
-        catch(...)
-        {
-          content << "n/a";
-        }
-
-        tableRow.add(td(content.str()));
-      }
-      else
-      {
-        tableRow.add(td("&nbsp;"));
-      }
-    }
-    printingElements_ = false;
-
     cgicc::div queueDetail;
     queueDetail.set("class","xdaq-evb-queuedetail");
-    queueDetail.add(table().set("class","xdaq-table")
-                    .add(headerRow)
-                    .add(tableRow));
 
+    if ( nbElements > 0 )
+    {
+      tr headerRow,tableRow;
+
+      for (uint32_t i=readPointer_; i < readPointer_+nbElements; ++i)
+      {
+        uint32_t pos = i % size();
+        headerRow.add(th(boost::lexical_cast<std::string>(pos)).set("style","width:5em"));
+
+        if ( ( writePointer_ >= readPointer_ && i < writePointer_ ) ||
+             ( writePointer_ < readPointer_ && i < writePointer_ + size()) )
+        {
+          std::ostringstream content;
+          try
+          {
+            detail::formatter(container_[pos], &content);
+          }
+          catch(...)
+          {
+            content << "n/a";
+          }
+
+          tableRow.add(td(content.str()));
+        }
+        else
+        {
+          tableRow.add(td("&nbsp;"));
+        }
+      }
+
+      queueDetail.add(table().set("class","xdaq-table")
+                      .add(headerRow)
+                      .add(tableRow));
+    }
+
+    printingElements_ = false;
     return queueDetail;
   }
 

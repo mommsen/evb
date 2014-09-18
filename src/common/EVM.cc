@@ -233,6 +233,13 @@ namespace evb {
 
 
     template<>
+    std::string BUproxy<EVM>::getHelpTextForBuRequests() const
+    {
+      return "Event requests from the BUs. If no events are requested, the BU appliances are busy, have no FUs to process data or have failed.";
+    }
+
+
+    template<>
     void Configuring<EVM>::doConfigure(const EVM* evm)
     {
       evm->getRUproxy()->configure();

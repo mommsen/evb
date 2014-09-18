@@ -473,9 +473,13 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::div div;
+  div.add(p("DiskWriter"));
 
   {
+    table table;
+    table.set("title","Statistics for files generated. This numbers are updated only then a file is closed. Thus, they lag a bit behind. If 'dropEventData' is true, these counters stay at 0.");
+
     boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
 
     table.add(tr()
@@ -496,23 +500,9 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     table.add(tr()
               .add(td("current lumi section"))
               .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
+    div.add(table);
   }
 
-  StreamHandlers::const_iterator it = streamHandlers_.begin();
-  while ( it != streamHandlers_.end() ) // streamHandlers might get cleared while looping over them
-  {
-    try
-    {
-      table.add(tr()
-                .add(td(it->second->getHtmlSnippedForFileStatisticsFIFO()).set("colspan","2")));
-      ++it;
-    }
-    catch(...) {}
-  }
-
-  cgicc::div div;
-  div.add(p("DiskWriter"));
-  div.add(table);
   return div;
 }
 

@@ -537,9 +537,13 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::div div;
+  div.add(p("ResourceManager"));
 
   {
+    table table;
+    table.set("title","Statistics of built events. If the number of outstanding requests is larger than 0, the BU waits for data.");
+
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     table.add(tr()
@@ -578,55 +582,64 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
                 .add(td("event size (kB)"))
                 .add(td(str.str())));
     }
+
+    div.add(table);
   }
-  table.add(tr()
-            .add(td("# FU cores available"))
-            .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(a("display resource table")
-                      .set("href","/"+bu_->getURN().toString()+"/resourceTable").set("target","_blank"))));
-
-  if ( ! diskUsageMonitors_.empty() )
   {
-    table.add(tr()
-              .add(th("Output disk usage").set("colspan","2")));
+    table table;
+    table.set("title","If no FU slots are available or the output disk is full, no events are requested unless 'dropEventData' is set to true in the configuration.");
 
-    for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
-          it != itEnd; ++it)
+    table.add(tr()
+              .add(td("# FU slots available"))
+              .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
+
+    if ( ! diskUsageMonitors_.empty() )
     {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
       table.add(tr()
-                .add(td((*it)->path().string()))
-                .add(td(str.str())));
+                .add(th("Output disk usage").set("colspan","2")));
+
+      for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+            it != itEnd; ++it)
+      {
+        std::ostringstream str;
+        str.setf(std::ios::fixed);
+        str.precision(1);
+        str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
+        table.add(tr()
+                  .add(td((*it)->path().string()))
+                  .add(td(str.str())));
+      }
     }
+
+    div.add(table);
   }
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(freeResourceFIFO_.getHtmlSnipped())));
+  {
+    cgicc::div resources;
+    resources.set("title","A resource is used to request a number of events ('eventsPerRequest'). Resources are blocked if not enough FU cores are available or if the output disk becomes full. The number of resources per FU slot is governed by the configuration parameter 'resourcesPerCore'.");
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(blockedResourceFIFO_.getHtmlSnipped())));
+    resources.add(freeResourceFIFO_.getHtmlSnipped());
+    resources.add(blockedResourceFIFO_.getHtmlSnipped());
+
+    div.add(resources);
+  }
 
   {
     boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
     if ( ! lumiSectionAccounts_.empty() )
     {
-      cgicc::table lumiSectionTable;
-      lumiSectionTable.add(tr()
-                           .add(th("Active lumi sections").set("colspan","4")));
-      lumiSectionTable.add(tr()
-                           .add(td("LS"))
-                           .add(td("#events"))
-                           .add(td("#incomplete"))
-                           .add(td("age (s)")));
+      cgicc::table table;
+      table.set("title","List of lumi sections for which events are currently being built.");
+
+      table.add(tr()
+                .add(th("Active lumi sections").set("colspan","4")));
+      table.add(tr()
+                .add(td("LS"))
+                .add(td("#events"))
+                .add(td("#incomplete"))
+                .add(td("age (s)")));
 
       time_t now = time(0);
       for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
@@ -637,21 +650,21 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
         str.precision(1);
         str << now - it->second->startTime;
 
-        lumiSectionTable.add(tr()
-                             .add(td(boost::lexical_cast<std::string>(it->first)))
-                             .add(td(boost::lexical_cast<std::string>(it->second->nbEvents)))
-                             .add(td(boost::lexical_cast<std::string>(it->second->incompleteEvents)))
-                             .add(td(str.str())));
+        table.add(tr()
+                  .add(td(boost::lexical_cast<std::string>(it->first)))
+                  .add(td(boost::lexical_cast<std::string>(it->second->nbEvents)))
+                  .add(td(boost::lexical_cast<std::string>(it->second->incompleteEvents)))
+                  .add(td(str.str())));
       }
 
-      table.add(tr()
-                .add(td(lumiSectionTable).set("colspan","2")));
+      div.add(table);
     }
   }
 
-  cgicc::div div;
-  div.add(p("ResourceManager"));
-  div.add(table);
+  div.add(br());
+  div.add(a("display resource table")
+          .set("href","/"+bu_->getURN().toString()+"/resourceTable").set("target","_blank"));
+
   return div;
 }
 

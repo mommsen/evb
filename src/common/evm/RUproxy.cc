@@ -346,6 +346,7 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
   using namespace cgicc;
 
   table table;
+  table.set("title","Statistics of readout messages sent to the RUs. Normally, the allocate FIFO should be empty.");
 
   {
     boost::mutex::scoped_lock sl(allocateMonitoringMutex_);

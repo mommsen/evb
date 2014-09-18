@@ -575,12 +575,20 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::div div;
+  const std::string javaScript = "function dumpFragments(fedid,count) { var options = { url:'/" +
+    readoutUnit_->getURN().toString() + "/writeNextFragmentsToFile?fedid='+fedid+'&count='+count }; xdaqAJAX(options,null); }";
+  div.add(script(javaScript).set("type","text/javascript"));
+  div.add(p("Input - "+readoutUnit_->getConfiguration()->inputSource.toString()));
+
 
   {
+    table table;
+    table.set("title","Super-fragment statistics are only filled when super-fragments have been built. When dropping event data or when there are no requests from the BUs, these counters remain 0.");
+
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
-    table.add(tr()
+    table.add(tr().set("title","Number of successfully built super fragments")
               .add(td("# super fragments"))
               .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
     table.add(tr()
@@ -616,30 +624,25 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
                 .add(td("super fragment size (kB)"))
                 .add(td(str.str())));
     }
+    div.add(table);
   }
 
   {
+    cgicc::div ferolStreams;
+    ferolStreams.set("title","Any fragments received from the FEROL (pt::frl) are accounted here. If any fragment FIFO is empty, the EvB waits for data from the given FED.");
+
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
-    table.add(tr()
-              .add(td().set("colspan","2")
-                   .add(getFedTable())));
+    ferolStreams.add(getFedTable());
 
     for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
          it != itEnd; ++it)
     {
-      table.add(tr()
-                .add(td().set("colspan","2")
-                     .add(it->second->getHtmlSnippedForFragmentFIFO())));
+      ferolStreams.add(it->second->getHtmlSnippedForFragmentFIFO());
     }
+    div.add(ferolStreams);
   }
 
-  cgicc::div div;
-  const std::string javaScript = "function dumpFragments(fedid,count) { var options = { url:'/" +
-    readoutUnit_->getURN().toString() + "/writeNextFragmentsToFile?fedid='+fedid+'&count='+count }; xdaqAJAX(options,null); }";
-  div.add(script(javaScript).set("type","text/javascript"));
-  div.add(p("Input - "+readoutUnit_->getConfiguration()->inputSource.toString()));
-  div.add(table);
   return div;
 }
 
@@ -651,6 +654,7 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
   table fedTable;
 
+  fedTable.add(colgroup().add(col().set("span","7")));
   fedTable.add(tr()
                .add(th("Statistics per FED").set("colspan","7")));
   fedTable.add(tr()

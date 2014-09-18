@@ -69,6 +69,13 @@ namespace evb {
 
 
     template<>
+    std::string BUproxy<RU>::getHelpTextForBuRequests() const
+    {
+      return "BU event requests forwarded by the EVM. If no events are requested, the EVM has not got any requests or has no data.";
+    }
+
+
+    template<>
     void ru::ReadoutUnit::addComponentsToWebPage
     (
       cgicc::table& table

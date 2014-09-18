@@ -518,9 +518,13 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::div div;
+  div.add(p("RUproxy"));
 
   {
+    table table;
+    table.set("title","Statistics of super fragments received from the EVM/RUs.");
+
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
     table.add(tr()
@@ -543,8 +547,12 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("I2O count"))
               .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oCount))));
+    div.add(table);
   }
   {
+    table table;
+    table.set("title","Statistics of requests sent to the EVM.");
+
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     table.add(tr()
@@ -558,14 +566,11 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("I2O count"))
               .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+    div.add(table);
   }
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(getStatisticsPerRU())));
 
-  cgicc::div div;
-  div.add(p("RUproxy"));
-  div.add(table);
+  div.add(getStatisticsPerRU());
+
   return div;
 }
 
@@ -577,6 +582,7 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
   table table;
+  table.set("title","Statistics of received super fragments and total payload per EVM/RU.");
 
   table.add(tr()
             .add(th("Statistics per RU").set("colspan","4")));

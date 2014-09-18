@@ -420,57 +420,71 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  cgicc::table table;
-
-  table.add(tr()
-            .add(td("# corrupted events"))
-            .add(td(boost::lexical_cast<std::string>(corruptedEvents_))));
-  table.add(tr()
-            .add(td("# events w/ CRC errors"))
-            .add(td(boost::lexical_cast<std::string>(eventsWithCRCerrors_))));
+  cgicc::div div;
+  div.add(p("EventBuilder"));
 
   {
+    cgicc::table table;
+    table.set("title","Number of bad events since the beginning of the run.");
+
+    table.add(tr()
+              .add(td("# corrupted events"))
+              .add(td(boost::lexical_cast<std::string>(corruptedEvents_))));
+    table.add(tr()
+              .add(td("# events w/ CRC errors"))
+              .add(td(boost::lexical_cast<std::string>(eventsWithCRCerrors_))));
+
+    div.add(table);
+  }
+
+  {
+    cgicc::table table;
+    table.set("title","List of builder threads. Each thread assembles events independently. Any complete event is held back until all threads have reached the next lumi section.");
+
     boost::mutex::scoped_lock sl(processesActiveMutex_);
 
-    cgicc::table eventMapTable;
-    eventMapTable.add(tr()
-                      .add(th("Event builders").set("colspan","5")));
-    eventMapTable.add(tr()
-                      .add(td("builder"))
-                      .add(td("active"))
-                      .add(td("ls"))
-                      .add(td("#partial"))
-                      .add(td("#complete")));
+    table.add(tr()
+              .add(th("Event builders").set("colspan","5")));
+    table.add(tr()
+              .add(td("builder"))
+              .add(td("active"))
+              .add(td("ls"))
+              .add(td("#partial"))
+              .add(td("#complete")));
 
     for ( EventMapMonitors::const_iterator it = eventMapMonitors_.begin(), itEnd = eventMapMonitors_.end();
           it != itEnd; ++it )
     {
-      eventMapTable.add(tr()
-                        .add(td(boost::lexical_cast<std::string>(it->first)))
-                        .add(td(processesActive_[it->first]?"yes":"no"))
-                        .add(td(boost::lexical_cast<std::string>(it->second.lowestLumiSection)))
-                        .add(td(boost::lexical_cast<std::string>(it->second.partialEvents)))
-                        .add(td(boost::lexical_cast<std::string>(it->second.completeEvents))));
-    }
-    table.add(tr()
-              .add(td(eventMapTable).set("colspan","2")));
-  }
-
-  SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();
-  while ( it != superFragmentFIFOs_.end() )
-  {
-    try
-    {
       table.add(tr()
-                .add(td(it->second->getHtmlSnipped()).set("colspan","2")));
-      ++it;
+                .add(td(boost::lexical_cast<std::string>(it->first)))
+                .add(td(processesActive_[it->first]?"yes":"no"))
+                .add(td(boost::lexical_cast<std::string>(it->second.lowestLumiSection)))
+                .add(td(boost::lexical_cast<std::string>(it->second.partialEvents)))
+                .add(td(boost::lexical_cast<std::string>(it->second.completeEvents))));
     }
-    catch(...) {}
+
+    div.add(table);
   }
 
-  cgicc::div div;
-  div.add(p("EventBuilder"));
-  div.add(table);
+  if ( ! superFragmentFIFOs_.empty() )
+  {
+    cgicc::table table;
+    table.set("title","FIFOs holding super-fragments to be fed to the corresponding builder threads.");
+
+    SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();
+    while ( it != superFragmentFIFOs_.end() )
+    {
+      try
+      {
+        table.add(tr()
+                  .add(td(it->second->getHtmlSnipped())));
+        ++it;
+      }
+      catch(...) {}
+    }
+
+    div.add(table);
+  }
 
   div.add(br());
   const std::string javaScript = "function dumpEvents(count) { var options = { url:'/" +
