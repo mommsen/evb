@@ -33,11 +33,8 @@ namespace evb {
     {
       using namespace evtn;
 
-      const uint32_t ls = *(uint32_t*)(payload + sizeof(fedh_t) +
-                                       7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE) & 0xffffffff;
-
-      //use offline numbering scheme where LS starts with 1
-      return ls + 1;
+      return *(uint32_t*)(payload + sizeof(fedh_t) +
+                          7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE) & 0xffffffff;
     }
 
 
