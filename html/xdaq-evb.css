@@ -3,9 +3,11 @@
 }
 .xdaq-evb-banner td {
     text-align:right;
+    float:right;
 }
 .xdaq-evb-banner td:first-child {
     text-align:left;
+    float:left;
 }
 .xdaq-evb-layout {
     table-layout:fixed;
@@ -101,24 +103,26 @@
     min-width:20em;
     z-index:5;
 }
-.xdaq-evb-queuefloat td:first-child {
-    text-align:left
-}
 .xdaq-evb-queuedetail table {
     background:#f7f8f9;
     border: thin solid #bbb;
     border-collapse:separate;
-    padding:4px;
-    text-align:left;
+    padding:0px;
     table-layout:auto;
     white-space:normal;
+    font-size:0.9em;
 }
 .xdaq-evb-queuedetail td
 {
     border: thin solid #bbb;
     text-align:left;
 }
+.xdaq-evb-queuedetail td:first-child
+{
+    text-align:left
+}
 .xdaq-evb-queuedetail th
 {
     border: thin solid #bbb;
+    background:#e0e0e0;
 }

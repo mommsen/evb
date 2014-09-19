@@ -111,9 +111,12 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
+  cgicc::div div;
+  div.add(p("FEROL"));
 
   {
+    table table;
+
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
     table.add(tr()
@@ -155,14 +158,11 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
                 .add(td("FED size (kB)"))
                 .add(td(str.str())));
     }
+    div.add(table);
   }
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(fragmentFIFO_.getHtmlSnipped())));
 
-  cgicc::div div;
-  div.add(p("FEROL"));
-  div.add(table);
+  div.add(fragmentFIFO_.getHtmlSnipped());
+
   return div;
 }
 

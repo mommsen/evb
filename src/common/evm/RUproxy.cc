@@ -345,10 +345,13 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
 {
   using namespace cgicc;
 
-  table table;
-  table.set("title","Statistics of readout messages sent to the RUs. Normally, the allocate FIFO should be empty.");
+  cgicc::div div;
+  div.add(p("RUproxy"));
 
   {
+    table table;
+    table.set("title","Statistics of readout messages sent to the RUs. Normally, the allocate FIFO should be empty.");
+
     boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
     table.add(tr()
@@ -368,15 +371,12 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("# active RUs"))
               .add(td(boost::lexical_cast<std::string>(activeRUs))));
+
+    div.add(table);
   }
 
-  table.add(tr()
-            .add(td().set("colspan","2")
-                 .add(allocateFIFO_.getHtmlSnipped())));
+  div.add(allocateFIFO_.getHtmlSnipped());
 
-  cgicc::div div;
-  div.add(p("RUproxy"));
-  div.add(table);
   return div;
 }
 

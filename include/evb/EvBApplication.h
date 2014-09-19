@@ -646,7 +646,6 @@ cgicc::div evb::EvBApplication<Configuration,StateMachine>::getWebPageBanner() c
   using namespace cgicc;
 
   table infoSpaceTable;
-  infoSpaceTable.set("align","right");
   infoSpaceTable.add(tr()
                      .add(td("InfoSpaces: "))
                      .add(td()

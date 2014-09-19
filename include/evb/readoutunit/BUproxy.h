@@ -822,11 +822,8 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td("I2O count"))
               .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
-    table.add(tr()
-              .add(td().set("colspan","2")
-                   .add(fragmentRequestFIFO_.getHtmlSnipped())));
-
     div.add(table);
+    div.add(fragmentRequestFIFO_.getHtmlSnipped());
   }
 
   div.add(getStatisticsPerBU());

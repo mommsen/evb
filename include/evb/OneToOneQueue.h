@@ -390,7 +390,7 @@ namespace evb {
         }
       }
 
-      queueDetail.add(table().set("class","xdaq-table")
+      queueDetail.add(table()
                       .add(headerRow)
                       .add(tableRow));
     }

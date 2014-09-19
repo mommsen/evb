@@ -60,12 +60,6 @@ namespace evb {
        */
       bool getFileStatistics(FileStatisticsPtr&);
 
-      /**
-       * Return the content of the FileStatisticsFIFO as cgicc snipped
-       */
-      cgicc::div getHtmlSnippedForFileStatisticsFIFO() const
-      { return fileStatisticsFIFO_.getHtmlSnipped(); }
-
     private:
 
       void do_closeFile();

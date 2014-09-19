@@ -468,22 +468,21 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
 
   if ( ! superFragmentFIFOs_.empty() )
   {
-    cgicc::table table;
-    table.set("title","FIFOs holding super-fragments to be fed to the corresponding builder threads.");
+    cgicc::div fifos;
+    fifos.set("title","FIFOs holding super-fragments to be fed to the corresponding builder threads.");
 
     SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin();
     while ( it != superFragmentFIFOs_.end() )
     {
       try
       {
-        table.add(tr()
-                  .add(td(it->second->getHtmlSnipped())));
+        fifos.add(it->second->getHtmlSnipped());
         ++it;
       }
       catch(...) {}
     }
 
-    div.add(table);
+    div.add(fifos);
   }
 
   div.add(br());
