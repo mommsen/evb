@@ -75,7 +75,7 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_t lumiSection)
 {
   if ( (eventNumber == 1 && previousEventNumber_ > 1) ||
-       (eventNumber == 0 && previousEventNumber_ == (2^24)-1) )
+       (eventNumber == 0 && previousEventNumber_ == 16777215 ) ) // (2^24)-1
   {
     ++resyncCount_;
   }
