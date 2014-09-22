@@ -253,11 +253,11 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
        }
        if ( trailer->conscheck & 0x4000 ) // wrong FED id (F bit)
        {
-         oss << " with a FED id not expected by the FEROL (FED trailer F bit is set bit)";
+         oss << " with a FED id not expected by the FEROL (FED trailer F bit is set)";
        }
        if ( trailer->conscheck & 0x8000 ) // slink CRC error (C bit)
        {
-         oss << " with wrong slink CRC checksum found by the FEROL (FED trailer C bit is set bit)";
+         oss << " with wrong slink CRC checksum found by the FEROL (FED trailer C bit is set)";
        }
        XCEPT_RAISE(exception::FEDerror, oss.str());
     }
