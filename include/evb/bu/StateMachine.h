@@ -24,6 +24,15 @@ namespace evb {
     class StateMachine;
     class Outermost;
 
+    ////////////////////////////////
+    // Internal transition events //
+    ////////////////////////////////
+
+    class Release: public boost::statechart::event<Release> {};
+    class Throttle: public boost::statechart::event<Throttle> {};
+    class Block: public boost::statechart::event<Block> {};
+
+
     ///////////////////////
     // The state machine //
     ///////////////////////

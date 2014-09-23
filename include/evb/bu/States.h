@@ -38,8 +38,12 @@ namespace evb {
     class Ready;
     class Running;
     // Inner states of Running
-    class Enabled;
+    class Processing;
     class Draining;
+    // Inner states of Processing
+    class Enabled;
+    class Throttled;
+    class Blocked;
 
 
     ///////////////////
@@ -54,7 +58,11 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<> reactions;
+      typedef boost::mpl::list<
+      boost::statechart::in_state_reaction<Release>,
+      boost::statechart::in_state_reaction<Throttle>,
+      boost::statechart::in_state_reaction<Block>
+      > reactions;
 
       Outermost(my_context c) : my_state("Outermost", c)
       { safeEntryAction(); }
@@ -201,7 +209,7 @@ namespace evb {
     /**
      * The Running state of the outer-state Active.
      */
-    class Running: public EvBState<Running,Active,Enabled>
+    class Running: public EvBState<Running,Active,Processing>
     {
 
     public:
@@ -220,9 +228,9 @@ namespace evb {
 
 
     /**
-     * The Enabled state. Initial state of the outer-state Running.
+     * The Processing state. Initial state of the outer-state Running.
      */
-    class Enabled: public EvBState<Enabled,Running>
+    class Processing: public EvBState<Processing,Running,Enabled>
     {
 
     public:
@@ -231,9 +239,9 @@ namespace evb {
       boost::statechart::transition<Stop,Draining>
       > reactions;
 
-      Enabled(my_context c) : my_state("Enabled", c)
+      Processing(my_context c) : my_state("Processing", c)
       { safeEntryAction(); }
-      virtual ~Enabled()
+      virtual ~Processing()
       { safeExitAction(); }
 
     };
@@ -263,6 +271,81 @@ namespace evb {
     private:
       boost::scoped_ptr<boost::thread> drainingThread_;
       volatile bool doDraining_;
+
+    };
+
+
+    /**
+     * The Enabled state. Initial state of the outer-state Processing.
+     */
+    class Enabled: public EvBState<Enabled,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::in_state_reaction<Release>,
+      boost::statechart::transition<Throttle,Throttled>,
+      boost::statechart::transition<Block,Blocked>
+      > reactions;
+
+      Enabled(my_context c) : my_state("Enabled", c)
+      { safeEntryAction(); }
+      virtual ~Enabled()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Enabled"); }
+
+    };
+
+
+    /**
+     * The Throttled state of the outer-state Processing.
+     */
+    class Throttled: public EvBState<Throttled,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<Release,Enabled>,
+      boost::statechart::in_state_reaction<Throttle>,
+      boost::statechart::transition<Block,Blocked>
+      > reactions;
+
+      Throttled(my_context c) : my_state("Throttled", c)
+      { safeEntryAction(); }
+      virtual ~Throttled()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Throttled"); }
+
+    };
+
+
+    /**
+     * The Blocked state of the outer-state Processing.
+     */
+    class Blocked: public EvBState<Blocked,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<Release,Enabled>,
+      boost::statechart::transition<Throttle,Throttled>,
+      boost::statechart::in_state_reaction<Block>
+      > reactions;
+
+      Blocked(my_context c) : my_state("Blocked", c)
+      { safeEntryAction(); }
+      virtual ~Blocked()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Blocked"); }
 
     };
 
