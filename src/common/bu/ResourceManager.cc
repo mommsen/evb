@@ -408,11 +408,6 @@ void evb::bu::ResourceManager::updateResources()
     const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
     resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
-
-  if ( resourcesToBlock_ == nbResources_ )
-  {
-    bu_->getStateMachine();
-  }
 }
 
 
@@ -451,6 +446,13 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   updateResources();
   nbTotalResources_ = nbResources_;
   nbBlockedResources_ = blockedResourceFIFO_.elements();
+
+  if ( nbBlockedResources_.value_ == 0 )
+    bu_->getStateMachine()->processFSMEvent( Release() );
+  else if ( nbBlockedResources_.value_ == nbResources_ )
+    bu_->getStateMachine()->processFSMEvent( Block() );
+  else if ( nbBlockedResources_.value_ > 0 )
+    bu_->getStateMachine()->processFSMEvent( Throttle() );
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);

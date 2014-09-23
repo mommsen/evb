@@ -31,8 +31,6 @@ namespace evb {
 
   namespace bu { // namespace evb::bu
 
-    class StateMachine;
-
     /**
      * \ingroup xdaqApps
      * \brief Manage resources available to the BU
