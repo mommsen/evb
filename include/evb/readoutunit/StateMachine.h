@@ -95,11 +95,11 @@ void evb::readoutunit::StateMachine<Owner>::mismatchDetected(const MismatchDetec
 
   try
   {
-    this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
+    this->rcmsStateNotifier_.stateChanged("SyncLoss", evt.getReason());
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {
-    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SynchLoss!");
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SyncLoss!");
   }
 
   try
@@ -108,7 +108,7 @@ void evb::readoutunit::StateMachine<Owner>::mismatchDetected(const MismatchDetec
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {
-    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SynchLoss!");
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SyncLoss!");
   }
 }
 
@@ -122,11 +122,11 @@ void evb::readoutunit::StateMachine<Owner>::eventOutOfSequence(const EventOutOfS
 
   try
   {
-    this->rcmsStateNotifier_.stateChanged("SynchLoss", evt.getReason());
+    this->rcmsStateNotifier_.stateChanged("SyncLoss", evt.getReason());
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {
-    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SynchLoss!");
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SyncLoss!");
   }
 
   try
@@ -135,7 +135,7 @@ void evb::readoutunit::StateMachine<Owner>::eventOutOfSequence(const EventOutOfS
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {
-    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SynchLoss!");
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SyncLoss!");
   }
 }
 

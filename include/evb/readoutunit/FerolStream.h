@@ -116,7 +116,7 @@ namespace evb {
       const uint16_t fedId_;
       const boost::shared_ptr<Configuration> configuration_;
       volatile bool doProcessing_;
-      volatile bool synchLoss_;
+      volatile bool syncLoss_;
 
       EvBidFactory evbIdFactory_;
 
@@ -192,7 +192,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   }
   catch(exception::EventOutOfSequence& e)
   {
-    synchLoss_ = true;
+    syncLoss_ = true;
     writeFragmentToFile(fedFragment,e.message());
 
     std::ostringstream oss;
@@ -337,7 +337,7 @@ bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragmen
   if ( ! doProcessing_ )
     throw exception::HaltRequested();
 
-  if ( synchLoss_ ) return false;
+  if ( syncLoss_ ) return false;
 
   return fragmentFIFO_.deq(fedFragment);
 }
@@ -356,7 +356,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   catch(exception::MismatchDetected& e)
   {
     writeFragmentToFile(fedFragment,e.message());
-    synchLoss_ = true;
+    syncLoss_ = true;
     readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
   }
 }
@@ -369,7 +369,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(c
   resetMonitoringCounters();
   evbIdFactory_.reset(runNumber);
   doProcessing_ = true;
-  synchLoss_ = false;
+  syncLoss_ = false;
 }
 
 

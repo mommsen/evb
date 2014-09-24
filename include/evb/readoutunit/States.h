@@ -42,7 +42,7 @@ namespace evb {
     // Inner states of Running
     template<class> class Enabled;
     template<class> class Draining;
-    template<class> class SynchLoss;
+    template<class> class SyncLoss;
 
     template<class> class StateMachine;
 
@@ -259,10 +259,10 @@ namespace evb {
       typedef EvBState< Enabled<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
         boost::statechart::transition< Stop,Draining<Owner> >,
-        boost::statechart::transition< MismatchDetected,SynchLoss<Owner>,
+        boost::statechart::transition< MismatchDetected,SyncLoss<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::mismatchDetected>,
-        boost::statechart::transition< EventOutOfSequence,SynchLoss<Owner>,
+        boost::statechart::transition< EventOutOfSequence,SyncLoss<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::eventOutOfSequence>
         > reactions;
@@ -308,23 +308,23 @@ namespace evb {
 
 
     /**
-     * The SynchLoss state of the outer-state Running.
+     * The SyncLoss state of the outer-state Running.
      */
     template<class Owner>
-    class SynchLoss: public EvBState< SynchLoss<Owner>,Running<Owner> >
+    class SyncLoss: public EvBState< SyncLoss<Owner>,Running<Owner> >
     {
 
     public:
 
-      typedef EvBState< SynchLoss<Owner>,Running<Owner> > my_state;
+      typedef EvBState< SyncLoss<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
         boost::statechart::in_state_reaction< MismatchDetected >,
         boost::statechart::in_state_reaction< EventOutOfSequence >
         > reactions;
 
-      SynchLoss(typename my_state::boost_state::my_context c) : my_state("SynchLoss", c)
+      SyncLoss(typename my_state::boost_state::my_context c) : my_state("SyncLoss", c)
       { this->safeEntryAction(); }
-      virtual ~SynchLoss()
+      virtual ~SyncLoss()
       { this->safeExitAction(); }
 
       virtual void exitAction()

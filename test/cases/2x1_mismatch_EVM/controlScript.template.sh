@@ -207,7 +207,7 @@ sleep 5
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
-if [[ "$state" != "SynchLoss" ]]
+if [[ "$state" != "SyncLoss" ]]
 then
   echo "Test failed"
   exit 1
@@ -265,7 +265,7 @@ sleep 5
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
-if [[ "$state" != "SynchLoss" ]]
+if [[ "$state" != "SyncLoss" ]]
 then
   echo "Test failed"
   exit 1
