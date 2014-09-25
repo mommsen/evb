@@ -12,7 +12,7 @@ class EvBApplication
 {
 public:
   void registerQueueCallback(const std::string name, boost::function<cgicc::div()>) {};
-  std::string getURN() { return "dummy"; }
+  std::string getURN() { return "urn:dummy:foo"; }
 } evbApplication;
 
 
