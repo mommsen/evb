@@ -139,7 +139,8 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   FragmentChainPtr superFragments;
   SuperFragmentFIFOPtr superFragmentFIFO = superFragmentFIFOs_[builderId];
 
-  EventMapPtr eventMap(new EventMap);
+  PartialEvents partialEvents;
+  CompleteEvents completeEvents;
   EventMapMonitor& eventMapMonitor = eventMapMonitors_[builderId];
 
   StreamHandlerPtr streamHandler;
@@ -150,10 +151,46 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   {
     while ( doProcessing_ )
     {
-      if ( superFragmentFIFO->deq(superFragments) )
-        buildEvent(superFragments,eventMap);
+      while ( superFragmentFIFO->deq(superFragments) )
+      {
+        buildEvent(superFragments,partialEvents,completeEvents);
+        eventMapMonitor.partialEvents = partialEvents.size();
 
-      if ( eventMap->empty() )
+        if ( ! completeEvents.empty() )
+        {
+          try
+          {
+            eventMapMonitor.lowestLumiSection = completeEvents.begin()->first;
+            handleCompleteEvents(completeEvents,streamHandler);
+            eventMapMonitor.completeEvents = completeEvents.size();
+          }
+          catch(exception::DataCorruption& e)
+          {
+            ++corruptedEvents_;
+
+            LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
+                            xcept::stdformat_exception_history(e));
+            bu_->notifyQualified("error",e);
+          }
+          catch(exception::CRCerror& e)
+          {
+            ++eventsWithCRCerrors_;
+
+            if ( evb::isFibonacci(eventsWithCRCerrors_) )
+            {
+              std::ostringstream msg;
+              msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
+
+              XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
+              bu_->notifyQualified("error",sentinelError);
+
+              msg << ": " << xcept::stdformat_exception_history(e);
+              LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
+            }
+          }
+        }
+      }
+
       {
         boost::mutex::scoped_lock sl(processesActiveMutex_);
         processesActive_.reset(builderId);
@@ -161,37 +198,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         ::usleep(1000);
         sl.lock();
         processesActive_.set(builderId);
-      }
-      else
-      {
-        try
-        {
-          handleCompleteEvents(eventMap,streamHandler,eventMapMonitor);
-        }
-        catch(exception::DataCorruption& e)
-        {
-          ++corruptedEvents_;
-
-          LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
-                          xcept::stdformat_exception_history(e));
-          bu_->notifyQualified("error",e);
-        }
-        catch(exception::CRCerror& e)
-        {
-          ++eventsWithCRCerrors_;
-
-          if ( evb::isFibonacci(eventsWithCRCerrors_) )
-          {
-            std::ostringstream msg;
-            msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
-
-            XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
-            bu_->notifyQualified("error",sentinelError);
-
-            msg << ": " << xcept::stdformat_exception_history(e);
-            LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
-          }
-        }
       }
     }
   }
@@ -236,7 +242,8 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 inline void evb::bu::EventBuilder::buildEvent
 (
   FragmentChainPtr& superFragments,
-  EventMapPtr& eventMap
+  PartialEvents& partialEvents,
+  CompleteEvents& completeEvents
 ) const
 {
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
@@ -249,7 +256,7 @@ inline void evb::bu::EventBuilder::buildEvent
   uint16_t superFragmentCount = 0;
   const uint32_t blockHeaderSize = dataBlockMsg->getHeaderSize();
 
-  EventMap::iterator eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
+  PartialEvents::iterator eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
 
   do
   {
@@ -269,8 +276,16 @@ inline void evb::bu::EventBuilder::buildEvent
                                                  payload) )
       {
         // the super fragment is complete
+        if ( eventPos->second->isComplete() )
+        {
+          // the event is complete, too
+          const uint32_t lumiSection = eventPos->first.lumiSection();
+          completeEvents.insert(CompleteEvents::value_type(lumiSection,eventPos->second));
+          partialEvents.erase(eventPos);
+        }
+
         ++superFragmentCount;
-        eventPos = getEventPos(eventMap,dataBlockMsg,superFragmentCount);
+        eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
       }
 
       const uint32_t size = headerSize + superFragmentMsg->partSize;
@@ -295,24 +310,24 @@ inline void evb::bu::EventBuilder::buildEvent
 }
 
 
-inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEventPos
+inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::getEventPos
 (
-  EventMapPtr& eventMap,
+  PartialEvents& partialEvents,
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg,
   const uint16_t& superFragmentCount
 ) const
 {
   if ( superFragmentCount >= dataBlockMsg->nbSuperFragments )
-    return eventMap->end();
+    return partialEvents.end();
 
   const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
 
-  EventMap::iterator eventPos = eventMap->lower_bound(evbId);
-  if ( eventPos == eventMap->end() || (eventMap->key_comp()(evbId,eventPos->first)) )
+  PartialEvents::iterator eventPos = partialEvents.lower_bound(evbId);
+  if ( eventPos == partialEvents.end() || (partialEvents.key_comp()(evbId,eventPos->first)) )
   {
     // new event
     EventPtr event( new Event(evbId, dataBlockMsg) );
-    eventPos = eventMap->insert(eventPos, EventMap::value_type(evbId,event));
+    eventPos = partialEvents.insert(eventPos, PartialEvents::value_type(evbId,event));
   }
   return eventPos;
 }
@@ -320,81 +335,56 @@ inline evb::bu::EventBuilder::EventMap::iterator evb::bu::EventBuilder::getEvent
 
 void evb::bu::EventBuilder::handleCompleteEvents
 (
-  EventMapPtr& eventMap,
-  StreamHandlerPtr& streamHandler,
-  EventMapMonitor& eventMapMonitor
+  CompleteEvents& completeEvents,
+  StreamHandlerPtr& streamHandler
 ) const
 {
   const uint32_t oldestIncompleteLumiSection = resourceManager_->getOldestIncompleteLumiSection();
 
-  EventMapMonitor localEventMapMonitor;
-  EventMap::iterator pos = eventMap->begin();
+  CompleteEvents::iterator pos = completeEvents.begin();
 
-  while ( pos != eventMap->end() )
+  while ( pos != completeEvents.end() && pos->first == oldestIncompleteLumiSection )
   {
     const EventPtr& event = pos->second;
-    const uint32_t lumiSection = pos->first.lumiSection();
 
-    if ( lumiSection < localEventMapMonitor.lowestLumiSection ||
-         localEventMapMonitor.lowestLumiSection == 0 )
-      localEventMapMonitor.lowestLumiSection = lumiSection;
+    resourceManager_->eventCompleted(event);
 
-    if ( event->isComplete() )
+    try
     {
-      if ( lumiSection == oldestIncompleteLumiSection )
+      event->checkEvent(configuration_->checkCRC);
+    }
+    catch(exception::DataCorruption& e)
+    {
+      resourceManager_->discardEvent(event);
+      completeEvents.erase(pos++);
+      throw; // rethrow the exception such that it can be handled outside of critical section
+    }
+    catch(exception::CRCerror& e)
+    {
+      if ( ! configuration_->dropEventData )
+        streamHandler->writeEvent(event);
+
+      resourceManager_->discardEvent(event);
+      completeEvents.erase(pos++);
+      throw; // rethrow the exception such that it can be handled outside of critical section
+    }
+
+    if ( writeNextEventsToFile_ > 0 )
+    {
+      boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+      if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
       {
-        resourceManager_->eventCompleted(event);
-
-        try
-        {
-          event->checkEvent(configuration_->checkCRC);
-        }
-        catch(exception::DataCorruption& e)
-        {
-          resourceManager_->discardEvent(event);
-          eventMap->erase(pos++);
-          throw; // rethrow the exception such that it can be handled outside of critical section
-        }
-        catch(exception::CRCerror& e)
-        {
-          if ( ! configuration_->dropEventData )
-            streamHandler->writeEvent(event);
-
-          resourceManager_->discardEvent(event);
-          eventMap->erase(pos++);
-          throw; // rethrow the exception such that it can be handled outside of critical section
-        }
-
-        if ( writeNextEventsToFile_ > 0 )
-        {
-          boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
-          if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
-          {
-            event->dumpEventToFile("Requested by user");
-            --writeNextEventsToFile_;
-          }
-        }
-
-        if ( ! configuration_->dropEventData )
-          streamHandler->writeEvent(event);
-
-        resourceManager_->discardEvent(event);
-        eventMap->erase(pos++);
-      }
-      else
-      {
-        ++localEventMapMonitor.completeEvents;
-        ++pos;
+        event->dumpEventToFile("Requested by user");
+        --writeNextEventsToFile_;
       }
     }
-    else
-    {
-      ++localEventMapMonitor.partialEvents;
-      ++pos;
-    }
+
+    if ( ! configuration_->dropEventData )
+      streamHandler->writeEvent(event);
+
+    resourceManager_->discardEvent(event);
+    completeEvents.erase(pos++);
   }
-
-  eventMapMonitor = localEventMapMonitor;
 }
 
 

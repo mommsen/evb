@@ -112,8 +112,8 @@ namespace evb {
 
     private:
 
-      typedef std::map<EvBid,EventPtr> EventMap;
-      typedef boost::shared_ptr<EventMap> EventMapPtr;
+      typedef std::map<EvBid,EventPtr> PartialEvents;           //indexed by EvBid
+      typedef std::multimap<uint32_t,EventPtr> CompleteEvents;  //indexed by lumi section
 
       struct EventMapMonitor
       {
@@ -127,9 +127,9 @@ namespace evb {
 
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
-      void buildEvent(FragmentChainPtr&, EventMapPtr&) const;
-      EventMap::iterator getEventPos(EventMapPtr&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
-      void handleCompleteEvents(EventMapPtr&, StreamHandlerPtr&, EventMapMonitor&) const;
+      void buildEvent(FragmentChainPtr&, PartialEvents&, CompleteEvents&) const;
+      PartialEvents::iterator getEventPos(PartialEvents&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
+      void handleCompleteEvents(CompleteEvents&, StreamHandlerPtr&) const;
 
       BU* bu_;
       boost::shared_ptr<DiskWriter> diskWriter_;
