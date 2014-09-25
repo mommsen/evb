@@ -106,14 +106,9 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 }
 
 
-uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection()
+uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 {
-  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
-
-  if ( lumiSectionAccounts_.empty() )
-    return 0;
-  else
-    return lumiSectionAccounts_.begin()->first;
+  return oldestIncompleteLumiSection_;
 }
 
 
@@ -183,7 +178,8 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
     return false;
   }
 
-  LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
+  const LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
+  bool foundCompleteLS = false;
 
   if ( oldestLumiSection->second->incompleteEvents == 0 )
   {
@@ -192,7 +188,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
     {
       lumiSectionAccount = oldestLumiSection->second;
       lumiSectionAccounts_.erase(oldestLumiSection);
-      return true;
+      foundCompleteLS = true;
     }
     else // check if the current lumi section timed out
     {
@@ -207,18 +203,19 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
         LOG4CPLUS_INFO(bu_->getApplicationLogger(), msg.str());
         lumiSectionAccount = oldestLumiSection->second;
         lumiSectionAccounts_.erase(oldestLumiSection);
+        foundCompleteLS = true;
 
         // Insert the next lumi section
         ++lumiSection;
         LumiSectionAccountPtr lumiAccount( new LumiSectionAccount(lumiSection) );
         lumiSectionAccounts_.insert(LumiSectionAccounts::value_type(lumiSection,lumiAccount));
-
-        return true;
       }
     }
   }
 
-  return false;
+  oldestIncompleteLumiSection_ = lumiSectionAccounts_.begin()->first;
+
+  return foundCompleteLS;
 }
 
 
@@ -312,6 +309,7 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
 void evb::bu::ResourceManager::startProcessing()
 {
+  oldestIncompleteLumiSection_ = 0;
   draining_ = false;
   resetMonitoringCounters();
 }
@@ -469,7 +467,6 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
   eventMonitoring_.nbEventsInBU = 0;
   eventMonitoring_.nbEventsBuilt = 0;
-  eventMonitoring_.outstandingRequests = 0;
   eventMonitoring_.perf.reset();
 }
 
@@ -484,6 +481,7 @@ void evb::bu::ResourceManager::configure()
   resourceDirectory_.clear();
 
   eventsToDiscard_ = 0;
+  eventMonitoring_.outstandingRequests = 0;
 
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 

@@ -327,17 +327,21 @@ void evb::bu::EventBuilder::handleCompleteEvents
 {
   const uint32_t oldestIncompleteLumiSection = resourceManager_->getOldestIncompleteLumiSection();
 
-  eventMapMonitor.completeEvents = 0;
-  eventMapMonitor.partialEvents = 0;
+  EventMapMonitor localEventMapMonitor;
   EventMap::iterator pos = eventMap->begin();
 
   while ( pos != eventMap->end() )
   {
     const EventPtr& event = pos->second;
+    const uint32_t lumiSection = pos->first.lumiSection();
+
+    if ( lumiSection < localEventMapMonitor.lowestLumiSection ||
+         localEventMapMonitor.lowestLumiSection == 0 )
+      localEventMapMonitor.lowestLumiSection = lumiSection;
 
     if ( event->isComplete() )
     {
-      if ( pos->first.lumiSection() == oldestIncompleteLumiSection )
+      if ( lumiSection == oldestIncompleteLumiSection )
       {
         resourceManager_->eventCompleted(event);
 
@@ -379,16 +383,18 @@ void evb::bu::EventBuilder::handleCompleteEvents
       }
       else
       {
-        ++eventMapMonitor.completeEvents;
+        ++localEventMapMonitor.completeEvents;
         ++pos;
       }
     }
     else
     {
-      ++eventMapMonitor.partialEvents;
+      ++localEventMapMonitor.partialEvents;
       ++pos;
     }
   }
+
+  eventMapMonitor = localEventMapMonitor;
 }
 
 

@@ -90,7 +90,7 @@ namespace evb {
       /**
        * Return oldest lumi section number for which events are being built
        */
-      uint32_t getOldestIncompleteLumiSection();
+      uint32_t getOldestIncompleteLumiSection() const;
 
       /**
        * Start processing messages
@@ -175,6 +175,7 @@ namespace evb {
       typedef std::map<uint32_t,LumiSectionAccountPtr> LumiSectionAccounts;
       LumiSectionAccounts lumiSectionAccounts_;
       mutable boost::mutex lumiSectionAccountsMutex_;
+      uint32_t oldestIncompleteLumiSection_;
       volatile bool draining_;
 
       struct EventMonitoring
