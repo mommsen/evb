@@ -76,13 +76,20 @@ setParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 hltParameterSetURL string "f
 sendSimpleCmdToApp BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 Enable
 
 echo "Sending data..."
-sleep 5
+sleep 15
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Throttled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 while [[ $(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 eventRate xsd:unsignedInt) -gt 0 ]]
 do
     sleep 5
 done
-
-sleep 10
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "EVM state=$state"
@@ -102,13 +109,23 @@ fi
 
 state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
-if [[ "$state" != "Enabled" ]]
+if [[ "$state" != "Blocked" ]]
 then
   echo "Test failed"
   exit 1
 fi
 
 rm -f $testDir/run$runNumber/*.raw
+sleep 2
+
+state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
+echo "BU state=$state"
+if [[ "$state" != "Enabled" ]]
+then
+  echo "Test failed"
+  exit 1
+fi
+
 sleep 5
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
@@ -129,7 +146,7 @@ fi
 
 state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
-if [[ "$state" != "Enabled" ]]
+if [[ "$state" != "Throttled" ]]
 then
   echo "Test failed"
   exit 1
