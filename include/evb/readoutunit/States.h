@@ -61,7 +61,9 @@ namespace evb {
     public:
 
       typedef EvBState< Outermost<Owner>,StateMachine<Owner>,boost::mpl::list< AllOk<Owner> > > my_state;
-      typedef boost::mpl::list<> reactions;
+      typedef boost::mpl::list<
+        boost::statechart::in_state_reaction< DrainingDone >
+        > reactions;
 
       Outermost(typename my_state::boost_state::my_context c) : my_state("Outermost", c)
       { this->safeEntryAction(); }

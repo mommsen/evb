@@ -244,6 +244,8 @@ void evb::EvBStateMachine<MostDerived,InitialState>::processSoapEvent
   std::string& newStateName
 )
 {
+  LOG4CPLUS_INFO(getLogger(),"Received FSM SOAP command "+soapEvent);
+
   do_processSoapEvent(soapEvent, newStateName);
 }
 
