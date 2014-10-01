@@ -8,6 +8,21 @@ import socket
 import sys
 
 
+soapTemplate="""
+<soap-env:Envelope
+  soap-env:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/">
+  <soap-env:Header/>
+  <soap-env:Body>
+  %s
+  </soap-env:Body>
+</soap-env:Envelope>
+"""
+
+
 class SymbolMap:
 
     def __init__(self):
@@ -67,40 +82,37 @@ class SymbolMap:
             except OSError:
                 if not os.path.isdir(testDir):
                     raise
+
+            launchers = []
+            contextRegEx = re.compile('<xc:Context url="http://([A-Za-z0-9_]+)SOAP_HOST_NAME:([A-Za-z0-9_]+)SOAP_PORT')
+            config = "<xdaq:Configure xmlns:xdaq=\"urn:xdaq-soap:3.0\">\n"
+            try:
+                with open(self._testerHome + "/cases/" + testName + "/configuration.template.xml") as template:
+                    for line in template:
+                        config += line
+                        context = contextRegEx.search(line)
+                        if context:
+                            hostType = context.group(1)
+                            launchers.append((self._map[hostType + 'SOAP_HOST_NAME'],
+                                              int(self._map[hostType + 'LAUNCHER_PORT']),
+                                              "STARTXDAQ"+self._map[hostType + 'SOAP_PORT']))
+                for (key,val) in self._map.iteritems():
+                    config = config.replace(key,val)
+                config += "</xdaq:Configure>"
+
+            except EnvironmentError as e:
+                print("Could not open config file for test " + testName + ": " + str(e))
+                sys.exit(2)
+
+
             with open(testDir + "/configureCommand.xml","w") as conf:
-
-                conf.write("""<soap-env:Envelope
- soap-env:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
- xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xmlns:xsd="http://www.w3.org/2001/XMLSchema"
- xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/">
-<soap-env:Header>
-</soap-env:Header>
-<soap-env:Body>
-<xdaq:Configure xmlns:xdaq="urn:xdaq-soap:3.0">
-""")
-
-                try:
-                    with open(self._testerHome + "/cases/" + testName + "/configuration.template.xml") as template:
-                        for line in template:
-                            for (key,val) in self._map.iteritems():
-                                line = line.replace(key,val)
-                            conf.write(line)
-
-                except EnvironmentError as e:
-                    print("Could not open config file for test " + testName + ": " + str(e))
-                    sys.exit(2)
-
-                conf.write("""</xdaq:Configure>
-</soap-env:Body>
-</soap-env:Envelope>
-""")
+                conf.write(soapTemplate%(config))
 
         except EnvironmentError as e:
             print("Could not create configure command file in " + testDir + ": " + str(e))
             sys.exit(2)
 
+        return launchers
 
 
 class TestCase:
@@ -113,14 +125,21 @@ class TestCase:
 
         self._testName = testName
 
-        symbolMap.createConfigureCommand(testName)
+        launchers = symbolMap.createConfigureCommand(testName)
+        for l in launchers:
+            print("Launching XDAQ on "+l[0]+":"+str(l[1]))
+            self.sendCmdToLauncher(*l)
 
 
+    def sendCmdToLauncher(self,host,port,cmd):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((host,port))
+        s.send(cmd)
 
 
     def sendSimpleCommand(self,app,instance,command):
         urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
-        soapMessage = self._soapTemplate%("<xdaq:"+command+" xmlns:xdaq=\"urn:xdaq-soap:3.0\"/>")
+        soapMessage = soapTemplate%("<xdaq:"+command+" xmlns:xdaq=\"urn:xdaq-soap:3.0\"/>")
         headers = {"Content-Type":"text/xml",
                    "Content-Description":"SOAP Message",
                    "SOAPAction":urn}
