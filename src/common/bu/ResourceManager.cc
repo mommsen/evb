@@ -455,13 +455,6 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   nbTotalResources_ = nbResources_;
   nbBlockedResources_ = blockedResourceFIFO_.elements();
 
-  if ( nbBlockedResources_.value_ == 0 )
-    bu_->getStateMachine()->processFSMEvent( Release() );
-  else if ( nbBlockedResources_.value_ == nbResources_ )
-    bu_->getStateMachine()->processFSMEvent( Block() );
-  else if ( nbBlockedResources_.value_ > 0 )
-    bu_->getStateMachine()->processFSMEvent( Throttle() );
-
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
@@ -475,6 +468,13 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 
     eventMonitoring_.perf.reset();
   }
+
+  if ( nbBlockedResources_.value_ == 0 || outstandingRequests_ > configuration_->numberOfBuilders )
+    bu_->getStateMachine()->processFSMEvent( Release() );
+  else if ( nbBlockedResources_.value_ == nbResources_ )
+    bu_->getStateMachine()->processFSMEvent( Block() );
+  else if ( nbBlockedResources_.value_ > 0 && outstandingRequests_ < configuration_->numberOfBuilders )
+    bu_->getStateMachine()->processFSMEvent( Throttle() );
 }
 
 
