@@ -248,7 +248,10 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
       readoutMsg->buTid        = tid_;
       readoutMsg->buResourceId = buResourceId;
-      readoutMsg->nbRequests   = configuration_->eventsPerRequest;
+      if ( buResourceId > 0 )
+        readoutMsg->nbRequests = configuration_->eventsPerRequest;
+      else
+        readoutMsg->nbRequests = 0;
       readoutMsg->nbDiscards   = eventsToDiscard;
       readoutMsg->nbRUtids     = 0; // will be filled by EVM
 

@@ -270,20 +270,23 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
   msg::ReadoutMsg* readoutMsg =
     (msg::ReadoutMsg*)bufRef->getDataLocation();
 
-  FragmentRequestPtr fragmentRequest( new FragmentRequest );
-  fragmentRequest->buTid = readoutMsg->buTid;
-  fragmentRequest->buResourceId = readoutMsg->buResourceId;
-  fragmentRequest->nbRequests = readoutMsg->nbRequests;
-  fillRequest(readoutMsg, fragmentRequest);
-
-  updateRequestCounters(fragmentRequest);
-
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
     dataMonitoring_.outstandingEvents -= readoutMsg->nbDiscards;
   }
 
-  fragmentRequestFIFO_.enqWait(fragmentRequest);
+  if ( readoutMsg->nbRequests > 0 )
+  {
+    FragmentRequestPtr fragmentRequest( new FragmentRequest );
+    fragmentRequest->buTid = readoutMsg->buTid;
+    fragmentRequest->buResourceId = readoutMsg->buResourceId;
+    fragmentRequest->nbRequests = readoutMsg->nbRequests;
+    fillRequest(readoutMsg, fragmentRequest);
+
+    updateRequestCounters(fragmentRequest);
+
+    fragmentRequestFIFO_.enqWait(fragmentRequest);
+  }
 
   bufRef->release();
 }

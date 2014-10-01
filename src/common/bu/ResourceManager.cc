@@ -302,6 +302,16 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
     return true;
   }
+  else if ( eventsToDiscard_ > 0 )
+  {
+    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+
+    buResourceId = 0;
+    eventsToDiscard = eventsToDiscard_;
+    eventsToDiscard_ = 0;
+
+    return true;
+  }
 
   return false;
 }
@@ -501,13 +511,13 @@ void evb::bu::ResourceManager::configure()
   if ( configuration_->dropEventData )
   {
     resourcesToBlock_ = 0;
-    for (uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
+    for (uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId)
       assert( freeResourceFIFO_.enq(buResourceId) );
   }
   else
   {
     resourcesToBlock_ = nbResources_;
-    for (uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId)
+    for (uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId)
       assert( blockedResourceFIFO_.enq(buResourceId) );
 
     configureDiskUsageMonitors();
@@ -692,7 +702,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnippedForResourceTable() const
   {
     boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
 
-    for ( uint16_t buResourceId = 0; buResourceId < nbResources_; ++buResourceId )
+    for ( uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId )
     {
       tr row;
       row.add(td((boost::lexical_cast<std::string>(buResourceId))));
