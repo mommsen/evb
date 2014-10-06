@@ -4,7 +4,7 @@ use strict;
 #use Time::HiRes qw(usleep);
 
 my $testDir = $ENV{"EVB_TESTER_HOME"};
-my $symbolMap = $ENV{"TESTS_SYMBOL_MAP"};
+my $symbolMap = $testDir . "/cases/" . $ENV{"EVB_SYMBOL_MAP"};
 my $user = $ENV{"USER"};
 my $testEnv = "";
 $testEnv = "-" . $ENV{"TEST_TYPE"} if $ENV{"TEST_TYPE"};
