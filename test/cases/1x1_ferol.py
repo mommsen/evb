@@ -1,8 +1,8 @@
 from TestCase import TestCase
-from Configuration import RU,BU
+from Configuration import FEROL,RU,BU
 
 
-class case_1x1(TestCase):
+class case_1x1_ferol(TestCase):
 
     def runTest(self):
         self.configureEvB()
@@ -14,10 +14,14 @@ class case_1x1(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
+        evm = RU(symbolMap,[
+             ('inputSource','string','FEROL'),
              ('fedSourceIds','unsignedInt',(512,))
-            ]) )
+            ])
+        self._config.add( FEROL(symbolMap,evm,[
+             ('fedId','unsignedInt','512')
+             ]) )
+        self._config.add( evm )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true')
             ]) )
