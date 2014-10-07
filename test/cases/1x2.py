@@ -2,21 +2,23 @@ from TestCase import TestCase
 from Configuration import RU,BU
 
 
-class case_1x1(TestCase):
+class case_1x2(TestCase):
 
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(2048)
-        self.checkBU(2048)
+        self.checkEVM(24576)
+        self.checkBU(24576)
         self.stopEvB()
         self.haltEvB()
 
 
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,))
+             ('inputSource','string','Local')
+            ]) )
+        self._config.add( BU(symbolMap,[
+             ('dropEventData','boolean','true')
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true')
