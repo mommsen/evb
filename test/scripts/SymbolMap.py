@@ -43,11 +43,20 @@ class SymbolMap:
 
 
     def getHostInfo(self,hostType):
-        return {'launcherPort':self._map[hostType + '_LAUNCHER_PORT'],
-                'soapHostname':self._map[hostType + '_SOAP_HOST_NAME'],
-                'soapPort':self._map[hostType + '_SOAP_PORT'],
-                'i2oHostname':self._map[hostType + '_I2O_HOST_NAME'],
-                'i2oPort':self._map[hostType + '_I2O_PORT']}
+        hostInfo = {'launcherPort':self._map[hostType + '_LAUNCHER_PORT'],
+                    'soapHostname':self._map[hostType + '_SOAP_HOST_NAME'],
+                    'soapPort':self._map[hostType + '_SOAP_PORT']}
+        try:
+            hostInfo['i2oHostname'] = self._map[hostType + '_I2O_HOST_NAME']
+            hostInfo['i2oPort'] = self._map[hostType + '_I2O_PORT']
+        except KeyError:
+            pass
+        try:
+            hostInfo['frlHostname'] = self._map[hostType + '_FRL_HOST_NAME']
+            hostInfo['frlPort'] = self._map[hostType + '_FRL_PORT']
+        except KeyError:
+            pass
+        return hostInfo
 
 
     def parse(self,string):

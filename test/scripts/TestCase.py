@@ -23,8 +23,6 @@ class TestCase:
 
         self._config = Configuration.Configuration()
         self.fillConfiguration(symbolMap)
-        self._configureCmd = self.createConfigureCmd()
-        #print(self._configureCmd)
 
 
     def __del__(self):
@@ -71,9 +69,11 @@ class TestCase:
 
     def sendCmdToExecutive(self):
         urn = "urn:xdaq-application:lid=0"
+        cmd = self.createConfigureCmd()
+        print(cmd)
         for context in self._config.contexts:
             print("Configuring executive on "+context.hostInfo['soapHostname']+":"+context.hostInfo['soapPort'])
-            response = messengers.sendSoapMessage(context.hostInfo['soapHostname'],context.hostInfo['soapPort'],urn,self._configureCmd);
+            response = messengers.sendSoapMessage(context.hostInfo['soapHostname'],context.hostInfo['soapPort'],urn,cmd);
             xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
             if len(xdaqResponse) != 1:
                 raise(messengers.SOAPexception("Did not get a proper configure response from "+
@@ -84,7 +84,7 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    state = messengers.sendCmdToApp(command=cmd,app=app,**application)
+                    state = messengers.sendCmdToApp(command=cmd,**application)
                     if state != newState:
                         if state == 'Failed':
                             raise(StateException(app+":"+application['instance']+" has failed"))
@@ -106,7 +106,7 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    state = messengers.getStateName(app=app,**application)
+                    state = messengers.getStateName(**application)
                     if state != targetState:
                         raise(StateException(app+":"+str(application['instance'])+" has not reached "+targetState+" state"))
         except KeyError:
@@ -142,7 +142,7 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    messengers.setParam(paramName,paramType,paramValue,app=app,**application)
+                    messengers.setParam(paramName,paramType,paramValue,**application)
         except KeyError:
             pass
 
@@ -156,11 +156,11 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    value = int(messengers.getParam(paramName,paramType,app=app,**application))
+                    value = int(messengers.getParam(paramName,paramType,**application))
                     if comp(value,expectedValue):
                         print(app+":"+str(application['instance'])+" "+paramName+": "+str(value))
                     else:
-                        raise(ValueException(paramName+" on "+app+":"+application['instance']+
+                        raise(ValueException(paramName+" on "+app+":"+str(application['instance'])+
                                              " is "+str(value)+" instead of "+str(expectedValue)))
         except KeyError:
             pass
@@ -182,12 +182,13 @@ class TestCase:
         self.sendStateCmd('Halt','Halted',app,instance)
 
 
-    def startPtUtcp(self):
-        print("Starting pt::utcp")
-        for application in self._config.ptUtcp:
-            messengers.sendCmdToApp(command='Configure',app='pt::utcp::Application',**application)
-        for application in self._config.ptUtcp:
-            messengers.sendCmdToApp(command='Enable',app='pt::utcp::Application',**application)
+    def startPt(self):
+        print("Starting pt")
+        print self._config.pt
+        for application in self._config.pt:
+            messengers.sendCmdToApp(command='Configure',**application)
+        for application in self._config.pt:
+            messengers.sendCmdToApp(command='Enable',**application)
 
 
     def configureEvB(self):
@@ -198,13 +199,18 @@ class TestCase:
         print(" done")
 
 
-    def enableEvB(self,runNumber=1):
+    def enableEvB(self,sleepTime=5,runNumber=1):
         print("Enable EvB with run number "+str(runNumber))
         self.setParam("runNumber","unsignedInt",runNumber)
         self.enable('evb::EVM')
         self.enable('evb::RU')
         self.enable('evb::BU')
         self.enable('evb::test::DummyFEROL')
+        self.checkState('Enabled')
+        sys.stdout.write("Building for "+str(sleepTime)+"s...")
+        sys.stdout.flush()
+        sleep(sleepTime)
+        print("done")
         self.checkState('Enabled')
 
 
@@ -214,7 +220,7 @@ class TestCase:
         self.stop('evb::test::DummyFEROL')
         self.waitForAppState('Ready','evb::test::DummyFEROL',maxTries=15)
         self.stop('evb::EVM')
-        self.waitForAppState('Ready','evb::EVM',maxTries=10)
+        self.waitForAppState('Ready','evb::EVM',maxTries=20)
         self.stop('evb::RU')
         self.stop('evb::BU')
         self.waitForState('Ready')
@@ -236,14 +242,18 @@ class TestCase:
         self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"evb::EVM")
 
 
-    def checkBU(self,eventSize):
-        self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"evb::BU")
-        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"evb::BU")
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"evb::BU")
+    def checkRU(self,superFragmentSize,instance=None):
+        self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"evb::RU",instance)
+
+
+    def checkBU(self,eventSize,instance=None):
+        self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"evb::BU",instance)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"evb::BU",instance)
+        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"evb::BU",instance)
 
 
     def run(self):
         self.startXDAQs()
         self.sendCmdToExecutive()
-        self.startPtUtcp()
+        self.startPt()
         self.runTest()
