@@ -7,15 +7,18 @@ class Context:
     ptInstance = 0
 
     def __init__(self,params):
-        self.app = None
-        self.appInstance = None
-        self.ptInstance = Context.ptInstance
-        self.ptApp = None
-        self.hostInfo = None
-        self._id = 11
-        self.tid = None
-        Context.ptInstance += 1
         self._params = params
+        self.role = None
+        self.apps = {
+            'app':None,
+            'instance':None,
+            'ptApp':None,
+            'ptInstance':Context.ptInstance,
+            'tid':None,
+            'id':11
+            }
+        Context.ptInstance += 1
+        self._id = 11
 
 
     def getConfig(self):
@@ -38,14 +41,14 @@ class Context:
 
 
     def getTarget(self):
-        return """    <i2o:target class="%(app)s" instance="%(appInstance)s" tid="%(tid)s"/>
-""" % {'app':self.app,'appInstance':self.appInstance,'tid':self.tid}
+        return """    <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>
+""" % self.apps
 
 
     def getConfigForContext(self):
         return """
   <xc:Context url="http://%(soapHostname)s:%(soapPort)s">
-""" % self.hostInfo
+""" % self.apps
 
 
     def getConfigForPtFrl(self):
@@ -53,13 +56,12 @@ class Context:
 
 
     def getConfigForPtUtcp(self):
-        if self.ptApp != "pt::utcp::Application":
+        if self.apps['ptApp'] != "pt::utcp::Application":
              return ""
 
         config = """
     <xc:Endpoint protocol="atcp" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="tcp"/>
-""" % self.hostInfo
-        config += """
+
     <xc:Application class="pt::utcp::Application" id="%(id)s" instance="%(ptInstance)s" network="tcp">
       <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
         <protocol xsi:type="xsd:string">atcp</protocol>
@@ -71,17 +73,16 @@ class Context:
         <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
       </properties>
     </xc:Application>
-""" % {'id':self._id,'ptInstance':self.ptInstance}
+""" % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         return config
 
 
     def getConfigForApplication(self):
         config = """
-     <xc:Application class="%(app)s" id="%(id)s" instance="%(appInstance)s" network="tcp">
+     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
        <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % {'app':self.app,'id':self._id,'appInstance':self.appInstance}
-
+""" % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         config += self.fillProperties(self._params)
         config += "       </properties>\n    </xc:Application>"
@@ -113,23 +114,24 @@ class FEROL(Context):
 
     def __init__(self,symbolMap,destination,params):
         Context.__init__(self,params)
-        self.appInstance = FEROL.instance
+        self.role = "FEROL"
+        self.apps['app'] = "evb::test::DummyFEROL"
+        self.apps['instance'] = FEROL.instance
+        self.apps.update( symbolMap.getHostInfo('FEROL'+str(FEROL.instance)) )
+        self.apps['ptApp'] = "pt::frl::Application"
         FEROL.instance += 1
-        self.hostInfo = symbolMap.getHostInfo('FEROL'+str(self.appInstance))
-        self.app = "evb::test::DummyFEROL"
-        self.ptApp = "pt::frl::Application"
-        self._unicast = "<xc:Unicast class=\""+destination.app+"\" instance=\""+str(destination.appInstance)+"\" network=\"ferol\" />"
-        self._params.append(('destinationClass','string',destination.app))
-        self._params.append(('destinationInstance','unsignedInt',str(destination.appInstance)))
+
+        self._unicast = "<xc:Unicast class=\""+destination.apps['app']+"\" instance=\""+str(destination.apps['instance'])+"\" network=\"ferol\" />"
+        self._params.append(('destinationClass','string',destination.apps['app']))
+        self._params.append(('destinationInstance','unsignedInt',str(destination.apps['instance'])))
 
 
     def getConfigForApplication(self):
         config = """
-     <xc:Application class="%(app)s" id="%(id)s" instance="%(appInstance)s" network="ferol">
+     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="ferol">
        %(unicast)s
        <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % {'app':self.app,'id':self._id,'appInstance':self.appInstance,'unicast':self._unicast}
-
+""" % dict(self.apps.items() + [('id',self._id),('unicast',self._unicast)])
         self._id += 1
         config += self.fillProperties(self._params)
         config += "       </properties>\n    </xc:Application>"
@@ -139,11 +141,10 @@ class FEROL(Context):
     def getConfigForPtFrl(self):
         config = """
     <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
-""" % self.hostInfo
-        config += """
+
     <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-""" % {'id':self._id,'ptInstance':self.ptInstance}
+""" % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         config += self.fillProperties([
             ('ioQueueSize','unsignedInt','65536'),
@@ -159,15 +160,17 @@ class RU(Context):
 
     def __init__(self,symbolMap,params):
         Context.__init__(self,params)
-        self.appInstance = RU.instance
-        RU.instance += 1
-        self.hostInfo = symbolMap.getHostInfo('RU'+str(self.appInstance))
-        self.tid = self.appInstance+1
-        if self.appInstance == 0:
-            self.app = "evb::EVM"
+        if RU.instance == 0:
+            self.apps['app'] = "evb::EVM"
+            self.role = "EVM"
         else:
-            self.app = "evb::RU"
-        self.ptApp = "pt::utcp::Application"
+            self.apps['app'] = "evb::RU"
+            self.role = "RU"
+        self.apps['instance'] = RU.instance
+        self.apps.update( symbolMap.getHostInfo('RU'+str(RU.instance)) )
+        self.apps['tid'] = RU.instance+1
+        self.apps['ptApp'] = "pt::utcp::Application"
+        RU.instance += 1
 
 
     def getConfigForPtFrl(self):
@@ -180,19 +183,18 @@ class RU(Context):
                     for fedId in param[2]:
                         routing.append( (
                             ('fedid','string',str(fedId)),
-                            ('className','string',self.app),
-                            ('instance','string',str(self.appInstance))
+                            ('className','string',self.apps['app']),
+                            ('instance','string',str(self.apps['instance']))
                             ) )
             except KeyError:
                 pass
 
         config = """
     <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-""" % self.hostInfo
-        config += """
+
     <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-""" % {'id':self._id,'ptInstance':self.ptInstance}
+"""  % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
 
         config += self.fillProperties([
@@ -223,12 +225,13 @@ class BU(Context):
 
     def __init__(self,symbolMap,params):
         Context.__init__(self,params)
-        self.appInstance = BU.instance
+        self.role = "BU"
+        self.apps['app'] = "evb::BU"
+        self.apps['instance'] = BU.instance
+        self.apps.update( symbolMap.getHostInfo('BU'+str(BU.instance)) )
+        self.apps['tid'] = BU.instance+30
+        self.apps['ptApp'] = "pt::utcp::Application"
         BU.instance += 1
-        self.hostInfo = symbolMap.getHostInfo('BU'+str(self.appInstance))
-        self.tid = self.appInstance+30
-        self.app = "evb::BU"
-        self.ptApp = "pt::utcp::Application"
 
 
 class Configuration():
@@ -241,16 +244,14 @@ class Configuration():
 
     def add(self,context):
         self.contexts.append(context)
-        appInfo = dict((key,context.hostInfo[key]) for key in ('soapHostname','soapPort'))
-        appInfo['app'] = context.app
-        appInfo['instance'] = context.appInstance
-        if context.app not in self.applications:
-            self.applications[context.app] = []
-        self.applications[context.app].append(copy.deepcopy(appInfo))
-        if context.ptApp is not None:
-            appInfo['app'] = context.ptApp
-            appInfo['instance'] = context.ptInstance
-            self.pt.append(copy.deepcopy(appInfo))
+        appInfo = dict((key,context.apps[key]) for key in ('app','instance','soapHostname','soapPort'))
+        if context.role not in self.applications:
+            self.applications[context.role] = []
+        self.applications[context.role].append(copy.deepcopy(appInfo))
+        if context.apps['ptApp'] is not None:
+            appInfo['app'] = context.apps['ptApp']
+            appInfo['instance'] = context.apps['ptInstance']
+            self.pt.append(appInfo)
 
 
     def getPartition(self):
@@ -261,7 +262,7 @@ class Configuration():
 """
 
         for context in self.contexts:
-            if context.tid is not None:
+            if context.apps['tid'] is not None:
                 partition += context.getTarget()
 
         partition += "  </i2o:protocol>\n"

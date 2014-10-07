@@ -28,8 +28,8 @@ class TestCase:
     def __del__(self):
         for context in self._config.contexts:
             try:
-                print("Stopping XDAQ on "+context.hostInfo['soapHostname']+":"+str(context.hostInfo['launcherPort']))
-                messengers.sendCmdToLauncher("STOPXDAQ",context.hostInfo['soapHostname'],context.hostInfo['launcherPort'],context.hostInfo['soapPort'])
+                print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
+                messengers.sendCmdToLauncher("STOPXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
             except socket.error:
                 pass
 
@@ -37,16 +37,16 @@ class TestCase:
     def startXDAQs(self):
         try:
             for context in self._config.contexts:
-                print("Starting XDAQ on "+context.hostInfo['soapHostname']+":"+str(context.hostInfo['launcherPort']))
-                messengers.sendCmdToLauncher("STARTXDAQ",context.hostInfo['soapHostname'],context.hostInfo['launcherPort'],context.hostInfo['soapPort'])
+                print("Starting XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
+                messengers.sendCmdToLauncher("STARTXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
         except socket.error:
             print("Cannot contact launcher")
             sys.exit(2)
 
         for context in self._config.contexts:
-            sys.stdout.write("Checking "+context.hostInfo['soapHostname']+":"+context.hostInfo['soapPort']+" is listening")
+            sys.stdout.write("Checking "+context.apps['soapHostname']+":"+context.apps['soapPort']+" is listening")
             for x in xrange(10):
-                if messengers.webPing(context.hostInfo['soapHostname'],context.hostInfo['soapPort']):
+                if messengers.webPing(context.apps['soapHostname'],context.apps['soapPort']):
                     print(" okay")
                     break
                 else:
@@ -70,14 +70,14 @@ class TestCase:
     def sendCmdToExecutive(self):
         urn = "urn:xdaq-application:lid=0"
         cmd = self.createConfigureCmd()
-        print(cmd)
+        #print(cmd)
         for context in self._config.contexts:
-            print("Configuring executive on "+context.hostInfo['soapHostname']+":"+context.hostInfo['soapPort'])
-            response = messengers.sendSoapMessage(context.hostInfo['soapHostname'],context.hostInfo['soapPort'],urn,cmd);
+            print("Configuring executive on "+context.apps['soapHostname']+":"+context.apps['soapPort'])
+            response = messengers.sendSoapMessage(context.apps['soapHostname'],context.apps['soapPort'],urn,cmd);
             xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
             if len(xdaqResponse) != 1:
                 raise(messengers.SOAPexception("Did not get a proper configure response from "+
-                                                context.hostInfo['soapHostname']+":"+context.hostInfo['soapPort']+":\n"+
+                                                context.apps['soapHostname']+":"+context.apps['soapPort']+":\n"+
                                                 response.toprettyxml()))
 
     def sendStateCmd(self,cmd,newState,app,instance=None):
@@ -158,9 +158,9 @@ class TestCase:
                 if instance is None or instance == application['instance']:
                     value = int(messengers.getParam(paramName,paramType,**application))
                     if comp(value,expectedValue):
-                        print(app+":"+str(application['instance'])+" "+paramName+": "+str(value))
+                        print(app+str(application['instance'])+" "+paramName+": "+str(value))
                     else:
-                        raise(ValueException(paramName+" on "+app+":"+str(application['instance'])+
+                        raise(ValueException(paramName+" on "+app+str(application['instance'])+
                                              " is "+str(value)+" instead of "+str(expectedValue)))
         except KeyError:
             pass
@@ -184,7 +184,6 @@ class TestCase:
 
     def startPt(self):
         print("Starting pt")
-        print self._config.pt
         for application in self._config.pt:
             messengers.sendCmdToApp(command='Configure',**application)
         for application in self._config.pt:
@@ -202,10 +201,10 @@ class TestCase:
     def enableEvB(self,sleepTime=5,runNumber=1):
         print("Enable EvB with run number "+str(runNumber))
         self.setParam("runNumber","unsignedInt",runNumber)
-        self.enable('evb::EVM')
-        self.enable('evb::RU')
-        self.enable('evb::BU')
-        self.enable('evb::test::DummyFEROL')
+        self.enable('EVM')
+        self.enable('RU')
+        self.enable('BU')
+        self.enable('FEROL')
         self.checkState('Enabled')
         sys.stdout.write("Building for "+str(sleepTime)+"s...")
         sys.stdout.flush()
@@ -217,39 +216,39 @@ class TestCase:
     def stopEvB(self):
         sys.stdout.write("Stopping EvB")
         sys.stdout.flush()
-        self.stop('evb::test::DummyFEROL')
-        self.waitForAppState('Ready','evb::test::DummyFEROL',maxTries=15)
-        self.stop('evb::EVM')
-        self.waitForAppState('Ready','evb::EVM',maxTries=20)
-        self.stop('evb::RU')
-        self.stop('evb::BU')
+        self.stop('FEROL')
+        self.waitForAppState('Ready','FEROL',maxTries=15)
+        self.stop('EVM')
+        self.waitForAppState('Ready','EVM',maxTries=20)
+        self.stop('RU')
+        self.stop('BU')
         self.waitForState('Ready')
         print(" done")
 
 
     def haltEvB(self):
         print("Halt EvB")
-        self.halt('evb::test::DummyFEROL')
-        self.halt('evb::EVM')
-        self.halt('evb::RU')
-        self.halt('evb::BU')
+        self.halt('FEROL')
+        self.halt('EVM')
+        self.halt('RU')
+        self.halt('BU')
         self.checkState('Halted')
 
 
     def checkEVM(self,superFragmentSize):
-        self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"evb::EVM")
-        self.checkAppParam("eventCount","unsignedLong",1000,operator.gt,"evb::EVM")
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"evb::EVM")
+        self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
+        self.checkAppParam("eventCount","unsignedLong",1000,operator.gt,"EVM")
+        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"EVM")
 
 
     def checkRU(self,superFragmentSize,instance=None):
-        self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"evb::RU",instance)
+        self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"RU",instance)
 
 
     def checkBU(self,eventSize,instance=None):
-        self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"evb::BU",instance)
-        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"evb::BU",instance)
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"evb::BU",instance)
+        self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU",instance)
+        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"BU",instance)
 
 
     def run(self):
