@@ -31,6 +31,8 @@ def usage():
 testRunner.py --test testCase
           -h --help:         print this message and exit
           -t --test:         name of the test case
+          -a --all:          run all tests
+          -v --verbose:      print log info to stdout
     """)
 
 
@@ -69,6 +71,7 @@ def main(argv):
 
     sys.path.append(testCaseDir)
     symbolMap = SymbolMap(testCaseDir)
+    pattern = None
 
     try:
         opts,args = getopt.getopt(argv,"hvat:",["help","verbose","all","test="])
@@ -82,14 +85,19 @@ def main(argv):
         elif opt in ("-v","--verbose"):
             verbose = True
         elif opt in ("-t","--test"):
-            testNames.append(arg)
+            pattern = re.compile("("+arg+")\.py$")
         elif opt in ("-a","--all"):
             pattern = re.compile("^([0-9]x[0-9].*)\.py$")
-            for file in os.listdir(testCaseDir):
-                testCase = pattern.search(file)
-                if testCase:
-                    testNames.append(testCase.group(1))
-            testNames.sort()
+
+        if pattern is None:
+            print("Please specify a test to run")
+            sys.exit(2)
+
+        for file in os.listdir(testCaseDir):
+            testCase = pattern.search(file)
+            if testCase:
+                testNames.append(testCase.group(1))
+        testNames.sort()
 
     for test in testNames:
         logFile = open(testLogDir+test+".txt",'w')
