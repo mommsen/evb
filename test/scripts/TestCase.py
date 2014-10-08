@@ -1,6 +1,8 @@
 import getopt
+import glob
 import operator
 import os
+import re
 import socket
 import sys
 from time import sleep
@@ -41,6 +43,8 @@ class TestCase:
                 messengers.sendCmdToLauncher("STOPXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
             except socket.error:
                 pass
+        for file in glob.glob("/tmp/dump_*txt"):
+            os.remove(file)
         sys.stdout.flush()
         sys.stdout = self._origStdout
 
@@ -163,13 +167,17 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
                     value = int(messengers.getParam(paramName,paramType,**application))
-                    if comp(value,expectedValue):
+                    if comp(value,int(expectedValue)):
                         print(app+str(application['instance'])+" "+paramName+": "+str(value))
                     else:
                         raise(ValueException(paramName+" on "+app+str(application['instance'])+
                                              " is "+str(value)+" instead of "+str(expectedValue)))
         except KeyError:
             pass
+
+
+    def getFiles(self,regex,dir="/tmp"):
+        return [f for f in os.listdir(dir) if re.search(regex,f)]
 
 
     def configure(self,app,instance=None):
