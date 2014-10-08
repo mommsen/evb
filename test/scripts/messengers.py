@@ -24,6 +24,7 @@ def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((soapHostname,int(launcherPort)))
     s.send(cmd+soapPort)
+    s.close()
 
 
 def webPing(soapHostname,soapPort):
@@ -54,7 +55,7 @@ def sendCmdToApp(command,soapHostname,soapPort,app,instance):
     if len(xdaqResponse) == 0:
         xdaqResponse = response.getElementsByTagName('xdaq:'+command.lower()+'Response')
     if len(xdaqResponse) != 1:
-        raise(SOAPexception("Did not get a proper FSM response from "+app+":"+str(instance)+":\n"+response.toprettyxml()))
+        raise(SOAPexception("Did not get a proper FSM response from "+app+str(instance)+":\n"+response.toprettyxml()))
     try:
         return xdaqResponse[0].firstChild.attributes['xdaq:stateName'].value
     except (AttributeError,KeyError):
@@ -77,7 +78,7 @@ def getParam(paramName,paramType,soapHostname,soapPort,app,instance):
     response = sendSoapMessage(soapHostname,soapPort,urn,paramGet)
     xdaqResponse = response.getElementsByTagName('p:'+paramName)
     if len(xdaqResponse) != 1:
-        raise(SOAPexception("ParameterGetResponse response from "+app+":"+str(instance)+" is missing "+paramName+" ("+paramType+"):\n"
+        raise(SOAPexception("ParameterGetResponse response from "+app+str(instance)+" is missing "+paramName+" ("+paramType+"):\n"
                             +response.toprettyxml()))
     return xdaqResponse[0].firstChild.data
 
