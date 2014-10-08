@@ -121,14 +121,15 @@ class FEROL(Context):
         self.apps['ptApp'] = "pt::frl::Application"
         FEROL.instance += 1
 
-        self._unicast = "<xc:Unicast class=\""+destination.apps['app']+"\" instance=\""+str(destination.apps['instance'])+"\" network=\"ferol\" />"
+        self._unicast = """<xc:Unicast class="%(destinationApp)s" instance="%(destinationInstance)s" network=\"ferol%(instance)s" />"""\
+            % {'destinationApp':destination.apps['app'],'destinationInstance':destination.apps['instance'],'instance':self.apps['instance']}
         self._params.append(('destinationClass','string',destination.apps['app']))
         self._params.append(('destinationInstance','unsignedInt',str(destination.apps['instance'])))
 
 
     def getConfigForApplication(self):
         config = """
-     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="ferol">
+     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="ferol%(instance)s">
        %(unicast)s
        <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',self._id),('unicast',self._unicast)])
@@ -140,9 +141,9 @@ class FEROL(Context):
 
     def getConfigForPtFrl(self):
         config = """
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
+    <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol%(instance)s" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
 
-    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
+    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol%(instance)s">
       <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
@@ -216,6 +217,11 @@ class RU(Context):
             ('doSuperFragment','boolean','false')
             ])
         config += "       </properties>\n     </xc:Application>\n"
+
+        for i in range(len(routing)):
+            config += "\n    <xc:Alias name=\"ferol"+str(i)+"\">ferol</xc:Alias>"
+
+        config += "\n"
         return config
 
 
@@ -232,6 +238,17 @@ class BU(Context):
         self.apps['tid'] = BU.instance+30
         self.apps['ptApp'] = "pt::utcp::Application"
         BU.instance += 1
+
+
+    def getConfigForPtFrl(self):
+        config = """
+    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
+      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
+      </properties>
+    </xc:Application>
+""" % dict(self.apps.items() + [('id',self._id)])
+        self._id += 1
+        return config
 
 
 class Configuration():
