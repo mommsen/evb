@@ -21,6 +21,10 @@ class Context:
         self._id = 11
 
 
+    def __del__(self):
+        Context.ptInstance = 0
+
+
     def getConfig(self):
         config = self.getConfigForContext()
         config += self.getConfigForPtFrl()
@@ -28,26 +32,25 @@ class Context:
         config += self.getConfigForApplication()
 
         config += """
+      <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+      <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
+      <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
+      <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
+      <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
 
-    <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
-    <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
-    <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-
-  </xc:Context>
+    </xc:Context>
 """
         return config
 
 
     def getTarget(self):
-        return """    <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>
+        return """      <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>
 """ % self.apps
 
 
     def getConfigForContext(self):
         return """
-  <xc:Context url="http://%(soapHostname)s:%(soapPort)s">
+    <xc:Context url="http://%(soapHostname)s:%(soapPort)s">
 """ % self.apps
 
 
@@ -60,19 +63,19 @@ class Context:
              return ""
 
         config = """
-    <xc:Endpoint protocol="atcp" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="tcp"/>
+      <xc:Endpoint protocol="atcp" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="tcp"/>
 
-    <xc:Application class="pt::utcp::Application" id="%(id)s" instance="%(ptInstance)s" network="tcp">
-      <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
-        <protocol xsi:type="xsd:string">atcp</protocol>
-        <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
-        <autoConnect xsi:type="xsd:boolean">false</autoConnect>
-        <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
-        <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
-        <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-        <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
-      </properties>
-    </xc:Application>
+      <xc:Application class="pt::utcp::Application" id="%(id)s" instance="%(ptInstance)s" network="tcp">
+        <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
+          <protocol xsi:type="xsd:string">atcp</protocol>
+          <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
+          <autoConnect xsi:type="xsd:boolean">false</autoConnect>
+          <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
+          <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
+          <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
+          <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
+        </properties>
+      </xc:Application>
 """ % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         return config
@@ -80,12 +83,12 @@ class Context:
 
     def getConfigForApplication(self):
         config = """
-     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
-       <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
+      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
+         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         config += self.fillProperties(self._params)
-        config += "       </properties>\n    </xc:Application>"
+        config += "         </properties>\n      </xc:Application>\n"
         return config
 
 
@@ -93,18 +96,18 @@ class Context:
         config = ""
         for param in params:
             if isinstance(param[2],tuple) or isinstance(param[2],list):
-                config += "         <"+param[0]+" soapenc:arrayType=\"xsd:ur-type["+str(len(param[2]))+"]\" xsi:type=\"soapenc:Array\">\n"
+                config += "           <"+param[0]+" soapenc:arrayType=\"xsd:ur-type["+str(len(param[2]))+"]\" xsi:type=\"soapenc:Array\">\n"
                 for index,value in enumerate(param[2]):
                     if param[1] == 'Struct':
-                        config += "           <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"soapenc:Struct\">"
+                        config += "             <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"soapenc:Struct\">"
                         for val in value:
-                            config += "\n             <"+val[0]+" xsi:type=\"xsd:"+val[1]+"\">"+str(val[2])+"</"+val[0]+">"
-                        config += "\n           </item>\n"
+                            config += "\n               <"+val[0]+" xsi:type=\"xsd:"+val[1]+"\">"+str(val[2])+"</"+val[0]+">"
+                        config += "\n             </item>\n"
                     else:
-                        config += "           <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"xsd:"+param[1]+"\">"+str(value)+"</item>\n"
-                config += "         </"+param[0]+">\n"
+                        config += "             <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"xsd:"+param[1]+"\">"+str(value)+"</item>\n"
+                config += "           </"+param[0]+">\n"
             else:
-                config += "         <"+param[0]+" xsi:type=\"xsd:"+param[1]+"\">"+str(param[2])+"</"+param[0]+">\n"
+                config += "           <"+param[0]+" xsi:type=\"xsd:"+param[1]+"\">"+str(param[2])+"</"+param[0]+">\n"
         return config
 
 
@@ -127,31 +130,35 @@ class FEROL(Context):
         self._params.append(('destinationInstance','unsignedInt',str(destination.apps['instance'])))
 
 
+    def __del__(self):
+        FEROL.instance = 0
+
+
     def getConfigForApplication(self):
         config = """
-     <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="ferol%(instance)s">
-       %(unicast)s
-       <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
+      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="ferol%(instance)s">
+        %(unicast)s
+        <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',self._id),('unicast',self._unicast)])
         self._id += 1
         config += self.fillProperties(self._params)
-        config += "       </properties>\n    </xc:Application>"
+        config += "        </properties>\n      </xc:Application>\n"
         return config
 
 
     def getConfigForPtFrl(self):
         config = """
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol%(instance)s" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
+      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol%(instance)s" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
 
-    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol%(instance)s">
-      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
+      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol%(instance)s">
+        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         config += self.fillProperties([
             ('ioQueueSize','unsignedInt','65536'),
             ('eventQueueSize','unsignedInt','65536')
             ])
-        config += "       </properties>\n     </xc:Application>\n"
+        config += "        </properties>\n      </xc:Application>\n"
         return config
 
 
@@ -174,6 +181,10 @@ class RU(Context):
         RU.instance += 1
 
 
+    def __del__(self):
+        RU.instance = 0
+
+
     def getConfigForPtFrl(self):
         routing = []
         for param in self._params:
@@ -191,10 +202,10 @@ class RU(Context):
                 pass
 
         config = """
-    <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
+      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
 
-    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
-      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
+      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
+        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
 """  % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
 
@@ -216,10 +227,10 @@ class RU(Context):
             ('maxInputBlockSize','unsignedInt','131072'),
             ('doSuperFragment','boolean','false')
             ])
-        config += "       </properties>\n     </xc:Application>\n"
+        config += "        </properties>\n      </xc:Application>\n"
 
         for i in range(len(routing)):
-            config += "\n    <xc:Alias name=\"ferol"+str(i)+"\">ferol</xc:Alias>"
+            config += "\n      <xc:Alias name=\"ferol"+str(i)+"\">ferol</xc:Alias>"
 
         config += "\n"
         return config
@@ -240,12 +251,16 @@ class BU(Context):
         BU.instance += 1
 
 
+    def __del__(self):
+        BU.instance = 0
+
+
     def getConfigForPtFrl(self):
         config = """
-    <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
-      <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-      </properties>
-    </xc:Application>
+      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
+        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
+        </properties>
+      </xc:Application>
 """ % dict(self.apps.items() + [('id',self._id)])
         self._id += 1
         return config
@@ -273,20 +288,20 @@ class Configuration():
 
     def getPartition(self):
         partition = """
-<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-  <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
+    <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
 """
 
         for context in self.contexts:
             if context.apps['tid'] is not None:
                 partition += context.getTarget()
 
-        partition += "  </i2o:protocol>\n"
+        partition += "    </i2o:protocol>\n"
 
         for context in self.contexts:
             partition += context.getConfig()
 
-        partition += "</xc:Partition>"
+        partition += "  </xc:Partition>\n"
 
         return partition

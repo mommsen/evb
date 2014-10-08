@@ -1,7 +1,6 @@
 import getopt
 import operator
 import os
-import re
 import socket
 import sys
 from time import sleep
@@ -9,6 +8,9 @@ from time import sleep
 import messengers
 import Configuration
 
+
+class LauncherException(Exception):
+    pass
 
 class StateException(Exception):
     pass
@@ -19,10 +21,17 @@ class ValueException(Exception):
 
 class TestCase:
 
-    def __init__(self,symbolMap):
+    def __init__(self,symbolMap,stdout):
 
+        self._origStdout = sys.stdout
+        sys.stdout = stdout
         self._config = Configuration.Configuration()
         self.fillConfiguration(symbolMap)
+        self._configCmd = self.createConfigureCmd()
+        print("**************************************")
+        print(self._configCmd)
+        print("**************************************")
+
 
 
     def __del__(self):
@@ -32,6 +41,8 @@ class TestCase:
                 messengers.sendCmdToLauncher("STOPXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
             except socket.error:
                 pass
+        sys.stdout.flush()
+        sys.stdout = self._origStdout
 
 
     def startXDAQs(self):
@@ -40,8 +51,7 @@ class TestCase:
                 print("Starting XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
                 messengers.sendCmdToLauncher("STARTXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
         except socket.error:
-            print("Cannot contact launcher")
-            sys.exit(2)
+            raise LauncherException("Cannot contact launcher")
 
         for context in self._config.contexts:
             sys.stdout.write("Checking "+context.apps['soapHostname']+":"+context.apps['soapPort']+" is listening")
@@ -55,12 +65,10 @@ class TestCase:
                     sleep(1)
             else:
                 print(" NOPE")
-                sys.exit(2)
+                raise LauncherException(context.apps['soapHostname']+":"+context.apps['soapPort']+" is not listening")
 
 
     def createConfigureCmd(self):
-        #contextRegEx = re.compile('<xc:Context url="http://(?P<hosttype>[A-Za-z0-9_]+)SOAP_HOST_NAME:')
-        #applicationRegEx = re.compile('<xc:Application.*class="(?P<class>[A-Za-z:]+)".*instance="(?P<instance>[0-9]+)"')
         cmd = """<xdaq:Configure xmlns:xdaq=\"urn:xdaq-soap:3.0\">"""
         cmd += self._config.getPartition()
         cmd += "</xdaq:Configure>"
@@ -69,11 +77,9 @@ class TestCase:
 
     def sendCmdToExecutive(self):
         urn = "urn:xdaq-application:lid=0"
-        cmd = self.createConfigureCmd()
-        #print(cmd)
         for context in self._config.contexts:
             print("Configuring executive on "+context.apps['soapHostname']+":"+context.apps['soapPort'])
-            response = messengers.sendSoapMessage(context.apps['soapHostname'],context.apps['soapPort'],urn,cmd);
+            response = messengers.sendSoapMessage(context.apps['soapHostname'],context.apps['soapPort'],urn,self._configCmd);
             xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
             if len(xdaqResponse) != 1:
                 raise(messengers.SOAPexception("Did not get a proper configure response from "+
@@ -108,7 +114,7 @@ class TestCase:
                 if instance is None or instance == application['instance']:
                     state = messengers.getStateName(**application)
                     if state != targetState:
-                        raise(StateException(app+":"+str(application['instance'])+" has not reached "+targetState+" state"))
+                        raise(StateException(app+str(application['instance'])+" has not reached "+targetState+" state"))
         except KeyError:
             pass
 
@@ -254,5 +260,6 @@ class TestCase:
     def run(self):
         self.startXDAQs()
         self.sendCmdToExecutive()
+        self.waitForState('Halted')
         self.startPt()
         self.runTest()
