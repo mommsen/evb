@@ -19,5 +19,6 @@ class case_1x1(TestCase):
              ('fedSourceIds','unsignedInt',(512,))
             ]) )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )

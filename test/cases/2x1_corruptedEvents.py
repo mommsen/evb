@@ -80,5 +80,6 @@ class case_2x1_corruptedEvents(TestCase):
 
         self._config.add( BU(symbolMap,[
              ('checkCRC','unsignedInt','1'),
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )

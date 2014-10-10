@@ -24,8 +24,10 @@ class case_1x2_ferol(TestCase):
                 ]) )
         self._config.add( evm )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )

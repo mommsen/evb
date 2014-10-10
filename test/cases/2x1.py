@@ -23,5 +23,6 @@ class case_2x1(TestCase):
              ('inputSource','string','Local')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )
