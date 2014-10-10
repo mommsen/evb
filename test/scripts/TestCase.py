@@ -1,9 +1,13 @@
 import getopt
 import glob
+import json
+import filecmp
 import operator
 import os
 import re
+import shutil
 import socket
+import subprocess
 import sys
 from time import sleep
 
@@ -18,6 +22,9 @@ class StateException(Exception):
     pass
 
 class ValueException(Exception):
+    pass
+
+class FileException(Exception):
     pass
 
 
@@ -97,9 +104,9 @@ class TestCase:
                     state = messengers.sendCmdToApp(command=cmd,**application)
                     if state != newState:
                         if state == 'Failed':
-                            raise(StateException(app+":"+application['instance']+" has failed"))
+                            raise(StateException(app+str(application['instance'])+" has failed"))
                         else:
-                            raise(StateException(app+":"+application['instance']+" is in state "+state+
+                            raise(StateException(app+str(application['instance'])+" is in state "+state+
                                                  " instead of target state "+newState))
 
 
@@ -162,6 +169,23 @@ class TestCase:
             self.setAppParam(paramName,paramType,paramValue,app)
 
 
+    def getAppParam(self,paramName,paramType,app,instance=None):
+        params= {}
+        try:
+            for application in self._config.applications[app]:
+                if instance is None or instance == application['instance']:
+                    params[app+str(application['instance'])] = messengers.getParam(paramName,paramType,**application)
+        except KeyError:
+            pass
+        return params
+
+
+    def getParam(self,paramName,paramType):
+        params = {}
+        for app in self._config.applications.keys():
+            params.update( self.getAppParam(paramName,paramType,app) )
+
+
     def checkAppParam(self,paramName,paramType,expectedValue,comp,app,instance=None):
         try:
             for application in self._config.applications[app]:
@@ -172,6 +196,18 @@ class TestCase:
                     else:
                         raise(ValueException(paramName+" on "+app+str(application['instance'])+
                                              " is "+str(value)+" instead of "+str(expectedValue)))
+        except KeyError:
+            pass
+
+
+    def waitForAppParam(self,paramName,paramType,expectedValue,comp,app,instance=None):
+        try:
+            for application in self._config.applications[app]:
+                if instance is None or instance == application['instance']:
+                    value = None
+                    while not comp(value,int(expectedValue)) and not sleep(1):
+                        value = int(messengers.getParam(paramName,paramType,**application))
+
         except KeyError:
             pass
 
@@ -263,6 +299,97 @@ class TestCase:
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
         self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU",instance)
         self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"BU",instance)
+
+
+    def prepareAppliance(self,testDir):
+        try:
+            shutil.rmtree(testDir)
+        except OSError:
+            pass
+        os.makedirs(testDir)
+        with open(testDir+'/HltConfig.py','w') as config:
+            config.write("dummy HLT menu for EvB test")
+        with open(testDir+'/SCRAM_ARCH','w') as arch:
+            arch.write("slc6_amd64_gcc472")
+        with open(testDir+'/CMSSW_VERSION','w') as version:
+            version.write("cmssw_noxdaq")
+        stat = os.statvfs(testDir)
+        return 1 - stat.f_bfree/float(stat.f_blocks)
+
+
+    def checkBuDir(self,testDir,runNumber,eventSize=None,singleBU=True):
+        runDir=testDir+"/run"+runNumber
+        print( subprocess.Popen(["ls","--full-time","-rt","-R",runDir], stdout=subprocess.PIPE).communicate()[0] )
+        if os.path.isdir(runDir+"/open"):
+            raise FileException(runDir+"/open still exists")
+        for jsdFile in ('rawData.jsd','EoLS.jsd','EoR.jsd'):
+            jsdPath = runDir+"/jsd/"+jsdFile
+            if not os.path.isfile(jsdPath):
+                raise FileException(jsdPath+" does not exist")
+        for hltFile in ('HltConfig.py','CMSSW_VERSION','SCRAM_ARCH'):
+            hltPath = runDir+"/hlt/"+hltFile
+            if not os.path.isfile(hltPath):
+                raise FileException(hltPath+" does not exist")
+            if not filecmp.cmp(hltPath,testDir+"/"+hltFile,False):
+                raise FileException("Files "+testDir+"/"+hltFile+" and "+hltPath+" are not identical")
+
+        runLsCounter = 0
+        runFileCounter = 0
+        runEventCounter = 0
+        fileCounter = 0
+        lsRegex = re.compile('.*_ls([0-9]+)_EoLS.jsn')
+        for eolsFile in sorted(glob.glob(runDir+"/*_EoLS.jsn")):
+            lumiSection = lsRegex.match(eolsFile).group(1)
+            with open(eolsFile) as file:
+                eolsData = [int(f) for f in json.load(file)['data']]
+            if singleBU and eolsData[0] != eolsData[2]:
+                raise ValueException("Total event count "+str(eolsData[2])+" does not match "+str(eolsData[0])+" in "+eolsFile)
+
+            eventCounter = 0
+            if eolsData[1] > 0:
+                runLsCounter += 1
+                jsonFiles = glob.glob(runDir+"/run"+runNumber+"_ls"+lumiSection+"_index*jsn")
+                fileCounter = len(jsonFiles)
+                runFileCounter += fileCounter
+                for jsonFile in jsonFiles:
+                    with open(jsonFile) as file:
+                        jsonData = [int(f) for f in json.load(file)['data']]
+                    eventCounter += jsonData[0]
+                    if eventSize:
+                        rawFile = jsonFile.replace('.jsn','.raw')
+                        try:
+                            fileSize = os.path.getsize(rawFile)
+                        except OSError:
+                            raise FileException(rawFile+" does not exist")
+                            eventCount = fileSize/eventSize
+                            if eventCount != jsonData[0]:
+                                raise ValueException("expected "+str(jsonData[0])+", but found "+str(eventCount)+" events in JSON file "+jsonFile)
+
+            else:
+                fileCounter = len( glob.glob(runDir+"/run"+runNumber+"_ls"+lumiSection+"*[raw,jsn]") ) - 1
+
+            if eventCounter != eolsData[0]:
+                raise ValueException("expected "+str(eolsData[0])+" events in LS "+lumiSection+", but found "+str(eventCounter)+" events in raw data JSON files")
+            if fileCounter != eolsData[1]:
+                raise ValueException("expected "+str(eolsData[1])+" files for LS "+lumiSection+", but found "+str(fileCounter)+" raw data files")
+            runEventCounter += eventCounter
+
+        eorFile=runDir+"/run"+runNumber+"_ls0000_EoR.jsn"
+        try:
+            with open(eorFile) as file:
+                eorData = [int(f) for f in json.load(file)['data']]
+        except IOError:
+            raise FileException("cannot locate the EoR json file "+eorFile)
+        if runEventCounter != eorData[0]:
+            raise ValueException("expected "+str(eorData[0])+" events in run "+runNumber+", but found "+str(runEventCounter)+" events in raw data JSON files")
+        if runFileCounter != eorData[1]:
+            raise ValueException("expected "+str(eorData[1])+" files for run "+runNumber+", but found "+str(runFileCounter)+" raw data files")
+        if runLsCounter != eorData[2]:
+            raise ValueException("expected "+str(eorData[2])+" lumi sections in run "+runNumber+", but found raw data files for "+str(runLsCounter)+" lumi sections")
+        if int(lumiSection) != eorData[3]:
+            raise ValueException("expected last lumi section "+str(eorData[3])+" for run "+runNumber+", but found raw data files up to lumi section "+str(int(lumiSection)))
+
+        shutil.rmtree(runDir)
 
 
     def run(self):
