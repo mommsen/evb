@@ -298,7 +298,6 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::drain()
 {
   generateFragments_ = false;
   while ( generatingActive_ ) ::usleep(1000);
-  this->fragmentFIFO_.clear();
 }
 
 
