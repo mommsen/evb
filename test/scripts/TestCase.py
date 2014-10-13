@@ -125,7 +125,7 @@ class TestCase:
                 if instance is None or instance == application['instance']:
                     state = messengers.getStateName(**application)
                     if state != targetState:
-                        raise(StateException(app+str(application['instance'])+" has not reached "+targetState+" state"))
+                        raise(StateException(app+str(application['instance'])+" is not in expected state '"+targetState+"', but '"+state+"'"))
         except KeyError:
             pass
 
@@ -256,11 +256,12 @@ class TestCase:
         self.enable('BU')
         self.enable('FEROL')
         self.checkState('Enabled')
-        sys.stdout.write("Building for "+str(sleepTime)+"s...")
-        sys.stdout.flush()
-        sleep(sleepTime)
-        print("done")
-        self.checkState('Enabled')
+        if sleepTime > 0:
+            sys.stdout.write("Building for "+str(sleepTime)+"s...")
+            sys.stdout.flush()
+            sleep(sleepTime)
+            print("done")
+            self.checkState('Enabled')
 
 
     def stopEvB(self):
@@ -269,7 +270,7 @@ class TestCase:
         self.stop('FEROL')
         self.waitForAppState('Ready','FEROL',maxTries=15)
         self.stop('EVM')
-        self.waitForAppState('Ready','EVM',maxTries=20)
+        self.waitForAppState('Ready','EVM',maxTries=30)
         self.stop('RU')
         self.stop('BU')
         self.waitForState('Ready')
