@@ -18,8 +18,10 @@ class case_1x2(TestCase):
              ('inputSource','string','Local')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('dropEventData','boolean','true')
+             ('dropEventData','boolean','true'),
+             ('lumiSectionTimeout','unsignedInt','0')
             ]) )
