@@ -61,7 +61,7 @@ namespace evb {
     toolbox::mem::Reference* bufRef_;
     tcpla::MemoryCache* cache_;
 
-    CRCCalculator crcCalculator_;
+    static CRCCalculator crcCalculator_;
 
   };
 

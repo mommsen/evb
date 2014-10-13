@@ -9,6 +9,8 @@
 #include "interface/shared/i2ogevb2g.h"
 
 
+evb::CRCCalculator evb::FedFragment::crcCalculator_;
+
 evb::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
   : isCorrupted_(false),bufRef_(bufRef),cache_(cache)
 {
