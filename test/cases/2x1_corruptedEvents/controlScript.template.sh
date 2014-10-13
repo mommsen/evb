@@ -282,9 +282,9 @@ fi
 
 nbFedDumps=$(find /tmp -regex '/tmp/dump_run000000_event[0-9]+_fed0006.txt'|wc -l)
 echo "Nb of FED dumps=$nbFedDumps"
-if [[ $nbFedDumps -ne 2 ]]
+if [[ $nbFedDumps -ne 1 ]]
 then
-  echo "Test failed: expected 2"
+  echo "Test failed: expected 1"
   exit 1
 fi
 

@@ -248,7 +248,7 @@ checkStates "Enabled"
 
 echo "Stop EVM"
 sendCmdToEVM Stop Draining
-sleep 1
+sleep 3
 
 state=$(getParam RU0_SOAP_HOST_NAME RU0_SOAP_PORT evb::EVM 0 stateName xsd:string)
 echo "RU0 state=$state"

@@ -116,7 +116,7 @@ then
 fi
 
 rm -f $testDir/run$runNumber/*.raw
-sleep 2
+sleep 1
 
 state=$(getParam BU0_SOAP_HOST_NAME BU0_SOAP_PORT evb::BU 0 stateName xsd:string)
 echo "BU state=$state"
