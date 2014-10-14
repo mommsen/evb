@@ -265,8 +265,17 @@ class TestCase:
 
 
     def stopEvB(self):
-        sys.stdout.write("Stopping EvB")
+        eventRate = int(self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0'])
+        lastEvent = int(self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'])
+        eventToStop = lastEvent + max(2*eventRate,1000)
+        sys.stdout.write("Stopping EvB at event "+str(eventToStop-1))
         sys.stdout.flush()
+        if 'FEROL' in self._config.applications:
+            self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
+        else:
+            self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
+            self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'RU')
+
         self.stop('FEROL')
         self.waitForAppState('Ready','FEROL',maxTries=15)
         self.stop('EVM')
