@@ -58,6 +58,12 @@ evb::bu::RUproxy::~RUproxy()
 
 void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
+  if ( ! doProcessing_ )
+  {
+    bufRef->release();
+    return;
+  }
+
   try
   {
     do
