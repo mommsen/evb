@@ -65,7 +65,7 @@ testRunner.py --test testCase
 
     def parseArgs(self,argv):
 
-        pattern = None
+        patterns = []
 
         try:
             opts,args = getopt.getopt(argv,"hvat:",["help","verbose","all","test="])
@@ -79,18 +79,19 @@ testRunner.py --test testCase
             elif opt in ("-v","--verbose"):
                 self._verbose = True
             elif opt in ("-t","--test"):
-                pattern = re.compile("("+arg+")\.py$")
+                patterns.append(re.compile("("+arg+")\.py$"))
             elif opt in ("-a","--all"):
-                pattern = re.compile("^([0-9]x[0-9].*)\.py$")
+                patterns = [re.compile("^([0-9]x[0-9].*)\.py$")]
 
-        if pattern is None:
+        if len(patterns) == 0:
             print("Please specify a test to run")
             sys.exit(2)
 
         for file in os.listdir(self._testCaseDir):
-            testCase = pattern.search(file)
-            if testCase:
-                self._testNames.append(testCase.group(1))
+            for pattern in patterns:
+                testCase = pattern.search(file)
+                if testCase:
+                    self._testNames.append(testCase.group(1))
         self._testNames.sort()
 
 
