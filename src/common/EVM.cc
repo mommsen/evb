@@ -183,7 +183,7 @@ namespace evb {
         fragmentRequest->evbIds.push_back(evbId);
 
         uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
-        const uint32_t maxTries = configuration_->maxTriggerAgeMSec*100;
+        const uint32_t maxTries = configuration_->maxTriggerAgeMSec*10;
         uint32_t tries = 0;
         while ( remainingRequests > 0 && tries < maxTries )
         {
@@ -196,7 +196,7 @@ namespace evb {
           }
           else
           {
-            ::usleep(10);
+            ::usleep(100);
             ++tries;
           }
         }
