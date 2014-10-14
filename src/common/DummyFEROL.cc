@@ -309,7 +309,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
         else
         {
           bufRef->release();
-          doProcessing_ = false;
+          break;
         }
       }
     }
