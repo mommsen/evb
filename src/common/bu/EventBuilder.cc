@@ -151,46 +151,51 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   {
     while ( doProcessing_ )
     {
-      while ( superFragmentFIFO->deq(superFragments) )
+      bool workDone = false;
+
+      if ( superFragmentFIFO->deq(superFragments) )
       {
         buildEvent(superFragments,partialEvents,completeEvents);
         eventMapMonitor.partialEvents = partialEvents.size();
+        workDone = true;
+      }
 
-        if ( ! completeEvents.empty() )
+      if ( ! completeEvents.empty() )
+      {
+        workDone = true;
+        try
         {
-          try
+          eventMapMonitor.lowestLumiSection = completeEvents.begin()->first;
+          handleCompleteEvents(completeEvents,streamHandler);
+          eventMapMonitor.completeEvents = completeEvents.size();
+        }
+        catch(exception::DataCorruption& e)
+        {
+          ++corruptedEvents_;
+
+          LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
+                          xcept::stdformat_exception_history(e));
+          bu_->notifyQualified("error",e);
+        }
+        catch(exception::CRCerror& e)
+        {
+          ++eventsWithCRCerrors_;
+
+          if ( evb::isFibonacci(eventsWithCRCerrors_) )
           {
-            eventMapMonitor.lowestLumiSection = completeEvents.begin()->first;
-            handleCompleteEvents(completeEvents,streamHandler);
-            eventMapMonitor.completeEvents = completeEvents.size();
-          }
-          catch(exception::DataCorruption& e)
-          {
-            ++corruptedEvents_;
+            std::ostringstream msg;
+            msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
 
-            LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
-                            xcept::stdformat_exception_history(e));
-            bu_->notifyQualified("error",e);
-          }
-          catch(exception::CRCerror& e)
-          {
-            ++eventsWithCRCerrors_;
+            XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
+            bu_->notifyQualified("error",sentinelError);
 
-            if ( evb::isFibonacci(eventsWithCRCerrors_) )
-            {
-              std::ostringstream msg;
-              msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
-
-              XCEPT_DECLARE_NESTED(exception::CRCerror,sentinelError,msg.str(),e);
-              bu_->notifyQualified("error",sentinelError);
-
-              msg << ": " << xcept::stdformat_exception_history(e);
-              LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
-            }
+            msg << ": " << xcept::stdformat_exception_history(e);
+            LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
           }
         }
       }
 
+      if ( ! workDone )
       {
         boost::mutex::scoped_lock sl(processesActiveMutex_);
         processesActive_.reset(builderId);
