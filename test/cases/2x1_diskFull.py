@@ -5,7 +5,7 @@ import shutil
 import sys
 import time
 
-from TestCase import TestCase
+from TestCase import *
 from Configuration import RU,BU
 
 
@@ -28,6 +28,9 @@ class case_2x1_diskFull(TestCase):
         time.sleep(15)
         self.checkAppState("Throttled","BU")
         self.waitForAppParam('eventRate','unsignedInt',0,operator.eq,'EVM')
+        # avoid some spurious wake ups
+        time.sleep(1)
+        self.waitForAppParam('eventRate','unsignedInt',0,operator.eq,'EVM')
         print(" done")
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","RU")
@@ -35,10 +38,14 @@ class case_2x1_diskFull(TestCase):
         print("Freeing disk space")
         for rawFile in glob.glob(runDir+"/*.raw"):
             os.remove(rawFile)
-        time.sleep(5)
-        self.checkAppState("Throttled","BU")
+        time.sleep(2)
+        try:
+            self.checkAppState("Enabled","BU")
+        except StateException:
+            self.checkAppState("Throttled","BU")
         self.checkAppParam('eventRate','unsignedInt',500,operator.gt,"BU")
         self.stopEvB()
+        time.sleep(1) # assure counters are up-to-date
         eventCount = self.getAppParam('eventCount','unsignedLong','EVM')
         eventCount.update( self.getAppParam('nbEventsBuilt','unsignedLong','BU') )
         if eventCount['EVM0'] != eventCount['BU0']:
@@ -62,5 +69,5 @@ class case_2x1_diskFull(TestCase):
              ('dummyFedSizeStdDev','unsignedInt','1000')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('lumiSectionTimeout','unsignedInt','6')
+             ('lumiSectionTimeout','unsignedInt','10')
             ]) )
