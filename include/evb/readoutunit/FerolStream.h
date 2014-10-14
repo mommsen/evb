@@ -86,6 +86,12 @@ namespace evb {
       { writeNextFragments_ = count; }
 
       /**
+       * Set the event number at which the generator shall stop
+       */
+      void setEventNumberToStop(const uint32_t value)
+      { eventNumberToStop_ = value; }
+
+      /**
        * Return the requested monitoring quantities.
        */
       void retrieveMonitoringQuantities(const double deltaT,
@@ -117,6 +123,7 @@ namespace evb {
       const boost::shared_ptr<Configuration> configuration_;
       volatile bool doProcessing_;
       volatile bool syncLoss_;
+      uint32_t eventNumberToStop_;
 
       EvBidFactory evbIdFactory_;
 
@@ -160,6 +167,8 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   fedId_(fedId),
   configuration_(readoutUnit->getConfiguration()),
   doProcessing_(false),
+  syncLoss_(false),
+  eventNumberToStop_(0),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   writeNextFragments_(0),
   runNumber_(0)

@@ -56,6 +56,10 @@ namespace evb {
       BUproxyPtr getBUproxy() const
       { return buProxy_; }
 
+      uint32_t getEventNumberToStop() const
+      { return stopLocalInputAtEvent_.value_; }
+
+
     protected:
 
       InputPtr input_;
@@ -86,6 +90,7 @@ namespace evb {
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger64 eventCount_;
       xdata::UnsignedInteger32 lastEventNumber_;
+      xdata::UnsignedInteger32 stopLocalInputAtEvent_;
 
     };
 
@@ -116,11 +121,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendAp
   superFragmentSize_ = 0;
   eventCount_ = 0;
   lastEventNumber_ = 0;
+  stopLocalInputAtEvent_ = 0;
 
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("superFragmentSize", &superFragmentSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventCount", &eventCount_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("stopLocalInputAtEvent", &stopLocalInputAtEvent_, InfoSpaceItems::change);
 }
 
 
@@ -171,6 +178,10 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   if (item == "writeNextFragmentsToFile")
   {
     input_->writeNextFragmentsToFile(this->configuration_->writeNextFragmentsToFile);
+  }
+  else if (item == "stopLocalInputAtEvent")
+  {
+    input_->stopLocalInputAtEvent(stopLocalInputAtEvent_);
   }
 }
 

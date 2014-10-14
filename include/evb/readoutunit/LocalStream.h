@@ -64,7 +64,6 @@ namespace evb {
       toolbox::task::WorkLoop* generatingWorkLoop_;
       toolbox::task::ActionSignature* generatingAction_;
 
-      volatile bool generateFragments_;
       volatile bool generatingActive_;
 
       FragmentTracker fragmentTracker_;
@@ -86,7 +85,6 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
   const uint16_t fedId
 ) :
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
-  generateFragments_(false),
   generatingActive_(false),
   fragmentTracker_(fedId,
                    this->configuration_->dummyFedSize,
@@ -162,7 +160,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
 
   try
   {
-    while ( generateFragments_ )
+    while ( evbId.eventNumber() < this->eventNumberToStop_ )
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {
@@ -195,7 +193,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
 
   generatingActive_ = false;
 
-  return generateFragments_;
+  return false;
 }
 
 
@@ -288,7 +286,7 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startProcessing(c
 {
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
 
-  generateFragments_ = true;
+  this->eventNumberToStop_ = (1 << 25); //larger than maximum event number
   generatingWorkLoop_->submit(generatingAction_);
 }
 
@@ -296,7 +294,6 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startProcessing(c
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::drain()
 {
-  generateFragments_ = false;
   while ( generatingActive_ ) ::usleep(1000);
 }
 
@@ -304,7 +301,7 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::drain()
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::stopProcessing()
 {
-  generateFragments_ = false;
+  this->eventNumberToStop_ = 0;
 
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
 }
