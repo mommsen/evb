@@ -80,7 +80,11 @@ def getParam(paramName,paramType,soapHostname,soapPort,app,instance):
     if len(xdaqResponse) != 1:
         raise(SOAPexception("ParameterGetResponse response from "+app+str(instance)+" is missing "+paramName+" ("+paramType+"):\n"
                             +response.toprettyxml()))
-    return xdaqResponse[0].firstChild.data
+    value = xdaqResponse[0].firstChild.data
+    try:
+        return int(value)
+    except ValueError:
+        return value
 
 
 def getStateName(soapHostname,soapPort,app,instance):

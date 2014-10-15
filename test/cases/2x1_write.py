@@ -25,8 +25,8 @@ class case_2x1_write(TestCase):
         self.checkRU(24576)
         self.checkBU(26624)
 
-        eventRate = int(self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0'])
-        lastEvent = int(self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'])
+        eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
+        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
         eventToStop = lastEvent + max(2*eventRate,1000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop-1))
         sys.stdout.flush()
@@ -44,10 +44,6 @@ class case_2x1_write(TestCase):
         sys.stdout.write("Stopping EvB")
         self.waitForState('Ready')
         print(" done")
-        eventCount = self.getAppParam('eventCount','unsignedLong','EVM')
-        eventCount.update( self.getAppParam('nbEventsBuilt','unsignedLong','BU') )
-        if eventCount['EVM0'] != eventCount['BU0']:
-            raise ValueError("EVM counted "+str(eventCount['EVM0'])+" events, while BU built "+str(eventCount['BU0'])+" events")
         self.checkBuDir(testDir,runNumber,eventSize=28672)
 
 

@@ -190,8 +190,8 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    value = int(messengers.getParam(paramName,paramType,**application))
-                    if comp(value,int(expectedValue)):
+                    value = messengers.getParam(paramName,paramType,**application)
+                    if comp(value,expectedValue):
                         print(app+str(application['instance'])+" "+paramName+": "+str(value))
                     else:
                         raise(ValueException(paramName+" on "+app+str(application['instance'])+
@@ -205,8 +205,8 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
                     value = None
-                    while not comp(value,int(expectedValue)) and not sleep(1):
-                        value = int(messengers.getParam(paramName,paramType,**application))
+                    while not comp(value,expectedValue) and not sleep(1):
+                        value = messengers.getParam(paramName,paramType,**application)
 
         except KeyError:
             pass
@@ -265,8 +265,8 @@ class TestCase:
 
 
     def stopEvB(self):
-        eventRate = int(self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0'])
-        lastEvent = int(self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'])
+        eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
+        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
         eventToStop = lastEvent + max(2*eventRate,1000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop-1))
         sys.stdout.flush()
@@ -284,6 +284,7 @@ class TestCase:
         self.stop('BU')
         self.waitForState('Ready')
         print(" done")
+        self.checkEventCount()
 
 
     def haltEvB(self):
@@ -309,6 +310,15 @@ class TestCase:
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
         self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU",instance)
         self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"BU",instance)
+
+
+    def checkEventCount(self):
+        sleep(1) # assure counters are up-to-date
+        evmEventCount = self.getAppParam('eventCount','unsignedLong','EVM')['EVM0']
+        buEventCounts = self.getAppParam('nbEventsBuilt','unsignedLong','BU')
+        buEventCount = reduce(lambda x,y:x+y,buEventCounts.values())
+        if evmEventCount != buEventCount:
+            raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
     def prepareAppliance(self,testDir):

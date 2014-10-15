@@ -45,11 +45,6 @@ class case_2x1_diskFull(TestCase):
             self.checkAppState("Throttled","BU")
         self.checkAppParam('eventRate','unsignedInt',500,operator.gt,"BU")
         self.stopEvB()
-        time.sleep(1) # assure counters are up-to-date
-        eventCount = self.getAppParam('eventCount','unsignedLong','EVM')
-        eventCount.update( self.getAppParam('nbEventsBuilt','unsignedLong','BU') )
-        if eventCount['EVM0'] != eventCount['BU0']:
-            raise ValueError("EVM counted "+str(eventCount['EVM0'])+" events, while BU built "+str(eventCount['BU0'])+" events")
         self.checkBuDir(testDir,runNumber)
 
 
