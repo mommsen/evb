@@ -203,8 +203,6 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
       // empty lumi section
       const LumiInfoPtr lumiInfo( new LumiInfo(lumiSectionAccount->lumiSection) );
       lumiInfo->totalEvents = totalEventsInLumiSection;
-      if ( diskWriterMonitoring_.currentLumiSection > diskWriterMonitoring_.lastLumiSection )
-        diskWriterMonitoring_.lastLumiSection = diskWriterMonitoring_.currentLumiSection;
       diskWriterMonitoring_.currentLumiSection = lumiSectionAccount->lumiSection + 1;
       writeEoLS(lumiInfo);
     }
@@ -230,12 +228,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
       writeEoLS(it->second);
 
       if ( it->second->nbEventsWritten > 0 )
-      {
         ++diskWriterMonitoring_.nbLumiSections;
-        const uint32_t lumiSection = it->second->lumiSection;
-        if ( lumiSection > diskWriterMonitoring_.lastLumiSection )
-          diskWriterMonitoring_.lastLumiSection = lumiSection;
-      }
 
       lumiStatistics_.erase(it++);
     }
