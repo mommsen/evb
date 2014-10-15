@@ -327,8 +327,11 @@ class TestCase:
         return 1 - stat.f_bfree/float(stat.f_blocks)
 
 
-    def checkBuDir(self,testDir,runNumber,eventSize=None,singleBU=True):
-        runDir=testDir+"/run"+runNumber
+    def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):
+        if buInstance is not None:
+            runDir=testDir+"/BU"+str(buInstance)+"/run"+runNumber
+        else:
+            runDir=testDir+"/run"+runNumber
         print( subprocess.Popen(["ls","--full-time","-rt","-R",runDir], stdout=subprocess.PIPE).communicate()[0] )
         if os.path.isdir(runDir+"/open"):
             raise FileException(runDir+"/open still exists")
@@ -347,17 +350,19 @@ class TestCase:
         runFileCounter = 0
         runEventCounter = 0
         fileCounter = 0
+        lastLumiWithFiles = 0
         lsRegex = re.compile('.*_ls([0-9]+)_EoLS.jsn')
         for eolsFile in sorted(glob.glob(runDir+"/*_EoLS.jsn")):
             lumiSection = lsRegex.match(eolsFile).group(1)
             with open(eolsFile) as file:
                 eolsData = [int(f) for f in json.load(file)['data']]
-            if singleBU and eolsData[0] != eolsData[2]:
+            if buInstance is None and eolsData[0] != eolsData[2]:
                 raise ValueException("Total event count "+str(eolsData[2])+" does not match "+str(eolsData[0])+" in "+eolsFile)
 
             eventCounter = 0
             if eolsData[1] > 0:
                 runLsCounter += 1
+                lastLumiWithFiles = int(lumiSection)
                 jsonFiles = glob.glob(runDir+"/run"+runNumber+"_ls"+lumiSection+"_index*jsn")
                 fileCounter = len(jsonFiles)
                 runFileCounter += fileCounter
@@ -396,8 +401,8 @@ class TestCase:
             raise ValueException("expected "+str(eorData[1])+" files for run "+runNumber+", but found "+str(runFileCounter)+" raw data files")
         if runLsCounter != eorData[2]:
             raise ValueException("expected "+str(eorData[2])+" lumi sections in run "+runNumber+", but found raw data files for "+str(runLsCounter)+" lumi sections")
-        if int(lumiSection) != eorData[3]:
-            raise ValueException("expected last lumi section "+str(eorData[3])+" for run "+runNumber+", but found raw data files up to lumi section "+str(int(lumiSection)))
+        if lastLumiWithFiles != eorData[3]:
+            raise ValueException("expected last lumi section "+str(eorData[3])+" for run "+runNumber+", but found raw data files up to lumi section "+str(lastLumiWithFiles))
 
         shutil.rmtree(runDir)
 
