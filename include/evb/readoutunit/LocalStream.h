@@ -160,7 +160,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
 
   try
   {
-    while ( evbId.eventNumber() < this->eventNumberToStop_ )
+    while ( evbId.eventNumber() <= this->eventNumberToStop_ )
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {

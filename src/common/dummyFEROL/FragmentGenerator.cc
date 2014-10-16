@@ -27,13 +27,6 @@ evb::test::dummyFEROL::FragmentGenerator::FragmentGenerator() :
 }
 
 
-uint32_t evb::test::dummyFEROL::FragmentGenerator::getLastEventNumber() const
-{
-  const uint32_t eventNumber = evbId_.eventNumber();
-  return ( eventNumber > 0 ? eventNumber-1 : (1 << 24)-1 );
-}
-
-
 void evb::test::dummyFEROL::FragmentGenerator::configure
 (
   const uint32_t fedId,
@@ -122,7 +115,7 @@ void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& play
 {
   toolbox::mem::Reference* bufRef = 0;
   uint32_t dummy = 0;
-  fillData(bufRef,dummy,dummy,dummy,dummy);
+  fillData(bufRef,dummy,dummy,dummy,dummy,dummy,dummy);
   playbackData_.push_back(bufRef);
   playbackDataPos_ = playbackData_.begin();
 }
@@ -139,6 +132,8 @@ void evb::test::dummyFEROL::FragmentGenerator::reset()
 bool evb::test::dummyFEROL::FragmentGenerator::getData
 (
   toolbox::mem::Reference*& bufRef,
+  const uint32_t stopAtEventNumber,
+  uint32_t& lastEventNumber,
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
@@ -159,7 +154,7 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
   }
   else
   {
-    return fillData(bufRef,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors);
+    return fillData(bufRef,stopAtEventNumber,lastEventNumber,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors);
   }
 }
 
@@ -167,6 +162,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
 bool evb::test::dummyFEROL::FragmentGenerator::fillData
 (
   toolbox::mem::Reference*& bufRef,
+  const uint32_t stopAtEventNumber,
+  uint32_t& lastEventNumber,
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
@@ -198,7 +195,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
   // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
   uint16_t ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
 
-  while ( (usedFrameSize + remainingFedSize + ferolBlocks*sizeof(ferolh_t)) <= frameSize_ )
+  while ( (usedFrameSize + remainingFedSize + ferolBlocks*sizeof(ferolh_t)) <= frameSize_ &&
+          (stopAtEventNumber == 0 || lastEventNumber < stopAtEventNumber) )
   {
     uint32_t packetNumber = 0;
 
@@ -266,7 +264,10 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
     if ( duplicateNbEvents > 0 )
       --duplicateNbEvents;
     else
+    {
+      lastEventNumber = evbId_.eventNumber();
       evbId_ = evbIdFactory_.getEvBid();
+    }
 
     remainingFedSize = fragmentTracker_->startFragment(evbId_);
     ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
@@ -274,6 +275,7 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
 
   assert( usedFrameSize <= frameSize_ );
   bufRef->setDataSize(usedFrameSize);
+
 
   return true;
 }

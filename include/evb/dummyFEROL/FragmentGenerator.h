@@ -55,11 +55,6 @@ namespace evb {
         ~FragmentGenerator() {};
 
         /**
-         * Return the event number of the last generated event
-         */
-        uint32_t getLastEventNumber() const;
-
-        /**
          * Configure the super-fragment generator.
          * If usePlayback is set to true, the data is read from the playbackDataFile,
          * otherwise, dummy data is generated according to the fedPayloadSize.
@@ -91,6 +86,8 @@ namespace evb {
          * Returns false if no fragment can be generated
          */
         bool getData(toolbox::mem::Reference*&,
+                     const uint32_t stopAtEventNumber,
+                     uint32_t& lastEventNumber,
                      uint32_t& skipNbEvents,
                      uint32_t& duplicateNbEvents,
                      uint32_t& corruptNbEvents,
@@ -101,6 +98,8 @@ namespace evb {
 
         void cacheData(const std::string& playbackDataFile);
         bool fillData(toolbox::mem::Reference*&,
+                      const uint32_t stopAtEventNumber,
+                      uint32_t& lastEventNumber,
                       uint32_t& skipNbEvents,
                       uint32_t& duplicateNbEvents,
                       uint32_t& corruptNbEvents,

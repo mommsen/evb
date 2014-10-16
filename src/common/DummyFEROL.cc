@@ -294,23 +294,16 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
   try
   {
-    while ( doProcessing_ )
+    while ( doProcessing_ &&
+            (stopAtEvent_.value_ == 0 || lastEventNumber_.value_ < stopAtEvent_.value_) )
     {
       toolbox::mem::Reference* bufRef = 0;
 
-      if ( fragmentGenerator_.getData(bufRef,skipNbEvents_.value_,duplicateNbEvents_.value_,corruptNbEvents_.value_,nbCRCerrors_.value_) )
+      if ( fragmentGenerator_.getData(bufRef,stopAtEvent_.value_,lastEventNumber_.value_,
+                                      skipNbEvents_.value_,duplicateNbEvents_.value_,
+                                      corruptNbEvents_.value_,nbCRCerrors_.value_) )
       {
-        const uint32_t lastEventNumber = fragmentGenerator_.getLastEventNumber();
-        if (stopAtEvent_.value_ == 0 || lastEventNumber < stopAtEvent_.value_)
-        {
-          lastEventNumber_ = lastEventNumber;
-          fragmentFIFO_.enqWait(bufRef);
-        }
-        else
-        {
-          bufRef->release();
-          break;
-        }
+        fragmentFIFO_.enqWait(bufRef);
       }
     }
   }
