@@ -58,12 +58,6 @@ evb::bu::RUproxy::~RUproxy()
 
 void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
-  if ( ! doProcessing_ )
-  {
-    bufRef->release();
-    return;
-  }
-
   try
   {
     do
@@ -188,11 +182,6 @@ void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
   while ( requestFragmentsActive_ ) ::usleep(1000);
-
-  {
-    boost::mutex::scoped_lock sl(dataBlockMapMutex_);
-    dataBlockMap_.clear();
-  }
 }
 
 
