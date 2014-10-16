@@ -267,14 +267,12 @@ class TestCase:
     def stopEvB(self):
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(2*eventRate,1000)
-        sys.stdout.write("Stopping EvB at event "+str(eventToStop-1))
+        eventToStop = lastEvent + max(4*eventRate,1000)
+        sys.stdout.write("Stopping EvB at event "+str(eventToStop))
         sys.stdout.flush()
-        if 'FEROL' in self._config.applications:
-            self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
-        else:
-            self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
-            self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'RU')
+        self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
+        self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
+        self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'RU')
 
         self.stop('FEROL')
         self.waitForAppState('Ready','FEROL',maxTries=15)
@@ -299,7 +297,7 @@ class TestCase:
     def checkEVM(self,superFragmentSize):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
         self.checkAppParam("eventCount","unsignedLong",1000,operator.gt,"EVM")
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"EVM")
+        self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"EVM")
 
 
     def checkRU(self,superFragmentSize,instance=None):
@@ -309,7 +307,7 @@ class TestCase:
     def checkBU(self,eventSize,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
         self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU",instance)
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"BU",instance)
+        self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"BU",instance)
 
 
     def checkEventCount(self):
