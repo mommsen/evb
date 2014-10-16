@@ -2,12 +2,14 @@ import copy
 
 import SymbolMap
 
+id = 11
 
 class Context:
     ptInstance = 0
 
-    def __init__(self,params):
+    def __init__(self,params,nestedContexts):
         self._params = params
+        self.nestedContexts = nestedContexts
         self.role = None
         self.apps = {
             'app':None,
@@ -15,11 +17,9 @@ class Context:
             'ptApp':None,
             'ptInstance':Context.ptInstance,
             'network':[],
-            'tid':None,
-            'id':11
+            'tid':None
             }
         Context.ptInstance += 1
-        self._id = 11
 
 
     def __del__(self):
@@ -27,8 +27,7 @@ class Context:
 
 
     def getConfig(self):
-        config = self.getConfigForContext()
-        config += self.getConfigForPtFrl()
+        config = self.getConfigForPtFrl()
         config += self.getConfigForPtUtcp()
         config += self.getConfigForApplication()
 
@@ -38,21 +37,15 @@ class Context:
       <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
       <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-
-    </xc:Context>
 """
         return config
 
 
     def getTarget(self):
-        return """      <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>
-""" % self.apps
-
-
-    def getConfigForContext(self):
-        return """
-    <xc:Context url="http://%(soapHostname)s:%(soapPort)s">
-""" % self.apps
+        if self.apps['tid'] is None:
+            return ""
+        else:
+            return """      <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>\n""" % self.apps
 
 
     def getConfigForPtFrl(self):
@@ -60,6 +53,7 @@ class Context:
 
 
     def getConfigForPtUtcp(self):
+        global id
         if self.apps['ptApp'] != "pt::utcp::Application":
              return ""
 
@@ -77,17 +71,18 @@ class Context:
           <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
         </properties>
       </xc:Application>
-""" % dict(self.apps.items() + [('id',self._id)])
-        self._id += 1
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
         return config
 
 
     def getConfigForApplication(self):
+        global id
         config = """
       <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
          <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % dict(self.apps.items() + [('id',self._id)])
-        self._id += 1
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
         config += self.fillProperties(self._params)
         config += "         </properties>\n      </xc:Application>\n"
         return config
@@ -116,8 +111,8 @@ class Context:
 class FEROL(Context):
     instance = 0
 
-    def __init__(self,symbolMap,destination,params):
-        Context.__init__(self,params)
+    def __init__(self,symbolMap,destination,params,nestedContexts=()):
+        Context.__init__(self,params,nestedContexts)
         self.role = "FEROL"
         self.apps['app'] = "evb::test::DummyFEROL"
         self.apps['instance'] = FEROL.instance
@@ -138,25 +133,27 @@ class FEROL(Context):
 
 
     def getConfigForApplication(self):
+        global id
         config = """
       <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="%(network)s">
         %(unicast)s
         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % dict(self.apps.items() + [('id',self._id),('unicast',self._unicast)])
-        self._id += 1
+""" % dict(self.apps.items() + [('id',id),('unicast',self._unicast)])
+        id += 1
         config += self.fillProperties(self._params)
         config += "        </properties>\n      </xc:Application>\n"
         return config
 
 
     def getConfigForPtFrl(self):
+        global id
         config = """
       <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="%(network)s" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
 
       <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="%(network)s">
         <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-""" % dict(self.apps.items() + [('id',self._id)])
-        self._id += 1
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
         config += self.fillProperties([
             ('ioQueueSize','unsignedInt','65536'),
             ('eventQueueSize','unsignedInt','65536')
@@ -169,8 +166,8 @@ class FEROL(Context):
 class RU(Context):
     instance = 0
 
-    def __init__(self,symbolMap,params):
-        Context.__init__(self,params)
+    def __init__(self,symbolMap,params,nestedContexts=()):
+        Context.__init__(self,params,nestedContexts)
         if RU.instance == 0:
             self.apps['app'] = "evb::EVM"
             self.role = "EVM"
@@ -189,6 +186,7 @@ class RU(Context):
 
 
     def getConfigForPtFrl(self):
+        global id
         routing = []
         for param in self._params:
             try:
@@ -209,8 +207,8 @@ class RU(Context):
 
       <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
         <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-"""  % dict(self.apps.items() + [('id',self._id)])
-        self._id += 1
+"""  % dict(self.apps.items() + [('id',id)])
+        id += 1
 
         config += self.fillProperties([
             ('frlRouting','Struct',routing),
@@ -243,8 +241,8 @@ class RU(Context):
 class BU(Context):
     instance = 0
 
-    def __init__(self,symbolMap,params):
-        Context.__init__(self,params)
+    def __init__(self,symbolMap,params,nestedContexts=()):
+        Context.__init__(self,params,nestedContexts)
         self.role = "BU"
         self.apps['app'] = "evb::BU"
         self.apps['instance'] = BU.instance
@@ -259,13 +257,14 @@ class BU(Context):
 
 
     def getConfigForPtFrl(self):
+        global id
         config = """
       <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
         <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
         </properties>
       </xc:Application>
-""" % dict(self.apps.items() + [('id',self._id)])
-        self._id += 1
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
         return config
 
 
@@ -283,6 +282,12 @@ class Configuration():
         if context.role not in self.applications:
             self.applications[context.role] = []
         self.applications[context.role].append(copy.deepcopy(appInfo))
+        for nested in context.nestedContexts:
+            if nested.role not in self.applications:
+                self.applications[nested.role] = []
+            appInfo['app'] = nested.apps['app']
+            appInfo['instance'] = nested.apps['instance']
+            self.applications[nested.role].append(copy.deepcopy(appInfo))
         if context.apps['ptApp'] is not None:
             appInfo['app'] = context.apps['ptApp']
             appInfo['instance'] = context.apps['ptInstance']
@@ -297,13 +302,18 @@ class Configuration():
 """
 
         for context in self.contexts:
-            if context.apps['tid'] is not None:
-                partition += context.getTarget()
+            partition += context.getTarget()
+            for nested in context.nestedContexts:
+                partition += nested.getTarget()
 
-        partition += "    </i2o:protocol>\n"
+        partition += "    </i2o:protocol>\n\n"
 
         for context in self.contexts:
+            partition += """    <xc:Context url="http://%(soapHostname)s:%(soapPort)s">""" % context.apps
             partition += context.getConfig()
+            for nested in context.nestedContexts:
+                partition += nested.getConfigForApplication()
+            partition += "    </xc:Context>\n\n"
 
         partition += "  </xc:Partition>\n"
 
