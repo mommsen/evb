@@ -19,7 +19,6 @@ export PATH=${PATH}:${XDAQ_LOCAL}/bin:${XDAQ_ROOT}/bin
 # EvB tester suite
 export EVB_TESTER_HOME=${HOME}/daq/trunk/daq/evb/test
 export EVB_SYMBOL_MAP=standaloneSymbolMap.txt
-
 export PATH=${PATH}:${EVB_TESTER_HOME}/scripts
 export PYTHONPATH=${EVB_TESTER_HOME}/scripts:${PYTHONPATH}
 
