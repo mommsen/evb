@@ -3,7 +3,8 @@
 use IO::Socket;
 use strict;
 
-my $symbolMap = $ENV{"EVB_TESTER_HOME"} . "/cases/" . $ENV{"EVB_SYMBOL_MAP"};
+my $testDir = $ENV{"EVB_TESTER_HOME"};
+my $symbolMap = $testDir . "/cases/" . $ENV{"EVB_SYMBOL_MAP"};
 
 die "The file \"$symbolMap\" does not exist\n" unless -e $symbolMap;
 
