@@ -222,6 +222,7 @@ void evb::test::DummyFEROL::getApplicationDescriptors()
 void evb::test::DummyFEROL::startProcessing()
 {
   resetMonitoringCounters();
+  stopAtEvent_ = 0;
   doProcessing_ = true;
   fragmentGenerator_.reset();
   generatingWL_->submit(generatingAction_);
