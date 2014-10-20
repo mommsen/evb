@@ -267,7 +267,7 @@ class TestCase:
     def stopEvB(self):
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(4*eventRate,1000)
+        eventToStop = lastEvent + max(2*eventRate,1000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop))
         sys.stdout.flush()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
@@ -296,7 +296,7 @@ class TestCase:
 
     def checkEVM(self,superFragmentSize):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
-        self.checkAppParam("eventCount","unsignedLong",1000,operator.gt,"EVM")
+        self.checkAppParam("eventCount","unsignedLong",500,operator.gt,"EVM")
         self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"EVM")
 
 
@@ -306,7 +306,7 @@ class TestCase:
 
     def checkBU(self,eventSize,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
-        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU",instance)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.gt,"BU",instance)
         self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"BU",instance)
 
 
