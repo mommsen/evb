@@ -20,10 +20,13 @@ class SOAPexception(Exception):
     pass
 
 
-def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort):
+def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((soapHostname,int(launcherPort)))
-    s.send(cmd+soapPort)
+    if soapPort is None:
+        s.send(cmd)
+    else:
+        s.send(cmd+':'+soapPort)
     s.close()
 
 

@@ -15,9 +15,12 @@ class SymbolMap:
 
         self._hostname = socket.gethostbyaddr(socket.gethostname())[0]
         self._map = {}
+        self.launchers = []
 
         hostTypeRegEx = re.compile('^([A-Za-z0-9_]+)SOAP_HOST_NAME')
         hostCount = 0
+        launcherPort = None
+        previousVal = ""
 
         try:
             with open(self._symbolMapfile) as symbolMapFile:
@@ -27,9 +30,17 @@ class SymbolMap:
                         if val == 'localhost':
                             val = self._hostname
                         self._map[key] = val
+                        if key == 'LAUNCHER_BASE_PORT':
+                            launcherPort = int(val)
                         try:
                             hostType = hostTypeRegEx.findall(key)[0]
-                            self._map[hostType + 'LAUNCHER_PORT'] = str(int(self._map['LAUNCHER_BASE_PORT']) + hostCount)
+
+                            if val != previousVal:
+                                launcherPort += 1
+                                self.launchers.append((self._map[hostType + 'SOAP_HOST_NAME'],launcherPort))
+                                previousVal = val
+
+                            self._map[hostType + 'LAUNCHER_PORT'] = str(launcherPort)
                             self._map[hostType + 'SOAP_PORT']     = str(int(self._map['SOAP_BASE_PORT'])     + hostCount)
                             self._map[hostType + 'I2O_PORT']      = str(int(self._map['I2O_BASE_PORT'])      + hostCount)
                             self._map[hostType + 'FRL_PORT']      = str(int(self._map['FRL_BASE_PORT'])      + hostCount)
@@ -63,3 +74,11 @@ class SymbolMap:
         for (key,val) in self._map.iteritems():
             string = string.replace(key,val)
         return string
+
+
+
+if __name__ == "__main__":
+
+    symbolMap = SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cases/")
+    print(symbolMap._map)
+    print(symbolMap.launchers)

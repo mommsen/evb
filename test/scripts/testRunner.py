@@ -3,6 +3,7 @@
 import getopt
 import os
 import re
+import subprocess
 import sys
 import time
 import traceback
@@ -31,18 +32,18 @@ class TestRunner:
         self._testNames = []
 
         try:
-            evbTesterHome = os.environ["EVB_TESTER_HOME"]
+            self._evbTesterHome = os.environ["EVB_TESTER_HOME"]
         except KeyError:
             print("Please specify the test directory to be used in the environment veriable EVB_TESTER_HOME")
             sys.exit(2)
 
-        self._testLogDir = evbTesterHome + '/log/'
+        self._testLogDir = self._evbTesterHome + '/log/'
         try:
             os.mkdir(self._testLogDir)
         except OSError:
             pass
 
-        self._testCaseDir = evbTesterHome + '/cases/'
+        self._testCaseDir = self._evbTesterHome + '/cases/'
         if not os.path.isdir(self._testCaseDir):
             print("Cannot find test case directory "+self._testCaseDir)
             sys.exit(2)
@@ -58,6 +59,8 @@ class TestRunner:
 testRunner.py --test testCase
            -h --help:         print this message and exit
            -t --test:         name of the test case
+           -l --launchers:    start xdaqLaunchers
+           -s --stop:         stop xdaqLaunchers
            -a --all:          run all tests
            -v --verbose:      print log info to stdout
 """)
@@ -68,7 +71,7 @@ testRunner.py --test testCase
         patterns = []
 
         try:
-            opts,args = getopt.getopt(argv,"hvat:",["help","verbose","all","test="])
+            opts,args = getopt.getopt(argv,"hvlsat:",["help","verbose","launchers","stop","all","test="])
         except getopt.GetoptError:
             usage()
             sys.exit(2)
@@ -78,14 +81,17 @@ testRunner.py --test testCase
                 sys.exit()
             elif opt in ("-v","--verbose"):
                 self._verbose = True
+            elif opt in ("-l","--launchers"):
+                self.startLaunchers()
+            elif opt in ("-s","--stop"):
+                self.stopLaunchers()
             elif opt in ("-t","--test"):
                 patterns.append(re.compile("("+arg+")\.py$"))
             elif opt in ("-a","--all"):
                 patterns = [re.compile("^([0-9]x[0-9].*)\.py$")]
 
         if len(patterns) == 0:
-            print("Please specify a test to run")
-            sys.exit(2)
+            sys.exit()
 
         for file in os.listdir(self._testCaseDir):
             for pattern in patterns:
@@ -93,6 +99,19 @@ testRunner.py --test testCase
                 if testCase:
                     self._testNames.append(testCase.group(1))
         self._testNames.sort()
+
+
+    def startLaunchers(self):
+        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && source "+self._evbTesterHome+"/setenv.sh && xdaqLauncher.py ";
+        for launcher in self._symbolMap.launchers:
+            print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
+            subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])
+
+
+    def stopLaunchers(self):
+        for launcher in self._symbolMap.launchers:
+            print("Stopping launcher on "+launcher[0]+":"+str(launcher[1]))
+            messengers.sendCmdToLauncher("stopLauncher",launcher[0],launcher[1])
 
 
     def runTest(self,test,stdout):
