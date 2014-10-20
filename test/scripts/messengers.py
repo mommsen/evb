@@ -27,7 +27,9 @@ def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None):
         s.send(cmd)
     else:
         s.send(cmd+':'+soapPort)
+    reply = s.recv(1024)
     s.close()
+    return reply
 
 
 def webPing(soapHostname,soapPort):

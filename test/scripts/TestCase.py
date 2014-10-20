@@ -47,7 +47,7 @@ class TestCase:
         for context in self._config.contexts:
             try:
                 print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
+                print(messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
             except socket.error:
                 pass
         for file in glob.glob("/tmp/dump_*txt"):
@@ -60,7 +60,7 @@ class TestCase:
         try:
             for context in self._config.contexts:
                 print("Starting XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                messengers.sendCmdToLauncher("startXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort'])
+                print(messengers.sendCmdToLauncher("startXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 

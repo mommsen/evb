@@ -23,7 +23,8 @@ class xdaqThread(threading.Thread):
 
 
     def kill(self):
-        self._process.kill()
+        if self._process:
+            self._process.kill()
 
 
 class xdaqLauncher(SocketServer.BaseRequestHandler):
