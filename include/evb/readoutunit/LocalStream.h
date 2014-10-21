@@ -53,6 +53,11 @@ namespace evb {
        */
       virtual void stopProcessing();
 
+      /**
+       * Set the trigger rate for generating events
+       */
+      virtual void setMaxTriggerRate(const uint32_t maxTriggerRate);
+
 
     private:
 
@@ -92,6 +97,7 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
                    this->configuration_->dummyFedSizeStdDev,
                    this->configuration_->dummyFedSizeMin,
                    this->configuration_->dummyFedSizeMax,
+                   this->configuration_->maxTriggerRate,
                    this->configuration_->computeCRC)
 {
   const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
@@ -156,6 +162,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
 {
   generatingActive_ = true;
   toolbox::mem::Reference* bufRef = 0;
+  fragmentTracker_.startRun();
   EvBid evbId = this->evbIdFactory_.getEvBid();
 
   try
@@ -304,6 +311,13 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::stopProcessing()
   this->eventNumberToStop_ = 0;
 
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::setMaxTriggerRate(const uint32_t maxTriggerRate)
+{
+  fragmentTracker_.setMaxTriggerRate(maxTriggerRate);
 }
 
 

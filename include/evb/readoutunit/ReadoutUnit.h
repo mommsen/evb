@@ -179,6 +179,10 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   {
     input_->writeNextFragmentsToFile(this->configuration_->writeNextFragmentsToFile);
   }
+  else if (item == "maxTriggerRate")
+  {
+    input_->setMaxTriggerRate(this->configuration_->maxTriggerRate);
+  }
   else if (item == "stopLocalInputAtEvent")
   {
     input_->stopLocalInputAtEvent(stopLocalInputAtEvent_);

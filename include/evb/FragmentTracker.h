@@ -29,8 +29,19 @@ namespace evb {
       const uint32_t fedSizeStdDev,
       const uint32_t minFedSize,
       const uint32_t maxFedSize,
+      const uint32_t maxTriggerRate,
       const bool computeCRC
     );
+
+    /**
+     * Start the clock for determining the available triggers
+     */
+    void startRun();
+
+    /**
+    */
+    void setMaxTriggerRate(const uint32_t rate)
+    { maxTriggerRate_ = rate; }
 
     /**
      * Starts a new FED fragment with the specified event number.
@@ -52,6 +63,7 @@ namespace evb {
 
   private:
 
+    void waitForNextTrigger();
     uint32_t getFedSize() const;
 
     CRCCalculator crcCalculator_;
@@ -67,6 +79,7 @@ namespace evb {
     const uint32_t fedSize_;
     const uint32_t minFedSize_;
     const uint32_t maxFedSize_;
+    uint32_t maxTriggerRate_;
     const bool computeCRC_;
     boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
     uint16_t fedCRC_;
@@ -74,6 +87,8 @@ namespace evb {
     uint32_t currentFedSize_;
     uint32_t remainingFedSize_;
     EvBid evbId_;
+    double lastTime_;
+    uint32_t availableTriggers_;
   };
 
   typedef boost::shared_ptr<FragmentTracker> FragmentTrackerPtr;

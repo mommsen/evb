@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <sstream>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
 
 #include "interface/shared/fed_header.h"
@@ -17,15 +18,19 @@ evb::FragmentTracker::FragmentTracker
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
+  const uint32_t maxTriggerRate,
   const bool computeCRC
 ) :
   fedId_(fedId),
   fedSize_(fedSize),
   minFedSize_(minFedSize),
   maxFedSize_(maxFedSize),
+  maxTriggerRate_(maxTriggerRate),
   computeCRC_(computeCRC),
   fedCRC_(0xffff),
-  typeOfNextComponent_(FED_HEADER)
+  typeOfNextComponent_(FED_HEADER),
+  lastTime_(0),
+  availableTriggers_(0)
 {
   if (useLogNormal)
   {
@@ -46,11 +51,48 @@ uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
+  waitForNextTrigger();
+
   evbId_ = evbId;
   currentFedSize_ = getFedSize();
   remainingFedSize_ = currentFedSize_;
 
   return currentFedSize_;
+}
+
+
+void evb::FragmentTracker::startRun()
+{
+  struct timeval time;
+  gettimeofday(&time,0);
+  lastTime_ = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+  availableTriggers_ = 0;
+}
+
+
+void evb::FragmentTracker::waitForNextTrigger()
+{
+  if ( maxTriggerRate_ == 0 ) return;
+
+  if ( availableTriggers_ > 0 )
+  {
+    --availableTriggers_;
+    return;
+  }
+
+  struct timeval time;
+  double now = 0;
+  while ( availableTriggers_ == 0 )
+  {
+    gettimeofday(&time,0);
+    now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+    if ( lastTime_ == 0 )
+      availableTriggers_ = 1;
+    else
+      availableTriggers_ = static_cast<uint32_t>( (now - lastTime_) * maxTriggerRate_ );
+  }
+  lastTime_ = now;
+  --availableTriggers_;
 }
 
 

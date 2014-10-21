@@ -135,11 +135,15 @@ namespace evb {
        */
       void writeNextFragmentsToFile(const uint16_t count, const uint16_t fedId=FED_COUNT+1);
 
+      /**
+       * Stop generating local events at the given event number
+       */
+      void stopLocalInputAtEvent(const uint32_t eventNumberToStop);
 
       /**
-      * Stop generating local events at the given event number
-      */
-      void stopLocalInputAtEvent(const uint32_t eventNumberToStop);
+       * Adjust the trigger rate when generating local data
+       */
+      void setMaxTriggerRate(const uint32_t maxTriggerRate);
 
       /**
        * Return the readout unit associated with this input
@@ -406,6 +410,21 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopLocalInputAtEvent(c
           it != itEnd; ++it)
     {
       it->second->setEventNumberToStop(eventNumberToStop);
+    }
+  }
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::setMaxTriggerRate(const uint32_t rate)
+{
+  {
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
+    for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+          it != itEnd; ++it)
+    {
+      it->second->setMaxTriggerRate(rate);
     }
   }
 }

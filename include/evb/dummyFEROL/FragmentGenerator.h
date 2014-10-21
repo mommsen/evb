@@ -73,7 +73,8 @@ namespace evb {
           const uint32_t minFedSize,
           const uint32_t maxFedSize,
           const size_t fragmentPoolSize,
-          const uint32_t fakeLumiSectionDuration
+          const uint32_t fakeLumiSectionDuration,
+          const uint32_t maxTriggerRate
         );
 
         /**

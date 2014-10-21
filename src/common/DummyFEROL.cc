@@ -192,7 +192,8 @@ void evb::test::DummyFEROL::configure()
     configuration_->minFedSize,
     configuration_->maxFedSize,
     configuration_->frameSize*configuration_->fragmentFIFOCapacity,
-    configuration_->fakeLumiSectionDuration
+    configuration_->fakeLumiSectionDuration,
+    configuration_->maxTriggerRate
   );
 
   getApplicationDescriptors();

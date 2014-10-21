@@ -80,6 +80,11 @@ namespace evb {
       virtual void stopProcessing();
 
       /**
+       * Set the trigger rate for generating events
+       */
+      virtual void setMaxTriggerRate(const uint32_t maxTriggerRate) {};
+
+      /**
        * Write the next count FED fragments to a text file
        */
       void writeNextFragmentsToFile(const uint16_t count)

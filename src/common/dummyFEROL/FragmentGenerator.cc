@@ -22,9 +22,7 @@ evb::test::dummyFEROL::FragmentGenerator::FragmentGenerator() :
   frameSize_(0),
   fedSize_(0),
   usePlayback_(false)
-{
-  reset();
-}
+{}
 
 
 void evb::test::dummyFEROL::FragmentGenerator::configure
@@ -40,7 +38,8 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
   const size_t fragmentPoolSize,
-  const uint32_t fakeLumiSectionDuration
+  const uint32_t fakeLumiSectionDuration,
+  const uint32_t maxTriggerRate
 )
 {
   if (fedId > FED_COUNT)
@@ -102,7 +101,7 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   }
 
   fragmentTracker_.reset(
-    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize,computeCRC)
+    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize,maxTriggerRate,computeCRC)
   );
 
   playbackData_.clear();
@@ -125,6 +124,7 @@ void evb::test::dummyFEROL::FragmentGenerator::reset()
 {
   playbackDataPos_ = playbackData_.begin();
   evbIdFactory_.reset(0);
+  fragmentTracker_->startRun();
   evbId_ = evbIdFactory_.getEvBid();
 }
 

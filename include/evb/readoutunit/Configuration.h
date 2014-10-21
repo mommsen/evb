@@ -40,6 +40,7 @@ namespace evb {
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
+      xdata::UnsignedInteger32 maxTriggerRate;               // Maximum trigger rate in Hz when generating dummy data. 0 means no limitation.
       xdata::UnsignedInteger32 dummyFedSize;                 // Mean size in Bytes of the FED when running in Local mode
       xdata::Boolean useLogNormal;                           // If set to true, use the log-normal generator for FED sizes
       xdata::UnsignedInteger32 dummyFedSizeStdDev;           // Standard deviation of the FED sizes when using the log-normal distrubution
@@ -72,6 +73,7 @@ namespace evb {
           computeCRC(true),
           usePlayback(false),
           playbackDataFile(""),
+          maxTriggerRate(0),
           dummyFedSize(2048),
           useLogNormal(false),
           dummyFedSizeStdDev(0),
@@ -111,6 +113,7 @@ namespace evb {
         params.add("dropInputData", &dropInputData);
         params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
+        params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSize", &dummyFedSize);
         params.add("useLogNormal", &useLogNormal);

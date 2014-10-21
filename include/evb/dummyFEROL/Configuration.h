@@ -32,6 +32,7 @@ namespace evb {
         xdata::UnsignedInteger32 frameSize;
         xdata::UnsignedInteger32 fragmentFIFOCapacity;
         xdata::UnsignedInteger32 fakeLumiSectionDuration;
+        xdata::UnsignedInteger32 maxTriggerRate;
 
         Configuration()
           : destinationClass("evb::RU"),
@@ -45,7 +46,8 @@ namespace evb {
             playbackDataFile(""),
             frameSize(0x40000),
             fragmentFIFOCapacity(32),
-            fakeLumiSectionDuration(23)
+            fakeLumiSectionDuration(23),
+            maxTriggerRate(0)
         {};
 
         void addToInfoSpace
@@ -72,6 +74,7 @@ namespace evb {
           params.add("frameSize", &frameSize);
           params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
           params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
+          params.add("maxTriggerRate", &maxTriggerRate);
         }
       };
 
