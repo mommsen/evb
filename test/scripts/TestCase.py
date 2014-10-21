@@ -294,20 +294,20 @@ class TestCase:
         self.checkState('Halted')
 
 
-    def checkEVM(self,superFragmentSize):
+    def checkEVM(self,superFragmentSize,eventRate=1000):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
         self.checkAppParam("eventCount","unsignedLong",500,operator.gt,"EVM")
-        self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"EVM")
+        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.gt,"EVM")
 
 
     def checkRU(self,superFragmentSize,instance=None):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"RU",instance)
 
 
-    def checkBU(self,eventSize,instance=None):
+    def checkBU(self,eventSize,eventRate=1000,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
         self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.gt,"BU",instance)
-        self.checkAppParam("eventRate","unsignedInt",500,operator.gt,"BU",instance)
+        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.gt,"BU",instance)
 
 
     def checkEventCount(self):
