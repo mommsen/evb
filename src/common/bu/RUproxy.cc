@@ -219,7 +219,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   {
     uint16_t buResourceId;
     uint16_t eventsToDiscard;
-    const uint32_t msgSize = sizeof(msg::ReadoutMsg)+sizeof(I2O_TID);
+    const uint32_t msgSize = sizeof(msg::ReadoutMsg);
 
     while ( resourceManager_->getResourceId(buResourceId,eventsToDiscard) )
     {

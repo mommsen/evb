@@ -6,7 +6,7 @@ uint32_t evb::msg::ReadoutMsg::getHeaderSize() const
   return
     sizeof(msg::ReadoutMsg) +
     nbRequests * sizeof(EvBid) +
-    (nbRUtids|0x1) * sizeof(I2O_TID); // there's always an odd number of I2O_TIDs to keep 64-bit alignment
+    ((nbRUtids+1)&~1) * sizeof(I2O_TID); // there's always an even number of I2O_TIDs to keep 64-bit alignment
 }
 
 

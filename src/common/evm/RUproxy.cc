@@ -111,7 +111,8 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
       const uint16_t ruCount = fragmentRequest->ruTids.size();
       const size_t msgSize = sizeof(msg::ReadoutMsg) +
         requestsCount * sizeof(EvBid) +
-        (ruCount|0x1) * sizeof(I2O_TID); // odd number of I2O_TIDs to align header to 64-bits
+        ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
+      //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << msgSize << std::endl;
 
       toolbox::mem::Reference* rqstBufRef =
         toolbox::mem::getMemoryPoolFactory()->
