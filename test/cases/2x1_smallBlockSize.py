@@ -7,9 +7,9 @@ class case_2x1_smallBlockSize(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(2048)
+        self.checkEVM(2048,100)
         self.checkRU(24576)
-        self.checkBU(26624)
+        self.checkBU(26624,100)
         self.haltEvB()
 
 
