@@ -54,11 +54,11 @@ namespace evb {
       Configuration()
         : sendPoolName("sudapl"),
           evmInstance(-1), // Explicitly indicate parameter not set
-          maxEvtsUnderConstruction(6*3*16), // 6 builders with 3 requests for 16 events
-          eventsPerRequest(16),
+          maxEvtsUnderConstruction(256),
+          eventsPerRequest(8),
           resourcesPerCore(0.1),
           staleResourceTime(10),
-          superFragmentFIFOCapacity(16384),
+          superFragmentFIFOCapacity(3072),
           dropEventData(false),
           numberOfBuilders(6),
           rawDataDir("/tmp/fff"),
@@ -66,17 +66,17 @@ namespace evb {
           jsdDirName("jsd"),
           hltDirName("hlt"),
           fuLockName("fu.lock"),
-          rawDataHighWaterMark(0.7),
-          rawDataLowWaterMark(0.5),
-          metaDataHighWaterMark(0.9),
-          metaDataLowWaterMark(0.5),
+          rawDataHighWaterMark(0.95),
+          rawDataLowWaterMark(0.75),
+          metaDataHighWaterMark(0.95),
+          metaDataLowWaterMark(0.75),
           checkCRC(1),
-          calculateAdler32(false),
+          calculateAdler32(true),
           deleteRawDataFiles(false),
-          maxEventsPerFile(2000),
+          maxEventsPerFile(400),
           fileStatisticsFIFOCapacity(128),
           lumiSectionFIFOCapacity(128),
-          lumiSectionTimeout(25),
+          lumiSectionTimeout(30),
           hltParameterSetURL("")
       {};
 

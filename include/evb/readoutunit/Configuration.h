@@ -66,7 +66,7 @@ namespace evb {
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
           fragmentFIFOCapacity(128),
-          fragmentRequestFIFOCapacity(64*18), // 64 BUs with 18 requests
+          fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
           checkCRC(0),
           writeNextFragmentsToFile(0),
           dropInputData(false),
