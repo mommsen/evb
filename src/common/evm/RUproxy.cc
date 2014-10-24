@@ -114,9 +114,24 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
         ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
       //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << msgSize << std::endl;
 
-      toolbox::mem::Reference* rqstBufRef =
-        toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, msgSize);
+      toolbox::mem::Reference* rqstBufRef = 0;
+      while ( !rqstBufRef )
+      {
+        try
+        {
+          rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
+            getFrame(fastCtrlMsgPool_, msgSize);
+        }
+        catch(toolbox::mem::exception::Exception)
+        {
+          rqstBufRef = 0;
+          if ( ! doProcessing_ )
+          {
+            assignEventsActive_ = false;
+            return false;
+          }
+        }
+      }
       rqstBufRef->setDataSize(msgSize);
 
       I2O_MESSAGE_FRAME* stdMsg =
@@ -198,9 +213,20 @@ void evb::evm::RUproxy::sendToAllRUs
   for ( ; it != itEnd ; ++it)
   {
     // Create an empty request message
-    toolbox::mem::Reference* copyBufRef =
-      toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fastCtrlMsgPool_, bufSize);
+    toolbox::mem::Reference* copyBufRef = 0;
+    while ( ! copyBufRef )
+    {
+      try
+      {
+        copyBufRef = toolbox::mem::getMemoryPoolFactory()->
+          getFrame(fastCtrlMsgPool_, bufSize);
+      }
+      catch(toolbox::mem::exception::Exception)
+      {
+        copyBufRef = 0;
+        if ( ! doProcessing_ ) return;
+      }
+    }
     char* copyFrame  = (char*)(copyBufRef->getDataLocation());
 
     // Copy the message under construction into
