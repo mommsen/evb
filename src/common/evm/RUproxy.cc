@@ -114,54 +114,75 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
         ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
       //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << msgSize << std::endl;
 
-      toolbox::mem::Reference* rqstBufRef = 0;
-      while ( !rqstBufRef )
+      ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin();
+      const ApplicationDescriptorsAndTids::const_iterator itEnd = participatingRUs_.end();
+      for ( ; it != itEnd ; ++it)
       {
-        try
+        toolbox::mem::Reference* rqstBufRef = 0;
+        while ( !rqstBufRef )
         {
-          rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
-            getFrame(fastCtrlMsgPool_, msgSize);
-        }
-        catch(toolbox::mem::exception::Exception)
-        {
-          rqstBufRef = 0;
-          if ( ! doProcessing_ )
+          try
           {
-            assignEventsActive_ = false;
-            return false;
+            rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
+              getFrame(fastCtrlMsgPool_, msgSize);
+          }
+          catch(toolbox::mem::exception::Exception)
+          {
+            rqstBufRef = 0;
+            if ( ! doProcessing_ )
+            {
+              assignEventsActive_ = false;
+              return false;
+            }
           }
         }
+        rqstBufRef->setDataSize(msgSize);
+
+        I2O_MESSAGE_FRAME* stdMsg =
+          (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
+        I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
+        msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+
+        stdMsg->VersionOffset    = 0;
+        stdMsg->MsgFlags         = 0;
+        stdMsg->MessageSize      = msgSize >> 2;
+        stdMsg->InitiatorAddress = tid_;
+        stdMsg->TargetAddress    = it->tid;
+        stdMsg->Function         = I2O_PRIVATE_MESSAGE;
+        pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
+        pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
+        readoutMsg->buTid        = fragmentRequest->buTid;
+        readoutMsg->buResourceId = fragmentRequest->buResourceId;
+        readoutMsg->nbRequests   = requestsCount;
+        readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
+        readoutMsg->nbRUtids     = ruCount;
+
+        unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
+        memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
+        payload += requestsCount*sizeof(EvBid);
+
+        memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
+
+        // Send the readout message to the RU
+        try
+        {
+          evm_->getApplicationContext()->
+            postFrame(
+              rqstBufRef,
+              evm_->getApplicationDescriptor(),
+              it->descriptor //,
+              //i2oExceptionHandler_,
+              //it->descriptor
+            );
+        }
+        catch(xcept::Exception& e)
+        {
+          std::ostringstream oss;
+          oss << "Failed to send message to RU TID ";
+          oss << it->tid;
+          XCEPT_RETHROW(exception::I2O, oss.str(), e);
+        }
       }
-      rqstBufRef->setDataSize(msgSize);
-
-      I2O_MESSAGE_FRAME* stdMsg =
-        (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
-      I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-      msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
-
-      stdMsg->VersionOffset    = 0;
-      stdMsg->MsgFlags         = 0;
-      stdMsg->MessageSize      = msgSize >> 2;
-      stdMsg->InitiatorAddress = tid_;
-      stdMsg->Function         = I2O_PRIVATE_MESSAGE;
-      pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
-      pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-      readoutMsg->buTid        = fragmentRequest->buTid;
-      readoutMsg->buResourceId = fragmentRequest->buResourceId;
-      readoutMsg->nbRequests   = requestsCount;
-      readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
-      readoutMsg->nbRUtids     = ruCount;
-
-      unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
-      memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
-      payload += requestsCount*sizeof(EvBid);
-
-      memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
-
-      sendToAllRUs(rqstBufRef, msgSize);
-
-      // Free the requests message (its copies were sent not it)
-      rqstBufRef->release();
 
       boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
@@ -194,75 +215,6 @@ bool evb::evm::RUproxy::assignEvents(toolbox::task::WorkLoop*)
   assignEventsActive_ = false;
 
   return doProcessing_;
-}
-
-
-void evb::evm::RUproxy::sendToAllRUs
-(
-  toolbox::mem::Reference* bufRef,
-  const size_t bufSize
-) const
-{
-  ////////////////////////////////////////////////////////////
-  // Make a copy of the pairs message under construction    //
-  // for each RU and send each copy to its corresponding RU //
-  ////////////////////////////////////////////////////////////
-
-  ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin();
-  const ApplicationDescriptorsAndTids::const_iterator itEnd = participatingRUs_.end();
-  for ( ; it != itEnd ; ++it)
-  {
-    // Create an empty request message
-    toolbox::mem::Reference* copyBufRef = 0;
-    while ( ! copyBufRef )
-    {
-      try
-      {
-        copyBufRef = toolbox::mem::getMemoryPoolFactory()->
-          getFrame(fastCtrlMsgPool_, bufSize);
-      }
-      catch(toolbox::mem::exception::Exception)
-      {
-        copyBufRef = 0;
-        if ( ! doProcessing_ ) return;
-      }
-    }
-    char* copyFrame  = (char*)(copyBufRef->getDataLocation());
-
-    // Copy the message under construction into
-    // the newly created empty message
-    memcpy(
-      copyFrame,
-      bufRef->getDataLocation(),
-      bufRef->getDataSize()
-    );
-
-    // Set the size of the copy
-    copyBufRef->setDataSize(bufSize);
-
-    // Set the I2O TID target address
-    ((I2O_MESSAGE_FRAME*)copyFrame)->TargetAddress = it->tid;
-
-    // Send the pairs message to the RU
-    try
-    {
-      evm_->getApplicationContext()->
-        postFrame(
-          copyBufRef,
-          evm_->getApplicationDescriptor(),
-          it->descriptor //,
-          //i2oExceptionHandler_,
-          //it->descriptor
-        );
-    }
-    catch(xcept::Exception& e)
-    {
-      std::ostringstream oss;
-      oss << "Failed to send message to RU TID ";
-      oss << it->tid;
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-  }
 }
 
 

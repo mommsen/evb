@@ -112,7 +112,6 @@ namespace evb {
       void resetMonitoringCounters();
       void startProcessingWorkLoop();
       bool assignEvents(toolbox::task::WorkLoop*);
-      void sendToAllRUs(toolbox::mem::Reference*, const size_t bufSize) const;
       void getApplicationDescriptors();
       void fillRUInstance(xdata::UnsignedInteger32 instance);
 
