@@ -176,6 +176,10 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
         this->addFedFragmentWithEvBid(fedFragment);
         evbId = this->evbIdFactory_.getEvBid();
       }
+      else
+      {
+        ::usleep(10);
+      }
     }
   }
   catch(xcept::Exception &e)
