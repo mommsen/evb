@@ -109,6 +109,12 @@ void evb::bu::DiskWriter::stopProcessing()
   for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
        it != itEnd; ++it)
   {
+    if ( it->second->totalEvents == 0 )
+    {
+      it->second->totalEvents =
+        bu_->getRUproxy()->getTotalEventsInLumiSection(it->first);
+    }
+
     writeEoLS(it->second);
 
     if ( it->second->nbEventsWritten > 0 )
