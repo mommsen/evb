@@ -77,7 +77,7 @@ namespace evb {
           dummyFedSize(2048),
           useLogNormal(false),
           dummyFedSizeStdDev(0),
-          dummyFedSizeMin(8), // minimum is 8 Bytes
+          dummyFedSizeMin(16), // minimum is 16 Bytes
           dummyFedSizeMax(0), // no limitation
           dummyScalFedSize(0),
           scalFedId(999),

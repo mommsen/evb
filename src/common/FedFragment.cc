@@ -204,6 +204,7 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
     oss << " but got event size 0x" << trailer->eventsize;
     oss << " and conscheck 0x" << trailer->conscheck;
     oss << " for FED " << std::dec << fedId_;
+    oss << " with expected size " << fedSize << " Bytes";
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 

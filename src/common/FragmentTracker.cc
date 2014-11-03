@@ -32,6 +32,13 @@ evb::FragmentTracker::FragmentTracker
   lastTime_(0),
   availableTriggers_(0)
 {
+  if (minFedSize < sizeof(fedh_t) + sizeof(fedt_t))
+  {
+    std::ostringstream oss;
+    oss << "The minimal FED size in the configuration (minFedSize) must be at least ";
+    oss << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << minFedSize << " Bytes";
+    XCEPT_RAISE(exception::Configuration, oss.str());
+  }
   if (useLogNormal)
   {
     logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev) );
