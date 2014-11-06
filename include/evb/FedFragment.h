@@ -54,6 +54,8 @@ namespace evb {
 
   private:
 
+    std::string trailerBitToString(const uint32_t conscheck) const;
+
     uint16_t fedId_;
     uint32_t eventNumber_;
     EvBid evbId_;
