@@ -76,7 +76,7 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_
 {
   if ( eventNumber != previousEventNumber_ + 1 )
   {
-    if ( (eventNumber == 1 && previousEventNumber_ > 1) ||
+    if ( (eventNumber == 1 && previousEventNumber_ > 0) ||
          (eventNumber == 0 && previousEventNumber_ == 16777215 ) ) // (2^24)-1
     {
       ++resyncCount_;
