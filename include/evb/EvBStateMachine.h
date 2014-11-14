@@ -1,6 +1,7 @@
 #ifndef _evb_StateMachine_h_
 #define _evb_StateMachine_h_
 
+#include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 #include <boost/statechart/state.hpp>
@@ -376,10 +377,14 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
 {
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
 
+  const boost::regex e("[A-Za-z0-9]+evb[0-9a-z]+([a-zA-Z]+)E", boost::regex::extended);
+  boost::smatch what;
+  std::string event = typeid(evt).name();
+  if ( boost::regex_match(event,what,e) )
+    event = what[1];
   LOG4CPLUS_ERROR(getLogger(),
-                  "The " << typeid(evt).name()
-                  << " event is not supported from the "
-                  << stateName_ << " state!");
+                  "The '" << event << "' event is not supported from the '"
+                  << stateName_ << "' state! '" <<std::string(typeid(evt).name()));
 }
 
 
