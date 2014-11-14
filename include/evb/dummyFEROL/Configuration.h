@@ -40,7 +40,7 @@ namespace evb {
             computeCRC(true),
             useLogNormal(false),
             fedSizeStdDev(0),
-            minFedSize(8), // minimum is 8 Bytes
+            minFedSize(16), // minimum to fit FED header and trailer
             maxFedSize(0), // no limitiation
             usePlayback(false),
             playbackDataFile(""),
