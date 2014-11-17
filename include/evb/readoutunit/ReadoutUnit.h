@@ -76,6 +76,7 @@ namespace evb {
       virtual void do_updateMonitoringInfo();
 
       virtual void do_handleItemChangedEvent(const std::string& item);
+      void localItemChangedEvent(const std::string& item) {};
       virtual void do_handleItemRetrieveEvent(const std::string& item);
 
       virtual void bindNonDefaultXgiCallbacks();
@@ -179,13 +180,13 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   {
     input_->writeNextFragmentsToFile(this->configuration_->writeNextFragmentsToFile);
   }
-  else if (item == "maxTriggerRate")
-  {
-    input_->setMaxTriggerRate(this->configuration_->maxTriggerRate);
-  }
   else if (item == "stopLocalInputAtEvent")
   {
     input_->stopLocalInputAtEvent(stopLocalInputAtEvent_);
+  }
+  else
+  {
+    localItemChangedEvent(item);
   }
 }
 

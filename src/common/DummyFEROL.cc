@@ -84,6 +84,16 @@ void evb::test::DummyFEROL::do_updateMonitoringInfo()
   dataMonitoring_.reset();
 }
 
+
+void evb::test::DummyFEROL::do_handleItemChangedEvent(const std::string& item)
+{
+  if (item == "maxTriggerRate")
+  {
+    fragmentGenerator_.setMaxTriggerRate(this->configuration_->maxTriggerRate);
+  }
+}
+
+
 cgicc::table evb::test::DummyFEROL::getMainWebPage() const
 {
   using namespace cgicc;

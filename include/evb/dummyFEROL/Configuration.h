@@ -74,7 +74,7 @@ namespace evb {
           params.add("frameSize", &frameSize);
           params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
           params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
-          params.add("maxTriggerRate", &maxTriggerRate);
+          params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
         }
       };
 

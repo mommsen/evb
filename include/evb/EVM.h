@@ -5,8 +5,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "evb/evm/Configuration.h"
 #include "evb/evm/RUproxy.h"
-#include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "i2o/i2oDdmLib.h"
@@ -19,8 +19,8 @@ namespace evb {
 
   namespace evm {
     typedef readoutunit::StateMachine<EVM> EVMStateMachine;
-    typedef readoutunit::ReadoutUnit<EVM,readoutunit::Configuration,EVMStateMachine> ReadoutUnit;
-    typedef readoutunit::Input<EVM,readoutunit::Configuration> Input;
+    typedef readoutunit::ReadoutUnit<EVM,evm::Configuration,EVMStateMachine> ReadoutUnit;
+    typedef readoutunit::Input<EVM,evm::Configuration> Input;
   }
 
   /**

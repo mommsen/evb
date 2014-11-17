@@ -7,9 +7,7 @@
 
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
-#include "evb/UnsignedInteger32Less.h"
 #include "xdaq/ApplicationContext.h"
-#include "xdaq/ApplicationDescriptor.h"
 #include "xdata/Boolean.h"
 #include "xdata/Double.h"
 #include "xdata/String.h"
@@ -40,7 +38,6 @@ namespace evb {
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
-      xdata::UnsignedInteger32 maxTriggerRate;               // Maximum trigger rate in Hz when generating dummy data. 0 means no limitation.
       xdata::UnsignedInteger32 dummyFedSize;                 // Mean size in Bytes of the FED when running in Local mode
       xdata::Boolean useLogNormal;                           // If set to true, use the log-normal generator for FED sizes
       xdata::UnsignedInteger32 dummyFedSizeStdDev;           // Standard deviation of the FED sizes when using the log-normal distrubution
@@ -51,10 +48,6 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
-      xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
-      xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
-      xdata::Boolean getLumiSectionFromTrigger;              // If set to true, try to get the lumi section number from the trigger. Otherwise, use fake LS
-      xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
@@ -73,7 +66,6 @@ namespace evb {
           computeCRC(true),
           usePlayback(false),
           playbackDataFile(""),
-          maxTriggerRate(0),
           dummyFedSize(2048),
           useLogNormal(false),
           dummyFedSizeStdDev(0),
@@ -83,9 +75,6 @@ namespace evb {
           scalFedId(999),
           fragmentPoolSize(200000000),
           frameSize(32768),
-          maxTriggerAgeMSec(1000),
-          getLumiSectionFromTrigger(true),
-          fakeLumiSectionDuration(0),
           tolerateCorruptedEvents(false),
           maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
@@ -99,7 +88,6 @@ namespace evb {
       )
       {
         fillDefaultFedSourceIds(instance);
-        fillDefaultRUinstances(instance,context);
 
         params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource);
@@ -113,7 +101,6 @@ namespace evb {
         params.add("dropInputData", &dropInputData);
         params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
-        params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSize", &dummyFedSize);
         params.add("useLogNormal", &useLogNormal);
@@ -125,10 +112,6 @@ namespace evb {
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds);
-        params.add("ruInstances", &ruInstances);
-        params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
-        params.add("getLumiSectionFromTrigger", &getLumiSectionFromTrigger);
-        params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
@@ -146,35 +129,6 @@ namespace evb {
         {
           fedSourceIds.push_back(sourceId);
         }
-      }
-
-      void fillDefaultRUinstances(const uint32_t instance, xdaq::ApplicationContext* context)
-      {
-        ruInstances.clear();
-
-        std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
-
-        try
-        {
-          ruDescriptors =
-            context->getDefaultZone()->
-            getApplicationDescriptors("evb::RU");
-        }
-        catch(xcept::Exception& e)
-        {
-          XCEPT_RETHROW(exception::I2O,
-                        "Failed to get RU application descriptor", e);
-        }
-
-        for (std::set<xdaq::ApplicationDescriptor*>::const_iterator
-               it=ruDescriptors.begin(), itEnd =ruDescriptors.end();
-             it != itEnd; ++it)
-        {
-          ruInstances.push_back((*it)->getInstance());
-        }
-
-        std::sort(ruInstances.begin(), ruInstances.end(),
-                  UnsignedInteger32Less());
       }
     };
 

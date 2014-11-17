@@ -101,12 +101,20 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   }
 
   fragmentTracker_.reset(
-    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize,maxTriggerRate,computeCRC)
+    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize,computeCRC)
   );
+  fragmentTracker_->setMaxTriggerRate(maxTriggerRate);
 
   playbackData_.clear();
   if ( usePlayback )
     cacheData(playbackDataFile);
+}
+
+
+void evb::test::dummyFEROL::FragmentGenerator::setMaxTriggerRate(const uint32_t rate)
+{
+  if ( fragmentTracker_.get() )
+    fragmentTracker_->setMaxTriggerRate(rate);
 }
 
 

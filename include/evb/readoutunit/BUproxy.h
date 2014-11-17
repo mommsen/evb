@@ -133,7 +133,6 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
-      const ConfigurationPtr configuration_;
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
 
@@ -188,7 +187,6 @@ namespace evb {
 template<class ReadoutUnit>
 evb::readoutunit::BUproxy<ReadoutUnit>::BUproxy(ReadoutUnit* readoutUnit) :
 readoutUnit_(readoutUnit),
-configuration_(readoutUnit->getConfiguration()),
 tid_(0),
 doProcessing_(false),
 nbActiveProcesses_(0),
@@ -196,7 +194,7 @@ fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
   {
-    toolbox::net::URN urn("toolbox-mem-pool",configuration_->sendPoolName);
+    toolbox::net::URN urn("toolbox-mem-pool",readoutUnit_->getConfiguration()->sendPoolName);
     superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
   catch(toolbox::mem::exception::MemoryPoolNotFound)
@@ -243,7 +241,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 
   doProcessing_ = true;
 
-  for (uint32_t i=0; i < configuration_->numberOfResponders; ++i)
+  for (uint32_t i=0; i < readoutUnit_->getConfiguration()->numberOfResponders; ++i)
   {
     workLoops_.at(i)->submit(action_);
   }
@@ -394,9 +392,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   //std::cout << "blockHeaderSize: " << sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << blockHeaderSize << std::endl;
 
   assert( blockHeaderSize % 8 == 0 );
-  assert( blockHeaderSize < configuration_->blockSize );
+  assert( blockHeaderSize < readoutUnit_->getConfiguration()->blockSize );
   unsigned char* payload = (unsigned char*)head->getDataLocation() + blockHeaderSize;
-  uint32_t remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
+  uint32_t remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - blockHeaderSize;
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
@@ -452,7 +450,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
           // get a new block
           toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
           payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
-          remainingPayloadSize = configuration_->blockSize - blockHeaderSize;
+          remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - blockHeaderSize;
           fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
           tail->setNextReference(nextBlock);
           tail = nextBlock;
@@ -569,8 +567,8 @@ toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
 ) const
 {
   toolbox::mem::Reference* bufRef =
-    toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
-  bufRef->setDataSize(configuration_->blockSize);
+    toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
+  bufRef->setDataSize(readoutUnit_->getConfiguration()->blockSize);
 
   msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
   dataBlockMsg->blockNb = blockNb;
@@ -621,17 +619,17 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 {
   fragmentRequestFIFO_.clear();
-  fragmentRequestFIFO_.resize(configuration_->fragmentRequestFIFOCapacity);
+  fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
 
-  if ( configuration_->numberOfPreallocatedBlocks.value_ > 0 )
+  if ( readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks.value_ > 0 )
   {
     toolbox::mem::Reference* head =
-      toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
+      toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
     toolbox::mem::Reference* tail = head;
-    for (uint32_t i = 1; i < configuration_->numberOfPreallocatedBlocks; ++i)
+    for (uint32_t i = 1; i < readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks; ++i)
     {
       toolbox::mem::Reference* bufRef =
-        toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,configuration_->blockSize);
+        toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
       tail->setNextReference(bufRef);
       tail = bufRef;
     }
@@ -661,14 +659,14 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 {
   processesActive_.clear();
-  processesActive_.resize(configuration_->numberOfResponders);
+  processesActive_.resize(readoutUnit_->getConfiguration()->numberOfResponders);
 
   const std::string identifier = readoutUnit_->getIdentifier();
 
   try
   {
     // Leave any previous created workloops alone. Only add new ones if needed.
-    for (uint16_t i=workLoops_.size(); i < configuration_->numberOfResponders; ++i)
+    for (uint16_t i=workLoops_.size(); i < readoutUnit_->getConfiguration()->numberOfResponders; ++i)
     {
       std::ostringstream workLoopName;
       workLoopName << identifier << "/Responder_" << i;

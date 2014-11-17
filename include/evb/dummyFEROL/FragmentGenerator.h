@@ -94,6 +94,11 @@ namespace evb {
                      uint32_t& corruptNbEvents,
                      uint32_t& nbCRCerrors);
 
+        /**
+         * Set maximum rate for generating fragments
+         */
+        void setMaxTriggerRate(const uint32_t rate);
+
 
       private:
 

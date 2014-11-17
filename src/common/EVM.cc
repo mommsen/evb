@@ -1,8 +1,8 @@
 #include <sched.h>
 
 #include "evb/EVM.h"
+#include "evb/evm/Configuration.h"
 #include "evb/readoutunit/BUproxy.h"
-#include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/States.h"
 #include "interface/shared/GlobalEventNumber.h"
@@ -29,7 +29,7 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromTCDS(const unsigned char* payload) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS(const unsigned char* payload) const
     {
       using namespace evtn;
 
@@ -39,7 +39,7 @@ namespace evb {
 
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromGTP(const unsigned char* payload) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTP(const unsigned char* payload) const
     {
       using namespace evtn;
 
@@ -80,7 +80,7 @@ namespace evb {
 
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromGTPe(const unsigned char* payload) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe(const unsigned char* payload) const
     {
       using namespace evtn;
 
@@ -98,7 +98,7 @@ namespace evb {
 
 
     template<>
-    void evb::readoutunit::Input<EVM,readoutunit::Configuration>::setMasterStream()
+    void evb::readoutunit::Input<EVM,evm::Configuration>::setMasterStream()
     {
       masterStream_ = ferolStreams_.end();
 
@@ -111,21 +111,21 @@ namespace evb {
         masterStream_ = ferolStreams_.find(TCDS_FED_ID);
         if ( masterStream_ != ferolStreams_.end() )
         {
-          lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromTCDS, this, _1);
+          lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS, this, _1);
         }
         else
         {
           masterStream_ = ferolStreams_.find(GTP_FED_ID);
           if ( masterStream_ != ferolStreams_.end() )
           {
-            lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromGTP, this, _1);
+            lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTP, this, _1);
           }
           else
           {
             masterStream_ = ferolStreams_.find(GTPe_FED_ID);
             if ( masterStream_ != ferolStreams_.end() )
             {
-              lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,readoutunit::Configuration>::getLumiSectionFromGTPe, this, _1);
+              lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe, this, _1);
             }
           }
         }
@@ -139,7 +139,7 @@ namespace evb {
 
 
     template<>
-    evb::EvBid evb::readoutunit::FerolStream<EVM,readoutunit::Configuration>::getEvBid(const FedFragmentPtr& fedFragment)
+    evb::EvBid evb::readoutunit::FerolStream<EVM,evm::Configuration>::getEvBid(const FedFragmentPtr& fedFragment)
     {
       const uint32_t eventNumber = fedFragment->getEventNumber();
       if ( lumiSectionFunction_ )
@@ -183,7 +183,7 @@ namespace evb {
         fragmentRequest->evbIds.push_back(evbId);
 
         uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
-        const uint32_t maxTries = configuration_->maxTriggerAgeMSec*10;
+        const uint32_t maxTries = readoutUnit_->getConfiguration()->maxTriggerAgeMSec*10;
         uint32_t tries = 0;
         while ( remainingRequests > 0 && tries < maxTries )
         {
@@ -240,6 +240,7 @@ namespace evb {
     void Configuring<EVM>::doConfigure(const EVM* evm)
     {
       evm->getRUproxy()->configure();
+      evm->getInput()->setMaxTriggerRate(evm->getConfiguration()->maxTriggerRate);
     }
 
 
@@ -280,6 +281,20 @@ namespace evb {
       table.add(tr()
                 .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
                 .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
+    }
+
+
+    template<>
+    void evm::ReadoutUnit::localItemChangedEvent(const std::string& item)
+    {
+      if (item == "maxTriggerRate")
+      {
+        const uint32_t triggerRate = this->configuration_->maxTriggerRate;
+        std::ostringstream msg;
+        msg << "Setting maxTriggerRate to " << triggerRate << " Hz";
+        LOG4CPLUS_INFO(this->getApplicationLogger(),msg.str());
+        input_->setMaxTriggerRate(triggerRate);
+      }
     }
   }
 }

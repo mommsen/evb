@@ -18,14 +18,13 @@ evb::FragmentTracker::FragmentTracker
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
-  const uint32_t maxTriggerRate,
   const bool computeCRC
 ) :
   fedId_(fedId),
   fedSize_(fedSize),
   minFedSize_(minFedSize),
   maxFedSize_(maxFedSize),
-  maxTriggerRate_(maxTriggerRate),
+  maxTriggerRate_(0),
   computeCRC_(computeCRC),
   fedCRC_(0xffff),
   typeOfNextComponent_(FED_HEADER),

@@ -29,7 +29,6 @@ namespace evb {
       const uint32_t fedSizeStdDev,
       const uint32_t minFedSize,
       const uint32_t maxFedSize,
-      const uint32_t maxTriggerRate,
       const bool computeCRC
     );
 

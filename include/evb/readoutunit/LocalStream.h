@@ -97,7 +97,6 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
                    this->configuration_->dummyFedSizeStdDev,
                    this->configuration_->dummyFedSizeMin,
                    this->configuration_->dummyFedSizeMax,
-                   this->configuration_->maxTriggerRate,
                    this->configuration_->computeCRC)
 {
   const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
