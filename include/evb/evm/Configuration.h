@@ -31,12 +31,14 @@ namespace evb {
       xdata::UnsignedInteger32 maxTriggerRate;               // Maximum trigger rate in Hz when generating dummy data. 0 means no limitation.
       xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
+      xdata::Boolean getLumiSectionFromTrigger;              // If set to true, try to get the lumi section number from the trigger. Otherwise, use fake LS
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
 
       Configuration()
         : triggerType("None"),
           maxTriggerRate(0),
           maxTriggerAgeMSec(1000),
+          getLumiSectionFromTrigger(true),
           fakeLumiSectionDuration(0)
       {};
 
@@ -54,6 +56,7 @@ namespace evb {
         params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
         params.add("ruInstances", &ruInstances);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
+        params.add("getLumiSectionFromTrigger", &getLumiSectionFromTrigger);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
       }
 
