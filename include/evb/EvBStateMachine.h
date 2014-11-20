@@ -384,7 +384,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
     event = what[1];
   LOG4CPLUS_ERROR(getLogger(),
                   "The '" << event << "' event is not supported from the '"
-                  << stateName_ << "' state! '" <<std::string(typeid(evt).name()));
+                  << stateName_ << "' state! '");
 }
 
 
