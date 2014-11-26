@@ -50,21 +50,18 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
   doProcessing_ = true;
   lumiAccountingWorkLoop_->submit(lumiAccountingAction_);
 
-  if ( configuration_->dropEventData ) return;
-
   std::ostringstream runDir;
   runDir << "run" << std::setfill('0') << std::setw(6) << runNumber_;
 
   boost::filesystem::path rawRunDir( configuration_->rawDataDir.value_ );
   rawRunDir /= runDir.str();
   runRawDataDir_ = rawRunDir / "open";
-  createDir(runRawDataDir_);
 
   runMetaDataDir_ = configuration_->metaDataDir.value_;
   runMetaDataDir_ /= runDir.str();
-  createDir(runMetaDataDir_);
 
   boost::filesystem::path streamFileName = runRawDataDir_ / "stream";
+  streamHandlers_.clear();
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
     std::ostringstream fileName;
@@ -73,16 +70,22 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     streamHandlers_.insert( StreamHandlers::value_type(i,streamHandler) );
   }
 
-  getHLTmenu(rawRunDir);
-  createLockFile(rawRunDir);
+  if ( ! configuration_->dropEventData )
+  {
+    createDir(runRawDataDir_);
+    createDir(runMetaDataDir_);
 
-  const boost::filesystem::path jsdDir = runMetaDataDir_ / configuration_->jsdDirName.value_;
-  createDir(jsdDir);
-  defineRawData(jsdDir);
-  defineEoLS(jsdDir);
-  defineEoR(jsdDir);
+    getHLTmenu(rawRunDir);
+    createLockFile(rawRunDir);
 
-  fileMoverWorkLoop_->submit(fileMoverAction_);
+    const boost::filesystem::path jsdDir = runMetaDataDir_ / configuration_->jsdDirName.value_;
+    createDir(jsdDir);
+    defineRawData(jsdDir);
+    defineEoLS(jsdDir);
+    defineEoR(jsdDir);
+
+    fileMoverWorkLoop_->submit(fileMoverAction_);
+  }
 }
 
 
@@ -95,7 +98,11 @@ void evb::bu::DiskWriter::stopProcessing()
   doProcessing_ = false;
   while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
 
-  if ( configuration_->dropEventData ) return;
+  if ( configuration_->dropEventData )
+  {
+    streamHandlers_.clear();
+    return;
+  }
 
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)

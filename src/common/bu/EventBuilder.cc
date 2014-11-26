@@ -143,9 +143,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   CompleteEvents completeEvents;
   EventMapMonitor& eventMapMonitor = eventMapMonitors_[builderId];
 
-  StreamHandlerPtr streamHandler;
-  if ( ! configuration_->dropEventData )
-    streamHandler = diskWriter_->getStreamHandler(builderId);
+  StreamHandlerPtr streamHandler = diskWriter_->getStreamHandler(builderId);
 
   try
   {
@@ -366,9 +364,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
     }
     catch(exception::CRCerror& e)
     {
-      if ( ! configuration_->dropEventData )
-        streamHandler->writeEvent(event);
-
+      streamHandler->writeEvent(event);
       resourceManager_->discardEvent(event);
       completeEvents.erase(pos++);
       throw; // rethrow the exception such that it can be handled outside of critical section
@@ -384,9 +380,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
       }
     }
 
-    if ( ! configuration_->dropEventData )
-      streamHandler->writeEvent(event);
-
+    streamHandler->writeEvent(event);
     resourceManager_->discardEvent(event);
     completeEvents.erase(pos++);
   }

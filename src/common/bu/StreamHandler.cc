@@ -28,6 +28,8 @@ evb::bu::StreamHandler::~StreamHandler()
 
 void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
+  if ( configuration_->dropEventData ) return;
+
   boost::mutex::scoped_lock sl(fileHandlerMutex_);
 
   const uint32_t lumiSection = event->lumiSection();
