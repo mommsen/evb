@@ -37,9 +37,12 @@
 #include "interface/shared/i2ogevb2g.h"
 #include "log4cplus/loggingmacros.h"
 #include "tcpla/MemoryCache.h"
+#include "toolbox/lang/Class.h"
 #include "toolbox/mem/CommittedHeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
 #include "toolbox/mem/Reference.h"
+#include "toolbox/task/WorkLoopFactory.h"
+#include "toolbox/task/WorkLoop.h"
 #include "xcept/tools.h"
 #include "xdaq/ApplicationContext.h"
 #include "xdaq/ApplicationStub.h"
@@ -57,7 +60,7 @@ namespace evb {
      * \brief Generic input for the readout units
      */
     template<class ReadoutUnit, class Configuration>
-    class Input
+    class Input : public toolbox::lang::Class
     {
     public:
 
@@ -157,6 +160,8 @@ namespace evb {
       void setMasterStream();
       void resetMonitoringCounters();
       void updateSuperFragmentCounters(const FragmentChainPtr&);
+      void startDummySuperFragmentWorkLoop();
+      bool buildDummySuperFragments(toolbox::task::WorkLoop*);
       cgicc::table getFedTable() const;
 
       // these methods are only implemented for EVM
@@ -178,6 +183,9 @@ namespace evb {
       boost::mutex lumiCounterMutex_;
 
       uint32_t runNumber_;
+
+      toolbox::task::WorkLoop* dummySuperFragmentWL_;
+      toolbox::task::ActionSignature* dummySuperFragmentAction_;
 
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
@@ -292,6 +300,43 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvB
 
 
 template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragments(toolbox::task::WorkLoop* wl)
+{
+  if ( ferolStreams_.empty() ) return false;
+
+  FragmentChainPtr superFragment;
+  FedFragmentPtr fedFragment;
+
+  try
+  {
+    typename FerolStreams::iterator it = ferolStreams_.begin();
+    if ( it->second->getNextFedFragment(fedFragment) )
+    {
+      superFragment.reset( new readoutunit::FragmentChain(fedFragment->getEvBid()) );
+      superFragment->append(fedFragment);
+
+      while ( ++it != ferolStreams_.end() )
+      {
+        it->second->appendFedFragment(superFragment);
+      }
+
+      updateSuperFragmentCounters(superFragment);
+    }
+    else
+    {
+      ::usleep(100);
+    }
+  }
+  catch(exception::HaltRequested)
+  {
+    return false;
+  }
+
+  return true;
+}
+
+
+template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCounters(const FragmentChainPtr& superFragment)
 {
   {
@@ -366,6 +411,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
     {
       it->second->startProcessing(runNumber);
     }
+  }
+
+  if ( readoutUnit_->getConfiguration()->dropInputData )
+  {
+    dummySuperFragmentWL_->submit(dummySuperFragmentAction_);
   }
 }
 
@@ -579,6 +629,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
       const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,configuration->scalFedId) );
       ferolStreams_.insert( typename FerolStreams::value_type(configuration->scalFedId,scalerStream ) );
     }
+
+    if ( configuration->dropInputData )
+    {
+      startDummySuperFragmentWorkLoop();
+    }
   }
 }
 
@@ -587,6 +642,31 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::setMasterStream()
 {
   masterStream_ = ferolStreams_.end();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::startDummySuperFragmentWorkLoop()
+{
+  try
+  {
+    dummySuperFragmentWL_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( readoutUnit_->getIdentifier("dummySuperFragment"), "waiting" );
+
+    if ( ! dummySuperFragmentWL_->isActive() )
+    {
+      dummySuperFragmentAction_ =
+        toolbox::task::bind(this, &evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragments,
+                            readoutUnit_->getIdentifier("buildDummySuperFragments") );
+
+      dummySuperFragmentWL_->activate();
+    }
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloop 'dummySuperFragment'";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
 }
 
 
@@ -624,7 +704,7 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
 
   {
     table table;
-    table.set("title","Super-fragment statistics are only filled when super-fragments have been built. When dropping event data or when there are no requests from the BUs, these counters remain 0.");
+    table.set("title","Super-fragment statistics are only filled when super-fragments have been built. When there are no requests from the BUs, these counters remain 0.");
 
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 

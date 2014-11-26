@@ -272,8 +272,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
   updateInputMonitor(fedFragment,fedSize);
   maybeDumpFragmentToFile(fedFragment);
 
-  if ( !configuration_->dropInputData )
-    fragmentFIFO_.enqWait(fedFragment);
+  fragmentFIFO_.enqWait(fedFragment);
 }
 
 
