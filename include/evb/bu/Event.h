@@ -145,7 +145,7 @@ namespace evb {
         DataLocations fedData_;
         uint32_t remainingFedSize_;
 
-        CRCCalculator crcCalculator_;
+        static CRCCalculator crcCalculator_;
       };
 
       struct EventInfo

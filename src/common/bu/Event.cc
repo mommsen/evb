@@ -16,6 +16,7 @@
 #include "interface/evb/i2oEVBMsgs.h"
 #include "xcept/tools.h"
 
+
 evb::bu::Event::Event
 (
   const EvBid& evbId,
@@ -271,6 +272,9 @@ void evb::bu::Event::dumpEventToFile(const std::string& reasonForDump, const uin
   }
   dumpFile.close();
 }
+
+
+evb::CRCCalculator evb::bu::Event::FedInfo::crcCalculator_;
 
 
 evb::bu::Event::FedInfo::FedInfo(const unsigned char* pos, uint32_t& remainingLength)
