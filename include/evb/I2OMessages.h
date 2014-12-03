@@ -25,6 +25,8 @@ namespace evb {
     struct ReadoutMsg
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
+      uint32_t headerSize;                       // Size of the message header
+      uint32_t padding;
       I2O_TID buTid;                             // BU TID to send the data
       uint16_t buResourceId;                     // Index of BU resource used to built the event
       uint16_t nbRequests;                       // Number of requested EvBids
@@ -33,7 +35,6 @@ namespace evb {
       EvBid evbIds[];                            // EvBids
       I2O_TID ruTids[];                          // List of RU TIDs participating in the event building
 
-      uint32_t getHeaderSize() const;
       void getEvBids(EvBids&) const;
       void getRUtids(RUtids&) const;
 
@@ -45,13 +46,13 @@ namespace evb {
      */
     struct SuperFragment
     {
-      uint32_t superFragmentNb;                  // Index of the super fragment
+      uint16_t headerSize;                       // Size of the message header
+      uint16_t superFragmentNb;                  // Index of the super fragment
       uint32_t totalSize;                        // Total size of the super fragment
       uint32_t partSize;                         // Partial size of the super-fragment contained in this message
       uint16_t nbDroppedFeds;                    // Number of FEDs dropped from the super fragment
       uint16_t fedIds[];                         // List of dropped FED ids
 
-      uint32_t getHeaderSize() const;
       void appendFedIds(FedIds&) const;
 
     };
@@ -63,7 +64,8 @@ namespace evb {
     struct I2O_DATA_BLOCK_MESSAGE_FRAME
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
-      uint32_t buResourceId;                     // Index of BU resource used to built the event
+      uint16_t headerSize;                       // Size of the message header
+      uint16_t buResourceId;                     // Index of BU resource used to built the event
       uint32_t nbBlocks;                         // Total number of I2O blocks
       uint32_t blockNb;                          // Index of the this block
       uint16_t nbSuperFragments;                 // Total number of super fragments
@@ -71,7 +73,6 @@ namespace evb {
       EvBid evbIds[];                            // The EvBids of the super fragments
       I2O_TID ruTids[];                          // List of RU TIDs participating in the event building
 
-      uint32_t getHeaderSize() const;
       void getEvBids(EvBids&) const;
       void getRUtids(RUtids&) const;
 

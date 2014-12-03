@@ -510,6 +510,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     stdMsg->Function               = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
+    dataBlockMsg->headerSize       = blockHeaderSize;
     dataBlockMsg->buResourceId     = fragmentRequest->buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = nbSuperFragments;
@@ -606,6 +607,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   payload += headerSize;
   remainingPayloadSize -= headerSize;
 
+  superFragmentMsg->headerSize = headerSize;
   superFragmentMsg->superFragmentNb = superFragmentNb;
   superFragmentMsg->totalSize = superFragment->getSize();
   superFragmentMsg->partSize = currentFragmentSize > remainingPayloadSize ? remainingPayloadSize : currentFragmentSize;

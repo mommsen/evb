@@ -70,7 +70,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
         (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
       const uint32_t payload = (stdMsg->MessageSize << 2) -
-        dataBlockMsg->getHeaderSize();
+        dataBlockMsg->headerSize;
 
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
@@ -241,6 +241,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       stdMsg->Function         = I2O_PRIVATE_MESSAGE;
       pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
       pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
+      readoutMsg->headerSize   = msgSize;
       readoutMsg->buTid        = tid_;
       readoutMsg->buResourceId = buResourceId;
       if ( buResourceId > 0 )

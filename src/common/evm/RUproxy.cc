@@ -163,6 +163,7 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
           stdMsg->Function         = I2O_PRIVATE_MESSAGE;
           pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
           pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
+          readoutMsg->headerSize   = msgSize;
           readoutMsg->buTid        = fragmentRequest->buTid;
           readoutMsg->buResourceId = fragmentRequest->buResourceId;
           readoutMsg->nbRequests   = requestsCount;

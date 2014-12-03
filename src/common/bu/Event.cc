@@ -58,7 +58,7 @@ bool evb::bu::Event::appendSuperFragment
   myBufRefs_.push_back(bufRef);
 
   const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-  payload += superFragmentMsg->getHeaderSize();
+  payload += superFragmentMsg->headerSize;
 
   const RUsizes::iterator pos = ruSizes_.find(ruTid);
   if ( pos == ruSizes_.end() )

@@ -257,7 +257,7 @@ inline void evb::bu::EventBuilder::buildEvent
   const I2O_TID ruTid = stdMsg->InitiatorAddress;
   const uint16_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
   uint16_t superFragmentCount = 0;
-  const uint32_t blockHeaderSize = dataBlockMsg->getHeaderSize();
+  const uint32_t blockHeaderSize = dataBlockMsg->headerSize;
 
   PartialEvents::iterator eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
 
@@ -272,7 +272,6 @@ inline void evb::bu::EventBuilder::buildEvent
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
     {
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
-      const uint32_t headerSize = superFragmentMsg->getHeaderSize();
 
       if ( eventPos->second->appendSuperFragment(ruTid,
                                                  bufRef->duplicate(),
@@ -291,7 +290,7 @@ inline void evb::bu::EventBuilder::buildEvent
         eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
       }
 
-      const uint32_t size = headerSize + superFragmentMsg->partSize;
+      const uint32_t size = superFragmentMsg->headerSize + superFragmentMsg->partSize;
       payload += size;
       remainingBufferSize -= size;
       if ( remainingBufferSize < sizeof(msg::SuperFragment) )
