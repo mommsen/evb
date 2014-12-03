@@ -783,14 +783,14 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
     table.add(tr()
               .add(td("# of active responders"))
-              .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(nbActiveProcesses_)))));
+              .add(td(boost::lexical_cast<std::string>(nbActiveProcesses_))));
 
     const int32_t outstandingEvents = dataMonitoring_.outstandingEvents;
     if ( outstandingEvents >= 0 )
     {
       table.add(tr()
                 .add(td("# of outstanding events"))
-                .add(td(boost::lexical_cast<std::string>(boost::lexical_cast<std::string>(outstandingEvents)))));
+                .add(td(boost::lexical_cast<std::string>(outstandingEvents))));
     }
 
     table.add(tr()

@@ -1,6 +1,8 @@
 #ifndef _evb_evm_RUproxy_h_
 #define _evb_evm_RUproxy_h_
 
+#include <boost/dynamic_bitset.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <map>
@@ -110,8 +112,8 @@ namespace evb {
     private:
 
       void resetMonitoringCounters();
-      void startProcessingWorkLoop();
-      bool assignEvents(toolbox::task::WorkLoop*);
+      void createProcessingWorkLoops();
+      bool allocateEvents(toolbox::task::WorkLoop*);
       void getApplicationDescriptors();
       void fillRUInstance(xdata::UnsignedInteger32 instance);
 
@@ -121,15 +123,22 @@ namespace evb {
       toolbox::mem::Pool* fastCtrlMsgPool_;
 
       typedef OneToOneQueue<readoutunit::FragmentRequestPtr> AllocateFIFO;
-      AllocateFIFO allocateFIFO_;
+      typedef boost::shared_ptr<AllocateFIFO> AllocateFIFOPtr;
+      typedef std::vector<AllocateFIFOPtr> AllocateFIFOs;
+      AllocateFIFOs allocateFIFOs_;
+      uint32_t numberOfAllocators_;
 
-      bool doProcessing_;
-      bool assignEventsActive_;
-
-      toolbox::task::WorkLoop* assignEventsWL_;
-      toolbox::task::ActionSignature* assignEventsAction_;
+      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
+      WorkLoops workLoops_;
+      toolbox::task::ActionSignature* allocateAction_;
+      volatile bool doProcessing_;
+      boost::dynamic_bitset<> allocateActive_;
+      mutable boost::mutex allocateActiveMutex_;
+      boost::mutex postFrameMutex_;
 
       I2O_TID tid_;
+
+      typedef std::vector<ApplicationDescriptorAndTid> ApplicationDescriptorsAndTids;
       ApplicationDescriptorsAndTids participatingRUs_;
       std::vector<I2O_TID> ruTids_;
 

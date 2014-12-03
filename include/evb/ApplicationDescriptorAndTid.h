@@ -1,8 +1,6 @@
 #ifndef _evb_ApplicationDescriptorAndTid_h_
 #define _evb_ApplicationDescriptorAndTid_h_
 
-#include <set>
-
 #include "i2o/i2oDdmLib.h"
 #include "xdaq/ApplicationDescriptor.h"
 
@@ -35,9 +33,15 @@ namespace evb {
       if ( a.descriptor != b.descriptor ) return ( a.descriptor < b.descriptor );
       return ( a.tid < b.tid );
     }
-  };
 
-  typedef std::set<ApplicationDescriptorAndTid> ApplicationDescriptorsAndTids;
+    friend bool operator==(
+      const ApplicationDescriptorAndTid& a,
+      const ApplicationDescriptorAndTid& b
+    )
+    {
+      return ( a.descriptor == b.descriptor && a.tid == b.tid );
+    }
+  };
 
 } // namespace evb
 
