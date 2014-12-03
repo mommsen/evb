@@ -102,7 +102,7 @@ namespace evb {
     {
       masterStream_ = ferolStreams_.end();
 
-      if ( ferolStreams_.empty() ) return;
+      if ( ferolStreams_.empty() || readoutUnit_->getConfiguration()->dropInputData ) return;
 
       boost::function< uint32_t(const unsigned char*) > lumiSectionFunction = 0;
 
