@@ -61,7 +61,7 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent(const uint32_t checkCRC) const;
+      void checkEvent(const uint32_t& checkCRC) const;
 
       /**
        * Write the event to disk using the handler passed
@@ -129,18 +129,18 @@ namespace evb {
       public:
         FedInfo(const unsigned char* pos, uint32_t& remainingLength);
         void addDataChunk(const unsigned char* pos, uint32_t& remainingLength);
-        void checkData(const uint32_t eventNumber, const bool computeCRC) const;
+        void checkData(const uint32_t& eventNumber, const bool computeCRC) const;
 
         bool complete() const { return (remainingFedSize_ == 0); }
 
-        uint32_t eventId()  const { return FED_LVL1_EXTRACT(header()->eventid); }
-        uint16_t fedId()    const { return FED_SOID_EXTRACT(header()->sourceid); }
-        uint32_t fedSize()  const { return FED_EVSZ_EXTRACT(trailer()->eventsize)<<3; }
-        uint16_t crc()      const { return FED_CRCS_EXTRACT(trailer()->conscheck); }
+        uint32_t eventId()  const { return (header_?FED_LVL1_EXTRACT(header_->eventid):0); }
+        uint16_t fedId()    const { return (header_?FED_SOID_EXTRACT(header_->sourceid):0); }
+        uint32_t fedSize()  const { return FED_EVSZ_EXTRACT(trailer_->eventsize)<<3; }
+        uint16_t crc()      const { return FED_CRCS_EXTRACT(trailer_->conscheck); }
 
       private:
-        fedh_t* header() const;
-        fedt_t* trailer() const;
+        fedh_t* header_;
+        fedt_t* trailer_;
 
         DataLocations fedData_;
         uint32_t remainingFedSize_;

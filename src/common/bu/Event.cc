@@ -149,7 +149,7 @@ void evb::bu::Event::writeToDisk
 }
 
 
-void evb::bu::Event::checkEvent(const uint32_t checkCRC) const
+void evb::bu::Event::checkEvent(const uint32_t& checkCRC) const
 {
   if ( ! isComplete() )
   {
@@ -279,24 +279,19 @@ evb::CRCCalculator evb::bu::Event::FedInfo::crcCalculator_;
 
 evb::bu::Event::FedInfo::FedInfo(const unsigned char* pos, uint32_t& remainingLength)
 {
-  fedt_t* trailer = (fedt_t*)(pos + remainingLength - sizeof(fedt_t));
+  trailer_ = (fedt_t*)(pos + remainingLength - sizeof(fedt_t));
 
-  if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
-  {
-    std::ostringstream oss;
-    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << std::hex << trailer->eventsize;
-    oss << " and conscheck 0x" << std::hex << trailer->conscheck;
-    oss << " at offset 0x" << std::hex << remainingLength;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
-  }
-
-  const uint32_t fedSize = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
+  const uint32_t fedSize = FED_EVSZ_EXTRACT(trailer_->eventsize)<<3;
   const uint32_t length = std::min(fedSize,remainingLength);
   remainingFedSize_ = fedSize - length;
   remainingLength -= length;
 
   fedData_.push_back(DataLocationPtr( new DataLocation(pos+remainingLength,length) ));
+
+  if ( complete() )
+    header_ = (fedh_t*)(pos+remainingLength);
+  else
+    header_ = 0;
 }
 
 
@@ -306,21 +301,24 @@ void evb::bu::Event::FedInfo::addDataChunk(const unsigned char* pos, uint32_t& r
   remainingFedSize_ -= length;
   remainingLength -= length;
   fedData_.push_back(DataLocationPtr( new DataLocation(pos+remainingLength,length) ));
+
+  if ( complete() )
+    header_ = (fedh_t*)(pos+remainingLength);
 }
 
 
-void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool computeCRC) const
+void evb::bu::Event::FedInfo::checkData(const uint32_t& eventNumber, const bool computeCRC) const
 {
-  if ( FED_HCTRLID_EXTRACT(header()->eventid) != FED_SLINK_START_MARKER )
+  if ( FED_HCTRLID_EXTRACT(header_->eventid) != FED_SLINK_START_MARKER )
   {
     std::ostringstream oss;
     oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-    oss << " but got event id 0x" << std::hex << header()->eventid;
-    oss << " and source id 0x" << std::hex << header()->sourceid;
+    oss << " but got event id 0x" << std::hex << header_->eventid;
+    oss << " and source id 0x" << std::hex << header_->sourceid;
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  if (eventId() != eventNumber)
+  if ( eventId() != eventNumber )
   {
     std::ostringstream oss;
     oss << "FED header \"eventid\" " << eventId() << " does not match";
@@ -335,13 +333,12 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  // recheck the trailer to assure that the fedData is correct
-  if ( FED_TCTRLID_EXTRACT(trailer()->eventsize) != FED_SLINK_END_MARKER )
+  if ( FED_TCTRLID_EXTRACT(trailer_->eventsize) != FED_SLINK_END_MARKER )
   {
     std::ostringstream oss;
     oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << std::hex << trailer()->eventsize;
-    oss << " and conscheck 0x" << std::hex << trailer()->conscheck;
+    oss << " but got event size 0x" << std::hex << trailer_->eventsize;
+    oss << " and conscheck 0x" << std::hex << trailer_->conscheck;
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
@@ -349,8 +346,8 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
   {
     // Force C,F,R & CRC field to zero before re-computing the CRC.
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-    const uint32_t conscheck = trailer()->conscheck;
-    trailer()->conscheck &= ~(FED_CRCS_MASK | 0xC004);
+    const uint32_t conscheck = trailer_->conscheck;
+    trailer_->conscheck &= ~(FED_CRCS_MASK | 0xC004);
 
     uint16_t crc(0xffff);
     for (DataLocations::const_reverse_iterator rit = fedData_.rbegin(), ritEnd = fedData_.rend();
@@ -359,7 +356,7 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
       crcCalculator_.compute(crc,(*rit)->location,(*rit)->length);
     }
 
-    trailer()->conscheck = conscheck;
+    trailer_->conscheck = conscheck;
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
 
     if ( trailerCRC != crc )
@@ -371,21 +368,6 @@ void evb::bu::Event::FedInfo::checkData(const uint32_t eventNumber, const bool c
       XCEPT_RAISE(exception::CRCerror, oss.str());
     }
   }
-}
-
-
-inline
-fedh_t* evb::bu::Event::FedInfo::header() const
-{
-  return (fedh_t*)(fedData_.back()->location);
-}
-
-
-inline
-fedt_t* evb::bu::Event::FedInfo::trailer() const
-{
-  const DataLocationPtr loc = fedData_.front();
-  return (fedt_t*)(loc->location + loc->length - sizeof(fedt_t));
 }
 
 
