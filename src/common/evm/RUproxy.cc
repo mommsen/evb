@@ -216,7 +216,7 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
         boost::mutex::scoped_lock sl(allocateActiveMutex_);
         allocateActive_.reset(id);
       }
-      ::usleep(1000);
+      ::usleep(100);
     }
     catch(xcept::Exception& e)
     {
