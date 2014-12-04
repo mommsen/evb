@@ -221,6 +221,7 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 ) :
 readoutUnit_(readoutUnit),
 runNumber_(0),
+incompleteEvents_(0),
 lastMonitoringTime_(0)
 {}
 
