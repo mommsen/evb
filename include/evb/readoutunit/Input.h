@@ -709,15 +709,18 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
 
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
+    table.add(tr()
+              .add(td("evt number of last super fragment"))
+              .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));
     table.add(tr().set("title","Number of successfully built super fragments")
               .add(td("# super fragments"))
               .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.eventCount))));
     table.add(tr()
               .add(td("# incomplete super fragments"))
-              .add(td(boost::lexical_cast<std::string>(incompleteEvents_))));
+              .add(td(boost::lexical_cast<std::string>(incompleteSuperFragmentCount_.value_))));
     table.add(tr()
-              .add(td("evt number of last super fragment"))
-              .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.lastEventNumber))));
+              .add(td("# events with missing FEDs"))
+              .add(td(boost::lexical_cast<std::string>(incompleteEvents_))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
