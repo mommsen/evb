@@ -142,6 +142,7 @@ namespace evb {
       void eventCompletedForLumiSection(const uint32_t lumiSection);
       void configureDiskUsageMonitors();
       float getAvailableResources();
+      float getOverThreshold();
       void updateResources();
 
       BU* bu_;
