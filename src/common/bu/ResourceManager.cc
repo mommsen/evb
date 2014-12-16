@@ -343,6 +343,7 @@ float evb::bu::ResourceManager::getAvailableResources()
   if ( resourceDirectory_.empty() ) return nbResources_;
 
   uint32_t coreCount = 0;
+  uint32_t currentLumiSection = 0;
   boost::filesystem::directory_iterator dirIter(resourceDirectory_);
 
   while ( dirIter != boost::filesystem::directory_iterator() )
@@ -375,15 +376,23 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
 
   fuCoresAvailable_ = coreCount;
-  const float resourcesFromCores = coreCount * configuration_->resourcesPerCore;
+  currentLumiSectionOnFUs_ = currentLumiSection;
 
-  return ( resourcesFromCores > nbResources_ ? nbResources_ : resourcesFromCores );
+  if ( oldestIncompleteLumiSection_ > currentLumiSection + configuration_->maxFuLumiSectionLatency )
+  {
+    return 0;
+  }
+  else
+  {
+    const float resourcesFromCores = coreCount * configuration_->resourcesPerCore;
+    return std::min(resourcesFromCores,static_cast<float>(nbResources_));
+  }
 }
 
 
-void evb::bu::ResourceManager::updateResources()
+float evb::bu::ResourceManager::getOverThreshold()
 {
-  if ( diskUsageMonitors_.empty() ) return;
+  if ( diskUsageMonitors_.empty() ) return 0;
 
   float overThreshold = 0;
 
@@ -407,6 +416,14 @@ void evb::bu::ResourceManager::updateResources()
 
     overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
+
+  return overThreshold;
+}
+
+
+void evb::bu::ResourceManager::updateResources()
+{
+  const float overThreshold = getOverThreshold();
 
   if ( overThreshold >= 1 )
   {

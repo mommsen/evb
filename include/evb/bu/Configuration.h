@@ -29,6 +29,7 @@ namespace evb {
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
       xdata::Double resourcesPerCore;                      // Number of resource IDs per active FU core
+      xdata::UnsignedInteger32 maxFuLumiSectionLatency;    // Maximum number of lumi sections the FUs may lag behind
       xdata::UnsignedInteger32 staleResourceTime;          // Number of seconds after which a FU resource is no longer considered
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
       xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
@@ -57,6 +58,7 @@ namespace evb {
           maxEvtsUnderConstruction(256),
           eventsPerRequest(8),
           resourcesPerCore(0.1),
+          maxFuLumiSectionLatency(3),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
           dropEventData(false),
@@ -92,6 +94,7 @@ namespace evb {
         params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("resourcesPerCore", &resourcesPerCore);
+        params.add("maxFuLumiSectionLatency", &maxFuLumiSectionLatency);
         params.add("staleResourceTime", &staleResourceTime);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);
