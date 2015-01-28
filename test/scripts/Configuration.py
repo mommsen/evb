@@ -198,7 +198,6 @@ class RU(Context):
                 ) )
         return ('ferolSources','Struct',ferolSources)
 
-
     def getConfigForPtFrl(self):
         global id
         routing = []
@@ -208,6 +207,13 @@ class RU(Context):
                     return ""
                 if param[0] == 'ferolSources':
                     for ferolSource in param[2]:
+                        routing.append( (
+                            ('fedid','string',str(ferolSource[0][2])),
+                            ('className','string',self.apps['app']),
+                            ('instance','string',str(self.apps['instance']))
+                            ) )
+                elif param[0] == 'fedSourceIds':
+                    for fedId in param[2]:
                         routing.append( (
                             ('fedid','string',str(ferolSource[0][2])),
                             ('className','string',self.apps['app']),
