@@ -8,6 +8,7 @@
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "xdaq/ApplicationContext.h"
+#include "xdata/Bag.h"
 #include "xdata/Boolean.h"
 #include "xdata/Double.h"
 #include "xdata/String.h"
@@ -25,6 +26,21 @@ namespace evb {
      */
     struct Configuration
     {
+      struct FerolSource
+      {
+        xdata::UnsignedInteger32 fedId;
+        xdata::String hostname;
+        xdata::UnsignedInteger32 port;
+
+        void registerFields(xdata::Bag<FerolSource>* bag)
+        {
+          bag->addField("fedId",&fedId);
+          bag->addField("hostname",&hostname);
+          bag->addField("port",&port);
+        }
+      };
+      typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
+
       xdata::String sendPoolName;                            // The pool name used for evb messages
       xdata::String inputSource;                             // Input mode selection: FEROL or Local
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
@@ -47,7 +63,8 @@ namespace evb {
       xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
-      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
+      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids (depreciated)
+      FerolSources ferolSources;                             // Vector of FEROL sources
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
@@ -87,7 +104,7 @@ namespace evb {
         xdaq::ApplicationContext* context
       )
       {
-        fillDefaultFedSourceIds(instance);
+        fillDefaultFerolSources(instance);
 
         params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource);
@@ -111,15 +128,20 @@ namespace evb {
         params.add("scalFedId", &scalFedId);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("frameSize", &frameSize);
-        params.add("fedSourceIds", &fedSourceIds);
+        params.add("fedSourceIds", &fedSourceIds, InfoSpaceItems::change);
+        params.add("ferolSources", &ferolSources);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 
-      void fillDefaultFedSourceIds(const uint32_t instance)
+      void fillDefaultFerolSources(const uint32_t instance)
       {
         fedSourceIds.clear();
+        ferolSources.clear();
+        xdata::Bag<FerolSource> ferolSource;
+        ferolSource.bag.hostname = "localhost";
+        ferolSource.bag.port = 9999;
 
         // Default is 12 FEDs per super-fragment
         // RU0 has 0 to 11, RU1 has 12 to 23, etc.
@@ -127,7 +149,23 @@ namespace evb {
         const uint32_t lastSourceId  = (instance * 12) + 11;
         for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
         {
+          ferolSource.bag.fedId = sourceId;
+          ferolSources.push_back(ferolSource);
           fedSourceIds.push_back(sourceId);
+        }
+      }
+
+      void populateFerolSourcesFromSourceIds()
+      {
+        ferolSources.clear();
+        xdata::Bag<FerolSource> ferolSource;
+        ferolSource.bag.hostname = "localhost";
+        ferolSource.bag.port = 9999;
+        for (xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = fedSourceIds.begin(), itEnd = fedSourceIds.end();
+             it != itEnd; ++it)
+        {
+          ferolSource.bag.fedId = it->value_;
+          ferolSources.push_back(ferolSource);
         }
       }
     };
