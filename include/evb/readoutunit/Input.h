@@ -243,8 +243,13 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
     std::ostringstream msg;
     msg << "The received FED id " << fedFragment->getFedId();
     msg << " is not in the excepted FED list: ";
-    std::copy(readoutUnit_->getConfiguration()->fedSourceIds.begin(), readoutUnit_->getConfiguration()->fedSourceIds.end(),
-              std::ostream_iterator<uint16_t>(msg," "));
+
+    typename Configuration::FerolSources::const_iterator it, itEnd;
+    for (it = readoutUnit_->getConfiguration()->ferolSources.begin(),
+           itEnd = readoutUnit_->getConfiguration()->ferolSources.end(); it != itEnd; ++it)
+    {
+      msg << it->bag.fedId.value_ << " ";
+    }
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
@@ -598,11 +603,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
 
     ferolStreams_.clear();
-    xdata::Vector<xdata::UnsignedInteger32>::const_iterator it, itEnd;
-    for (it = configuration->fedSourceIds.begin(), itEnd = configuration->fedSourceIds.end();
-         it != itEnd; ++it)
+    typename Configuration::FerolSources::const_iterator it, itEnd;
+    for (it = configuration->ferolSources.begin(),
+           itEnd = configuration->ferolSources.end(); it != itEnd; ++it)
     {
-      const uint16_t fedId = it->value_;
+      const uint16_t fedId = it->bag.fedId.value_;
       if (fedId > FED_COUNT)
       {
         std::ostringstream oss;
