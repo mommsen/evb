@@ -186,7 +186,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   }
   else if (item == "fedSourceIds")
   {
-    this->getConfiguration()->maskFerolSourcesFromSourceIds();
+    this->getConfiguration()->populateFerolSourcesFromSourceIds();
   }
   else
   {
