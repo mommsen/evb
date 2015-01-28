@@ -26,9 +26,8 @@ class case_1x1_ferol_1xdaq(TestCase):
              ('lumiSectionTimeout','unsignedInt','0')
             ])
         evm = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',(512,))
-            ],(bu,))
+             ('inputSource','string','FEROL')
+            ],(512,),(bu,))
         self._config.add( FEROL(symbolMap,evm,[
              ('fedId','unsignedInt','512')
              ]) )
