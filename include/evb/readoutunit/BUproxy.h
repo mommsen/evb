@@ -787,13 +787,10 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td("# of active responders"))
               .add(td(boost::lexical_cast<std::string>(nbActiveProcesses_))));
 
-    const int32_t outstandingEvents = dataMonitoring_.outstandingEvents;
-    if ( outstandingEvents >= 0 )
-    {
-      table.add(tr()
-                .add(td("# of outstanding events"))
-                .add(td(boost::lexical_cast<std::string>(outstandingEvents))));
-    }
+    // outstanding events is negative for the RUs, but positive for the EVM
+    table.add(tr()
+              .add(td("# of outstanding events"))
+              .add(td(boost::lexical_cast<std::string>(abs(dataMonitoring_.outstandingEvents)))));
 
     table.add(tr()
               .add(th("Event data").set("colspan","2")));
