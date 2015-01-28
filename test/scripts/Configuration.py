@@ -166,7 +166,9 @@ class FEROL(Context):
 class RU(Context):
     instance = 0
 
-    def __init__(self,symbolMap,params,nestedContexts=()):
+    def __init__(self,symbolMap,params,fedSourceIds=None,nestedContexts=()):
+        if fedSourceIds:
+            params.append( self.getFerolSources(fedSourceIds) );
         Context.__init__(self,params,nestedContexts)
         if RU.instance == 0:
             self.apps['app'] = "evb::EVM"
@@ -185,6 +187,16 @@ class RU(Context):
         RU.instance = 0
 
 
+    def getFerolSources(self, fedSourceIds):
+        ferolSources = []
+        for fedId in fedSourceIds:
+            ferolSources.append( (
+                ('fedId','unsignedInt',fedId),
+                ('hostname','string','localhost'),
+                ('port','unsignedInt',9999)
+                ) )
+        return ('ferolSources','Struct',ferolSources)
+
     def getConfigForPtFrl(self):
         global id
         routing = []
@@ -192,7 +204,14 @@ class RU(Context):
             try:
                 if param[0] == 'inputSource' and param[2] == 'Local':
                     return ""
-                if param[0] == 'fedSourceIds':
+                if param[0] == 'ferolSources':
+                    for ferolSource in param[2]:
+                        routing.append( (
+                            ('fedid','string',str(ferolSource[0][2])),
+                            ('className','string',self.apps['app']),
+                            ('instance','string',str(self.apps['instance']))
+                            ) )
+                elif param[0] == 'fedSourceIds':
                     for fedId in param[2]:
                         routing.append( (
                             ('fedid','string',str(fedId)),
