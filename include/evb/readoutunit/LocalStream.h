@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include "evb/EvBid.h"
-#include "evb/FedFragment.h"
 #include "evb/FragmentTracker.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"
@@ -170,8 +170,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {
-        FedFragmentPtr fedFragment( new FedFragment(bufRef) );
-        fedFragment->setEvBid(evbId);
+        FedFragmentPtr fedFragment( new FedFragment(this->fedId_,evbId,bufRef) );
         this->addFedFragmentWithEvBid(fedFragment);
         evbId = this->evbIdFactory_.getEvBid();
       }
@@ -229,29 +228,21 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
   const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   assert(ferolBlocks < 2048);
   const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
-  const uint32_t frameSize = ferolSize + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   uint32_t remainingFedSize = fedSize;
 
   try
   {
     bufRef = toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fragmentPool_,frameSize);
+      getFrame(fragmentPool_,ferolSize);
   }
   catch(xcept::Exception)
   {
     return false;
   }
 
-  bufRef->setDataSize(frameSize);
+  bufRef->setDataSize(ferolSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  memset(payload, 0, frameSize);
-  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-  frame->totalLength = ferolSize;
-  frame->fedid = this->fedId_;
-  frame->triggerno = evbId.eventNumber();
-  uint32_t partLength = 0;
-
-  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  memset(payload, 0, ferolSize);
 
   for (uint16_t packetNumber=0; packetNumber < ferolBlocks; ++packetNumber)
   {
@@ -281,10 +272,8 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
     ferolHeader->set_data_length(filledBytes);
 
     payload += filledBytes;
-    partLength += filledBytes + sizeof(ferolh_t);
   }
 
-  frame->partLength = partLength;
   assert( remainingFedSize == 0 );
 
   return true;

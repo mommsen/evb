@@ -62,7 +62,6 @@ namespace evb {
       xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
       xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
-      xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids (depreciated)
       FerolSources ferolSources;                             // Vector of FEROL sources
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
@@ -91,7 +90,6 @@ namespace evb {
           dummyScalFedSize(0),
           scalFedId(999),
           fragmentPoolSize(200000000),
-          frameSize(32768),
           tolerateCorruptedEvents(false),
           maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
@@ -127,7 +125,6 @@ namespace evb {
         params.add("dummyScalFedSize", &dummyScalFedSize);
         params.add("scalFedId", &scalFedId);
         params.add("fragmentPoolSize", &fragmentPoolSize);
-        params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds, InfoSpaceItems::change);
         params.add("ferolSources", &ferolSources);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);

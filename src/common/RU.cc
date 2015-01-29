@@ -40,7 +40,7 @@ namespace evb {
         for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
         {
           const EvBid& evbId = fragmentRequest->evbIds.at(i);
-          FragmentChainPtr superFragment;
+          SuperFragmentPtr superFragment;
 
           while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) )
           {
