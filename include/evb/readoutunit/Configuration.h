@@ -31,12 +31,14 @@ namespace evb {
         xdata::UnsignedInteger32 fedId;
         xdata::String hostname;
         xdata::UnsignedInteger32 port;
+        xdata::Boolean active;
 
         void registerFields(xdata::Bag<FerolSource>* bag)
         {
           bag->addField("fedId",&fedId);
           bag->addField("hostname",&hostname);
           bag->addField("port",&port);
+          bag->addField("active",&active);
         }
       };
       typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
@@ -62,7 +64,7 @@ namespace evb {
       xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
       xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
-      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids (depreciated)
+      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
@@ -139,6 +141,7 @@ namespace evb {
         xdata::Bag<FerolSource> ferolSource;
         ferolSource.bag.hostname = "localhost";
         ferolSource.bag.port = 9999;
+        ferolSource.bag.active = true;
 
         // Default is 12 FEDs per super-fragment
         // RU0 has 0 to 11, RU1 has 12 to 23, etc.
@@ -152,17 +155,41 @@ namespace evb {
         }
       }
 
-      void populateFerolSourcesFromSourceIds()
+      void maskFerolSourcesFromSourceIds()
       {
-        ferolSources.clear();
+        for (FerolSources::iterator it = ferolSources.begin(), itEnd = ferolSources.end();
+               it != itEnd; ++it)
+        {
+          if ( std::find(fedSourceIds.begin(),fedSourceIds.end(),it->bag.fedId) == fedSourceIds.end() )
+            it->bag.active = false;
+          else
+            it->bag.active = true;
+        }
+
+        // Hack for backward compatibilty
         xdata::Bag<FerolSource> ferolSource;
         ferolSource.bag.hostname = "localhost";
         ferolSource.bag.port = 9999;
-        for (xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = fedSourceIds.begin(), itEnd = fedSourceIds.end();
-             it != itEnd; ++it)
+        ferolSource.bag.active = true;
+
+        for (xdata::Vector<xdata::UnsignedInteger32>::const_iterator fedId = fedSourceIds.begin(), fedIdEnd = fedSourceIds.end();
+             fedId != fedIdEnd; ++fedId)
         {
-          ferolSource.bag.fedId = it->value_;
-          ferolSources.push_back(ferolSource);
+          bool found = false;
+          for (FerolSources::iterator it = ferolSources.begin(), itEnd = ferolSources.end();
+               it != itEnd; ++it)
+          {
+            if ( it->bag.fedId == fedId->value_ )
+            {
+              found = true;
+              break;
+            }
+          }
+          if ( ! found )
+          {
+             ferolSource.bag.fedId = fedId->value_;
+             ferolSources.push_back(ferolSource);
+          }
         }
       }
     };
