@@ -1,62 +1,109 @@
 #include <sstream>
 
 #include "evb/Constants.h"
+#include "evb/DumpUtility.h"
 #include "evb/Exception.h"
-#include "evb/FedFragment.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::CRCCalculator evb::FedFragment::crcCalculator_;
+evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
 
-evb::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-  : isCorrupted_(false),bufRef_(bufRef),cache_(cache)
+evb::readoutunit::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+  : fedSize_(0),isCorrupted_(false),bufRef_(bufRef),cache_(cache)
 {
   assert(bufRef);
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   fedId_ = msg->fedid;
   eventNumber_ = msg->triggerno;
+  payload_ = ((unsigned char*)msg)+sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  length_ = msg->partLength;
+  assert( length_ == msg->totalLength );
 }
 
 
-evb::FedFragment::~FedFragment()
+evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
+  : fedId_(fedId),evbId_(evbId),fedSize_(0),isCorrupted_(false),
+    bufRef_(bufRef),cache_(0)
 {
-  // break any chain
-  bufRef_->setNextReference(0);
-  if ( cache_ )
-    cache_->grantFrame(bufRef_);
+  eventNumber_ = evbId.eventNumber();
+  payload_ = (unsigned char*)bufRef->getDataLocation();
+  length_ = bufRef->getDataSize();
+}
+
+
+evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length)
+  : fedId_(fedId),eventNumber_(eventNumber),fedSize_(0),isCorrupted_(false),
+    payload_(payload),length_(length),bufRef_(0),cache_(0)
+{}
+
+
+evb::readoutunit::FedFragment::~FedFragment()
+{
+  if ( bufRef_ )
+  {
+    // break any chain
+    bufRef_->setNextReference(0);
+    if ( cache_ )
+      cache_->grantFrame(bufRef_);
+    else
+      bufRef_->release();
+  }
   else
-    bufRef_->release();
+  {
+    // TODO: release payload
+  }
 }
 
 
-unsigned char* evb::FedFragment::getFedPayload() const
+unsigned char* evb::readoutunit::FedFragment::getFedPayload() const
 {
-  return (unsigned char*)(bufRef_->getDataLocation())
-    + sizeof(I2O_DATA_READY_MESSAGE_FRAME) + sizeof(ferolh_t);
+  return payload_ + sizeof(ferolh_t);
 }
 
 
-void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, const uint32_t checkCRC)
+uint32_t evb::readoutunit::FedFragment::getFedSize()
 {
-  toolbox::mem::Reference* currentBufRef = bufRef_;
-  unsigned char* payload = (unsigned char*)currentBufRef->getDataLocation();
-  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-  uint32_t payloadSize = frame->partLength;
+  if ( fedSize_ == 0 )
+    calculateSize();
+  return fedSize_;
+}
 
-  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
 
-  uint16_t crc = 0xffff;
-  const bool computeCRC = ( checkCRC > 0 && eventNumber_ % checkCRC == 0 );
-  fedSize = 0;
-  uint32_t usedSize = 0;
+void evb::readoutunit::FedFragment::calculateSize()
+{
+  fedSize_ = 0;
+  uint32_t ferolOffset = 0;
   ferolh_t* ferolHeader;
 
   do
   {
-    ferolHeader = (ferolh_t*)payload;
+    ferolHeader = (ferolh_t*)(payload_ + ferolOffset);
+    assert( ferolHeader->signature() == FEROL_SIGNATURE );
+
+    const uint32_t dataLength = ferolHeader->data_length();
+    fedSize_ += dataLength;
+    ferolOffset += dataLength + sizeof(ferolh_t);
+  }
+  while ( !ferolHeader->is_last_packet() && ferolOffset < length_ );
+}
+
+
+void evb::readoutunit::FedFragment::checkIntegrity(FedErrors& fedErrors, const uint32_t checkCRC)
+{
+  uint16_t crc = 0xffff;
+  const bool computeCRC = ( checkCRC > 0 && eventNumber_ % checkCRC == 0 );
+  fedSize_ = 0;
+  uint32_t usedSize = 0;
+  unsigned char* pos = payload_;
+  ferolh_t* ferolHeader;
+
+  do
+  {
+    ferolHeader = (ferolh_t*)pos;
 
     if ( ferolHeader->signature() != FEROL_SIGNATURE )
     {
@@ -91,11 +138,11 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
       XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
 
-    payload += sizeof(ferolh_t);
+    pos += sizeof(ferolh_t);
 
     if ( ferolHeader->is_first_packet() )
     {
-      const fedh_t* fedHeader = (fedh_t*)payload;
+      const fedh_t* fedHeader = (fedh_t*)pos;
 
       if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
       {
@@ -138,62 +185,18 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
     if ( computeCRC )
     {
       if ( ferolHeader->is_last_packet() )
-        crcCalculator_.compute(crc,payload,dataLength-sizeof(fedt_t)); // omit the FED trailer
+        crcCalculator_.compute(crc,pos,dataLength-sizeof(fedt_t)); // omit the FED trailer
       else
-        crcCalculator_.compute(crc,payload,dataLength);
+        crcCalculator_.compute(crc,pos,dataLength);
     }
 
-    payload += dataLength;
-    fedSize += dataLength;
+    pos += dataLength;
+    fedSize_ += dataLength;
     usedSize += dataLength + sizeof(ferolh_t);
-
-    if ( usedSize >= payloadSize && !ferolHeader->is_last_packet() )
-    {
-      usedSize -= payloadSize;
-      currentBufRef = currentBufRef->getNextReference();
-
-      if ( ! currentBufRef )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream msg;
-        msg << "Premature end of FEROL data for FED " << fedId_ << ":";
-        msg << " expected " << usedSize << " more Bytes,";
-        msg << " but toolbox::mem::Reference chain has ended";
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-
-      payload = (unsigned char*)currentBufRef->getDataLocation();
-      frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-      payloadSize = frame->partLength;
-      payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-      if ( fedId_ != frame->fedid )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream msg;
-        msg << "Inconsistent FED id:";
-        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from FED id " << fedId_;
-        msg << " while the current has FED id " << frame->fedid;
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-
-      if ( eventNumber_ != frame->triggerno )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream msg;
-        msg << "Inconsistent event number for FED " << fedId_ << ":";
-        msg << " first I2O_DATA_READY_MESSAGE_FRAME was from event " << eventNumber_;
-        msg << " while the current is from event " << frame->triggerno;
-        XCEPT_RAISE(exception::DataCorruption, msg.str());
-      }
-    }
   }
   while ( !ferolHeader->is_last_packet() );
 
-  fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
+  fedt_t* trailer = (fedt_t*)(pos - sizeof(fedt_t));
 
   if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
   {
@@ -204,19 +207,19 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
     oss << " but got event size 0x" << trailer->eventsize;
     oss << " and conscheck 0x" << trailer->conscheck;
     oss << " for FED " << std::dec << fedId_;
-    oss << " with expected size " << fedSize << " Bytes";
+    oss << " with expected size " << fedSize_ << " Bytes";
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
   const uint32_t evsz = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
-  if ( evsz != fedSize )
+  if ( evsz != fedSize_ )
   {
     isCorrupted_ = true;
     ++fedErrors.corruptedEvents;
     std::ostringstream oss;
     oss << "Inconsistent event size for FED " << fedId_ << ":";
     oss << " FED trailer claims " << evsz << " Bytes,";
-    oss << " while sum of FEROL headers yield " << fedSize;
+    oss << " while sum of FEROL headers yield " << fedSize_;
     if (trailer->conscheck & 0x8004)
     {
       oss << ". Trailer indicates that " << trailerBitToString(trailer->conscheck);
@@ -230,7 +233,7 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     const uint32_t conscheck = trailer->conscheck;
     trailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
-    crcCalculator_.compute(crc,payload-sizeof(fedt_t),sizeof(fedt_t));
+    crcCalculator_.compute(crc,pos-sizeof(fedt_t),sizeof(fedt_t));
     trailer->conscheck = conscheck;
 
     const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
@@ -258,7 +261,7 @@ void evb::FedFragment::checkIntegrity(uint32_t& fedSize, FedErrors& fedErrors, c
 }
 
 
-std::string evb::FedFragment::trailerBitToString(const uint32_t conscheck) const
+std::string evb::readoutunit::FedFragment::trailerBitToString(const uint32_t conscheck) const
 {
   if ( conscheck & 0x4 ) // FED CRC error (R bit)
   {
@@ -275,6 +278,25 @@ std::string evb::FedFragment::trailerBitToString(const uint32_t conscheck) const
   return "";
 }
 
+void evb::readoutunit::FedFragment::dump
+(
+  std::ostream& s,
+  const std::string& reasonForDump
+)
+{
+  s << "==================== DUMP ======================" << std::endl;
+  s << "Reason for dump: " << reasonForDump << std::endl;
+
+  s << "Buffer data location (hex): " << toolbox::toString("%x", getPayload()) << std::endl;
+  s << "Buffer data size     (dec): " << getLength() << std::endl;
+  s << "FED size             (dec): " << getFedSize() << std::endl;
+  s << "FED id               (dec): " << getFedId() << std::endl;
+  s << "Trigger no           (dec): " << getEventNumber() << std::endl;
+  s << "EvB id                    : " << getEvBid() << std::endl;
+  DumpUtility::dumpBlockData(s, payload_, length_);
+
+  s << "================ END OF DUMP ===================" << std::endl;
+}
 
 
 /// emacs configuration

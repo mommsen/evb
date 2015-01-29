@@ -23,7 +23,6 @@
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 #include "evb/Exception.h"
-#include "evb/FragmentChain.h"
 #include "evb/FragmentTracker.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
@@ -76,18 +75,16 @@ namespace evb {
       /**
        * Get the next complete super fragment.
        * If none is available, the method returns false.
-       * Otherwise, the FragmentChainPtr holds the
-       * toolbox::mem::Reference chain to the FED fragements.
+       * Otherwise, the SuperFragmentPtr holds a vector of FED fragements.
        */
-      bool getNextAvailableSuperFragment(FragmentChainPtr&);
+      bool getNextAvailableSuperFragment(SuperFragmentPtr&);
 
       /**
        * Get the complete super fragment with EvBid.
        * If it is not available or complete, the method returns false.
-       * Otherwise, the FragmentChainPtr holds the
-       * toolbox::mem::Reference chain to the FED fragements.
+       * Otherwise, the SuperFragmentPtr holds a vector of FED fragements.
        */
-      bool getSuperFragmentWithEvBid(const EvBid&, FragmentChainPtr&);
+      bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&);
 
       /**
        * Get the number of events contained in the given lumi section
@@ -159,7 +156,7 @@ namespace evb {
 
       void setMasterStream();
       void resetMonitoringCounters();
-      void updateSuperFragmentCounters(const FragmentChainPtr&);
+      void updateSuperFragmentCounters(const SuperFragmentPtr&);
       void startDummySuperFragmentWorkLoop();
       bool buildDummySuperFragments(toolbox::task::WorkLoop*);
       cgicc::table getFedTable() const;
@@ -258,7 +255,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFragment(FragmentChainPtr& superFragment)
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFragment(SuperFragmentPtr& superFragment)
 {
   {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
@@ -266,7 +263,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 
     if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
 
-    superFragment.reset( new readoutunit::FragmentChain(fedFragment->getEvBid()) );
+    superFragment.reset( new SuperFragment(fedFragment->getEvBid()) );
     superFragment->append(fedFragment);
 
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
@@ -286,9 +283,9 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, FragmentChainPtr& superFragment)
+bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
 {
-  superFragment.reset( new readoutunit::FragmentChain(evbId) );
+  superFragment.reset( new SuperFragment(evbId) );
 
   {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
@@ -310,7 +307,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
 {
   if ( ferolStreams_.empty() ) return false;
 
-  FragmentChainPtr superFragment;
+  SuperFragmentPtr superFragment;
   FedFragmentPtr fedFragment;
 
   try
@@ -318,7 +315,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
     typename FerolStreams::iterator it = ferolStreams_.begin();
     if ( it->second->getNextFedFragment(fedFragment) )
     {
-      superFragment.reset( new readoutunit::FragmentChain(fedFragment->getEvBid()) );
+      superFragment.reset( new SuperFragment(fedFragment->getEvBid()) );
       superFragment->append(fedFragment);
 
       while ( ++it != ferolStreams_.end() )
@@ -343,7 +340,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCounters(const FragmentChainPtr& superFragment)
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCounters(const SuperFragmentPtr& superFragment)
 {
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
@@ -806,82 +803,27 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
 namespace evb
 {
-  template<>
-  inline uint32_t FragmentChain<I2O_DATA_READY_MESSAGE_FRAME>::calculateSize(toolbox::mem::Reference* bufRef) const
-  {
-    const unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-    const uint32_t payloadSize = ((I2O_DATA_READY_MESSAGE_FRAME*)payload)->partLength;
-    payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-    uint32_t fedSize = 0;
-    uint32_t ferolOffset = 0;
-    ferolh_t* ferolHeader;
-
-    do
-    {
-      ferolHeader = (ferolh_t*)(payload + ferolOffset);
-      assert( ferolHeader->signature() == FEROL_SIGNATURE );
-
-      const uint32_t dataLength = ferolHeader->data_length();
-      fedSize += dataLength;
-      ferolOffset += dataLength + sizeof(ferolh_t);
-    }
-    while ( !ferolHeader->is_last_packet() && ferolOffset < payloadSize );
-
-    return fedSize;
-  }
-
-
   namespace detail
   {
     template <>
     inline void formatter
     (
-      const readoutunit::FragmentChainPtr fragmentChain,
-      std::ostringstream* out
-    )
-    {
-      if ( fragmentChain.get() )
-      {
-        toolbox::mem::Reference* bufRef = fragmentChain->head();
-        if ( bufRef )
-        {
-          I2O_DATA_READY_MESSAGE_FRAME* msg =
-            (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-          *out << "I2O_DATA_READY_MESSAGE_FRAME:" << std::endl;
-          *out << "  FED id: " << msg->fedid << std::endl;
-          *out << "  trigger no: " << msg->triggerno << std::endl;
-          *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
-          *out << "  evbId: " << fragmentChain->getEvBid() << std::endl;
-        }
-      }
-      else
-        *out << "n/a";
-    }
-
-
-    template <>
-    inline void formatter
-    (
-      const FedFragmentPtr fragment,
+      const readoutunit::FedFragmentPtr fragment,
       std::ostringstream* out
     )
     {
       if ( fragment.get() )
       {
-        toolbox::mem::Reference* bufRef = fragment->getBufRef();
-        if ( bufRef )
-        {
-          I2O_DATA_READY_MESSAGE_FRAME* msg =
-            (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-          *out << "I2O_DATA_READY_MESSAGE_FRAME:" << std::endl;
-          *out << "  FED id: " << msg->fedid << std::endl;
-          *out << "  trigger no: " << msg->triggerno << std::endl;
-          *out << "  length: " << msg->partLength <<  "/" << msg->totalLength << std::endl;
-        }
+        *out << "FED fragment:" << std::endl;
+        *out << "  FED id: " << fragment->getFedId() << std::endl;
+        *out << "  trigger no: " << fragment->getEventNumber() << std::endl;
+        *out << "  length: " << fragment->getLength() << std::endl;
+        *out << "  FED size: " << fragment->getFedSize() << std::endl;
       }
       else
+      {
         *out << "n/a";
+      }
     }
   } // namespace detail
 }

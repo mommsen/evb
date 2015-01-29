@@ -18,11 +18,12 @@
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 #include "evb/Exception.h"
-#include "evb/FedFragment.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/InputMonitor.h"
 #include "evb/readoutunit/StateMachine.h"
+#include "evb/readoutunit/SuperFragment.h"
 #include "xcept/tools.h"
 #include "xdaq/ApplicationStub.h"
 
@@ -56,7 +57,7 @@ namespace evb {
       /**
        * Append the next FED fragment to the super fragment
        */
-      virtual void appendFedFragment(FragmentChainPtr&);
+      virtual void appendFedFragment(SuperFragmentPtr&);
 
       /**
        * Define the function to be used to extract the lumi section from the payload
@@ -121,7 +122,7 @@ namespace evb {
 
       void addFedFragmentWithEvBid(FedFragmentPtr&);
       void maybeDumpFragmentToFile(const FedFragmentPtr&);
-      void updateInputMonitor(const FedFragmentPtr&,const uint32_t fedSize);
+      void updateInputMonitor(const FedFragmentPtr&);
 
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
@@ -227,11 +228,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
 {
   if ( ! doProcessing_ ) return;
 
-  uint32_t fedSize = 0;
-
   try
   {
-    fedFragment->checkIntegrity(fedSize, fedErrors_, configuration_->checkCRC);
+    fedFragment->checkIntegrity(fedErrors_, configuration_->checkCRC);
   }
   catch(exception::DataCorruption& e)
   {
@@ -269,7 +268,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
       writeFragmentToFile(fedFragment,e.message());
   }
 
-  updateInputMonitor(fedFragment,fedSize);
+  updateInputMonitor(fedFragment);
   maybeDumpFragmentToFile(fedFragment);
 
   fragmentFIFO_.enqWait(fedFragment);
@@ -299,11 +298,11 @@ evb::EvBid evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getEvBid(co
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::updateInputMonitor
 (
-  const FedFragmentPtr& fragment,
-  uint32_t fedSize
+  const FedFragmentPtr& fragment
 )
 {
   boost::mutex::scoped_lock sl(inputMonitorMutex_);
+  const uint32_t fedSize = fragment->getFedSize();
 
   ++(inputMonitor_.perf.i2oCount);
   ++(inputMonitor_.perf.logicalCount);
@@ -341,7 +340,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::writeFragmentToFi
     << ".txt";
   std::ofstream dumpFile;
   dumpFile.open(fileName.str().c_str());
-  DumpUtility::dump(dumpFile, reasonForDump, fragment->getBufRef());
+  fragment->dump(dumpFile,reasonForDump);
   dumpFile.close();
 }
 
@@ -359,7 +358,7 @@ bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragmen
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment(FragmentChainPtr& superFragment)
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
   FedFragmentPtr fedFragment;
   while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
