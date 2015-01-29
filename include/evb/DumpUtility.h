@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <iostream>
 
-#include "toolbox/mem/Reference.h"
-
 
 namespace evb {
 
@@ -13,27 +11,11 @@ namespace evb {
   {
   public:
 
-    static void dump
-    (
-      std::ostream&,
-      const std::string& reasonForDump,
-      toolbox::mem::Reference*
-    );
-
     static void dumpBlockData
     (
       std::ostream&,
       const unsigned char* data,
       uint32_t len
-    );
-
-  private:
-
-    static void dumpBlock
-    (
-      std::ostream&,
-      toolbox::mem::Reference*,
-      const uint32_t bufferCnt
     );
 
   }; // class DumpUtility

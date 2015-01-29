@@ -13,13 +13,13 @@
 #include "cgicc/HTMLClasses.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
-#include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
 #include "evb/readoutunit/StateMachine.h"
+#include "evb/readoutunit/SuperFragment.h"
 #include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
 #include "i2o/utils/AddressMap.h"
@@ -108,7 +108,7 @@ namespace evb {
 
     private:
 
-      typedef std::vector<FragmentChainPtr> SuperFragments;
+      typedef std::vector<SuperFragmentPtr> SuperFragments;
 
       void resetMonitoringCounters();
       void startProcessingWorkLoop();
@@ -124,7 +124,7 @@ namespace evb {
         unsigned char*& payload,
         uint32_t& remainingPayloadSize,
         const uint32_t superFragmentNb,
-        const FragmentChainPtr& superFragment,
+        const SuperFragmentPtr& superFragment,
         const uint32_t currentFragmentSize
       ) const;
       bool isEmpty();
@@ -398,33 +398,28 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
-    const FragmentChainPtr superFragment = superFragments[i];
+    const SuperFragmentPtr superFragment = superFragments[i];
     uint32_t remainingSuperFragmentSize = superFragment->getSize();
 
     fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
 
-    toolbox::mem::Reference* currentFragment = superFragment->head();
+    const SuperFragment::FedFragments& fedFragments = superFragment->getFedFragments();
+    SuperFragment::FedFragments::const_iterator currentFragment = fedFragments.begin();
+    const SuperFragment::FedFragments::const_iterator lastFragment = fedFragments.end();
 
-    while ( currentFragment )
+    while ( currentFragment != lastFragment )
     {
       ferolh_t* ferolHeader;
-      uint32_t ferolOffset = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+      uint32_t ferolOffset = 0;
 
       do
       {
-        if ( ferolOffset > (currentFragment->getDataSize()) )
+        if ( ferolOffset > ((*currentFragment)->getLength()) )
         {
-          currentFragment = currentFragment->getNextReference();
-          ferolOffset = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-          if (currentFragment == 0)
-          {
-            XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer");
-          }
+          XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer");
         }
 
-        const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
-          + ferolOffset;
+        const unsigned char* ferolData = (*currentFragment)->getPayload() + ferolOffset;
 
         ferolHeader = (ferolh_t*)ferolData;
         assert( ferolHeader->signature() == FEROL_SIGNATURE );
@@ -467,7 +462,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
 
-      currentFragment = currentFragment->getNextReference();
+      ++currentFragment;
     }
   }
 
@@ -584,11 +579,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   unsigned char*& payload,
   uint32_t& remainingPayloadSize,
   const uint32_t superFragmentNb,
-  const FragmentChainPtr& superFragment,
+  const SuperFragmentPtr& superFragment,
   const uint32_t currentFragmentSize
 ) const
 {
-  const FragmentChain::MissingFedIds& missingFedIds = superFragment->getMissingFedIds();
+  const SuperFragment::MissingFedIds& missingFedIds = superFragment->getMissingFedIds();
   const uint16_t nbDroppedFeds = missingFedIds.size();
   const uint32_t headerSize = sizeof(msg::SuperFragment)
     + ((nbDroppedFeds-1 + 3) / 4) * sizeof(uint64_t);
