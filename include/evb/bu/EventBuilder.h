@@ -16,6 +16,7 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/Configuration.h"
 #include "evb/bu/Event.h"
+#include "evb/bu/FragmentChain.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/bu/StreamHandler.h"
 #include "toolbox/lang/Class.h"
