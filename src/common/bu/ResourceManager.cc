@@ -14,6 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 
 evb::bu::ResourceManager::ResourceManager
@@ -431,6 +432,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   nbTotalResources_ = 0;
   nbBlockedResources_ = 0;
   fuCoresAvailable_ = 0;
+  queuedLumiSectionsOnFUs_ = 0;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
 
@@ -444,6 +446,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbTotalResources", &nbTotalResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("fuCoresAvailable", &fuCoresAvailable_);
+  items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
 }
@@ -608,6 +611,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table.add(tr()
               .add(td("# FU slots available"))
               .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
+    table.add(tr()
+              .add(td("# queued lumi sections on FUs"))
+              .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
 
     if ( ! diskUsageMonitors_.empty() )
     {
