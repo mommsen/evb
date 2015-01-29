@@ -73,11 +73,11 @@ testRunner.py --test testCase
         try:
             opts,args = getopt.getopt(argv,"hvlsat:",["help","verbose","launchers","stop","all","test="])
         except getopt.GetoptError:
-            usage()
+            self.usage()
             sys.exit(2)
         for opt, arg in opts:
             if opt == '-h':
-                usage()
+                self.usage()
                 sys.exit()
             elif opt in ("-v","--verbose"):
                 self._verbose = True
