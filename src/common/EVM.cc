@@ -170,7 +170,7 @@ namespace evb {
       {
         // Only get a request if we also have data to go with it.
         // Otherwise, we consume a request at the end of the run which gets lost
-        FragmentChainPtr superFragment;
+        SuperFragmentPtr superFragment;
         if ( fragmentRequestFIFO_.empty() || !input_->getNextAvailableSuperFragment(superFragment) ) return false;
 
         fragmentRequestFIFO_.deq(fragmentRequest);

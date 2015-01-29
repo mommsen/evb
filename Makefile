@@ -36,10 +36,11 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
-	FedFragment.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
+	readoutunit/FedFragment.cc \
+	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \
 	RU.cc \
@@ -49,6 +50,7 @@ Sources=\
 	bu/Event.cc \
 	bu/EventBuilder.cc \
 	bu/FileHandler.cc \
+	bu/FragmentChain.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
