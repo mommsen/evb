@@ -195,6 +195,7 @@ namespace evb {
       xdata::UnsignedInteger32 nbTotalResources_;
       xdata::UnsignedInteger32 nbBlockedResources_;
       xdata::UnsignedInteger32 fuCoresAvailable_;
+      xdata::UnsignedInteger32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
 
