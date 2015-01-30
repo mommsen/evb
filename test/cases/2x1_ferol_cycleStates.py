@@ -66,9 +66,8 @@ class case_2x1_ferol_cycleStates(TestCase):
     def fillConfiguration(self,symbolMap):
         evmFedIds = range(4)
         evm = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds)
-            ])
+             ('inputSource','string','FEROL')
+            ],evmFedIds)
         for id in evmFedIds:
             self._config.add( FEROL(symbolMap,evm,[
                 ('fedId','unsignedInt',str(id))
@@ -76,9 +75,8 @@ class case_2x1_ferol_cycleStates(TestCase):
 
         ruFedIds = range(4,8)
         ru = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ruFedIds)
-            ])
+             ('inputSource','string','FEROL')
+            ],ruFedIds)
         for id in ruFedIds:
             self._config.add( FEROL(symbolMap,ru,[
                 ('fedId','unsignedInt',str(id))
