@@ -16,9 +16,8 @@ class case_2x1_dropInputData(TestCase):
         evmFedIds = range(4)
         evm = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds),
              ('dropInputData','boolean','true')
-            ])
+            ],evmFedIds)
         for id in evmFedIds:
             self._config.add( FEROL(symbolMap,evm,[
                 ('fedId','unsignedInt',str(id))
@@ -27,9 +26,8 @@ class case_2x1_dropInputData(TestCase):
         ruFedIds = range(4,8)
         ru = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ruFedIds),
              ('dropInputData','boolean','true')
-            ])
+            ],ruFedIds)
         for id in ruFedIds:
             self._config.add( FEROL(symbolMap,ru,[
                 ('fedId','unsignedInt',str(id))

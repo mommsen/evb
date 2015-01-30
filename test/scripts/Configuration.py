@@ -167,8 +167,9 @@ class RU(Context):
     instance = 0
 
     def __init__(self,symbolMap,params,fedSourceIds=None,nestedContexts=()):
-        if fedSourceIds:
+        if fedSourceIds is not None:
             params.append( self.getFerolSources(fedSourceIds) );
+            params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
         Context.__init__(self,params,nestedContexts)
         if RU.instance == 0:
             self.apps['app'] = "evb::EVM"
@@ -197,6 +198,7 @@ class RU(Context):
                 ) )
         return ('ferolSources','Struct',ferolSources)
 
+
     def getConfigForPtFrl(self):
         global id
         routing = []
@@ -208,13 +210,6 @@ class RU(Context):
                     for ferolSource in param[2]:
                         routing.append( (
                             ('fedid','string',str(ferolSource[0][2])),
-                            ('className','string',self.apps['app']),
-                            ('instance','string',str(self.apps['instance']))
-                            ) )
-                elif param[0] == 'fedSourceIds':
-                    for fedId in param[2]:
-                        routing.append( (
-                            ('fedid','string',str(fedId)),
                             ('className','string',self.apps['app']),
                             ('instance','string',str(self.apps['instance']))
                             ) )

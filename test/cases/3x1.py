@@ -16,9 +16,8 @@ class case_3x1(TestCase):
 
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,))
-            ]) )
+             ('inputSource','string','Local')
+            ],(512,)) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local')
             ]) )
