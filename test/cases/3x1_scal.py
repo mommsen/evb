@@ -19,11 +19,10 @@ class case_3x1_scal(TestCase):
         evmFedIds = range(4)
         evm = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds),
              ('fakeLumiSectionDuration','unsignedInt','23'),
              ('dummyScalFedSize','unsignedInt','1024'),
              ('scalFedId','unsignedInt','997')
-            ])
+            ],evmFedIds)
         for id in evmFedIds:
             self._config.add( FEROL(symbolMap,evm,[
                 ('fedId','unsignedInt',str(id))
@@ -32,10 +31,9 @@ class case_3x1_scal(TestCase):
         ruFedIds = range(4,8)
         ru = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ruFedIds),
              ('dummyScalFedSize','unsignedInt','14624'),
              ('scalFedId','unsignedInt','998')
-            ])
+            ],ruFedIds)
         for id in ruFedIds:
             self._config.add( FEROL(symbolMap,ru,[
                 ('fedId','unsignedInt',str(id))
@@ -45,10 +43,9 @@ class case_3x1_scal(TestCase):
         self._config.add( ru )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',()),
              ('dummyScalFedSize','unsignedInt','4064'),
              ('scalFedId','unsignedInt','999')
-            ]) )
+            ],()) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true')
             ]) )

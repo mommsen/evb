@@ -15,9 +15,8 @@ class case_1x2_ferol(TestCase):
     def fillConfiguration(self,symbolMap):
         fedIds = range(1,9)
         evm = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',fedIds)
-            ])
+             ('inputSource','string','FEROL')
+            ],fedIds)
         for id in fedIds:
             self._config.add( FEROL(symbolMap,evm,[
                 ('fedId','unsignedInt',str(id))
