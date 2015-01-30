@@ -16,9 +16,8 @@ class case_2x1_largeEvents(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,)),
              ('dummyFedSize','unsignedInt','16384')
-            ]) )
+            ],(512,)) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('dummyFedSize','unsignedInt','16384')

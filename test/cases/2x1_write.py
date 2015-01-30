@@ -50,9 +50,8 @@ class case_2x1_write(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,)),
              ('fakeLumiSectionDuration','unsignedInt','5')
-            ]) )
+            ],(512,)) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local')
             ]) )
