@@ -16,9 +16,8 @@ class case_2x1_smallBlockSize(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,)),
              ('blockSize','unsignedInt','1024')
-            ]) )
+            ],(512,)) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('blockSize','unsignedInt','1024')

@@ -16,9 +16,8 @@ class case_2x1_preallocate(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,)),
              ('numberOfPreallocatedBlocks','unsignedInt','32')
-            ]) )
+            ],(512,)) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('numberOfPreallocatedBlocks','unsignedInt','128')
