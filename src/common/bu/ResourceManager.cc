@@ -339,7 +339,8 @@ void evb::bu::ResourceManager::stopProcessing()
 
 float evb::bu::ResourceManager::getAvailableResources()
 {
-  if ( resourceDirectory_.empty() ) return nbResources_;
+  if ( resourceDirectory_.empty() || configuration_->deleteRawDataFiles )
+    return nbResources_;
 
   uint32_t coreCount = 0;
   boost::filesystem::directory_iterator dirIter(resourceDirectory_);
