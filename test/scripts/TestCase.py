@@ -319,20 +319,26 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir):
+    def prepareAppliance(self,testDir,runNumber,activeRunNumQueuedLS=-1,cloud=0):
         try:
             shutil.rmtree(testDir)
         except OSError:
             pass
-        os.makedirs(testDir)
+        os.makedirs(testDir+'/appliance')
+        stat = os.statvfs(testDir)
+        ramDiskOccupancy = 1 - stat.f_bfree/float(stat.f_blocks)
+        with open(testDir+'/appliance/resource_summary','w') as resourceSummary:
+            resourceSummary.write('{"ramdisk_occupancy": '+str(ramDiskOccupancy)+
+                ', "broken": 0, "idle": 16, "used": 80, "activeFURun": '+str(runNumber)+
+                ', "active_resources": 96, "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
+                ', "cloud": '+str(cloud)+'}')
         with open(testDir+'/HltConfig.py','w') as config:
             config.write("dummy HLT menu for EvB test")
         with open(testDir+'/SCRAM_ARCH','w') as arch:
             arch.write("slc6_amd64_gcc472")
         with open(testDir+'/CMSSW_VERSION','w') as version:
             version.write("cmssw_noxdaq")
-        stat = os.statvfs(testDir)
-        return 1 - stat.f_bfree/float(stat.f_blocks)
+        return ramDiskOccupancy
 
 
     def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):
