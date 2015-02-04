@@ -377,7 +377,7 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
 
   fuCoresAvailable_ = coreCount;
-  currentLumiSectionOnFUs_ = currentLumiSection;
+  //currentLumiSectionOnFUs_ = currentLumiSection;
 
   if ( oldestIncompleteLumiSection_ > currentLumiSection + configuration_->maxFuLumiSectionLatency )
   {
