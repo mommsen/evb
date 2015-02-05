@@ -108,6 +108,7 @@ namespace evb {
 
     xdata::UnsignedInteger32 monitoringRunNumber_;
     xdata::String monitoringStateName_;
+    xdata::String monitoringErrorMsg_;
   };
 
 
@@ -316,9 +317,11 @@ void evb::EvBStateMachine<MostDerived,InitialState>::appendMonitoringItems
 {
   monitoringRunNumber_ = 0;
   monitoringStateName_ = "Halted";
+  monitoringErrorMsg_ = "";
 
   items.add("runNumber", &monitoringRunNumber_);
   items.add("stateName", &monitoringStateName_);
+  items.add("errorMsg", &monitoringErrorMsg_);
 }
 
 
@@ -328,6 +331,7 @@ void evb::EvBStateMachine<MostDerived,InitialState>::updateMonitoringItems()
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
   monitoringStateName_ = stateName_;
   monitoringRunNumber_ = runNumber_;
+  monitoringErrorMsg_ = reasonForError_;
 }
 
 
@@ -345,9 +349,7 @@ template <class MostDerived,class InitialState>
 void evb::EvBStateMachine<MostDerived,InitialState>::failEvent(const Fail& evt)
 {
   reasonForError_ = evt.getTraceback();
-
-  LOG4CPLUS_FATAL(getLogger(),
-                  "Failed: " << evt.getReason() << ". " << reasonForError_);
+  LOG4CPLUS_FATAL(getLogger(), "Failed: " << reasonForError_);
 
   try
   {

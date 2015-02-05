@@ -90,8 +90,7 @@ template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::mismatchDetected(const MismatchDetected& evt)
 {
   this->reasonForError_ = evt.getTraceback();
-
-  LOG4CPLUS_ERROR(this->getLogger(), this->reasonForError_);
+  LOG4CPLUS_ERROR(this->getLogger(), "SyncLoss: " << this->reasonForError_);
 
   try
   {
@@ -117,8 +116,7 @@ template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::eventOutOfSequence(const EventOutOfSequence& evt)
 {
   this->reasonForError_ = evt.getTraceback();
-
-  LOG4CPLUS_ERROR(this->getLogger(), this->reasonForError_);
+  LOG4CPLUS_ERROR(this->getLogger(), "SyncLoss: " << this->reasonForError_);
 
   try
   {
