@@ -221,6 +221,7 @@ class FedKitConfig:
           <properties xmlns="urn:xdaq-application:evb::BU" xsi:type="soapenc:Struct">
             <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
             <dropEventData xsi:type="xsd:boolean">%(dropEventData)s</dropEventData>
+            <ignoreResourceSummary xsi:type="xsd:boolean">true</ignoreResourceSummary>
             <lumiSectionTimeout xsi:type="xsd:unsignedInt">%(lumiSectionTimeout)s</lumiSectionTimeout>
             <numberOfBuilders xsi:type="xsd:unsignedInt">1</numberOfBuilders>
             <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>

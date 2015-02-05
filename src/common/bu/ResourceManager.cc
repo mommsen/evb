@@ -14,6 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 
@@ -340,53 +341,37 @@ void evb::bu::ResourceManager::stopProcessing()
 
 float evb::bu::ResourceManager::getAvailableResources()
 {
-  if ( resourceDirectory_.empty() || configuration_->deleteRawDataFiles )
-    return nbResources_;
+  if ( resourceSummary_.empty() ) return nbResources_;
 
-  uint32_t coreCount = 0;
-  uint32_t currentLumiSection = 0;
-  boost::filesystem::directory_iterator dirIter(resourceDirectory_);
-
-  while ( dirIter != boost::filesystem::directory_iterator() )
+  try
   {
-    const std::time_t lastWriteTime =
-      boost::filesystem::last_write_time(*dirIter);
-    if ( (std::time(0) - lastWriteTime) < configuration_->staleResourceTime )
-    {
-      std::ifstream boxFile( dirIter->path().string().c_str() );
-      while (boxFile)
-      {
-        std::string line;
-        std::getline(boxFile,line);
-        std::size_t pos = line.find('=');
-        if (pos != std::string::npos)
-        {
-          const std::string key = line.substr(0,pos);
-          if ( key == "idles" || key == "used" )
-          {
-            try
-            {
-              coreCount += boost::lexical_cast<uint32_t>(line.substr(pos+1));
-            }
-            catch(boost::bad_lexical_cast& e) {}
-          }
-        }
-      }
-    }
-    ++dirIter;
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json(resourceSummary_.string(), pt);
+    fuSlotsHLT_ = pt.get<int>("active_resources");
+    fuSlotsCloud_ = pt.get<int>("cloud");
+    queuedLumiSectionsOnFUs_ = pt.get<int>("activeRunNumQueuedLS");
+  }
+  catch(boost::property_tree::ptree_error& e)
+  {
+    std::ostringstream oss;
+    oss << "Failed to parse " << resourceSummary_ << ": ";
+    oss << e.what();
+    LOG4CPLUS_ERROR(bu_->getApplicationLogger(),oss.str());
+
+    XCEPT_DECLARE(exception::DiskWriting,sentinelError,oss.str());
+    bu_->notifyQualified("error",sentinelError);
+
+    return 0;
   }
 
-  fuCoresAvailable_ = coreCount;
-  //currentLumiSectionOnFUs_ = currentLumiSection;
-
-  if ( oldestIncompleteLumiSection_ > currentLumiSection + configuration_->maxFuLumiSectionLatency )
+  if ( queuedLumiSectionsOnFUs_ > static_cast<int>(configuration_->maxFuLumiSectionLatency) )
   {
     return 0;
   }
   else
   {
-    const float resourcesFromCores = coreCount * configuration_->resourcesPerCore;
-    return std::min(resourcesFromCores,static_cast<float>(nbResources_));
+    const float resourcesFromFUs = fuSlotsHLT_ * configuration_->resourcesPerCore;
+    return std::min(resourcesFromFUs,static_cast<float>(nbResources_));
   }
 }
 
@@ -449,7 +434,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   outstandingRequests_ = 0;
   nbTotalResources_ = 0;
   nbBlockedResources_ = 0;
-  fuCoresAvailable_ = 0;
+  fuSlotsHLT_ = 0;
+  fuSlotsCloud_ = 0;
   queuedLumiSectionsOnFUs_ = 0;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
@@ -463,7 +449,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("outstandingRequests", &outstandingRequests_);
   items.add("nbTotalResources", &nbTotalResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
-  items.add("fuCoresAvailable", &fuCoresAvailable_);
+  items.add("fuSlotsHLT", &fuSlotsHLT_);
+  items.add("fuSlotsCloud", &fuSlotsCloud_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
@@ -490,12 +477,24 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventMonitoring_.perf.reset();
   }
 
-  if ( nbBlockedResources_.value_ == 0 || outstandingRequests_ > configuration_->numberOfBuilders )
+  if ( nbBlockedResources_ == 0U || outstandingRequests_ > 0U )
+  {
     bu_->getStateMachine()->processFSMEvent( Release() );
-  else if ( nbBlockedResources_.value_ == nbResources_ )
-    bu_->getStateMachine()->processFSMEvent( Block() );
-  else if ( nbBlockedResources_.value_ > 0 && outstandingRequests_ < configuration_->numberOfBuilders )
-    bu_->getStateMachine()->processFSMEvent( Throttle() );
+  }
+  else if ( nbBlockedResources_ == nbResources_ )
+  {
+    if ( fuSlotsCloud_ > 0U )
+      bu_->getStateMachine()->processFSMEvent( Clouded() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Block() );
+  }
+  else if ( nbBlockedResources_ > 0U && outstandingRequests_ == 0U )
+  {
+    if ( fuSlotsCloud_ > 0U )
+      bu_->getStateMachine()->processFSMEvent( Misted() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Throttle() );
+  }
 }
 
 
@@ -516,7 +515,7 @@ void evb::bu::ResourceManager::configure()
   allocatedResources_.clear();
   lumiSectionAccounts_.clear();
   diskUsageMonitors_.clear();
-  resourceDirectory_.clear();
+  resourceSummary_.clear();
 
   eventsToDiscard_ = 0;
   eventMonitoring_.outstandingRequests = 0;
@@ -550,9 +549,17 @@ void evb::bu::ResourceManager::configure()
 
 void evb::bu::ResourceManager::configureDiskUsageMonitors()
 {
-  resourceDirectory_ = boost::filesystem::path(configuration_->rawDataDir.value_) / "appliance" / "boxes";
-  if ( ! boost::filesystem::is_directory(resourceDirectory_) )
-    resourceDirectory_.clear();
+  if ( !configuration_->ignoreResourceSummary && !configuration_->deleteRawDataFiles )
+  {
+    resourceSummary_ = boost::filesystem::path(configuration_->rawDataDir.value_) / configuration_->resourceSummaryFileName.value_;
+    if ( !boost::filesystem::exists(resourceSummary_) )
+    {
+      std::ostringstream oss;
+      oss << "Resource summary file " << resourceSummary_ << " does not exist";
+      resourceSummary_.clear();
+      XCEPT_RAISE(exception::DiskWriting, oss.str());
+    }
+  }
 
   DiskUsagePtr rawDiskUsage(
     new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
@@ -628,7 +635,10 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
 
     table.add(tr()
               .add(td("# FU slots available"))
-              .add(td(boost::lexical_cast<std::string>(fuCoresAvailable_.value_))));
+              .add(td(boost::lexical_cast<std::string>(fuSlotsHLT_.value_))));
+    table.add(tr()
+              .add(td("# FU slots used for cloud"))
+              .add(td(boost::lexical_cast<std::string>(fuSlotsCloud_.value_))));
     table.add(tr()
               .add(td("# queued lumi sections on FUs"))
               .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
