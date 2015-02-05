@@ -63,7 +63,9 @@ namespace evb {
       typedef boost::mpl::list<
       boost::statechart::in_state_reaction<Release>,
       boost::statechart::in_state_reaction<Throttle>,
-      boost::statechart::in_state_reaction<Block>
+      boost::statechart::in_state_reaction<Block>,
+      boost::statechart::in_state_reaction<Misted>,
+      boost::statechart::in_state_reaction<Clouded>
       > reactions;
 
       Outermost(my_context c) : my_state("Outermost", c)

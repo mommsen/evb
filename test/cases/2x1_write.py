@@ -57,5 +57,6 @@ class case_2x1_write(TestCase):
              ('inputSource','string','Local')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('lumiSectionTimeout','unsignedInt','6')
+             ('lumiSectionTimeout','unsignedInt','6'),
+             ('staleResourceTime','unsignedInt','0')
             ]) )

@@ -49,5 +49,9 @@ class case_2x2_failBU(TestCase):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local')
             ]) )
-        self._config.add( BU(symbolMap,[]) )
-        self._config.add( BU(symbolMap,[]) )
+        self._config.add( BU(symbolMap,[
+             ('staleResourceTime','unsignedInt','0')
+             ]) )
+        self._config.add( BU(symbolMap,[
+             ('staleResourceTime','unsignedInt','0')
+             ]) )
