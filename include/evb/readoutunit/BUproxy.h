@@ -170,6 +170,7 @@ namespace evb {
       } dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
 
+      xdata::UnsignedInteger32 activeRequests_;
       xdata::UnsignedInteger64 requestCount_;
       xdata::UnsignedInteger64 fragmentCount_;
       xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
@@ -688,11 +689,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::createProcessingWorkLoops()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
 {
+  activeRequests_ = 0;
   requestCount_ = 0;
   fragmentCount_ = 0;
   requestCountPerBU_.clear();
   payloadPerBU_.clear();
 
+  items.add("activeRequests", &activeRequests_);
   items.add("requestCount", &requestCount_);
   items.add("fragmentCount", &fragmentCount_);
   items.add("requestCountPerBU", &requestCountPerBU_);
@@ -703,6 +706,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
+  activeRequests_ = fragmentRequestFIFO_.elements();
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
     requestCount_ = requestMonitoring_.logicalCount;
