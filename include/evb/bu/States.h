@@ -44,6 +44,8 @@ namespace evb {
     class Enabled;
     class Throttled;
     class Blocked;
+    class Mist;
+    class Cloud;
 
 
     ///////////////////
@@ -124,7 +126,8 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Configure,Active>
+      boost::statechart::transition<Configure,Active>,
+      boost::statechart::in_state_reaction<Halt>
       > reactions;
 
       Halted(my_context c) : my_state("Halted", c)
@@ -286,7 +289,9 @@ namespace evb {
       typedef boost::mpl::list<
       boost::statechart::in_state_reaction<Release>,
       boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::transition<Block,Blocked>
+      boost::statechart::transition<Block,Blocked>,
+      boost::statechart::transition<Misted,Mist>,
+      boost::statechart::transition<Clouded,Cloud>
       > reactions;
 
       Enabled(my_context c) : my_state("Enabled", c)
@@ -311,7 +316,9 @@ namespace evb {
       typedef boost::mpl::list<
       boost::statechart::transition<Release,Enabled>,
       boost::statechart::in_state_reaction<Throttle>,
-      boost::statechart::transition<Block,Blocked>
+      boost::statechart::transition<Block,Blocked>,
+      boost::statechart::transition<Misted,Mist>,
+      boost::statechart::transition<Clouded,Cloud>
       > reactions;
 
       Throttled(my_context c) : my_state("Throttled", c)
@@ -336,7 +343,9 @@ namespace evb {
       typedef boost::mpl::list<
       boost::statechart::transition<Release,Enabled>,
       boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::in_state_reaction<Block>
+      boost::statechart::in_state_reaction<Block>,
+      boost::statechart::transition<Misted,Mist>,
+      boost::statechart::transition<Clouded,Cloud>
       > reactions;
 
       Blocked(my_context c) : my_state("Blocked", c)
@@ -346,6 +355,60 @@ namespace evb {
 
       virtual void entryAction()
       { outermost_context().notifyRCMS("Blocked"); }
+
+    };
+
+
+    /**
+     * The Mist state of the outer-state Processing.
+     */
+    class Mist: public EvBState<Mist,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<Release,Enabled>,
+      boost::statechart::transition<Throttle,Throttled>,
+      boost::statechart::transition<Block,Blocked>,
+      boost::statechart::in_state_reaction<Misted>,
+      boost::statechart::transition<Clouded,Cloud>
+      > reactions;
+
+      Mist(my_context c) : my_state("Mist", c)
+      { safeEntryAction(); }
+      virtual ~Mist()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Mist"); }
+
+    };
+
+
+    /**
+     * The Cloud state of the outer-state Processing.
+     */
+    class Cloud: public EvBState<Cloud,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::transition<Release,Enabled>,
+      boost::statechart::transition<Throttle,Throttled>,
+      boost::statechart::transition<Block,Blocked>,
+      boost::statechart::transition<Misted,Mist>,
+      boost::statechart::in_state_reaction<Clouded>
+      > reactions;
+
+      Cloud(my_context c) : my_state("Cloud", c)
+      { safeEntryAction(); }
+      virtual ~Cloud()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Cloud"); }
 
     };
 

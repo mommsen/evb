@@ -15,7 +15,7 @@ class case_2x1_diskFull(TestCase):
         testDir="/tmp/evb_test/ramdisk"
         runNumber=time.strftime("%s",time.localtime())
         runDir=testDir+"/run"+runNumber
-        diskUsage = self.prepareAppliance(testDir)
+        diskUsage = self.prepareAppliance(testDir,runNumber)
         self.setAppParam('rawDataLowWaterMark','double',str(diskUsage),'BU')
         self.setAppParam('rawDataHighWaterMark','double',str(diskUsage+0.001),'BU')
         self.setAppParam('rawDataDir','string',testDir,'BU')

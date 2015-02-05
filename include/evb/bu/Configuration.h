@@ -39,6 +39,7 @@ namespace evb {
       xdata::String jsdDirName;                            // Directory name under the run directory used for JSON definition files
       xdata::String hltDirName;                            // Directory name under the run directory used for HLT configuration files
       xdata::String fuLockName;                            // Filename of the lock file used to arbritrate file-access btw FUs
+      xdata::String resourceSummaryFileName;               // Relative path to resource summary file
       xdata::Double rawDataHighWaterMark;                  // Relative high-water mark for the event data directory
       xdata::Double rawDataLowWaterMark;
       xdata::Double metaDataHighWaterMark;
@@ -46,6 +47,7 @@ namespace evb {
       xdata::UnsignedInteger32 checkCRC;                   // Check the CRC of the FED fragments for every Nth event
       xdata::Boolean calculateAdler32;                     // If set to true, an adler32 checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
+      xdata::Boolean ignoreResourceSummary;                // If true, ignore the resource_summary file from hltd
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
       xdata::UnsignedInteger32 fileStatisticsFIFOCapacity; // Capacity of the FIFO used for file accounting
       xdata::UnsignedInteger32 lumiSectionFIFOCapacity;    // Capacity of the FIFO used for lumi-section accounting
@@ -57,7 +59,7 @@ namespace evb {
           evmInstance(-1), // Explicitly indicate parameter not set
           maxEvtsUnderConstruction(256),
           eventsPerRequest(8),
-          resourcesPerCore(0.1),
+          resourcesPerCore(0.2),
           maxFuLumiSectionLatency(3),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
@@ -68,6 +70,7 @@ namespace evb {
           jsdDirName("jsd"),
           hltDirName("hlt"),
           fuLockName("fu.lock"),
+          resourceSummaryFileName("appliance/resource_summary"),
           rawDataHighWaterMark(0.95),
           rawDataLowWaterMark(0.75),
           metaDataHighWaterMark(0.95),
@@ -75,6 +78,7 @@ namespace evb {
           checkCRC(1),
           calculateAdler32(true),
           deleteRawDataFiles(false),
+          ignoreResourceSummary(false),
           maxEventsPerFile(400),
           fileStatisticsFIFOCapacity(128),
           lumiSectionFIFOCapacity(128),
@@ -104,6 +108,7 @@ namespace evb {
         params.add("jsdDirName", &jsdDirName);
         params.add("hltDirName", &hltDirName);
         params.add("fuLockName", &fuLockName);
+        params.add("resourceSummaryFileName", &resourceSummaryFileName);
         params.add("rawDataHighWaterMark", &rawDataHighWaterMark);
         params.add("rawDataLowWaterMark", &rawDataLowWaterMark);
         params.add("metaDataHighWaterMark", &metaDataHighWaterMark);
@@ -111,6 +116,7 @@ namespace evb {
         params.add("checkCRC", &checkCRC);
         params.add("calculateAdler32", &calculateAdler32);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
+        params.add("ignoreResourceSummary", &ignoreResourceSummary);
         params.add("maxEventsPerFile", &maxEventsPerFile);
         params.add("fileStatisticsFIFOCapacity", &fileStatisticsFIFOCapacity);
         params.add("lumiSectionFIFOCapacity", &lumiSectionFIFOCapacity);

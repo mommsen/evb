@@ -15,7 +15,7 @@ class case_4x1_write(TestCase):
         testDir="/tmp/evb_test/ramdisk"
         runNumber=time.strftime("%s",time.localtime())
         runDir=testDir+"/run"+runNumber
-        self.prepareAppliance(testDir)
+        self.prepareAppliance(testDir,runNumber)
         print("Emulating some left-over runs")
         dummyRuns = ('123456','234567','345678')
         for run in dummyRuns:

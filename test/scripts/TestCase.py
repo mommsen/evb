@@ -319,7 +319,7 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir,runNumber,activeRunNumQueuedLS=-1,cloud=0):
+    def prepareAppliance(self,testDir,runNumber,activeResources=160,activeRunNumQueuedLS=-1,cloud=0):
         try:
             shutil.rmtree(testDir)
         except OSError:
@@ -329,8 +329,10 @@ class TestCase:
         ramDiskOccupancy = 1 - stat.f_bfree/float(stat.f_blocks)
         with open(testDir+'/appliance/resource_summary','w') as resourceSummary:
             resourceSummary.write('{"ramdisk_occupancy": '+str(ramDiskOccupancy)+
-                ', "broken": 0, "idle": 16, "used": 80, "activeFURun": '+str(runNumber)+
-                ', "active_resources": 96, "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
+                ', "broken": 0, "idle": 16, "used":'+str(activeResources-16)+
+                ', "activeFURun": '+str(runNumber)+
+                ', "active_resources": '+str(activeResources)+
+                ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
                 ', "cloud": '+str(cloud)+'}')
         with open(testDir+'/HltConfig.py','w') as config:
             config.write("dummy HLT menu for EvB test")
@@ -342,10 +344,7 @@ class TestCase:
 
 
     def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):
-        if buInstance is not None:
-            runDir=testDir+"/BU"+str(buInstance)+"/run"+runNumber
-        else:
-            runDir=testDir+"/run"+runNumber
+        runDir=testDir+"/run"+runNumber
         print( subprocess.Popen(["ls","--full-time","-rt","-R",runDir], stdout=subprocess.PIPE).communicate()[0] )
         if os.path.isdir(runDir+"/open"):
             raise FileException(runDir+"/open still exists")

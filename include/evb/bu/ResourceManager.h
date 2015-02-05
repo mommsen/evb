@@ -20,6 +20,7 @@
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
 #include "xdata/Double.h"
+#include "xdata/Integer32.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xgi/Output.h"
@@ -166,7 +167,7 @@ namespace evb {
       typedef OneToOneQueue<uint16_t> ResourceFIFO;
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
-      boost::filesystem::path resourceDirectory_;
+      boost::filesystem::path resourceSummary_;
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;
@@ -195,8 +196,9 @@ namespace evb {
       xdata::UnsignedInteger32 outstandingRequests_;
       xdata::UnsignedInteger32 nbTotalResources_;
       xdata::UnsignedInteger32 nbBlockedResources_;
-      xdata::UnsignedInteger32 fuCoresAvailable_;
-      xdata::UnsignedInteger32 queuedLumiSectionsOnFUs_;
+      xdata::UnsignedInteger32 fuSlotsHLT_;
+      xdata::UnsignedInteger32 fuSlotsCloud_;
+      xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
 

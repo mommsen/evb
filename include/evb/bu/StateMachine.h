@@ -31,6 +31,8 @@ namespace evb {
     class Release: public boost::statechart::event<Release> {};
     class Throttle: public boost::statechart::event<Throttle> {};
     class Block: public boost::statechart::event<Block> {};
+    class Misted: public boost::statechart::event<Misted> {};
+    class Clouded: public boost::statechart::event<Clouded> {};
 
 
     ///////////////////////
