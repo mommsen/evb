@@ -64,5 +64,6 @@ class case_2x1_diskFull(TestCase):
              ('dummyFedSizeStdDev','unsignedInt','1000')
             ]) )
         self._config.add( BU(symbolMap,[
-             ('lumiSectionTimeout','unsignedInt','10')
+             ('lumiSectionTimeout','unsignedInt','10'),
+             ('staleResourceTime','unsignedInt','0')
             ]) )

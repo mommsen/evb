@@ -40,8 +40,10 @@ class case_2x2_cloud(TestCase):
              ('inputSource','string','Local')
             ]) )
         self._config.add( BU(symbolMap,[
-            ('resourcesPerCore','double','1')
+            ('resourcesPerCore','double','1'),
+            ('staleResourceTime','unsignedInt','0')
             ]) )
         self._config.add( BU(symbolMap,[
-            ('resourcesPerCore','double','1')
+            ('resourcesPerCore','double','1'),
+            ('staleResourceTime','unsignedInt','0')
             ]) )

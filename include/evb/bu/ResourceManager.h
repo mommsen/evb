@@ -145,6 +145,7 @@ namespace evb {
       float getAvailableResources();
       float getOverThreshold();
       void updateResources();
+      void handleResourceSummaryFailure(const std::string& msg);
 
       BU* bu_;
       const ConfigurationPtr configuration_;
@@ -168,6 +169,7 @@ namespace evb {
       ResourceFIFO freeResourceFIFO_;
       ResourceFIFO blockedResourceFIFO_;
       boost::filesystem::path resourceSummary_;
+      bool resourceSummaryFailureAlreadyNotified_;
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;

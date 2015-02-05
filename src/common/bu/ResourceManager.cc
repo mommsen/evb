@@ -343,6 +343,17 @@ float evb::bu::ResourceManager::getAvailableResources()
 {
   if ( resourceSummary_.empty() ) return nbResources_;
 
+  const std::time_t lastWriteTime = boost::filesystem::last_write_time(resourceSummary_);
+  if ( configuration_->staleResourceTime > 0U &&
+       (std::time(0) - lastWriteTime) > configuration_->staleResourceTime )
+  {
+    std::ostringstream oss;
+    oss << resourceSummary_ << " has not been updated in the last ";
+    oss << configuration_->staleResourceTime << "s";
+    handleResourceSummaryFailure(oss.str());
+    return 0;
+  }
+
   try
   {
     boost::property_tree::ptree pt;
@@ -356,13 +367,11 @@ float evb::bu::ResourceManager::getAvailableResources()
     std::ostringstream oss;
     oss << "Failed to parse " << resourceSummary_ << ": ";
     oss << e.what();
-    LOG4CPLUS_ERROR(bu_->getApplicationLogger(),oss.str());
-
-    XCEPT_DECLARE(exception::DiskWriting,sentinelError,oss.str());
-    bu_->notifyQualified("error",sentinelError);
-
+    handleResourceSummaryFailure(oss.str());
     return 0;
   }
+  resourceSummaryFailureAlreadyNotified_ = false;
+
 
   if ( queuedLumiSectionsOnFUs_ > static_cast<int>(configuration_->maxFuLumiSectionLatency) )
   {
@@ -373,6 +382,22 @@ float evb::bu::ResourceManager::getAvailableResources()
     const float resourcesFromFUs = fuSlotsHLT_ * configuration_->resourcesPerCore;
     return std::min(resourcesFromFUs,static_cast<float>(nbResources_));
   }
+}
+
+
+void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& msg)
+{
+  if ( resourceSummaryFailureAlreadyNotified_ ) return;
+
+  LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg);
+
+  XCEPT_DECLARE(exception::DiskWriting,sentinelError,msg);
+  bu_->notifyQualified("error",sentinelError);
+
+  fuSlotsHLT_ = 0;
+  fuSlotsCloud_ = 0;
+  queuedLumiSectionsOnFUs_ = -1;
+  resourceSummaryFailureAlreadyNotified_ = true;
 }
 
 
@@ -477,7 +502,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventMonitoring_.perf.reset();
   }
 
-  if ( nbBlockedResources_ == 0U || outstandingRequests_ > 0U )
+  if ( nbBlockedResources_ == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
   {
     bu_->getStateMachine()->processFSMEvent( Release() );
   }
@@ -519,6 +544,7 @@ void evb::bu::ResourceManager::configure()
 
   eventsToDiscard_ = 0;
   eventMonitoring_.outstandingRequests = 0;
+  resourceSummaryFailureAlreadyNotified_ = false;
 
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 

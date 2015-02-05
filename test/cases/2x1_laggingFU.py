@@ -49,5 +49,6 @@ class case_2x1_laggingFU(TestCase):
             ]) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','6'),
-             ('maxFuLumiSectionLatency','unsignedInt','2')
+             ('maxFuLumiSectionLatency','unsignedInt','2'),
+             ('staleResourceTime','unsignedInt','0')
             ]) )
