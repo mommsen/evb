@@ -7,6 +7,7 @@
   <xmas:item name="instance"                infospace="urn:evb::BU" type="string" source="$instance"/>
   <xmas:item name="runNumber"               infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="stateName"               infospace="urn:evb::BU" type="string"/>
+  <xmas:item name="errorMsg"                infospace="urn:evb::BU" type="string"/>
   <xmas:item name="bandwidth"               infospace="urn:evb::BU" type="unsigned int 64"/>
   <xmas:item name="eventRate"               infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="eventSize"               infospace="urn:evb::BU" type="unsigned int 32"/>
