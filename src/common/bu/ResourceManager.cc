@@ -459,6 +459,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   outstandingRequests_ = 0;
   nbTotalResources_ = 0;
   nbBlockedResources_ = 0;
+  fuCoresAvailable_ = 0;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
   queuedLumiSectionsOnFUs_ = 0;
@@ -474,6 +475,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("outstandingRequests", &outstandingRequests_);
   items.add("nbTotalResources", &nbTotalResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
+  items.add("fuCoresAvailable", &fuCoresAvailable_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
@@ -487,6 +489,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   updateResources();
   nbTotalResources_ = nbResources_;
   nbBlockedResources_ = blockedResourceFIFO_.elements();
+  fuCoresAvailable_ = fuSlotsHLT_;
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
