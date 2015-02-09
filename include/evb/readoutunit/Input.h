@@ -30,6 +30,7 @@
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/LocalStream.h"
 #include "evb/readoutunit/ScalerStream.h"
+#include "evb/readoutunit/SocketStream.h"
 #include "evb/readoutunit/InputMonitor.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "interface/shared/ferol_header.h"
@@ -48,6 +49,9 @@
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xdata/Vector.h"
+
+#include "evb/readoutunit/ferolTCP/Exception.h"
+#include "evb/readoutunit/ferolTCP/Server.h"
 
 
 namespace evb {
@@ -596,49 +600,91 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits");
   }
 
+
+  // We are listening for the incoming connections only during the configure time. It is not necessary to keep the server persistent.
+  boost::scoped_ptr<ferolTCP::Server> ferolTCPServer;
+
+  ::std::cerr << "Huhla" << ::std::endl;
+
+  if ( configuration->inputSource == "Socket" )
   {
-    boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
+    // Create ferolTCP::Server instance, by default it is doing nothing until a startServer is called.
+    ferolTCPServer.reset( new ferolTCP::Server() );
 
-    ferolStreams_.clear();
-    typename Configuration::FerolSources::iterator it, itEnd;
-    for (it = configuration->ferolSources.begin(), itEnd = configuration->ferolSources.end();
-         it != itEnd; ++it)
+    // Start listening for the connections on the given server port
+    // TODO: Get the server port number from the configuration
+    try
     {
-      if ( it->bag.active )
+      ferolTCPServer->startServer(10000);
+    }
+    catch(ferolTCP::Exception& e)
+    {
+      std::ostringstream oss;
+      oss << "ferolTCP::Exception: " << e.what();
+      XCEPT_RAISE(exception::Configuration, oss.str());
+    }
+  }
+
+  /*
+   *  FIXME: The locking was changed, should be checked and possibly moved to something more optimal...
+   *         But at least is not blocking the monitoring when waiting for connection from Ferol :)
+   */
+
+  {
+     boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
+     ferolStreams_.clear();
+  }
+
+  {
+    typename Configuration::FerolSources::const_iterator it, itEnd;
+    for (it = configuration->ferolSources.begin(),
+           itEnd = configuration->ferolSources.end(); it != itEnd; ++it)
+    {
+      const uint16_t fedId = it->bag.fedId.value_;
+      if (fedId > FED_COUNT)
       {
-        const uint16_t fedId = it->bag.fedId.value_;
-        if (fedId > FED_COUNT)
-        {
-          std::ostringstream oss;
-          oss << "The fedSourceId " << fedId;
-          oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
-          XCEPT_RAISE(exception::Configuration, oss.str());
-        }
+        std::ostringstream oss;
+        oss << "The fedSourceId " << fedId;
+        oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
+        XCEPT_RAISE(exception::Configuration, oss.str());
+      }
 
-        FerolStreamPtr ferolStream;
+      FerolStreamPtr ferolStream;
 
-        if ( configuration->inputSource == "FEROL" )
-          ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-        else if ( configuration->inputSource == "Local" )
-          ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-        else
-          XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
+      if ( configuration->inputSource == "FEROL" )
+        ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+      else if ( configuration->inputSource == "Local" )
+        ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+      else if ( configuration->inputSource == "Socket" )
+      {
+        // Wait for a connection from FEROL. This call is blocking...
+        // TODO: Handle a case when we want to Halt/Stop and we are blocking in waitForConnection()
+        ferolTCP::Connection* connection = ferolTCPServer->waitForConnection();
+        ferolStream.reset( new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,fedId,connection) );
+      }
+      else
+        XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
 
+      {
+        boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
         ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
       }
     }
 
-    setMasterStream();
-
-    if ( configuration->dummyScalFedSize.value_ > 0 )
     {
-      const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,configuration->scalFedId) );
-      ferolStreams_.insert( typename FerolStreams::value_type(configuration->scalFedId,scalerStream ) );
-    }
+      boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
+      setMasterStream();
 
-    if ( configuration->dropInputData )
-    {
-      startDummySuperFragmentWorkLoop();
+      if ( configuration->dummyScalFedSize.value_ > 0 )
+      {
+        const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,configuration->scalFedId) );
+        ferolStreams_.insert( typename FerolStreams::value_type(configuration->scalFedId,scalerStream ) );
+      }
+
+      if ( configuration->dropInputData )
+      {
+        startDummySuperFragmentWorkLoop();
+      }
     }
   }
 }

@@ -10,6 +10,7 @@
 #include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
+#include "evb/readoutunit/ferolTCP/BufferPool.h"
 
 namespace evb {
   namespace readoutunit {
@@ -25,7 +26,7 @@ namespace evb {
 
       FedFragment(toolbox::mem::Reference*, tcpla::MemoryCache*);
       FedFragment(uint16_t fedId, const EvBid&, toolbox::mem::Reference*);
-      FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length);
+      FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length, ferolTCP::Buffer*& ferolTCPBuffer);
 
       ~FedFragment();
 
@@ -72,6 +73,8 @@ namespace evb {
       tcpla::MemoryCache* cache_;
 
       static CRCCalculator crcCalculator_;
+
+      ferolTCP::Buffer* ferolTCPBuffer_;
 
     };
 
