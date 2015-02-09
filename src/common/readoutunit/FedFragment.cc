@@ -9,6 +9,8 @@
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
 
+#include "evb/readoutunit/ferolTCP/BufferPool.h"
+
 
 evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
 
@@ -35,9 +37,9 @@ evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, const EvBid& evbId, t
 }
 
 
-evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length)
+evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length, ferolTCP::Buffer*& ferolTCPBuffer)
   : fedId_(fedId),eventNumber_(eventNumber),fedSize_(0),isCorrupted_(false),
-    payload_(payload),length_(length),bufRef_(0),cache_(0)
+    payload_(payload),length_(length),bufRef_(0),cache_(0),ferolTCPBuffer_(ferolTCPBuffer)
 {}
 
 
@@ -54,7 +56,9 @@ evb::readoutunit::FedFragment::~FedFragment()
   }
   else
   {
-    // TODO: release payload
+    // Release payload
+    ferolTCPBuffer_->release(payload_);
+    //free(payload_);
   }
 }
 

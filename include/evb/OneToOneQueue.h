@@ -264,7 +264,7 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::enqWait(const T& element)
   {
-    while ( ! enq(element) ) ::usleep(1000);
+    while ( ! enq(element) ) ::usleep(10);
   }
 
 
@@ -285,7 +285,7 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::deqWait(T& element)
   {
-    while ( ! deq(element) ) ::usleep(1000);
+    while ( ! deq(element) ) ::usleep(10);
   }
 
 
