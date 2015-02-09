@@ -213,13 +213,6 @@ class RU(Context):
                             ('className','string',self.apps['app']),
                             ('instance','string',str(self.apps['instance']))
                             ) )
-                elif param[0] == 'fedSourceIds':
-                    for fedId in param[2]:
-                        routing.append( (
-                            ('fedid','string',str(ferolSource[0][2])),
-                            ('className','string',self.apps['app']),
-                            ('instance','string',str(self.apps['instance']))
-                            ) )
             except KeyError:
                 pass
 
