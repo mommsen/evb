@@ -173,6 +173,7 @@ namespace evb {
         FragmentChainPtr superFragment;
         if ( fragmentRequestFIFO_.empty() || !input_->getNextAvailableSuperFragment(superFragment) ) return false;
 
+        processingRequest_ = true;
         fragmentRequestFIFO_.deq(fragmentRequest);
 
         fragmentRequest->evbIds.clear();
@@ -203,6 +204,7 @@ namespace evb {
       }
       catch(exception::HaltRequested)
       {
+        processingRequest_ = false;
         return false;
       }
 
@@ -210,6 +212,7 @@ namespace evb {
 
       readoutUnit_->getRUproxy()->sendRequest(fragmentRequest);
 
+      processingRequest_ = false;
       return true;
     }
 
