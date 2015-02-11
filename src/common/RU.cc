@@ -34,6 +34,7 @@ namespace evb {
       boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
 
       if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
+      processingRequest_ = true;
 
       try
       {
@@ -53,9 +54,11 @@ namespace evb {
       }
       catch(exception::HaltRequested)
       {
+        processingRequest_ = false;
         return false;
       }
 
+      processingRequest_ = false;
       return true;
     }
 
