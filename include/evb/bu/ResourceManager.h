@@ -92,6 +92,11 @@ namespace evb {
       uint32_t getOldestIncompleteLumiSection() const;
 
       /**
+       * Return the number of incomplete events for the given lumi section
+       */
+      uint32_t getIncompleteEventsForLS(const uint32_t ls) const;
+
+      /**
        * Start processing messages
        */
       void startProcessing();

@@ -369,8 +369,9 @@ class TestCase:
             lumiSection = lsRegex.match(eolsFile).group(1)
             with open(eolsFile) as file:
                 eolsData = [int(f) for f in json.load(file)['data']]
-            if buInstance is None and eolsData[0] != eolsData[2]:
-                raise ValueException("Total event count "+str(eolsData[2])+" does not match "+str(eolsData[0])+" in "+eolsFile)
+            totalEvents = eolsData[0] + eolsData[3]
+            if buInstance is None and totalEvents != eolsData[2]:
+                raise ValueException("Total event count from EVM "+str(eolsData[2])+" does not match "+str(totalEvents)+" in "+eolsFile)
 
             eventCounter = 0
             if eolsData[1] > 0:
