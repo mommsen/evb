@@ -221,6 +221,18 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
 }
 
 
+uint32_t evb::bu::ResourceManager::getIncompleteEventsForLS(const uint32_t ls) const
+{
+  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+
+  const LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(ls);
+  if ( pos == lumiSectionAccounts_.end() )
+    return 0;
+  else
+    return pos->second->incompleteEvents;
+}
+
+
 void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
   eventCompletedForLumiSection(event->lumiSection());

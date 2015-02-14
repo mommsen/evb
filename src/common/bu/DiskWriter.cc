@@ -121,6 +121,7 @@ void evb::bu::DiskWriter::stopProcessing()
       it->second->totalEvents =
         bu_->getRUproxy()->getTotalEventsInLumiSection(it->first);
     }
+    it->second->nbIncompleteEvents = resourceManager_->getIncompleteEventsForLS(it->first);
 
     writeEoLS(it->second);
 
@@ -648,7 +649,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
   json << "   \"data\" : [ \""
     << lumiInfo->nbEventsWritten << "\", \""
     << lumiInfo->fileCount << "\", \""
-    << lumiInfo->totalEvents << "\" ],"     << std::endl;
+    << lumiInfo->totalEvents << "\", \""
+    << lumiInfo->nbIncompleteEvents << "\" ],"                             << std::endl;
   json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
   json << "}"                                                              << std::endl;
@@ -729,6 +731,10 @@ void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
   json << "      {"                                           << std::endl;
   json << "         \"name\" : \"TotalEvents\","              << std::endl;
   json << "         \"operation\" : \"max\""                  << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NLostEvents\","              << std::endl;
+  json << "         \"operation\" : \"sum\""                  << std::endl;
   json << "      }"                                           << std::endl;
   json << "   ]"                                              << std::endl;
   json << "}"                                                 << std::endl;
