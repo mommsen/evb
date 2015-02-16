@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "evb/BufRef.h"
 #include "evb/EvBid.h"
 #include "evb/FragmentTracker.h"
 #include "evb/readoutunit/FedFragment.h"
