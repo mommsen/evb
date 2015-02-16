@@ -3,7 +3,7 @@
 
 #include <boost/filesystem/convenience.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
 #include <stdint.h>
 #include <sys/statfs.h>
@@ -68,7 +68,11 @@ namespace evb {
       const float highWaterMark_;
       const bool deleteFiles_;
 
+      enum State { IDLE, UPDATE, UPDATING, STOP };
+      State state_;
       boost::mutex mutex_;
+      boost::condition_variable condition_;
+      boost::thread thread_;
       float diskSizeGB_;
       float relDiskUsage_;
       bool valid_;

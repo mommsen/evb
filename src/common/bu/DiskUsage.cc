@@ -3,7 +3,6 @@
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/thread.hpp>
 
 #include "evb/bu/DiskUsage.h"
 #include "evb/Exception.h"
@@ -21,6 +20,7 @@ evb::bu::DiskUsage::DiskUsage
   lowWaterMark_(lowWaterMark),
   highWaterMark_(highWaterMark),
   deleteFiles_(deleteFiles),
+  state_(IDLE),
   valid_(false)
 {
   if ( lowWaterMark >= highWaterMark )
@@ -32,25 +32,38 @@ evb::bu::DiskUsage::DiskUsage
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
+  thread_ = boost::thread( boost::bind( &DiskUsage::doStatFs, this ) );
   update();
 }
 
 
 evb::bu::DiskUsage::~DiskUsage()
-{}
+{
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    state_ = STOP;
+    condition_.notify_one();
+  }
+  try
+  {
+    thread_.join();
+  }
+  catch ( const boost::thread_interrupted& ) {}
+}
 
 
 void evb::bu::DiskUsage::update()
 {
-  boost::mutex::scoped_lock lock(mutex_, boost::try_to_lock);
+  boost::mutex::scoped_lock lock(mutex_);
 
-  if ( ! lock ) return; // don't start another thread if there's already one
+  if ( state_ != IDLE )
+  {
+    valid_ = false;
+    return;
+  }
 
-  boost::thread thread(
-    boost::bind( &DiskUsage::doStatFs, this )
-  );
-
-  valid_ = thread.timed_join( boost::posix_time::milliseconds(500) );
+  state_ = UPDATE;
+  condition_.notify_one();
 }
 
 
@@ -98,21 +111,41 @@ float evb::bu::DiskUsage::relDiskUsage()
 
 void evb::bu::DiskUsage::doStatFs()
 {
-  struct statfs64 statfs;
-  const int retVal = statfs64(path_.string().c_str(), &statfs);
-
-  if ( retVal == 0 )
+  while(1)
   {
-    diskSizeGB_ = static_cast<float>(statfs.f_blocks * statfs.f_bsize) / 1000 / 1000 / 1000;
-    if ( statfs.f_blocks > statfs.f_bfree )
-      relDiskUsage_ = 1 - static_cast<float>(statfs.f_bfree)/statfs.f_blocks;
-    else
-      relDiskUsage_ = 1;
-    valid_ = true;
-  }
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      while (state_ == IDLE)
+      {
+        condition_.wait(lock);
+      }
+      if (state_ == STOP) break;
+      state_ = UPDATING;
+    }
 
-  if (path_ == "/aSlowDiskForUnitTests") ::sleep(5);
+    struct statfs64 statfs;
+    const int retVal = statfs64(path_.string().c_str(), &statfs);
+
+    if ( retVal == 0 )
+    {
+      diskSizeGB_ = static_cast<float>(statfs.f_blocks * statfs.f_bsize) / 1000 / 1000 / 1000;
+      if ( statfs.f_blocks > statfs.f_bfree )
+        relDiskUsage_ = 1 - static_cast<float>(statfs.f_bfree)/statfs.f_blocks;
+      else
+        relDiskUsage_ = 1;
+      valid_ = true;
+    }
+
+    if (path_ == "/aSlowDiskForUnitTests") ::sleep(5);
+
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      if (state_ == STOP) break;
+      state_ = IDLE;
+    }
+  }
 }
+
 
 
 
