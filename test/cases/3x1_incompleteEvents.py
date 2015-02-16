@@ -41,9 +41,8 @@ class case_3x1_incompleteEvents(TestCase):
         evmFedIds = range(1)
         evm = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds),
              ('fakeLumiSectionDuration','unsignedInt','5')
-            ])
+            ],evmFedIds)
         for id in evmFedIds:
             self._config.add( FEROL(symbolMap,evm,[
                 ('fedId','unsignedInt',str(id))
@@ -52,8 +51,7 @@ class case_3x1_incompleteEvents(TestCase):
         ru1FedIds = range(1,4)
         ru1 = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ru1FedIds)
-            ])
+            ],ru1FedIds)
         for id in ru1FedIds:
             self._config.add( FEROL(symbolMap,ru1,[
                 ('fedId','unsignedInt',str(id))
@@ -62,8 +60,7 @@ class case_3x1_incompleteEvents(TestCase):
         ru2FedIds = range(4,7)
         ru2 = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ru2FedIds)
-            ])
+            ],ru2FedIds)
         for id in ru2FedIds:
             self._config.add( FEROL(symbolMap,ru2,[
                 ('fedId','unsignedInt',str(id))
