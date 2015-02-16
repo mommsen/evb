@@ -13,6 +13,8 @@
 #include "evb/bu/RUproxy.h"
 #include "evb/Exception.h"
 #include "toolbox/task/WorkLoopFactory.h"
+#include "xdata/String.h"
+#include "xdata/Vector.h"
 
 
 evb::bu::DiskWriter::DiskWriter
@@ -561,9 +563,12 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
     char lastChar = *url.rbegin();
     if ( lastChar != '/' ) url += '/';
 
-    retrieveFromURL(curl, url+"HltConfig.py", tmpPath/"HltConfig.py");
-    retrieveFromURL(curl, url+"SCRAM_ARCH", tmpPath/"SCRAM_ARCH");
-    retrieveFromURL(curl, url+"CMSSW_VERSION", tmpPath/"CMSSW_VERSION");
+    for (xdata::Vector<xdata::String>::iterator it = configuration_->hltFiles.begin(), itEnd = configuration_->hltFiles.end();
+         it != itEnd; ++it)
+    {
+      const std::string& fileName = it->toString();
+      retrieveFromURL(curl, url+fileName, tmpPath/fileName);
+    }
   }
   catch(xcept::Exception& e)
   {
