@@ -104,11 +104,12 @@ namespace evb {
         uint32_t totalEvents;
         uint32_t nbEvents;
         uint32_t nbEventsWritten;
+        uint32_t nbIncompleteEvents;
         uint32_t fileCount;
         uint32_t index;
 
         LumiInfo(const uint32_t ls)
-          : lumiSection(ls),totalEvents(0),nbEvents(0),nbEventsWritten(0),fileCount(0),index(0) {};
+          : lumiSection(ls),totalEvents(0),nbEvents(0),nbEventsWritten(0),nbIncompleteEvents(0),fileCount(0),index(0) {};
       };
       typedef boost::shared_ptr<LumiInfo> LumiInfoPtr;
       typedef std::map<uint32_t,LumiInfoPtr> LumiStatistics;
@@ -120,7 +121,7 @@ namespace evb {
       void startFileMover();
       bool lumiAccounting(toolbox::task::WorkLoop*);
       bool fileMover(toolbox::task::WorkLoop*);
-      void doLumiSectionAccounting();
+      void doLumiSectionAccounting(const bool completeLumiSectionsOnly);
       void moveFiles();
       void handleRawDataFile(const FileStatisticsPtr&);
       LumiStatistics::iterator getLumiStatistics(const uint32_t lumiSection);
