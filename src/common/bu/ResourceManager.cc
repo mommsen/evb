@@ -107,7 +107,6 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
   return pos->second.builderId;
 }
 
-
 uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 {
   return oldestIncompleteLumiSection_;
@@ -140,7 +139,7 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
   }
 
   ++(pos->second->nbEvents);
-  ++(pos->second->incompleteEvents);
+  ++(pos->second->nbIncompleteEvents);
 }
 
 
@@ -157,15 +156,29 @@ void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiS
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
-  --(pos->second->incompleteEvents);
+  --(pos->second->nbIncompleteEvents);
 }
 
 
-bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& lumiSectionAccount)
+bool evb::bu::ResourceManager::getNextLumiSectionAccount
+(
+  LumiSectionAccountPtr& lumiSectionAccount,
+  const bool completeLumiSectionsOnly
+)
 {
   boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
-  if ( lumiSectionAccounts_.empty() ) return false;
+  const LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
+  bool foundCompleteLS = false;
+
+  if ( oldestLumiSection == lumiSectionAccounts_.end() ) return false;
+
+  if ( !completeLumiSectionsOnly )
+  {
+    lumiSectionAccount = oldestLumiSection->second;
+    lumiSectionAccounts_.erase(oldestLumiSection);
+    return true;
+  }
 
   if ( blockedResourceFIFO_.full() )
   {
@@ -180,10 +193,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
     return false;
   }
 
-  const LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
-  bool foundCompleteLS = false;
-
-  if ( oldestLumiSection->second->incompleteEvents == 0 )
+  if ( oldestLumiSection->second->nbIncompleteEvents == 0 )
   {
     if ( lumiSectionAccounts_.size() > 1 // there are newer lumi sections
          || draining_ )
@@ -218,18 +228,6 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount(LumiSectionAccountPtr& 
   oldestIncompleteLumiSection_ = lumiSectionAccounts_.begin()->first;
 
   return foundCompleteLS;
-}
-
-
-uint32_t evb::bu::ResourceManager::getIncompleteEventsForLS(const uint32_t ls) const
-{
-  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
-
-  const LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(ls);
-  if ( pos == lumiSectionAccounts_.end() )
-    return 0;
-  else
-    return pos->second->incompleteEvents;
 }
 
 
@@ -743,7 +741,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
         table.add(tr()
                   .add(td(boost::lexical_cast<std::string>(it->first)))
                   .add(td(boost::lexical_cast<std::string>(it->second->nbEvents)))
-                  .add(td(boost::lexical_cast<std::string>(it->second->incompleteEvents)))
+                  .add(td(boost::lexical_cast<std::string>(it->second->nbIncompleteEvents)))
                   .add(td(str.str())));
       }
 

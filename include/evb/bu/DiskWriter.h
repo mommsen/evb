@@ -121,7 +121,7 @@ namespace evb {
       void startFileMover();
       bool lumiAccounting(toolbox::task::WorkLoop*);
       bool fileMover(toolbox::task::WorkLoop*);
-      void doLumiSectionAccounting();
+      void doLumiSectionAccounting(const bool completeLumiSectionsOnly);
       void moveFiles();
       void handleRawDataFile(const FileStatisticsPtr&);
       LumiStatistics::iterator getLumiStatistics(const uint32_t lumiSection);

@@ -111,29 +111,21 @@ void evb::bu::DiskWriter::stopProcessing()
   }
 
   moveFiles();
-  doLumiSectionAccounting();
+  doLumiSectionAccounting(false);
 
-  for (LumiStatistics::const_iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
-       it != itEnd; ++it)
+  if ( ! lumiStatistics_.empty() )
   {
-    if ( it->second->totalEvents == 0 )
+    std::ostringstream oss;
+    oss << "There are unaccounted files for the following lumi sections:";
+    for (LumiStatistics::iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
+         it != itEnd; ++it)
     {
-      it->second->totalEvents =
-        bu_->getRUproxy()->getTotalEventsInLumiSection(it->first);
+      oss << " " << it->first;
     }
-    it->second->nbIncompleteEvents = resourceManager_->getIncompleteEventsForLS(it->first);
+    XCEPT_RAISE(exception::DiskWriting, oss.str());
 
-    writeEoLS(it->second);
-
-    if ( it->second->nbEventsWritten > 0 )
-    {
-      ++diskWriterMonitoring_.nbLumiSections;
-      const uint32_t lumiSection = it->second->lumiSection;
-      if ( lumiSection > diskWriterMonitoring_.lastLumiSection )
-        diskWriterMonitoring_.lastLumiSection = lumiSection;
-    }
+    lumiStatistics_.clear();
   }
-  lumiStatistics_.clear();
 
   writeEoR();
 
@@ -171,7 +163,7 @@ bool evb::bu::DiskWriter::lumiAccounting(toolbox::task::WorkLoop* wl)
 
   try
   {
-    doLumiSectionAccounting();
+    doLumiSectionAccounting(true);
   }
   catch(xcept::Exception& e)
   {
@@ -201,11 +193,11 @@ bool evb::bu::DiskWriter::lumiAccounting(toolbox::task::WorkLoop* wl)
 }
 
 
-void evb::bu::DiskWriter::doLumiSectionAccounting()
+void evb::bu::DiskWriter::doLumiSectionAccounting(const bool completeLumiSectionsOnly)
 {
   ResourceManager::LumiSectionAccountPtr lumiSectionAccount;
 
-  while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount) )
+  while ( resourceManager_->getNextLumiSectionAccount(lumiSectionAccount,completeLumiSectionsOnly) )
   {
     if ( configuration_->dropEventData ) continue;
 
@@ -230,6 +222,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
         XCEPT_RAISE(exception::EventOrder, oss.str());
       }
       pos->second->nbEvents = lumiSectionAccount->nbEvents;
+      pos->second->nbIncompleteEvents = lumiSectionAccount->nbIncompleteEvents;
       pos->second->totalEvents = totalEventsInLumiSection;
     }
   }
@@ -237,7 +230,8 @@ void evb::bu::DiskWriter::doLumiSectionAccounting()
   LumiStatistics::iterator it = lumiStatistics_.begin();
   while ( it != lumiStatistics_.end() )
   {
-    if ( it->second->nbEvents > 0 && it->second->nbEvents == it->second->nbEventsWritten )
+    if ( it->second->nbEvents > 0 &&
+         it->second->nbEvents == it->second->nbEventsWritten + it->second->nbIncompleteEvents )
     {
       writeEoLS(it->second);
 
