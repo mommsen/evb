@@ -77,14 +77,14 @@ namespace evb {
         const uint32_t lumiSection;
         time_t startTime;
         uint32_t nbEvents;
-        uint32_t incompleteEvents;
+        uint32_t nbIncompleteEvents;
 
         LumiSectionAccount(const uint32_t ls)
-          : lumiSection(ls),startTime(time(0)),nbEvents(0),incompleteEvents(0) {};
+          : lumiSection(ls),startTime(time(0)),nbEvents(0),nbIncompleteEvents(0) {};
       };
       typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
 
-      bool getNextLumiSectionAccount(LumiSectionAccountPtr&);
+      bool getNextLumiSectionAccount(LumiSectionAccountPtr&,const bool completeLumiSectionsOnly);
 
       /**
        * Return oldest lumi section number for which events are being built

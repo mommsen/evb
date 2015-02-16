@@ -12,6 +12,7 @@
 #include "xdata/String.h"
 #include "xdata/Integer32.h"
 #include "xdata/UnsignedInteger32.h"
+#include "xdata/Vector.h"
 
 
 namespace evb {
@@ -53,6 +54,7 @@ namespace evb {
       xdata::UnsignedInteger32 lumiSectionFIFOCapacity;    // Capacity of the FIFO used for lumi-section accounting
       xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
+      xdata::Vector<xdata::String> hltFiles;               // List of file names to retrieve from hltParameterSetURL
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -84,7 +86,11 @@ namespace evb {
           lumiSectionFIFOCapacity(128),
           lumiSectionTimeout(30),
           hltParameterSetURL("")
-      {};
+      {
+        hltFiles.push_back("HltConfig.py");
+        hltFiles.push_back("SCRAM_ARCH");
+        hltFiles.push_back("CMSSW_VERSION");
+      };
 
       void addToInfoSpace
       (
@@ -122,6 +128,7 @@ namespace evb {
         params.add("lumiSectionFIFOCapacity", &lumiSectionFIFOCapacity);
         params.add("lumiSectionTimeout", &lumiSectionTimeout);
         params.add("hltParameterSetURL", &hltParameterSetURL);
+        params.add("hltFiles", &hltFiles);
       }
     };
 

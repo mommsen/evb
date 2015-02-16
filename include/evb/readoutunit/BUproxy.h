@@ -143,6 +143,7 @@ namespace evb {
       boost::dynamic_bitset<> processesActive_;
       boost::mutex processesActiveMutex_;
       uint32_t nbActiveProcesses_;
+      bool processingRequest_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
       FragmentRequestFIFO fragmentRequestFIFO_;
@@ -191,6 +192,7 @@ readoutUnit_(readoutUnit),
 tid_(0),
 doProcessing_(false),
 nbActiveProcesses_(0),
+processingRequest_(false),
 fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
   try
@@ -240,6 +242,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   resetMonitoringCounters();
 
+  processingRequest_ = false;
   doProcessing_ = true;
 
   for (uint32_t i=0; i < readoutUnit_->getConfiguration()->numberOfResponders; ++i)
@@ -260,6 +263,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
+  processingRequest_ = false;
 }
 
 
@@ -702,6 +706,8 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   activeRequests_ = fragmentRequestFIFO_.elements();
+  if ( processingRequest_ ) ++activeRequests_;
+
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
     requestCount_ = requestMonitoring_.logicalCount;
@@ -785,6 +791,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
     table.add(tr()
               .add(td("# of active responders"))
               .add(td(boost::lexical_cast<std::string>(nbActiveProcesses_))));
+    table.add(tr()
+              .add(td("# of active requests"))
+              .add(td(boost::lexical_cast<std::string>(activeRequests_.value_))));
 
     // outstanding events is negative for the RUs, but positive for the EVM
     table.add(tr()
