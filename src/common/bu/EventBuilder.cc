@@ -47,6 +47,7 @@ void evb::bu::EventBuilder::addSuperFragment
 void evb::bu::EventBuilder::configure()
 {
   superFragmentFIFOs_.clear();
+  eventMapMonitors_.clear();
   writeNextEventsToFile_ = 0;
 
   processesActive_.clear();
@@ -93,6 +94,12 @@ void evb::bu::EventBuilder::createProcessingWorkLoops()
 
 void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 {
+  for ( EventMapMonitors::iterator it = eventMapMonitors_.begin(), itEnd = eventMapMonitors_.end();
+        it != itEnd; ++it )
+  {
+    it->second.reset();
+  }
+
   runNumber_ = runNumber;
   corruptedEvents_ = 0;
   eventsWithCRCerrors_ = 0;

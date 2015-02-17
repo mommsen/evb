@@ -123,6 +123,9 @@ namespace evb {
 
         EventMapMonitor() :
           lowestLumiSection(0),completeEvents(0),partialEvents(0) {};
+
+        void reset()
+        { lowestLumiSection = 0; completeEvents = 0; partialEvents = 0; }
       };
 
       void createProcessingWorkLoops();
