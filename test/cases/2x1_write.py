@@ -14,7 +14,6 @@ class case_2x1_write(TestCase):
     def runTest(self):
         testDir="/tmp/evb_test/ramdisk"
         runNumber=time.strftime("%s",time.localtime())
-        runDir=testDir+"/run"+runNumber
         self.prepareAppliance(testDir,runNumber)
         self.setAppParam('rawDataDir','string',testDir,'BU')
         self.setAppParam('metaDataDir','string',testDir,'BU')
@@ -44,6 +43,14 @@ class case_2x1_write(TestCase):
         sys.stdout.write("Stopping EvB")
         self.waitForState('Ready')
         print(" done")
+        self.checkBuDir(testDir,runNumber,eventSize=28672)
+
+        runNumber=time.strftime("%s",time.localtime())
+        self.enableEvB(sleepTime=15,runNumber=runNumber)
+        self.checkEVM(2048)
+        self.checkRU(24576)
+        self.checkBU(26624)
+        self.stopEvB()
         self.checkBuDir(testDir,runNumber,eventSize=28672)
 
 
