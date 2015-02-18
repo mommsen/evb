@@ -138,6 +138,8 @@ namespace evb {
         virtual ~Active()
         { safeExitAction(); }
 
+        virtual void exitAction();
+
       };
 
 

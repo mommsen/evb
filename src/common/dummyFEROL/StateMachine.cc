@@ -132,6 +132,13 @@ void evb::test::dummyFEROL::Draining::exitAction()
 }
 
 
+void evb::test::dummyFEROL::Active::exitAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.dummyFEROL()->closeConnection();
+}
+
+
 /// emacs configuration
 /// Local Variables: -
 /// mode: c++ -

@@ -13,10 +13,15 @@
 #include "xcept/tools.h"
 
 #include <algorithm>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <pthread.h>
+#include <sys/socket.h>
+
 
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
+  sockfd_(0),
   doProcessing_(false),
   generatingActive_(false),
   fragmentFIFO_(this,"fragmentFIFO")
@@ -206,26 +211,45 @@ void evb::test::DummyFEROL::configure()
     configuration_->maxTriggerRate
   );
 
-  getApplicationDescriptors();
+  openConnection();
 
   resetMonitoringCounters();
 }
 
 
-void evb::test::DummyFEROL::getApplicationDescriptors()
+void evb::test::DummyFEROL::openConnection()
 {
-  try
-  {
-    ruDescriptor_ =
-      getApplicationContext()->
-      getDefaultZone()->
-      getApplicationDescriptor(configuration_->destinationClass,configuration_->destinationInstance);
-  }
-  catch(xcept::Exception &e)
+  addrinfo hints, *servinfo;
+  //Ensure that servinfo is clear
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  char str[8];
+  sprintf(str,"%d",configuration_->destinationPort.value_);
+  const int result = getaddrinfo(
+    configuration_->destinationHost.value_.c_str(),
+    (char*)&str,
+    &hints,&servinfo);
+  if ( result != 0 )
   {
     std::ostringstream oss;
-    oss << "Failed to get application descriptor of the destination";
-    XCEPT_RETHROW(exception::Configuration, oss.str(), e);
+    oss << "Failed to get server info: " << gai_strerror(result);
+    XCEPT_RAISE(exception::TCP, oss.str());
+  }
+
+  sockfd_ = socket(servinfo->ai_family,servinfo->ai_socktype,servinfo->ai_protocol);
+  if ( sockfd_ < 0 )
+  {
+    XCEPT_RAISE(exception::TCP, "Failed to open socket");
+  }
+
+  if (connect(sockfd_,servinfo->ai_addr,servinfo->ai_addrlen) < 0)
+  {
+    close(sockfd_);
+    std::ostringstream oss;
+    oss << "Failed to connect to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+    XCEPT_RAISE(exception::TCP, oss.str());
   }
 }
 
@@ -253,6 +277,14 @@ void evb::test::DummyFEROL::stopProcessing()
   doProcessing_ = false;
   while ( generatingActive_ || sendingActive_ ) ::usleep(1000);
   fragmentFIFO_.clear();
+}
+
+
+void evb::test::DummyFEROL::closeConnection()
+{
+  if ( sockfd_ > 0 )
+    close(sockfd_);
+  sockfd_ = 0;
 }
 
 
@@ -389,12 +421,13 @@ inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRe
 
 inline void evb::test::DummyFEROL::sendData(toolbox::mem::Reference* bufRef)
 {
-  getApplicationContext()->
-    postFrame(
-      bufRef,
-      getApplicationDescriptor(),
-      ruDescriptor_
-    );
+  if ( write(sockfd_,bufRef->getDataLocation(),bufRef->getDataSize()) < 0 )
+  {
+    std::ostringstream oss;
+    oss << "Failed to send data to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+    XCEPT_RAISE(exception::TCP, oss.str());
+  }
+  bufRef->release();
 }
 
 
