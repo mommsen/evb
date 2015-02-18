@@ -275,15 +275,14 @@ void evb::test::DummyFEROL::drain()
 void evb::test::DummyFEROL::stopProcessing()
 {
   doProcessing_ = false;
-  while ( generatingActive_ || sendingActive_ ) ::usleep(1000);
+  while ( generatingActive_ ) ::usleep(1000);
   fragmentFIFO_.clear();
 }
 
 
 void evb::test::DummyFEROL::closeConnection()
 {
-  if ( sockfd_ > 0 )
-    close(sockfd_);
+  close(sockfd_);
   sockfd_ = 0;
 }
 
