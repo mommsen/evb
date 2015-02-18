@@ -76,18 +76,6 @@ class Context:
         return config
 
 
-    def getConfigForApplication(self):
-        global id
-        config = """
-      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
-         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % dict(self.apps.items() + [('id',id)])
-        id += 1
-        config += self.fillProperties(self._params)
-        config += "         </properties>\n      </xc:Application>\n"
-        return config
-
-
     def fillProperties(self,params):
         config = ""
         for param in params:
@@ -111,21 +99,21 @@ class Context:
 class FEROL(Context):
     instance = 0
 
-    def __init__(self,symbolMap,destination,params,nestedContexts=()):
+    def __init__(self,symbolMap,destination,fedId,params=[],nestedContexts=()):
         Context.__init__(self,params,nestedContexts)
         self.role = "FEROL"
         self.apps['app'] = "evb::test::DummyFEROL"
         self.apps['instance'] = FEROL.instance
         self.apps.update( symbolMap.getHostInfo('FEROL'+str(FEROL.instance)) )
-        self.apps['ptApp'] = "pt::frl::Application"
-        self.apps['network'] = "ferol"+str(FEROL.instance)
         FEROL.instance += 1
 
-        self._unicast = """<xc:Unicast class="%(destinationApp)s" instance="%(destinationInstance)s" network=\"%(network)s" />"""\
-            % {'destinationApp':destination.apps['app'],'destinationInstance':destination.apps['instance'],'network':self.apps['network']}
-        self._params.append(('destinationClass','string',destination.apps['app']))
-        self._params.append(('destinationInstance','unsignedInt',str(destination.apps['instance'])))
-        destination.apps['network'].append(self.apps['network'])
+        self._params.append(('fedId','unsignedInt',fedId))
+        self._params.append(('destinationHost','string',destination.apps['frlHostname']))
+        self._params.append(('destinationPort','unsignedInt',str(destination.apps['frlPort'])))
+
+        ferolSource = dict((key, self.apps[key]) for key in ('frlHostname','frlPort'))
+        ferolSource['fedId'] = fedId
+        destination.apps['ferolSources'].append(ferolSource)
 
 
     def __del__(self):
@@ -135,29 +123,11 @@ class FEROL(Context):
     def getConfigForApplication(self):
         global id
         config = """
-      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="%(network)s">
-        %(unicast)s
+      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="local">
         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % dict(self.apps.items() + [('id',id),('unicast',self._unicast)])
-        id += 1
-        config += self.fillProperties(self._params)
-        config += "        </properties>\n      </xc:Application>\n"
-        return config
-
-
-    def getConfigForPtFrl(self):
-        global id
-        config = """
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="%(network)s" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
-
-      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="%(network)s">
-        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
 """ % dict(self.apps.items() + [('id',id)])
         id += 1
-        config += self.fillProperties([
-            ('ioQueueSize','unsignedInt','65536'),
-            ('eventQueueSize','unsignedInt','65536')
-            ])
+        config += self.fillProperties(self._params)
         config += "        </properties>\n      </xc:Application>\n"
         return config
 
@@ -166,10 +136,7 @@ class FEROL(Context):
 class RU(Context):
     instance = 0
 
-    def __init__(self,symbolMap,params,fedSourceIds=None,nestedContexts=()):
-        if fedSourceIds is not None:
-            params.append( self.getFerolSources(fedSourceIds) );
-            params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
+    def __init__(self,symbolMap,params,nestedContexts=()):
         Context.__init__(self,params,nestedContexts)
         if RU.instance == 0:
             self.apps['app'] = "evb::EVM"
@@ -181,6 +148,7 @@ class RU(Context):
         self.apps.update( symbolMap.getHostInfo('RU'+str(RU.instance)) )
         self.apps['tid'] = RU.instance+1
         self.apps['ptApp'] = "pt::utcp::Application"
+        self.apps['ferolSources'] = []
         RU.instance += 1
 
 
@@ -188,31 +156,49 @@ class RU(Context):
         RU.instance = 0
 
 
-    def getFerolSources(self, fedSourceIds):
+    def getConfigForApplication(self):
+        global id
+        config = """
+      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
+         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
+        config += self.fillProperties(self._params)
+        config += "         </properties>\n      </xc:Application>\n"
+        return config
+
+
+    def fillFerolSources(self):
+        if len(self.apps['ferolSources']) == 0:
+            return
         ferolSources = []
-        for fedId in fedSourceIds:
+        fedSourceIds = []
+        routing = []
+        for source in self.apps['ferolSources']:
+            fedSourceIds.append(source['fedId'])
             ferolSources.append( (
-                ('fedId','unsignedInt',fedId),
-                ('hostname','string','localhost'),
-                ('port','unsignedInt',9999)
+                ('fedId','unsignedInt',source['fedId']),
+                ('hostname','string',source['frlHostname']),
+                ('port','unsignedInt',source['frlPort'])
                 ) )
-        return ('ferolSources','Struct',ferolSources)
+            routing.append( (
+                ('fedid','string',source['fedId']),
+                ('className','string',self.apps['app']),
+                ('instance','string',str(self.apps['instance']))
+                ) )
+        self._params.append( ('ferolPort','unsignedInt',self.apps['frlPort']) );
+        self._params.append( ('ferolSources','Struct',ferolSources) )
+        self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
+        return routing
 
 
     def getConfigForPtFrl(self):
         global id
-        routing = []
+        routing = self.fillFerolSources()
         for param in self._params:
             try:
-                if param[0] == 'inputSource' and param[2] == 'Local':
+                if param[0] == 'inputSource' and param[2] in ('Local','Socket'):
                     return ""
-                if param[0] == 'ferolSources':
-                    for ferolSource in param[2]:
-                        routing.append( (
-                            ('fedid','string',str(ferolSource[0][2])),
-                            ('className','string',self.apps['app']),
-                            ('instance','string',str(self.apps['instance']))
-                            ) )
             except KeyError:
                 pass
 
@@ -268,6 +254,18 @@ class BU(Context):
 
     def __del__(self):
         BU.instance = 0
+
+
+    def getConfigForApplication(self):
+        global id
+        config = """
+      <xc:Application class="%(app)s" id="%(id)s" instance="%(instance)s" network="tcp">
+         <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
+""" % dict(self.apps.items() + [('id',id)])
+        id += 1
+        config += self.fillProperties(self._params)
+        config += "         </properties>\n      </xc:Application>\n"
+        return config
 
 
     def getConfigForPtFrl(self):

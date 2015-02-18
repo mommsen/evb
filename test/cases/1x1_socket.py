@@ -1,8 +1,8 @@
 from TestCase import TestCase
-from Configuration import RU,BU
+from Configuration import FEROL,RU,BU
 
 
-class case_1x1(TestCase):
+class case_1x1_socket(TestCase):
 
     def runTest(self):
         self.configureEvB()
@@ -14,10 +14,11 @@ class case_1x1(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,))
-            ]) )
+        evm = RU(symbolMap,[
+             ('inputSource','string','Socket')
+            ])
+        self._config.add( FEROL(symbolMap,evm,512) )
+        self._config.add( evm )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),
              ('lumiSectionTimeout','unsignedInt','0')
