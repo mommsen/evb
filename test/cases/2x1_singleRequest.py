@@ -16,9 +16,11 @@ class case_2x1_singleRequest(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-            ],(512,)) )
+             ('fedSourceIds','unsignedInt',(512,))
+            ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),

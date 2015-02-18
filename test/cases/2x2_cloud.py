@@ -33,10 +33,12 @@ class case_2x2_cloud(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',(512,)),
              ('fakeLumiSectionDuration','unsignedInt','5')
-            ],(512,)) )
+            ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
             ('resourcesPerCore','double','1'),

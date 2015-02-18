@@ -58,26 +58,20 @@ class case_2x1_crcErrors(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        evmFedIds = range(4)
         evm = RU(symbolMap,[
              ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1')
-            ],evmFedIds)
-        for id in evmFedIds:
-            self._config.add( FEROL(symbolMap,evm,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+            ])
+        for id in range(0,4):
+            self._config.add( FEROL(symbolMap,evm,id) )
 
-        ruFedIds = range(4,8)
         ru = RU(symbolMap,[
              ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1'),
              ('maxCRCErrorRate','double','10')
-            ],ruFedIds)
-        for id in ruFedIds:
-            self._config.add( FEROL(symbolMap,ru,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+            ])
+        for id in range(4,8):
+            self._config.add( FEROL(symbolMap,ru,id) )
 
         self._config.add( evm )
         self._config.add( ru )

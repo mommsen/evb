@@ -27,8 +27,6 @@ class case_1x1_ferol_1xdaq(TestCase):
             ])
         evm = RU(symbolMap,[
              ('inputSource','string','FEROL')
-            ],(512,),(bu,))
-        self._config.add( FEROL(symbolMap,evm,[
-             ('fedId','unsignedInt','512')
-             ]) )
+            ],(bu,))
+        self._config.add( FEROL(symbolMap,evm,512) )
         self._config.add( evm )

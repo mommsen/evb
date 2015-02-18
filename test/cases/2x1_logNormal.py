@@ -17,14 +17,16 @@ class case_2x1_logNormal(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',(512,)),
              ('dummyFedSize','unsignedInt','2048'),
              ('dummyFedSizeStdDev','unsignedInt','1024'),
              ('dummyFedSizeMin','unsignedInt','512'),
              ('dummyFedSizeMax','unsignedInt','2048'),
              ('useLogNormal','boolean','true')
-            ],(512,)) )
+            ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13)),
              ('dummyFedSize','unsignedInt','2048'),
              ('dummyFedSizeStdDev','unsignedInt','1024'),
              ('useLogNormal','boolean','true')

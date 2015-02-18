@@ -51,13 +51,15 @@ class case_2x1_diskFull(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(4)),
              ('useLogNormal','boolean','true'),
              ('dummyFedSize','unsignedInt','10000'),
              ('dummyFedSizeStdDev','unsignedInt','1000'),
              ('fakeLumiSectionDuration','unsignedInt','5')
-            ],range(4)) )
+            ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(7,20)),
              ('useLogNormal','boolean','true'),
              ('dummyFedSize','unsignedInt','10000'),
              ('dummyFedSizeStdDev','unsignedInt','1000')

@@ -8,7 +8,7 @@ class Context:
     ptInstance = 0
 
     def __init__(self,params,nestedContexts):
-        self._params = params
+        self._params = copy.deepcopy(params)
         self.nestedContexts = nestedContexts
         self.role = None
         self.apps = {
@@ -169,26 +169,37 @@ class RU(Context):
 
 
     def fillFerolSources(self):
-        if len(self.apps['ferolSources']) == 0:
-            return
-        ferolSources = []
-        fedSourceIds = []
         routing = []
-        for source in self.apps['ferolSources']:
-            fedSourceIds.append(source['fedId'])
-            ferolSources.append( (
-                ('fedId','unsignedInt',source['fedId']),
-                ('hostname','string',source['frlHostname']),
-                ('port','unsignedInt',source['frlPort'])
-                ) )
-            routing.append( (
-                ('fedid','string',source['fedId']),
-                ('className','string',self.apps['app']),
-                ('instance','string',str(self.apps['instance']))
-                ) )
-        self._params.append( ('ferolPort','unsignedInt',self.apps['frlPort']) );
+        ferolSources = []
+        if len(self.apps['ferolSources']) == 0:
+            for param in self._params:
+                try:
+                    if param[0] == 'fedSourceIds':
+                        for fedId in param[2]:
+                           ferolSources.append( (
+                                ('fedId','unsignedInt',fedId),
+                                ('hostname','string','localhost'),
+                                ('port','unsignedInt','9999')
+                                ) )
+                except KeyError:
+                    pass
+        else:
+            fedSourceIds = []
+            for source in self.apps['ferolSources']:
+                fedSourceIds.append(source['fedId'])
+                ferolSources.append( (
+                    ('fedId','unsignedInt',source['fedId']),
+                    ('hostname','string',source['frlHostname']),
+                    ('port','unsignedInt',source['frlPort'])
+                    ) )
+                routing.append( (
+                    ('fedid','string',source['fedId']),
+                    ('className','string',self.apps['app']),
+                    ('instance','string',str(self.apps['instance']))
+                    ) )
+            self._params.append( ('ferolPort','unsignedInt',self.apps['frlPort']) );
+            self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
         self._params.append( ('ferolSources','Struct',ferolSources) )
-        self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
         return routing
 
 
@@ -265,18 +276,6 @@ class BU(Context):
         id += 1
         config += self.fillProperties(self._params)
         config += "         </properties>\n      </xc:Application>\n"
-        return config
-
-
-    def getConfigForPtFrl(self):
-        global id
-        config = """
-      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
-        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-        </properties>
-      </xc:Application>
-""" % dict(self.apps.items() + [('id',id)])
-        id += 1
         return config
 
 
