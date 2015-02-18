@@ -66,6 +66,7 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
+      xdata::UnsignedInteger32 ferolPort;                    // Port number to listen for FEROL connections
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
@@ -92,6 +93,7 @@ namespace evb {
           dummyScalFedSize(0),
           scalFedId(999),
           fragmentPoolSize(200000000),
+          ferolPort(10000),
           tolerateCorruptedEvents(false),
           maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
@@ -129,6 +131,7 @@ namespace evb {
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds, InfoSpaceItems::change);
         params.add("ferolSources", &ferolSources);
+        params.add("ferolPort", &ferolPort);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
@@ -164,32 +167,6 @@ namespace evb {
             it->bag.active = false;
           else
             it->bag.active = true;
-        }
-
-        // Hack for backward compatibilty
-        xdata::Bag<FerolSource> ferolSource;
-        ferolSource.bag.hostname = "localhost";
-        ferolSource.bag.port = 9999;
-        ferolSource.bag.active = true;
-
-        for (xdata::Vector<xdata::UnsignedInteger32>::const_iterator fedId = fedSourceIds.begin(), fedIdEnd = fedSourceIds.end();
-             fedId != fedIdEnd; ++fedId)
-        {
-          bool found = false;
-          for (FerolSources::iterator it = ferolSources.begin(), itEnd = ferolSources.end();
-               it != itEnd; ++it)
-          {
-            if ( it->bag.fedId == fedId->value_ )
-            {
-              found = true;
-              break;
-            }
-          }
-          if ( ! found )
-          {
-             ferolSource.bag.fedId = fedId->value_;
-             ferolSources.push_back(ferolSource);
-          }
         }
       }
     };

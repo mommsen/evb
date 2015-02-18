@@ -617,7 +617,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     // TODO: Get the server port number from the configuration
     try
     {
-      ferolTCPServer->startServer(10000);
+      ferolTCPServer->startServer(configuration->ferolPort);
     }
     catch(ferolTCP::Exception& e)
     {
