@@ -37,6 +37,7 @@ namespace evb {
         Configuration()
           : destinationHost("localhost"),
             destinationPort(0),
+            fedId(0),
             fedSize(2048),
             computeCRC(true),
             useLogNormal(false),
@@ -54,12 +55,9 @@ namespace evb {
         void addToInfoSpace
         (
           InfoSpaceItems& params,
-          const uint32_t instance,
           xdaq::ApplicationContext* context
         )
         {
-          fedId = instance;
-
           params.add("destinationHost", &destinationHost);
           params.add("destinationPort", &destinationPort);
           params.add("fedId", &fedId);

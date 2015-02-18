@@ -102,12 +102,9 @@ namespace evb {
       void addToInfoSpace
       (
         InfoSpaceItems& params,
-        const uint32_t instance,
         xdaq::ApplicationContext* context
       )
       {
-        fillDefaultFerolSources(instance);
-
         params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource);
         params.add("numberOfResponders", &numberOfResponders);
@@ -135,27 +132,6 @@ namespace evb {
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
-      }
-
-      void fillDefaultFerolSources(const uint32_t instance)
-      {
-        fedSourceIds.clear();
-        ferolSources.clear();
-        xdata::Bag<FerolSource> ferolSource;
-        ferolSource.bag.hostname = "localhost";
-        ferolSource.bag.port = 9999;
-        ferolSource.bag.active = true;
-
-        // Default is 12 FEDs per super-fragment
-        // RU0 has 0 to 11, RU1 has 12 to 23, etc.
-        const uint32_t firstSourceId = (instance * 12);
-        const uint32_t lastSourceId  = (instance * 12) + 11;
-        for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
-        {
-          ferolSource.bag.fedId = sourceId;
-          ferolSources.push_back(ferolSource);
-          fedSourceIds.push_back(sourceId);
-        }
       }
 
       void maskFerolSourcesFromSourceIds()
