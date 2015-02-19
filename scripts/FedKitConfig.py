@@ -134,7 +134,7 @@ class FedKitConfig:
         </xc:Application>
 
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-        <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
+        <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
         """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'fedId':fedId,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort}
@@ -199,7 +199,7 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
-        <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
+        <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
 
