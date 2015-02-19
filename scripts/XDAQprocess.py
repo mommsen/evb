@@ -106,9 +106,14 @@ class XDAQprocess:
         for app in self._applications:
             if self.getStateName(*app) not in ('Halted','uninitialized'):
                 raise(StateException(app[0]+":"+str(app[1])+" is not in Halted state"))
-            state = self.sendSimpleCommand("Configure",*app)
-            tries=0
-            while not state in ('Ready','Configured'):
+            self.sendSimpleCommand("Configure",*app)
+
+
+    def waitForReady(self):
+        for app in self._applications:
+            state = ''
+            tries = 0
+            while not state in ('Ready','Configured','Configuring'):
                 time.sleep(1)
                 state = self.getStateName(*app)
                 if state == 'Failed':

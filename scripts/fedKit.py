@@ -66,7 +66,11 @@ def main(argv):
     time.sleep(2)
 
     for xdaq in fedKitConfig.xdaqProcesses[::-1]:
-        xdaq.start()
+        xdaq.configure()
+    for xdaq in fedKitConfig.xdaqProcesses[::-1]:
+        xdaq.waitForReady()
+    for xdaq in fedKitConfig.xdaqProcesses[::-1]:
+        xdaq.enable()
 
     url=fedKitConfig.xdaqProcesses[-1].getURL()
     print("Running. Point your browser to http://"+url)
