@@ -20,7 +20,7 @@ class case_4x1_write(TestCase):
         dummyRuns = ('123456','234567','345678')
         for run in dummyRuns:
             os.makedirs(testDir+"/run"+run)
-        with open(testDir+"/run234567/EoR_234567.jsn",'w') as dummy:
+        with open(testDir+"/run234567/run234567_ls0000_EoR.jsn",'w') as dummy:
             dummy.write("")
         self.setAppParam('rawDataDir','string',testDir,'BU')
         self.setAppParam('metaDataDir','string',testDir,'BU')
