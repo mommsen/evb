@@ -84,6 +84,7 @@ namespace evb {
       virtual void addComponentsToWebPage(cgicc::table&) const;
 
       void eventCountForLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+      void getLatestLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
       void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
 
       xdata::UnsignedInteger32 eventsInRU_;
@@ -307,6 +308,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
 
   xgi::bind(
     this,
+    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::getLatestLumiSection,
+    "getLatestLumiSection"
+  );
+
+  xgi::bind(
+    this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFragmentsToFile,
     "writeNextFragmentsToFile"
   );
@@ -372,6 +379,18 @@ throw (xgi::exception::Exception)
     const uint32_t ls = xgi::Utils::getFormElement(cgi, "ls")->getIntegerValue();
     *out << input_->getEventCountForLumiSection(ls);
   }
+}
+
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::getLatestLumiSection
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+throw (xgi::exception::Exception)
+{
+  *out << buProxy_->getLatestLumiSection();
 }
 
 #endif // _evb_readoutunit_ReadoutUnit_h_

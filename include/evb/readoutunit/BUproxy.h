@@ -101,6 +101,11 @@ namespace evb {
       void stopProcessing();
 
       /**
+       * Return the latest lumi section sent to the BUs
+       */
+      uint32_t getLatestLumiSection() const;
+
+      /**
        * Return monitoring information as cgicc snipped
        */
       cgicc::div getHtmlSnipped() const;
@@ -769,6 +774,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
     dataMonitoring_.i2oCount = 0;
     dataMonitoring_.payloadPerBU.clear();
   }
+}
+
+
+template<class ReadoutUnit>
+uint32_t evb::readoutunit::BUproxy<ReadoutUnit>::getLatestLumiSection() const
+{
+  boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+  return dataMonitoring_.lastLumiSectionToBUs;
 }
 
 

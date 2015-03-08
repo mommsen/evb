@@ -72,6 +72,11 @@ namespace evb {
       uint32_t getTotalEventsInLumiSection(const uint32_t lumiSection);
 
       /**
+       * Get the latest lumi section from the EVM
+       */
+      uint32_t getLatestLumiSection();
+
+      /**
        * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
@@ -125,6 +130,7 @@ namespace evb {
       bool requestFragments(toolbox::task::WorkLoop*);
       void getApplicationDescriptorForEVM();
       cgicc::table getStatisticsPerRU() const;
+      uint32_t getValueFromEVM(const std::string& url);
       static int curlWriter(char*, size_t, size_t, std::string*);
 
       BU* bu_;

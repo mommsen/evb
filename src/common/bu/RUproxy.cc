@@ -468,17 +468,29 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
 
 uint32_t evb::bu::RUproxy::getTotalEventsInLumiSection(const uint32_t lumiSection)
 {
-  uint32_t eventCount = 0;
   std::ostringstream url;
   url << evmURL_ << "/eventCountForLumiSection?ls=" << lumiSection;
-  curl_easy_setopt(curl_, CURLOPT_URL, url.str().c_str());
+  return getValueFromEVM(url.str());
+}
+
+
+uint32_t evb::bu::RUproxy::getLatestLumiSection()
+{
+  return getValueFromEVM(evmURL_+"/getLatestLumiSection");
+}
+
+
+uint32_t evb::bu::RUproxy::getValueFromEVM(const std::string& url)
+{
+  uint32_t value = 0;
+  curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
   const CURLcode result = curl_easy_perform(curl_);
 
   if (result == CURLE_OK)
   {
     try
     {
-      eventCount = boost::lexical_cast<uint32_t>(curlBuffer_);
+      value = boost::lexical_cast<uint32_t>(curlBuffer_);
     }
     catch(boost::bad_lexical_cast& e)
     {
@@ -490,15 +502,14 @@ uint32_t evb::bu::RUproxy::getTotalEventsInLumiSection(const uint32_t lumiSectio
   else
   {
     std::ostringstream oss;
-    oss << "Failed to get total event count for lumi section " << lumiSection;
-    oss << " from EVM at " << url.str() <<": ";
+    oss << "Failed to get value from EVM at " << url <<": ";
     oss << curl_easy_strerror(result);
     XCEPT_RAISE(exception::DiskWriting,oss.str());
   }
 
   curlBuffer_.clear();
 
-  return eventCount;
+  return value;
 }
 
 
