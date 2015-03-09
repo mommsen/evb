@@ -167,7 +167,18 @@ namespace evb {
       DataBlockMap dataBlockMap_;
       boost::mutex dataBlockMapMutex_;
 
-      typedef std::map<uint32_t,uint64_t> CountsPerRU;
+      struct StatsPerRU
+      {
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t sumArrivalTime;
+        uint32_t timeSamples;
+        uint32_t deltaTns;
+
+        StatsPerRU() :
+          logicalCount(0),payload(0),sumArrivalTime(0),timeSamples(0),deltaTns(0) {};
+      };
+      typedef std::map<uint32_t,StatsPerRU> CountsPerRU;
       typedef std::map<uint32_t,timespec> ArrivalTimes;
       ArrivalTimes arrivalTimes_;
       struct FragmentMonitoring
@@ -178,10 +189,7 @@ namespace evb {
         uint64_t logicalCount;
         uint64_t payload;
         uint64_t i2oCount;
-        CountsPerRU logicalCountPerRU;
-        CountsPerRU payloadPerRU;
-        CountsPerRU timeSamples;
-        CountsPerRU sumArrivalTimes;
+        CountsPerRU countsPerRU;
       } fragmentMonitoring_;
       mutable boost::mutex fragmentMonitoringMutex_;
 

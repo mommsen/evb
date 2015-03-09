@@ -87,7 +87,7 @@ namespace evb {
           lumiSectionFIFOCapacity(128),
           lumiSectionTimeout(30),
           hltParameterSetURL(""),
-          timeSamplePreScale(256)
+          timeSamplePreScale(10000)
       {
         hltFiles.push_back("HltConfig.py");
         hltFiles.push_back("SCRAM_ARCH");
