@@ -55,6 +55,7 @@ namespace evb {
       xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
       xdata::Vector<xdata::String> hltFiles;               // List of file names to retrieve from hltParameterSetURL
+      xdata::UnsignedInteger32 timeSamplePreScale;         // Sample arrival time difference for every Nth I2O mesage (0 disables it)
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -85,7 +86,8 @@ namespace evb {
           fileStatisticsFIFOCapacity(128),
           lumiSectionFIFOCapacity(128),
           lumiSectionTimeout(30),
-          hltParameterSetURL("")
+          hltParameterSetURL(""),
+          timeSamplePreScale(256)
       {
         hltFiles.push_back("HltConfig.py");
         hltFiles.push_back("SCRAM_ARCH");
@@ -129,6 +131,7 @@ namespace evb {
         params.add("lumiSectionTimeout", &lumiSectionTimeout);
         params.add("hltParameterSetURL", &hltParameterSetURL);
         params.add("hltFiles", &hltFiles);
+        params.add("timeSamplePreScale", &timeSamplePreScale);
       }
     };
 

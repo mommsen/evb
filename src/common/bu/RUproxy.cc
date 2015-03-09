@@ -75,12 +75,13 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
       index.buResourceId = dataBlockMsg->buResourceId;
+      const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+      const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
+      ArrivalTimes::iterator arrivalTimePos = arrivalTimes_.lower_bound(lastEventNumber);
 
       {
         boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
-        const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
-        const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
         if ( index.ruTid == evm_.tid )
         {
           if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
@@ -98,6 +99,24 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         {
           fragmentMonitoring_.logicalCount += nbSuperFragments;
           fragmentMonitoring_.logicalCountPerRU[index.ruTid] += nbSuperFragments;
+
+          if ( configuration_->timeSamplePreScale > 0U &&
+               lastEventNumber % configuration_->timeSamplePreScale == 0 )
+          {
+            timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            if ( arrivalTimePos == arrivalTimes_.end() || (arrivalTimes_.key_comp()(lastEventNumber,arrivalTimePos->first)) )
+            {
+              // first block for this event number
+              arrivalTimes_.insert(arrivalTimePos, ArrivalTimes::value_type(lastEventNumber,ts));
+            }
+            else
+            {
+              const uint64_t deltaNS =  (ts.tv_sec - arrivalTimePos->second.tv_sec)*1e9 + (ts.tv_nsec - arrivalTimePos->second.tv_nsec);
+              ++fragmentMonitoring_.sumArrivalTimes[index.ruTid] += deltaNS;
+            }
+            ++fragmentMonitoring_.timeSamples[index.ruTid];
+          }
         }
       }
 
@@ -137,6 +156,8 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         {
           eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
+          if ( arrivalTimePos != arrivalTimes_.end() )
+            arrivalTimes_.erase(arrivalTimePos);
         }
       }
 
@@ -368,6 +389,8 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     fragmentMonitoring_.i2oCount = 0;
     fragmentMonitoring_.logicalCountPerRU.clear();
     fragmentMonitoring_.payloadPerRU.clear();
+    fragmentMonitoring_.timeSamples.clear();
+    fragmentMonitoring_.sumArrivalTimes.clear();
   }
 }
 
@@ -595,18 +618,28 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   table.set("title","Statistics of received super fragments and total payload per EVM/RU.");
 
   table.add(tr()
-            .add(th("Statistics per RU").set("colspan","4")));
+            .add(th("Statistics per RU").set("colspan","5")));
   table.add(tr()
             .add(td("Instance"))
             .add(td("TID"))
             .add(td("Fragments"))
-            .add(td("Payload (MB)")));
+            .add(td("Payload (MB)"))
+            .add(td("&Delta;T (ns)")));
 
   CountsPerRU::const_iterator it, itEnd;
   for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
          itEnd = fragmentMonitoring_.logicalCountPerRU.end();
        it != itEnd; ++it)
   {
+    uint32_t deltaT = 0;
+    try
+    {
+      deltaT = fragmentMonitoring_.sumArrivalTimes.at(it->first) /
+        fragmentMonitoring_.timeSamples.at(it->first);
+    }
+    catch(std::out_of_range& e)
+    {}
+
     try
     {
       xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
@@ -620,7 +653,8 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
                      .add(a(label).set("href",url).set("target","_blank")))
                 .add(td(boost::lexical_cast<std::string>(it->first)))
                 .add(td(boost::lexical_cast<std::string>(it->second)))
-                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000)))
+                .add(td(boost::lexical_cast<std::string>(deltaT))));
     }
     catch (xdaq::exception::ApplicationDescriptorNotFound& e)
     {
@@ -630,7 +664,8 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
                 .add(td(label))
                 .add(td(boost::lexical_cast<std::string>(it->first)))
                 .add(td(boost::lexical_cast<std::string>(it->second)))
-                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000)))
+                .add(td(boost::lexical_cast<std::string>(deltaT))));
     }
   }
   return table;

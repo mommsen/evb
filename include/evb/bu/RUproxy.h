@@ -6,6 +6,7 @@
 #include <curl/curl.h>
 #include <map>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/ApplicationDescriptorAndTid.h"
@@ -167,6 +168,8 @@ namespace evb {
       boost::mutex dataBlockMapMutex_;
 
       typedef std::map<uint32_t,uint64_t> CountsPerRU;
+      typedef std::map<uint32_t,timespec> ArrivalTimes;
+      ArrivalTimes arrivalTimes_;
       struct FragmentMonitoring
       {
         uint32_t lastEventNumberFromEVM;
@@ -177,6 +180,8 @@ namespace evb {
         uint64_t i2oCount;
         CountsPerRU logicalCountPerRU;
         CountsPerRU payloadPerRU;
+        CountsPerRU timeSamples;
+        CountsPerRU sumArrivalTimes;
       } fragmentMonitoring_;
       mutable boost::mutex fragmentMonitoringMutex_;
 
