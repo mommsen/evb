@@ -370,7 +370,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
     {
       fragmentCountPerRU_.push_back(it->second.logicalCount);
       payloadPerRU_.push_back(it->second.payload);
-      it->second.deltaTns = it->second.sumArrivalTime / it->second.timeSamples;
+      it->second.deltaTns = it->second.timeSamples>0 ? it->second.sumArrivalTime / it->second.timeSamples : 0;
       if ( it->second.timeSamples > 10 )
       {
         it->second.sumArrivalTime = 0;
