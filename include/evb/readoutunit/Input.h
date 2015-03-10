@@ -305,27 +305,40 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
 {
   if ( ferolStreams_.empty() ) return false;
 
-  FragmentChainPtr superFragment;
   FedFragmentPtr fedFragment;
 
   try
   {
-    typename FerolStreams::iterator it = ferolStreams_.begin();
-    if ( it->second->getNextFedFragment(fedFragment) )
+    while (1)
     {
-      superFragment.reset( new readoutunit::FragmentChain(fedFragment->getEvBid()) );
-      superFragment->append(fedFragment);
-
-      while ( ++it != ferolStreams_.end() )
+      typename FerolStreams::iterator it = ferolStreams_.begin();
+      if ( it->second->getNextFedFragment(fedFragment) )
       {
-        it->second->appendFedFragment(superFragment);
-      }
+        uint32_t size = 0;
+        I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)fedFragment->getBufRef()->getDataLocation();
+        size = frame->partLength - (frame->partLength/FEROL_BLOCK_SIZE + 1) * sizeof(ferolh_t);
+        const uint32_t eventNumber = fedFragment->getEventNumber();
 
-      updateSuperFragmentCounters(superFragment);
-    }
-    else
-    {
-      ::usleep(100);
+        while ( ++it != ferolStreams_.end() )
+        {
+          while ( ! it->second->getNextFedFragment(fedFragment) ) { sched_yield(); }
+          I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)fedFragment->getBufRef()->getDataLocation();
+          size += frame->partLength - (frame->partLength/FEROL_BLOCK_SIZE + 1) * sizeof(ferolh_t);
+        }
+
+        {
+          boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+          superFragmentMonitor_.lastEventNumber = eventNumber;
+          superFragmentMonitor_.perf.sumOfSizes += size;
+          superFragmentMonitor_.perf.sumOfSquares += size*size;
+          ++superFragmentMonitor_.perf.logicalCount;
+          ++superFragmentMonitor_.eventCount;
+        }
+      }
+      else
+      {
+        ::usleep(10);
+      }
     }
   }
   catch(exception::HaltRequested)
