@@ -376,6 +376,8 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
       diskWriterMonitoring_.lastEventNumberWritten = fileStatistics->lastEventNumberWritten;
     if ( diskWriterMonitoring_.currentLumiSection < fileStatistics->lumiSection )
       diskWriterMonitoring_.currentLumiSection = fileStatistics->lumiSection;
+    if ( diskWriterMonitoring_.lastLumiSection < fileStatistics->lumiSection )
+      diskWriterMonitoring_.lastLumiSection = fileStatistics->lumiSection;
   }
 
   ++(lumiStatistics->second->fileCount);
@@ -429,6 +431,7 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
   diskWriterMonitoring_.nbLumiSections = 0;
   diskWriterMonitoring_.lastEventNumberWritten = 0;
   diskWriterMonitoring_.currentLumiSection = 0;
+  diskWriterMonitoring_.lastLumiSection = 0;
 }
 
 
@@ -496,6 +499,9 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     table.add(tr()
               .add(td("# finished lumi sections with files"))
               .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.nbLumiSections))));
+    table.add(tr()
+              .add(td("last lumi section with files"))
+              .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.lastLumiSection))));
     table.add(tr()
               .add(td("current lumi section"))
               .add(td(boost::lexical_cast<std::string>(diskWriterMonitoring_.currentLumiSection))));
@@ -668,8 +674,6 @@ void evb::bu::DiskWriter::writeEoR() const
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  const uint32_t lastLumiSection =  bu_->getRUproxy()->getLatestLumiSection();
-
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
@@ -678,7 +682,7 @@ void evb::bu::DiskWriter::writeEoR() const
     << diskWriterMonitoring_.nbEventsWritten << "\", \""
     << diskWriterMonitoring_.nbFiles         << "\", \""
     << diskWriterMonitoring_.nbLumiSections  << "\", \""
-    << lastLumiSection << "\" ],"  << std::endl;
+    << diskWriterMonitoring_.lastLumiSection << "\" ],"  << std::endl;
   json << "   \"definition\" : \"" << eorDefFile_.string() << "\","                     << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;

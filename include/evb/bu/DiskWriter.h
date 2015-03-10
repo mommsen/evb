@@ -167,6 +167,7 @@ namespace evb {
         uint32_t nbFiles;
         uint32_t nbEventsWritten;
         uint32_t nbLumiSections;
+        uint32_t lastLumiSection;
         uint32_t lastEventNumberWritten;
         uint32_t currentLumiSection;
       } diskWriterMonitoring_;
