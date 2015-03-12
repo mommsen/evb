@@ -6,6 +6,7 @@
 #include <curl/curl.h>
 #include <map>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/ApplicationDescriptorAndTid.h"
@@ -72,6 +73,11 @@ namespace evb {
       uint32_t getTotalEventsInLumiSection(const uint32_t lumiSection);
 
       /**
+       * Get the latest lumi section from the EVM
+       */
+      uint32_t getLatestLumiSection();
+
+      /**
        * Append the info space items to be published in the
        * monitoring info space to the InfoSpaceItems
        */
@@ -125,6 +131,7 @@ namespace evb {
       bool requestFragments(toolbox::task::WorkLoop*);
       void getApplicationDescriptorForEVM();
       cgicc::table getStatisticsPerRU() const;
+      uint32_t getValueFromEVM(const std::string& url);
       static int curlWriter(char*, size_t, size_t, std::string*);
 
       BU* bu_;
@@ -160,7 +167,20 @@ namespace evb {
       DataBlockMap dataBlockMap_;
       boost::mutex dataBlockMapMutex_;
 
-      typedef std::map<uint32_t,uint64_t> CountsPerRU;
+      struct StatsPerRU
+      {
+        uint64_t logicalCount;
+        uint64_t payload;
+        uint64_t sumArrivalTime;
+        uint32_t timeSamples;
+        uint32_t deltaTns;
+
+        StatsPerRU() :
+          logicalCount(0),payload(0),sumArrivalTime(0),timeSamples(0),deltaTns(0) {};
+      };
+      typedef std::map<uint32_t,StatsPerRU> CountsPerRU;
+      typedef std::map<uint32_t,timespec> ArrivalTimes;
+      ArrivalTimes arrivalTimes_;
       struct FragmentMonitoring
       {
         uint32_t lastEventNumberFromEVM;
@@ -169,8 +189,7 @@ namespace evb {
         uint64_t logicalCount;
         uint64_t payload;
         uint64_t i2oCount;
-        CountsPerRU logicalCountPerRU;
-        CountsPerRU payloadPerRU;
+        CountsPerRU countsPerRU;
       } fragmentMonitoring_;
       mutable boost::mutex fragmentMonitoringMutex_;
 

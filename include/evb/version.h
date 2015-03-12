@@ -4,8 +4,8 @@
 #include "config/PackageInfo.h"
 
 #define EVB_VERSION_MAJOR 2
-#define EVB_VERSION_MINOR 9
-#define EVB_VERSION_PATCH 1
+#define EVB_VERSION_MINOR 10
+#define EVB_VERSION_PATCH 0
 #undef EVB_PREVIOUS_VERSIONS
 
 
@@ -24,7 +24,7 @@ namespace evb
   const std::string description = "The CMS event builder";
   const std::string summary = "Event builder library";
   const std::string authors = "Remi Mommsen";
-  const std::string link = "";
+  const std::string link = "https://svnweb.cern.ch/trac/cmsos";
 
   config::PackageInfo getPackageInfo();
 

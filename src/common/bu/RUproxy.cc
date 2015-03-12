@@ -75,12 +75,13 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
       index.buResourceId = dataBlockMsg->buResourceId;
+      const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+      const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
+      ArrivalTimes::iterator arrivalTimePos = arrivalTimes_.end();
 
       {
         boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
-        const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
-        const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
         if ( index.ruTid == evm_.tid )
         {
           if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
@@ -91,13 +92,40 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
             fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
         }
+        fragmentMonitoring_.i2oCount++;
         fragmentMonitoring_.payload += payload;
-        fragmentMonitoring_.payloadPerRU[index.ruTid] += payload;
-        ++fragmentMonitoring_.i2oCount;
+
+        CountsPerRU::iterator countsPerRuPos = fragmentMonitoring_.countsPerRU.lower_bound(index.ruTid);
+        if ( countsPerRuPos == fragmentMonitoring_.countsPerRU.end() ||
+             ( fragmentMonitoring_.countsPerRU.key_comp()(index.ruTid,countsPerRuPos->first)) )
+        {
+          countsPerRuPos = fragmentMonitoring_.countsPerRU.insert(countsPerRuPos, CountsPerRU::value_type(index.ruTid,StatsPerRU()));
+        }
+        countsPerRuPos->second.payload += payload;
         if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
         {
           fragmentMonitoring_.logicalCount += nbSuperFragments;
-          fragmentMonitoring_.logicalCountPerRU[index.ruTid] += nbSuperFragments;
+          countsPerRuPos->second.logicalCount += nbSuperFragments;
+
+          if ( configuration_->timeSamplePreScale > 0U &&
+               lastEventNumber % configuration_->timeSamplePreScale < nbSuperFragments )
+          {
+            timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            arrivalTimePos = arrivalTimes_.lower_bound(lastEventNumber);
+            if ( arrivalTimePos == arrivalTimes_.end() || (arrivalTimes_.key_comp()(lastEventNumber,arrivalTimePos->first)) )
+            {
+              // first block for this event number
+              arrivalTimes_.insert(arrivalTimePos, ArrivalTimes::value_type(lastEventNumber,ts));
+            }
+            else
+            {
+              const uint64_t deltaNS = (ts.tv_sec - arrivalTimePos->second.tv_sec)*1000000000
+                + (ts.tv_nsec - arrivalTimePos->second.tv_nsec);
+              countsPerRuPos->second.sumArrivalTime += deltaNS;
+            }
+            countsPerRuPos->second.timeSamples++;
+          }
         }
       }
 
@@ -137,6 +165,8 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         {
           eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
+          if ( arrivalTimePos != arrivalTimes_.end() )
+            arrivalTimes_.erase(arrivalTimePos);
         }
       }
 
@@ -330,21 +360,22 @@ void evb::bu::RUproxy::updateMonitoringItems()
     fragmentCount_ = fragmentMonitoring_.logicalCount;
 
     fragmentCountPerRU_.clear();
-    fragmentCountPerRU_.reserve(fragmentMonitoring_.logicalCountPerRU.size());
-    for (CountsPerRU::const_iterator it = fragmentMonitoring_.logicalCountPerRU.begin(),
-           itEnd = fragmentMonitoring_.logicalCountPerRU.end();
-         it != itEnd; ++it)
-    {
-      fragmentCountPerRU_.push_back(it->second);
-    }
-
+    fragmentCountPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
     payloadPerRU_.clear();
-    payloadPerRU_.reserve(fragmentMonitoring_.payloadPerRU.size());
-    for (CountsPerRU::const_iterator it = fragmentMonitoring_.payloadPerRU.begin(),
-           itEnd = fragmentMonitoring_.payloadPerRU.end();
+    payloadPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
+
+    for (CountsPerRU::iterator it = fragmentMonitoring_.countsPerRU.begin(),
+           itEnd = fragmentMonitoring_.countsPerRU.end();
          it != itEnd; ++it)
     {
-      payloadPerRU_.push_back(it->second);
+      fragmentCountPerRU_.push_back(it->second.logicalCount);
+      payloadPerRU_.push_back(it->second.payload);
+      it->second.deltaTns = it->second.timeSamples>0 ? it->second.sumArrivalTime / it->second.timeSamples : 0;
+      if ( it->second.timeSamples > 10 )
+      {
+        it->second.sumArrivalTime = 0;
+        it->second.timeSamples = 0;
+      }
     }
   }
 }
@@ -366,8 +397,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     fragmentMonitoring_.payload = 0;
     fragmentMonitoring_.logicalCount = 0;
     fragmentMonitoring_.i2oCount = 0;
-    fragmentMonitoring_.logicalCountPerRU.clear();
-    fragmentMonitoring_.payloadPerRU.clear();
+    fragmentMonitoring_.countsPerRU.clear();
   }
 }
 
@@ -468,17 +498,29 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
 
 uint32_t evb::bu::RUproxy::getTotalEventsInLumiSection(const uint32_t lumiSection)
 {
-  uint32_t eventCount = 0;
   std::ostringstream url;
   url << evmURL_ << "/eventCountForLumiSection?ls=" << lumiSection;
-  curl_easy_setopt(curl_, CURLOPT_URL, url.str().c_str());
+  return getValueFromEVM(url.str());
+}
+
+
+uint32_t evb::bu::RUproxy::getLatestLumiSection()
+{
+  return getValueFromEVM(evmURL_+"/getLatestLumiSection");
+}
+
+
+uint32_t evb::bu::RUproxy::getValueFromEVM(const std::string& url)
+{
+  uint32_t value = 0;
+  curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
   const CURLcode result = curl_easy_perform(curl_);
 
   if (result == CURLE_OK)
   {
     try
     {
-      eventCount = boost::lexical_cast<uint32_t>(curlBuffer_);
+      value = boost::lexical_cast<uint32_t>(curlBuffer_);
     }
     catch(boost::bad_lexical_cast& e)
     {
@@ -490,15 +532,14 @@ uint32_t evb::bu::RUproxy::getTotalEventsInLumiSection(const uint32_t lumiSectio
   else
   {
     std::ostringstream oss;
-    oss << "Failed to get total event count for lumi section " << lumiSection;
-    oss << " from EVM at " << url.str() <<": ";
+    oss << "Failed to get value from EVM at " << url <<": ";
     oss << curl_easy_strerror(result);
     XCEPT_RAISE(exception::DiskWriting,oss.str());
   }
 
   curlBuffer_.clear();
 
-  return eventCount;
+  return value;
 }
 
 
@@ -584,16 +625,17 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   table.set("title","Statistics of received super fragments and total payload per EVM/RU.");
 
   table.add(tr()
-            .add(th("Statistics per RU").set("colspan","4")));
+            .add(th("Statistics per RU").set("colspan","5")));
   table.add(tr()
             .add(td("Instance"))
             .add(td("TID"))
             .add(td("Fragments"))
-            .add(td("Payload (MB)")));
+            .add(td("Payload (MB)"))
+            .add(td("&Delta;T (ns)")));
 
   CountsPerRU::const_iterator it, itEnd;
-  for (it=fragmentMonitoring_.logicalCountPerRU.begin(),
-         itEnd = fragmentMonitoring_.logicalCountPerRU.end();
+  for (it=fragmentMonitoring_.countsPerRU.begin(),
+         itEnd = fragmentMonitoring_.countsPerRU.end();
        it != itEnd; ++it)
   {
     try
@@ -608,8 +650,9 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
                 .add(td()
                      .add(a(label).set("href",url).set("target","_blank")))
                 .add(td(boost::lexical_cast<std::string>(it->first)))
-                .add(td(boost::lexical_cast<std::string>(it->second)))
-                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td(boost::lexical_cast<std::string>(it->second.logicalCount)))
+                .add(td(boost::lexical_cast<std::string>(it->second.payload / 1000000)))
+                .add(td(boost::lexical_cast<std::string>(it->second.deltaTns))));
     }
     catch (xdaq::exception::ApplicationDescriptorNotFound& e)
     {
@@ -618,8 +661,9 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
       table.add(tr()
                 .add(td(label))
                 .add(td(boost::lexical_cast<std::string>(it->first)))
-                .add(td(boost::lexical_cast<std::string>(it->second)))
-                .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payloadPerRU.at(it->first) / 1000000))));
+                .add(td(boost::lexical_cast<std::string>(it->second.logicalCount)))
+                .add(td(boost::lexical_cast<std::string>(it->second.payload / 1000000)))
+                .add(td(boost::lexical_cast<std::string>(it->second.deltaTns))));
     }
   }
   return table;
