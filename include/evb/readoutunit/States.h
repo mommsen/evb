@@ -397,7 +397,6 @@ template<class Owner>
 void evb::readoutunit::Configuring<Owner>::exitAction()
 {
   doConfiguring_ = false;
-  configuringThread_->join();
 }
 
 
@@ -480,7 +479,6 @@ template<class Owner>
 void evb::readoutunit::Draining<Owner>::exitAction()
 {
   doDraining_ = false;
-  drainingThread_->join();
 }
 
 
