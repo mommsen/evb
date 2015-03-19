@@ -243,6 +243,8 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 {
   ::usleep(1000);
 
+  if ( ! doProcessing_ ) return false;
+
   requestFragmentsActive_ = true;
 
   try

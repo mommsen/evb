@@ -319,6 +319,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const Fragmen
 template<class ReadoutUnit>
 bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   const std::string wlName =  wl->getName();
   const size_t startPos = wlName.find_last_of("_") + 1;
   const size_t endPos = wlName.find("/",startPos);

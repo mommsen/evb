@@ -133,6 +133,8 @@ void evb::bu::EventBuilder::stopProcessing()
 
 bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   const std::string wlName =  wl->getName();
   const size_t startPos = wlName.find_last_of("_") + 1;
   const size_t endPos = wlName.find("/",startPos);

@@ -161,6 +161,8 @@ void evb::bu::DiskWriter::startLumiAccounting()
 
 bool evb::bu::DiskWriter::lumiAccounting(toolbox::task::WorkLoop* wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   lumiAccountingActive_ = true;
 
   try
@@ -275,6 +277,8 @@ void evb::bu::DiskWriter::startFileMover()
 
 bool evb::bu::DiskWriter::fileMover(toolbox::task::WorkLoop* wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   fileMoverActive_ = true;
 
   try
