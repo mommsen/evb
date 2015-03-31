@@ -41,7 +41,6 @@ Sources=\
 	InfoSpaceItems.cc \
 	readoutunit/FedFragment.cc \
 	readoutunit/SuperFragment.cc \
-	readoutunit/ferolTCP/Tools.cc \
 	EVM.cc \
 	evm/RUproxy.cc \
 	RU.cc \
