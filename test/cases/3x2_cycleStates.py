@@ -61,7 +61,8 @@ class case_3x2_cycleStates(TestCase):
              ('inputSource','string','Local')
             ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(13,25))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),
