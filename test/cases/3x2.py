@@ -25,7 +25,7 @@ class case_3x2(TestCase):
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(1,13))
+             ('fedSourceIds','unsignedInt',range(13,25))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),
