@@ -32,7 +32,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
   boost::mutex::scoped_lock sl(fileHandlerMutex_);
 
-  const uint32_t lumiSection = event->lumiSection();
+  const uint32_t lumiSection = event->getEventInfo()->lumiSection();
 
   if ( fileHandler_.get() && lumiSection > currentFileStatistics_->lumiSection )
   {
@@ -55,8 +55,8 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
     currentFileStatistics_.reset( new FileStatistics(lumiSection,fileName.str()) );
   }
 
-  event->writeToDisk(fileHandler_, configuration_->calculateAdler32);
-  currentFileStatistics_->lastEventNumberWritten = event->eventNumber();
+  fileHandler_->writeEvent(event);
+  currentFileStatistics_->lastEventNumberWritten = event->getEventInfo()->eventNumber();
 
   if ( ++currentFileStatistics_->nbEventsWritten >= configuration_->maxEventsPerFile )
   {

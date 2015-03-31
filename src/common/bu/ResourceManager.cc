@@ -32,6 +32,7 @@ evb::bu::ResourceManager::ResourceManager
   draining_(false)
 {
   resetMonitoringCounters();
+  eventMonitoring_.outstandingRequests = 0;
 }
 
 
@@ -233,11 +234,11 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
 
 void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
-  eventCompletedForLumiSection(event->lumiSection());
+  eventCompletedForLumiSection(event->getEventInfo()->lumiSection());
 
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-  const uint32_t eventSize = event->eventSize();
+  const uint32_t eventSize = event->getEventInfo()->eventSize();
   eventMonitoring_.perf.sumOfSizes += eventSize;
   eventMonitoring_.perf.sumOfSquares += eventSize*eventSize;
   ++eventMonitoring_.perf.logicalCount;

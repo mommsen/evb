@@ -73,7 +73,7 @@ float evb::bu::DiskUsage::overThreshold()
 
   if ( ! valid_ ) return 1; //error condition
 
-  if ( deleteFiles_ && diskUsage > 0.9 )
+  if ( deleteFiles_ && diskUsage > 0.5 )
   {
     boost::filesystem::recursive_directory_iterator it(path_);
     while ( it != boost::filesystem::recursive_directory_iterator() )

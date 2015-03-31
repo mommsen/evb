@@ -48,6 +48,8 @@ Sources=\
 	bu/DiskWriter.cc \
 	bu/Event.cc \
 	bu/EventBuilder.cc \
+	bu/EventInfo.cc \
+	bu/FedInfo.cc \
 	bu/FileHandler.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \

@@ -4,6 +4,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "evb/BU.h"
+#include "evb/Constants.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/EventBuilder.h"
 #include "evb/bu/ResourceManager.h"
@@ -337,7 +338,7 @@ inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::get
   if ( eventPos == partialEvents.end() || (partialEvents.key_comp()(evbId,eventPos->first)) )
   {
     // new event
-    EventPtr event( new Event(evbId, dataBlockMsg) );
+    EventPtr event( new Event(evbId, configuration_->calculateAdler32, dataBlockMsg) );
     eventPos = partialEvents.insert(eventPos, PartialEvents::value_type(evbId,event));
   }
   return eventPos;
