@@ -43,6 +43,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
 {
   eventSize_ = 0;
   eventRate_ = 0;
+  bandwidth_ = 0;
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
   nbLumiSections_ = 0;
@@ -51,6 +52,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("bandwidth", &bandwidth_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
@@ -104,6 +106,17 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
     catch(xdata::exception::Exception& e)
     {
       eventRate_ = 0;
+    }
+  }
+  else if (item == "bandwidth")
+  {
+    try
+    {
+      bandwidth_.setValue( *(monitoringInfoSpace_->find("bandwidth")) );
+    }
+    catch(xdata::exception::Exception& e)
+    {
+      bandwidth_ = 0;
     }
   }
   else if (item == "nbEventsInBU")
