@@ -13,10 +13,12 @@
 evb::bu::Event::Event
 (
   const EvBid& evbId,
+  const bool checkCRC,
   const bool calculateAdler32,
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
 ) :
   evbId_(evbId),
+  checkCRC_(checkCRC),
   calculateAdler32_(calculateAdler32),
   buResourceId_(dataBlockMsg->buResourceId)
 {
@@ -107,7 +109,7 @@ bool evb::bu::Event::appendSuperFragment
 }
 
 
-void evb::bu::Event::checkEvent(const uint32_t& checkCRC) const
+void evb::bu::Event::checkEvent() const
 {
   if ( ! isComplete() )
   {
@@ -130,7 +132,6 @@ void evb::bu::Event::checkEvent(const uint32_t& checkCRC) const
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
   std::vector<std::string> crcErrors;
-  const bool computeCRC = ( checkCRC > 0 && evbId_.eventNumber() % checkCRC == 0 );
 
   try
   {
@@ -154,7 +155,7 @@ void evb::bu::Event::checkEvent(const uint32_t& checkCRC) const
 
       try
       {
-        fedInfo.checkData(evbId_.eventNumber(), computeCRC);
+        fedInfo.checkData(evbId_.eventNumber(), checkCRC_);
       }
       catch(exception::CRCerror& e)
       {

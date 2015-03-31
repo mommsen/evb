@@ -34,6 +34,7 @@ namespace evb {
       Event
       (
         const EvBid&,
+        const bool checkCRC,
         const bool calculateAdler32,
         const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
       );
@@ -60,7 +61,7 @@ namespace evb {
       /**
        * Check the complete event for integrity of the data
        */
-      void checkEvent(const uint32_t& checkCRC) const;
+      void checkEvent() const;
 
       /**
        * Write the event as binary dump to a text file
@@ -82,6 +83,7 @@ namespace evb {
       BufferReferences myBufRefs_;
 
       const EvBid evbId_;
+      const bool checkCRC_;
       const bool calculateAdler32_;
       const uint16_t buResourceId_;
       typedef std::map<I2O_TID,uint32_t> RUsizes;

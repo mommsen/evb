@@ -338,7 +338,8 @@ inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::get
   if ( eventPos == partialEvents.end() || (partialEvents.key_comp()(evbId,eventPos->first)) )
   {
     // new event
-    EventPtr event( new Event(evbId, configuration_->calculateAdler32, dataBlockMsg) );
+    const bool checkCRC = ( configuration_->checkCRC > 0U && evbId.eventNumber() % configuration_->checkCRC == 0 );
+    EventPtr event( new Event(evbId, checkCRC, configuration_->calculateAdler32, dataBlockMsg) );
     eventPos = partialEvents.insert(eventPos, PartialEvents::value_type(evbId,event));
   }
   return eventPos;
@@ -363,7 +364,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
 
     try
     {
-      event->checkEvent(configuration_->checkCRC);
+      event->checkEvent();
     }
     catch(exception::DataCorruption& e)
     {

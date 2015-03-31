@@ -21,7 +21,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <boost/scoped_ptr.hpp>
 
 namespace evb {
 
