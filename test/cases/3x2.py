@@ -20,7 +20,8 @@ class case_3x2(TestCase):
              ('fedSourceIds','unsignedInt',(512,))
             ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
