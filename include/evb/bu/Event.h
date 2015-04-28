@@ -36,6 +36,7 @@ namespace evb {
         const EvBid&,
         const bool checkCRC,
         const bool calculateAdler32,
+        const bool calculateCRC32,
         const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
       );
 
@@ -85,6 +86,7 @@ namespace evb {
       const EvBid evbId_;
       const bool checkCRC_;
       const bool calculateAdler32_;
+      const bool calculateCRC32_;
       const uint16_t buResourceId_;
       typedef std::map<I2O_TID,uint32_t> RUsizes;
       RUsizes ruSizes_;

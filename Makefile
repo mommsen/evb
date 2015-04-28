@@ -33,6 +33,7 @@ Package=evb
 
 Sources=\
 	crc16_T10DIF_128x_extended.S \
+	crc32c.cc \
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \

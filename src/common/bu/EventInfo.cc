@@ -4,6 +4,9 @@
 #include "evb/bu/EventInfo.h"
 
 
+evb::CRCCalculator evb::bu::EventInfo::crcCalculator_;
+
+
 evb::bu::EventInfo::EventInfo
 (
   const uint32_t run,
@@ -16,13 +19,20 @@ evb::bu::EventInfo::EventInfo
   eventNumber_(event),
   eventSize_(0),
   paddingSize_(0),
-  adler32_(::adler32(0L,Z_NULL,0))
+  adler32_(::adler32(0L,Z_NULL,0)),
+  crc32_(0)
 {}
 
 
 void evb::bu::EventInfo::updateAdler32(const iovec& loc)
 {
   adler32_ = ::adler32(adler32_, (Bytef*)loc.iov_base, loc.iov_len);
+}
+
+
+void evb::bu::EventInfo::updateCRC32(const iovec& loc)
+{
+  crc32_ = crcCalculator_.crc32c(crc32_, (Bytef*)loc.iov_base, loc.iov_len);
 }
 
 
@@ -41,6 +51,7 @@ namespace evb{
       str << " lumiSection=" << eventInfo.lumiSection();
       str << " eventNumber=" << eventInfo.eventNumber();
       str << " adler32=0x" << std::hex << eventInfo.adler32() << std::dec;
+      str << " crc32=0x" << std::hex << eventInfo.crc32() << std::dec;
       str << " eventSize=" << eventInfo.eventSize();
       str << " paddingSize=" << eventInfo.paddingSize();
 

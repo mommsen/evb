@@ -43,6 +43,12 @@ namespace evb {
      */
     void compute(uint16_t& crc, const uint8_t* buffer, size_t bufSize) const;
 
+    /**
+     * Compute CRC32-C
+     */
+    uint32_t crc32c(uint32_t crc, const unsigned char *buf, size_t len) const;
+
+
   private:
 
     static inline void computeCRC_8bit(uint16_t& crc, const uint8_t data)
@@ -61,6 +67,7 @@ namespace evb {
     }
 
     const bool havePCLMULQDQ_;
+    const bool haveSSE42_;
 
   };
 
@@ -75,6 +82,9 @@ namespace evb {
   }
 
 } // namespace evb
+
+extern uint32_t crc32c_sw(uint32_t crc, const unsigned char *buf, size_t len);
+extern uint32_t crc32c_hw(uint32_t crc, const unsigned char *buf, size_t len);
 
 #endif // _evb_CRCCalculator_h_
 
