@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <sys/uio.h>
 
+#include "evb/CRCCalculator.h"
+
 
 namespace evb {
   namespace bu {
@@ -21,7 +23,7 @@ namespace evb {
       );
 
       void addFedSize(const uint32_t size) { eventSize_ += size; }
-      void updateAdler32(const iovec&);
+      void updateCRC32(const iovec&);
 
       uint32_t version() const { return version_; }
       uint32_t eventNumber() const { return eventNumber_; }
@@ -29,7 +31,7 @@ namespace evb {
       uint32_t runNumber() const { return runNumber_; }
       uint32_t eventSize() const { return eventSize_; }
       uint32_t paddingSize() const { return paddingSize_; }
-      uint32_t adler32() const { return adler32_; }
+      uint32_t crc32() const { return crc32_; }
 
     private:
 
@@ -39,7 +41,9 @@ namespace evb {
       const uint32_t eventNumber_;
       uint32_t eventSize_;
       uint32_t paddingSize_;
-      uint32_t adler32_;
+      uint32_t crc32_;
+
+      static CRCCalculator crcCalculator_;
 
     }; // EventInfo
 

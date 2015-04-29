@@ -152,8 +152,22 @@ static inline bool hasPCLMULQDQ()
 }
 
 
+static inline bool hasSSE42()
+{
+  unsigned int ecx(0);
+  unsigned int eax(1); // we want processor info and feature bits
+
+  asm volatile("cpuid"
+               : "=c"(ecx)
+               : "a"(eax)
+               : "%ebx", "%edx");
+  return (ecx >> 20) & 1;
+}
+
+
 evb::CRCCalculator::CRCCalculator()
-  : havePCLMULQDQ_( hasPCLMULQDQ() )
+  : havePCLMULQDQ_( hasPCLMULQDQ() ),
+    haveSSE42_( hasSSE42() )
 {}
 
 
@@ -200,6 +214,12 @@ void evb::CRCCalculator::compute(uint16_t& crc, const uint8_t* buffer, size_t bu
       computeCRC_32bit(crc, ((uint32_t *)buffer)[0]);
     }
   }
+}
+
+
+uint32_t evb::CRCCalculator::crc32c(uint32_t crc, const unsigned char *buf, size_t len) const
+{
+  return haveSSE42_ ? crc32c_hw(crc, buf, len) : crc32c_sw(crc, buf, len);
 }
 
 

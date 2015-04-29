@@ -14,12 +14,12 @@ evb::bu::Event::Event
 (
   const EvBid& evbId,
   const bool checkCRC,
-  const bool calculateAdler32,
+  const bool calculateCRC32,
   const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
 ) :
   evbId_(evbId),
   checkCRC_(checkCRC),
-  calculateAdler32_(calculateAdler32),
+  calculateCRC32_(calculateCRC32),
   buResourceId_(dataBlockMsg->buResourceId)
 {
   eventInfo_ = EventInfoPtr( new EventInfo(evbId.runNumber(), evbId.lumiSection(), evbId.eventNumber()) );
@@ -92,8 +92,8 @@ bool evb::bu::Event::appendSuperFragment
     dataLocation.iov_len = superFragmentMsg->partSize;
     dataLocations_.push_back(dataLocation);
 
-    if (calculateAdler32_)
-      eventInfo_->updateAdler32(dataLocation);
+    if (calculateCRC32_)
+      eventInfo_->updateCRC32(dataLocation);
   }
 
   // erase at the very end. Otherwise the event might be considered complete

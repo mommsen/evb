@@ -1,7 +1,10 @@
 #include <sstream>
-#include <zlib.h>
+#include <sys/uio.h>
 
 #include "evb/bu/EventInfo.h"
+
+
+evb::CRCCalculator evb::bu::EventInfo::crcCalculator_;
 
 
 evb::bu::EventInfo::EventInfo
@@ -10,19 +13,19 @@ evb::bu::EventInfo::EventInfo
   const uint32_t lumi,
   const uint32_t event
 ) :
-  version_(3),
+  version_(5),
   runNumber_(run),
   lumiSection_(lumi),
   eventNumber_(event),
   eventSize_(0),
   paddingSize_(0),
-  adler32_(::adler32(0L,Z_NULL,0))
+  crc32_(0)
 {}
 
 
-void evb::bu::EventInfo::updateAdler32(const iovec& loc)
+void evb::bu::EventInfo::updateCRC32(const iovec& loc)
 {
-  adler32_ = ::adler32(adler32_, (Bytef*)loc.iov_base, loc.iov_len);
+  crc32_ = crcCalculator_.crc32c(crc32_, (const unsigned char*)loc.iov_base, loc.iov_len);
 }
 
 
@@ -40,7 +43,7 @@ namespace evb{
       str << " runNumber=" << eventInfo.runNumber();
       str << " lumiSection=" << eventInfo.lumiSection();
       str << " eventNumber=" << eventInfo.eventNumber();
-      str << " adler32=0x" << std::hex << eventInfo.adler32() << std::dec;
+      str << " crc32=0x" << std::hex << eventInfo.crc32() << std::dec;
       str << " eventSize=" << eventInfo.eventSize();
       str << " paddingSize=" << eventInfo.paddingSize();
 
