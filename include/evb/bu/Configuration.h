@@ -90,8 +90,7 @@ namespace evb {
           timeSamplePreScale(10000)
       {
         hltFiles.push_back("HltConfig.py");
-        hltFiles.push_back("SCRAM_ARCH");
-        hltFiles.push_back("CMSSW_VERSION");
+        hltFiles.push_back("fffParameters.jsn");
       };
 
       void addToInfoSpace
