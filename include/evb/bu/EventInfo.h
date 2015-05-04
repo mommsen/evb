@@ -30,8 +30,7 @@ namespace evb {
       uint32_t lumiSection() const { return lumiSection_; }
       uint32_t runNumber() const { return runNumber_; }
       uint32_t eventSize() const { return eventSize_; }
-      uint32_t paddingSize() const { return paddingSize_; }
-      uint32_t crc32() const { return crc32_; }
+      uint32_t crc32c() const { return crc32c_; }
 
     private:
 
@@ -40,8 +39,7 @@ namespace evb {
       const uint32_t lumiSection_;
       const uint32_t eventNumber_;
       uint32_t eventSize_;
-      uint32_t paddingSize_;
-      uint32_t crc32_;
+      uint32_t crc32c_;
 
       static CRCCalculator crcCalculator_;
 

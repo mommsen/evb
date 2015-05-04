@@ -18,14 +18,13 @@ evb::bu::EventInfo::EventInfo
   lumiSection_(lumi),
   eventNumber_(event),
   eventSize_(0),
-  paddingSize_(0),
-  crc32_(0)
+  crc32c_(0)
 {}
 
 
 void evb::bu::EventInfo::updateCRC32(const iovec& loc)
 {
-  crc32_ = crcCalculator_.crc32c(crc32_, (const unsigned char*)loc.iov_base, loc.iov_len);
+  crc32c_ = crcCalculator_.crc32c(crc32c_, (const unsigned char*)loc.iov_base, loc.iov_len);
 }
 
 
@@ -43,9 +42,8 @@ namespace evb{
       str << " runNumber=" << eventInfo.runNumber();
       str << " lumiSection=" << eventInfo.lumiSection();
       str << " eventNumber=" << eventInfo.eventNumber();
-      str << " crc32=0x" << std::hex << eventInfo.crc32() << std::dec;
+      str << " crc32c=0x" << std::hex << eventInfo.crc32c() << std::dec;
       str << " eventSize=" << eventInfo.eventSize();
-      str << " paddingSize=" << eventInfo.paddingSize();
 
       return str;
     }
