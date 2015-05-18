@@ -17,7 +17,7 @@ class case_2x1_diskFull(TestCase):
         runDir=testDir+"/run"+runNumber
         diskUsage = self.prepareAppliance(testDir,runNumber)
         self.setAppParam('rawDataLowWaterMark','double',str(diskUsage),'BU')
-        self.setAppParam('rawDataHighWaterMark','double',str(diskUsage+0.05),'BU')
+        self.setAppParam('rawDataHighWaterMark','double',str(diskUsage+0.1),'BU')
         self.setAppParam('rawDataDir','string',testDir,'BU')
         self.setAppParam('metaDataDir','string',testDir,'BU')
         self.configureEvB()
@@ -42,6 +42,8 @@ class case_2x1_diskFull(TestCase):
         except StateException:
             self.checkAppState("Throttled","BU")
         self.checkAppParam('eventRate','unsignedInt',500,operator.gt,"BU")
+        for rawFile in glob.glob(runDir+"/*.raw"):
+            os.remove(rawFile)
         self.stopEvB()
         self.checkBuDir(testDir,runNumber)
 
