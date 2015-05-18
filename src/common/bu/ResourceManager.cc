@@ -376,7 +376,7 @@ float evb::bu::ResourceManager::getAvailableResources()
   catch(boost::property_tree::ptree_error& e)
   {
     std::ostringstream oss;
-    oss << "Failed to parse " << resourceSummary_ << ": ";
+    oss << "Failed to parse " << resourceSummary_.string() << ": ";
     oss << e.what();
     handleResourceSummaryFailure(oss.str());
     return 0;
