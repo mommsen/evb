@@ -29,10 +29,35 @@ evb::bu::ResourceManager::ResourceManager
   builderId_(0),
   freeResourceFIFO_(bu,"freeResourceFIFO"),
   blockedResourceFIFO_(bu,"blockedResourceFIFO"),
-  draining_(false)
+  doProcessing_(false)
 {
+  startResourceMonitorWorkLoop();
   resetMonitoringCounters();
   eventMonitoring_.outstandingRequests = 0;
+}
+
+
+void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
+{
+  try
+  {
+    resourceMonitorWL_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( bu_->getIdentifier("resourceMonitor"), "waiting" );
+
+    if ( ! resourceMonitorWL_->isActive() )
+    {
+      resourceMonitorAction_ =
+        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
+                            bu_->getIdentifier("resourceMonitor") );
+
+      resourceMonitorWL_->activate();
+    }
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloop 'resourceMonitor'";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
 }
 
 
@@ -197,7 +222,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
   if ( oldestLumiSection->second->nbIncompleteEvents == 0 )
   {
     if ( lumiSectionAccounts_.size() > 1 // there are newer lumi sections
-         || draining_ )
+         || !doProcessing_ )
     {
       lumiSectionAccount = oldestLumiSection->second;
       lumiSectionAccounts_.erase(oldestLumiSection);
@@ -333,20 +358,21 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 void evb::bu::ResourceManager::startProcessing()
 {
   oldestIncompleteLumiSection_ = 0;
-  draining_ = false;
+  doProcessing_ = true;
+  resourceMonitorWL_->submit(resourceMonitorAction_);
   resetMonitoringCounters();
 }
 
 
 void evb::bu::ResourceManager::drain()
 {
-  draining_ = true;
+  doProcessing_ = false;
 }
 
 
 void evb::bu::ResourceManager::stopProcessing()
 {
-  draining_ = true;
+  doProcessing_ = false;
 }
 
 
@@ -371,6 +397,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     boost::property_tree::read_json(resourceSummary_.string(), pt);
     fuSlotsHLT_ = pt.get<int>("active_resources");
     fuSlotsCloud_ = pt.get<int>("cloud");
+    fuSlotsStale_ = pt.get<int>("stale_resources");
     queuedLumiSectionsOnFUs_ = pt.get<int>("activeRunNumQueuedLS");
   }
   catch(boost::property_tree::ptree_error& e)
@@ -407,6 +434,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
 
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
+  fuSlotsStale_ = 0;
   queuedLumiSectionsOnFUs_ = -1;
   resourceSummaryFailureAlreadyNotified_ = true;
 }
@@ -443,8 +471,10 @@ float evb::bu::ResourceManager::getOverThreshold()
 }
 
 
-void evb::bu::ResourceManager::updateResources()
+bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
+  if ( ! doProcessing_ ) return false;
+
   const float overThreshold = getOverThreshold();
 
   if ( overThreshold >= 1 )
@@ -456,6 +486,35 @@ void evb::bu::ResourceManager::updateResources()
     const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
     resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
+
+  if ( fuSlotsHLT_ == 0U && fuSlotsStale_ > 0U )
+  {
+    XCEPT_DECLARE(exception::FFF, e,
+                  "All FUs in the appliance are reporting a stale file handle");
+    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  else if ( resourcesToBlock_ == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
+  {
+    bu_->getStateMachine()->processFSMEvent( Release() );
+  }
+  else if ( resourcesToBlock_ == nbResources_ )
+  {
+    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+      bu_->getStateMachine()->processFSMEvent( Clouded() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Block() );
+  }
+  else if ( resourcesToBlock_ > 0U && outstandingRequests_ == 0U )
+  {
+    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+      bu_->getStateMachine()->processFSMEvent( Misted() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Throttle() );
+  }
+
+  ::sleep(1);
+
+  return doProcessing_;
 }
 
 
@@ -472,6 +531,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   nbBlockedResources_ = 0;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
+  fuSlotsStale_ = 0;
   queuedLumiSectionsOnFUs_ = 0;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
@@ -487,6 +547,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
+  items.add("fuSlotsStale", &fuSlotsStale_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
@@ -495,7 +556,6 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
-  updateResources();
   nbTotalResources_ = nbResources_;
   nbBlockedResources_ = blockedResourceFIFO_.elements();
 
@@ -511,25 +571,6 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
 
     eventMonitoring_.perf.reset();
-  }
-
-  if ( nbBlockedResources_ == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
-  {
-    bu_->getStateMachine()->processFSMEvent( Release() );
-  }
-  else if ( nbBlockedResources_ == nbResources_ )
-  {
-    if ( fuSlotsCloud_ > 0U )
-      bu_->getStateMachine()->processFSMEvent( Clouded() );
-    else
-      bu_->getStateMachine()->processFSMEvent( Block() );
-  }
-  else if ( nbBlockedResources_ > 0U && outstandingRequests_ == 0U )
-  {
-    if ( fuSlotsCloud_ > 0U )
-      bu_->getStateMachine()->processFSMEvent( Misted() );
-    else
-      bu_->getStateMachine()->processFSMEvent( Throttle() );
   }
 }
 
@@ -676,6 +717,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table.add(tr()
               .add(td("# FU slots used for cloud"))
               .add(td(boost::lexical_cast<std::string>(fuSlotsCloud_.value_))));
+    table.add(tr()
+              .add(td("# stale FU slots"))
+              .add(td(boost::lexical_cast<std::string>(fuSlotsStale_.value_))));
     table.add(tr()
               .add(td("# queued lumi sections on FUs"))
               .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));

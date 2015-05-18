@@ -19,6 +19,9 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
+#include "toolbox/lang/Class.h"
+#include "toolbox/task/Action.h"
+#include "toolbox/task/WaitingWorkLoop.h"
 #include "xdata/Double.h"
 #include "xdata/Integer32.h"
 #include "xdata/UnsignedInteger32.h"
@@ -144,7 +147,8 @@ namespace evb {
       void configureDiskUsageMonitors();
       float getAvailableResources();
       float getOverThreshold();
-      void updateResources();
+      void startResourceMonitorWorkLoop();
+      bool resourceMonitor(toolbox::task::WorkLoop*);
       void handleResourceSummaryFailure(const std::string& msg);
 
       BU* bu_;
@@ -178,7 +182,9 @@ namespace evb {
       LumiSectionAccounts lumiSectionAccounts_;
       mutable boost::mutex lumiSectionAccountsMutex_;
       uint32_t oldestIncompleteLumiSection_;
-      volatile bool draining_;
+      volatile bool doProcessing_;
+      toolbox::task::WorkLoop* resourceMonitorWL_;
+      toolbox::task::ActionSignature* resourceMonitorAction_;
 
       struct EventMonitoring
       {
@@ -200,6 +206,7 @@ namespace evb {
       xdata::UnsignedInteger32 nbBlockedResources_;
       xdata::UnsignedInteger32 fuSlotsHLT_;
       xdata::UnsignedInteger32 fuSlotsCloud_;
+      xdata::UnsignedInteger32 fuSlotsStale_;
       xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
