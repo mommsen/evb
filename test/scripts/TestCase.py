@@ -267,7 +267,7 @@ class TestCase:
     def stopEvB(self):
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(2*eventRate,1000)
+        eventToStop = lastEvent + max(3*eventRate,1000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop))
         sys.stdout.flush()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
@@ -319,7 +319,7 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir,runNumber,activeResources=160,activeRunNumQueuedLS=-1,cloud=0):
+    def prepareAppliance(self,testDir,runNumber,activeResources=160,staleResources=0,activeRunNumQueuedLS=-1,cloud=0):
         try:
             shutil.rmtree(testDir)
         except OSError:
@@ -332,16 +332,18 @@ class TestCase:
                 ', "broken": 0, "idle": 16, "used":'+str(activeResources-16)+
                 ', "activeFURun": '+str(runNumber)+
                 ', "active_resources": '+str(activeResources)+
+                ', "stale_resources": '+str(staleResources)+
                 ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
                 ', "cloud": '+str(cloud)+'}')
         with open(testDir+'/HltConfig.py','w') as config:
             config.write("dummy HLT menu for EvB test")
-        with open(testDir+'/SCRAM_ARCH','w') as arch:
-            arch.write("slc6_amd64_gcc472")
-        with open(testDir+'/CMSSW_VERSION','w') as version:
-            version.write("cmssw_noxdaq")
+        with open(testDir+'/fffParameters.jsn','w') as param:
+            param.write('{')
+            param.write('    "SCRAM_ARCH": "slc6_amd64_gcc491",')
+            param.write('    "CMSSW_VERSION": "CMSSW_7_4_2",')
+            param.write('    "TRANSFER_MODE": "TIER0_TRANSFER_OFF"')
+            param.write('}')
         return ramDiskOccupancy
-
 
     def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):
         runDir=testDir+"/run"+runNumber
@@ -352,7 +354,7 @@ class TestCase:
             jsdPath = runDir+"/jsd/"+jsdFile
             if not os.path.isfile(jsdPath):
                 raise FileException(jsdPath+" does not exist")
-        for hltFile in ('HltConfig.py','CMSSW_VERSION','SCRAM_ARCH'):
+        for hltFile in ('HltConfig.py','fffParameters.jsn'):
             hltPath = runDir+"/hlt/"+hltFile
             if not os.path.isfile(hltPath):
                 raise FileException(hltPath+" does not exist")
