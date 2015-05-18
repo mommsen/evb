@@ -4,7 +4,7 @@ from TestCase import *
 from Configuration import RU,BU
 
 
-class case_2x2_cloud(TestCase):
+class case_2x2_stale(TestCase):
 
     def runTest(self):
         testDir="/tmp/evb_test/ramdisk"
@@ -14,21 +14,21 @@ class case_2x2_cloud(TestCase):
             self.setAppParam('rawDataDir','string',buDir,'BU',instance)
             self.setAppParam('metaDataDir','string',buDir,'BU',instance)
             self.setAppParam('hltParameterSetURL','string','file://'+buDir,'BU',instance)
-        self.prepareAppliance(testDir+"/BU0",runNumber,activeResources=16,cloud=16)
-        self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,cloud=32)
+        self.prepareAppliance(testDir+"/BU0",runNumber,activeResources=16,staleResources=16)
+        self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,staleResources=32)
         self.configureEvB()
         try:
             self.enableEvB(sleepTime=0,runNumber=runNumber)
         except StateException:
-            self.checkAppState("Mist",BU,0)
-            self.checkAppState("Cloud",BU,1)
+            self.checkAppState("Throttled",BU,0)
+            self.checkAppState("Failed",BU,1)
         else:
             raise StateException("EvB should not be Enabled")
         time.sleep(5)
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624,instance=0)
-        self.stopEvB()
+        self.haltEvB()
 
 
     def fillConfiguration(self,symbolMap):
