@@ -14,8 +14,8 @@ class case_2x2_stale(TestCase):
             self.setAppParam('rawDataDir','string',buDir,'BU',instance)
             self.setAppParam('metaDataDir','string',buDir,'BU',instance)
             self.setAppParam('hltParameterSetURL','string','file://'+buDir,'BU',instance)
-        self.prepareAppliance(testDir+"/BU0",runNumber,activeResources=16,staleResources=16)
-        self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,staleResources=32)
+        self.prepareAppliance(testDir+"/BU0",runNumber,activeResources=16,staleResources=16,cloud=32)
+        self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,staleResources=32,cloud=32)
         self.configureEvB()
         try:
             self.enableEvB(sleepTime=0,runNumber=runNumber)
