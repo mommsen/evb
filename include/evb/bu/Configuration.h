@@ -46,7 +46,8 @@ namespace evb {
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
       xdata::UnsignedInteger32 checkCRC;                   // Check the CRC of the FED fragments for every Nth event
-      xdata::Boolean calculateCRC32;                       // If set to true, a CRC32c checksum of data blob of each event is calculated
+      xdata::Boolean calculateAdler32;                     // Depreciated: has the same effect as calculateCRC32c
+      xdata::Boolean calculateCRC32c;                      // If set to true, a CRC32c checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::Boolean ignoreResourceSummary;                // If true, ignore the resource_summary file from hltd
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
@@ -79,7 +80,8 @@ namespace evb {
           metaDataHighWaterMark(0.95),
           metaDataLowWaterMark(0.75),
           checkCRC(1),
-          calculateCRC32(true),
+          calculateAdler32(true),
+          calculateCRC32c(true),
           deleteRawDataFiles(false),
           ignoreResourceSummary(false),
           maxEventsPerFile(400),
@@ -121,7 +123,8 @@ namespace evb {
         params.add("metaDataHighWaterMark", &metaDataHighWaterMark);
         params.add("metaDataLowWaterMark", &metaDataLowWaterMark);
         params.add("checkCRC", &checkCRC);
-        params.add("calculateCRC32", &calculateCRC32);
+        params.add("calculateAdler32", &calculateAdler32);
+        params.add("calculateCRC32c", &calculateCRC32c);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("ignoreResourceSummary", &ignoreResourceSummary);
         params.add("maxEventsPerFile", &maxEventsPerFile);
