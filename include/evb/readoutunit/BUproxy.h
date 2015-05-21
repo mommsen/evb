@@ -17,12 +17,11 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/readoutunit/BUposter.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
 #include "evb/readoutunit/StateMachine.h"
-#include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
-#include "i2o/utils/AddressMap.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -138,6 +137,7 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
+      BUposter<ReadoutUnit> buPoster_;
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
 
@@ -194,6 +194,7 @@ namespace evb {
 template<class ReadoutUnit>
 evb::readoutunit::BUproxy<ReadoutUnit>::BUproxy(ReadoutUnit* readoutUnit) :
 readoutUnit_(readoutUnit),
+buPoster_(readoutUnit),
 tid_(0),
 doProcessing_(false),
 nbActiveProcesses_(0),
@@ -246,6 +247,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   resetMonitoringCounters();
+  buPoster_.startProcessing();
 
   processingRequest_ = false;
   doProcessing_ = true;
@@ -261,6 +263,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
   while ( ! isEmpty() ) ::usleep(1000);
+  buPoster_.drain();
 }
 
 
@@ -269,6 +272,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
   processingRequest_ = false;
+  buPoster_.stopProcessing();
 }
 
 
@@ -483,26 +487,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
   }
 
-  xdaq::ApplicationDescriptor* bu = 0;
-  try
-  {
-    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest->buTid);
-  }
-  catch(xcept::Exception& e)
-  {
-    std::ostringstream oss;
-    oss << "Failed to get application descriptor for BU with tid ";
-    oss << fragmentRequest->buTid;
-    XCEPT_RAISE(exception::I2O, oss.str());
-  }
-
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
   uint32_t i2oCount = 0;
   uint32_t lastEventNumberToBUs = 0;
   uint32_t lastLumiSectionToBUs = 0;
 
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
   // Prepare each event data block for the BU
   while (bufRef)
@@ -541,35 +531,21 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
     ++i2oCount;
 
-    try
-    {
-      readoutUnit_->getApplicationContext()->
-        postFrame(
-          bufRef,
-          readoutUnit_->getApplicationDescriptor(),
-          bu//,
-          //i2oExceptionHandler_,
-          //bu
-        );
-    }
-    catch(xcept::Exception& e)
-    {
-      std::ostringstream oss;
-      oss << "Failed to send super fragment to BU TID ";
-      oss << fragmentRequest->buTid;
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-
+    buPoster_.sendFrame(fragmentRequest->buTid,bufRef);
     bufRef = nextRef;
   }
 
-  dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
-  dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
-  dataMonitoring_.outstandingEvents += nbSuperFragments;
-  dataMonitoring_.i2oCount += i2oCount;
-  dataMonitoring_.payload += payloadSize;
-  dataMonitoring_.logicalCount += nbSuperFragments;
-  dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
+  {
+    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+
+    dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
+    dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
+    dataMonitoring_.outstandingEvents += nbSuperFragments;
+    dataMonitoring_.i2oCount += i2oCount;
+    dataMonitoring_.payload += payloadSize;
+    dataMonitoring_.logicalCount += nbSuperFragments;
+    dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
+  }
 }
 
 
@@ -855,6 +831,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
     div.add(fragmentRequestFIFO_.getHtmlSnipped());
   }
 
+  div.add(buPoster_.getPosterFIFOs());
   div.add(getStatisticsPerBU());
 
   return div;
