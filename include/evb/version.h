@@ -4,7 +4,7 @@
 #include "config/PackageInfo.h"
 
 #define EVB_VERSION_MAJOR 2
-#define EVB_VERSION_MINOR 14
+#define EVB_VERSION_MINOR 15
 #define EVB_VERSION_PATCH 0
 #undef EVB_PREVIOUS_VERSIONS
 
