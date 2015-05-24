@@ -178,7 +178,7 @@ void evb::readoutunit::BUposter<ReadoutUnit>::sendFrame(const I2O_TID tid, toolb
     std::ostringstream name;
     name << "frameFIFO_BU" << tid;
     const FrameFIFOPtr frameFIFO( new FrameFIFO(readoutUnit_,name.str()) );
-    frameFIFO->resize(1024);
+    frameFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
 
     try
     {
@@ -209,12 +209,10 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
   bool workDone = false;
   toolbox::mem::Reference* bufRef;
 
-  do
-  {
+  do {
     workDone = false;
-    typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
-
-    while ( it != buFrameQueueMap_.end() )
+    for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
+           it != buFrameQueueMap_.end(); ++it)
     {
       if ( it->second.frameFIFO->deq(bufRef) )
       {
@@ -236,7 +234,6 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
         }
         workDone = true;
       }
-      ++it;
     }
   } while ( doProcessing_ && workDone );
 
