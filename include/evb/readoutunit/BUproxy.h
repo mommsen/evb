@@ -120,7 +120,7 @@ namespace evb {
       void updateRequestCounters(const FragmentRequestPtr&);
       bool process(toolbox::task::WorkLoop*);
       bool processRequest(FragmentRequestPtr&,SuperFragments&);
-      void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&) const;
+      void handleRequest(const msg::ReadoutMsg*, FragmentRequestPtr&);
       void sendData(const FragmentRequestPtr&, const SuperFragments&);
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb) const;
       void fillSuperFragmentHeader
@@ -151,8 +151,12 @@ namespace evb {
       bool processingRequest_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
-      FragmentRequestFIFO fragmentRequestFIFO_;
-      boost::mutex fragmentRequestFIFOmutex_;
+      typedef boost::shared_ptr<FragmentRequestFIFO> FragmentRequestFIFOPtr;
+      typedef std::map<I2O_TID,FragmentRequestFIFOPtr> FragmentRequestFIFOs;
+      FragmentRequestFIFOs::iterator nextBU_;
+      FragmentRequestFIFOs fragmentRequestFIFOs_; //used on the EVM
+      FragmentRequestFIFO fragmentRequestFIFO_;   //used on the RU
+      mutable boost::mutex fragmentRequestFIFOmutex_;
 
       typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
@@ -293,11 +297,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
     fragmentRequest->buTid = readoutMsg->buTid;
     fragmentRequest->buResourceId = readoutMsg->buResourceId;
     fragmentRequest->nbRequests = readoutMsg->nbRequests;
-    fillRequest(readoutMsg, fragmentRequest);
+    handleRequest(readoutMsg, fragmentRequest);
 
     updateRequestCounters(fragmentRequest);
-
-    fragmentRequestFIFO_.enqWait(fragmentRequest);
   }
 
   bufRef->release();
@@ -608,8 +610,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 {
-  fragmentRequestFIFO_.clear();
-  fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+  {
+     boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+     fragmentRequestFIFO_.clear();
+     fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+     fragmentRequestFIFOs_.clear();
+     nextBU_ = fragmentRequestFIFOs_.begin();
+  }
 
   if ( readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks.value_ > 0 )
   {
@@ -693,7 +701,16 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
-  activeRequests_ = fragmentRequestFIFO_.elements();
+  {
+    boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+    activeRequests_ = fragmentRequestFIFO_.elements();
+    for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
+         it != fragmentRequestFIFOs_.end(); ++it)
+    {
+      activeRequests_.value_ += it->second->elements();
+    }
+  }
   if ( processingRequest_ ) ++activeRequests_;
 
   {
@@ -828,7 +845,23 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
     div.add(table);
-    div.add(fragmentRequestFIFO_.getHtmlSnipped());
+
+    {
+      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+      if ( fragmentRequestFIFOs_.empty() )
+      {
+        div.add(fragmentRequestFIFO_.getHtmlSnipped());
+      }
+      else
+      {
+        for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
+             it != fragmentRequestFIFOs_.end(); ++it)
+        {
+          div.add(it->second->getHtmlSnipped());
+        }
+      }
+    }
   }
 
   div.add(buPoster_.getPosterFIFOs());
