@@ -153,6 +153,8 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startRequestWork
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(toolbox::task::WorkLoop* wl)
 {
+  if ( ! this->doProcessing_ ) return false;
+
   requestLastestData();
 
   while ( this->doProcessing_ && dataIsValid_) ::sleep(1);

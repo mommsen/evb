@@ -30,6 +30,7 @@ namespace evb {
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
       xdata::Double resourcesPerCore;                      // Number of resource IDs per active FU core
+      xdata::UnsignedInteger32 sleepTimeBlocked;           // Time to sleep in ms for each blocked resource
       xdata::UnsignedInteger32 maxFuLumiSectionLatency;    // Maximum number of lumi sections the FUs may lag behind
       xdata::UnsignedInteger32 staleResourceTime;          // Number of seconds after which a FU resource is no longer considered
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
@@ -46,7 +47,8 @@ namespace evb {
       xdata::Double metaDataHighWaterMark;
       xdata::Double metaDataLowWaterMark;
       xdata::UnsignedInteger32 checkCRC;                   // Check the CRC of the FED fragments for every Nth event
-      xdata::Boolean calculateAdler32;                     // If set to true, an adler32 checksum of data blob of each event is calculated
+      xdata::Boolean calculateAdler32;                     // Depreciated: has the same effect as calculateCRC32c
+      xdata::Boolean calculateCRC32c;                      // If set to true, a CRC32c checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::Boolean ignoreResourceSummary;                // If true, ignore the resource_summary file from hltd
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
@@ -63,6 +65,7 @@ namespace evb {
           maxEvtsUnderConstruction(256),
           eventsPerRequest(8),
           resourcesPerCore(0.2),
+          sleepTimeBlocked(100),
           maxFuLumiSectionLatency(3),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
@@ -80,6 +83,7 @@ namespace evb {
           metaDataLowWaterMark(0.75),
           checkCRC(1),
           calculateAdler32(true),
+          calculateCRC32c(true),
           deleteRawDataFiles(false),
           ignoreResourceSummary(false),
           maxEventsPerFile(400),
@@ -90,8 +94,7 @@ namespace evb {
           timeSamplePreScale(10000)
       {
         hltFiles.push_back("HltConfig.py");
-        hltFiles.push_back("SCRAM_ARCH");
-        hltFiles.push_back("CMSSW_VERSION");
+        hltFiles.push_back("fffParameters.jsn");
       };
 
       void addToInfoSpace
@@ -105,6 +108,7 @@ namespace evb {
         params.add("maxEvtsUnderConstruction", &maxEvtsUnderConstruction);
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("resourcesPerCore", &resourcesPerCore);
+        params.add("sleepTimeBlocked", &sleepTimeBlocked);
         params.add("maxFuLumiSectionLatency", &maxFuLumiSectionLatency);
         params.add("staleResourceTime", &staleResourceTime);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
@@ -122,6 +126,7 @@ namespace evb {
         params.add("metaDataLowWaterMark", &metaDataLowWaterMark);
         params.add("checkCRC", &checkCRC);
         params.add("calculateAdler32", &calculateAdler32);
+        params.add("calculateCRC32c", &calculateCRC32c);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("ignoreResourceSummary", &ignoreResourceSummary);
         params.add("maxEventsPerFile", &maxEventsPerFile);

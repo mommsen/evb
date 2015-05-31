@@ -27,6 +27,7 @@
   <xmas:item name="outstandingRequests"     infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuSlotsHLT"              infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuSlotsCloud"            infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="fuSlotsStale"            infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="queuedLumiSectionsOnFUs" infospace="urn:evb::BU" type="int 32"/>
   <xmas:item name="ramDiskSizeInGB"         infospace="urn:evb::BU" type="double"/>
   <xmas:item name="ramDiskUsed"             infospace="urn:evb::BU" type="double"/>

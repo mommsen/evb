@@ -32,13 +32,15 @@ evb::bu::DiskUsage::DiskUsage
     XCEPT_RAISE(exception::Configuration, oss.str());
   }
 
-  thread_ = boost::thread( boost::bind( &DiskUsage::doStatFs, this ) );
+  diskUsageThread_ = boost::thread( boost::bind( &DiskUsage::doStatFs, this ) );
+  deleteThread_ = boost::thread( boost::bind( &DiskUsage::deleteRawFiles, this ) );
   update();
 }
 
 
 evb::bu::DiskUsage::~DiskUsage()
 {
+  deleteFiles_ = false;
   {
     boost::mutex::scoped_lock lock(mutex_);
     state_ = STOP;
@@ -46,7 +48,8 @@ evb::bu::DiskUsage::~DiskUsage()
   }
   try
   {
-    thread_.join();
+    diskUsageThread_.join();
+    deleteThread_.join();
   }
   catch ( const boost::thread_interrupted& ) {}
 }
@@ -72,25 +75,6 @@ float evb::bu::DiskUsage::overThreshold()
   const float diskUsage = relDiskUsage();
 
   if ( ! valid_ ) return 1; //error condition
-
-  if ( deleteFiles_ && diskUsage > 0.9 )
-  {
-    boost::filesystem::recursive_directory_iterator it(path_);
-    while ( it != boost::filesystem::recursive_directory_iterator() )
-    {
-      if ( it->path().filename() == "open" )
-      {
-        it.pop();
-        continue;
-      }
-
-      if ( it->path().extension() == ".raw" )
-      {
-        boost::filesystem::remove(*it);
-      }
-      ++it;
-    }
-  }
 
   return (diskUsage < lowWaterMark_) ? 0 :
     (diskUsage - lowWaterMark_) / (highWaterMark_ - lowWaterMark_);
@@ -147,6 +131,34 @@ void evb::bu::DiskUsage::doStatFs()
 }
 
 
+void evb::bu::DiskUsage::deleteRawFiles()
+{
+  while ( deleteFiles_ )
+  {
+    if ( valid_ && relDiskUsage_ > 0.5 )
+    {
+      boost::filesystem::recursive_directory_iterator it(path_);
+      while ( it != boost::filesystem::recursive_directory_iterator() )
+      {
+        if ( it->path().filename() == "open" )
+        {
+          it.pop();
+          continue;
+        }
+
+        if ( it->path().extension() == ".raw" )
+        {
+          boost::filesystem::remove(*it);
+        }
+        ++it;
+      }
+    }
+    else
+    {
+      ::sleep(1);
+    }
+  }
+}
 
 
 /// emacs configuration

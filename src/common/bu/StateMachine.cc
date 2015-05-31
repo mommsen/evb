@@ -83,7 +83,6 @@ void evb::bu::Configuring::activity()
 void evb::bu::Configuring::exitAction()
 {
   doConfiguring_ = false;
-  configuringThread_->join();
 }
 
 
@@ -161,7 +160,6 @@ void evb::bu::Draining::activity()
 void evb::bu::Draining::exitAction()
 {
   doDraining_ = false;
-  drainingThread_->join();
 }
 
 

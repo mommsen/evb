@@ -333,6 +333,8 @@ void evb::test::DummyFEROL::startWorkLoops()
 
 bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   generatingActive_ = true;
 
   try
@@ -379,6 +381,8 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 bool __attribute__((optimize("O0")))  // Optimization causes segfaults as bufRef is null
 evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   sendingActive_ = true;
 
   try

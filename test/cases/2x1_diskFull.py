@@ -17,7 +17,7 @@ class case_2x1_diskFull(TestCase):
         runDir=testDir+"/run"+runNumber
         diskUsage = self.prepareAppliance(testDir,runNumber)
         self.setAppParam('rawDataLowWaterMark','double',str(diskUsage),'BU')
-        self.setAppParam('rawDataHighWaterMark','double',str(diskUsage+0.001),'BU')
+        self.setAppParam('rawDataHighWaterMark','double',str(diskUsage+0.1),'BU')
         self.setAppParam('rawDataDir','string',testDir,'BU')
         self.setAppParam('metaDataDir','string',testDir,'BU')
         self.configureEvB()
@@ -25,11 +25,9 @@ class case_2x1_diskFull(TestCase):
         self.enableEvB(runNumber=runNumber,sleepTime=0)
         sys.stdout.write("Running until disk is full...")
         sys.stdout.flush()
-        time.sleep(10)
-        self.checkAppState("Throttled","BU")
         self.waitForAppParam('eventRate','unsignedInt',0,operator.eq,'EVM')
         # avoid some spurious wake ups
-        time.sleep(1)
+        time.sleep(3)
         self.waitForAppParam('eventRate','unsignedInt',0,operator.eq,'EVM')
         print(" done")
         self.checkAppState("Enabled","EVM")
@@ -44,6 +42,8 @@ class case_2x1_diskFull(TestCase):
         except StateException:
             self.checkAppState("Throttled","BU")
         self.checkAppParam('eventRate','unsignedInt',500,operator.gt,"BU")
+        for rawFile in glob.glob(runDir+"/*.raw"):
+            os.remove(rawFile)
         self.stopEvB()
         self.checkBuDir(testDir,runNumber)
 

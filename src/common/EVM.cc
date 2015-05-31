@@ -155,26 +155,57 @@ namespace evb {
 
 
     template<>
-    void BUproxy<EVM>::fillRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest) const
+    void BUproxy<EVM>::handleRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
     {
       fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
+
+      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+      FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(readoutMsg->buTid);
+      if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(readoutMsg->buTid,pos->first) )
+      {
+        // new TID
+        std::ostringstream name;
+        name << "fragmentRequestFIFO_BU" << readoutMsg->buTid;
+        const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
+        requestFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+        pos = fragmentRequestFIFOs_.insert(pos, FragmentRequestFIFOs::value_type(readoutMsg->buTid,requestFIFO));
+        nextBU_ = pos; //make sure the nextBU points to a valid location
+      }
+
+      pos->second->enqWait(fragmentRequest);
     }
+
 
     template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
       boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
 
+      if ( fragmentRequestFIFOs_.empty() ) return false;
+
+      // search the next request FIFO which is non-empty
+      const FragmentRequestFIFOs::iterator lastBU = nextBU_;
+      while ( nextBU_->second->empty() )
+      {
+        if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
+          nextBU_ = fragmentRequestFIFOs_.begin();
+
+        if ( lastBU == nextBU_ ) return false;
+      }
+
       try
       {
-        // Only get a request if we also have data to go with it.
-        // Otherwise, we consume a request at the end of the run which gets lost
         SuperFragmentPtr superFragment;
-        if ( fragmentRequestFIFO_.empty() || !input_->getNextAvailableSuperFragment(superFragment) ) return false;
+        if ( !input_->getNextAvailableSuperFragment(superFragment) ) return false;
 
         processingRequest_ = true;
-        fragmentRequestFIFO_.deq(fragmentRequest);
+
+        // this must succeed as we checked that the queue is non-empty
+        assert( nextBU_->second->deq(fragmentRequest) );
+        if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
+          nextBU_ = fragmentRequestFIFOs_.begin();
 
         fragmentRequest->evbIds.clear();
         fragmentRequest->evbIds.reserve(fragmentRequest->nbRequests);

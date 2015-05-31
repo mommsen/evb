@@ -33,6 +33,7 @@ Package=evb
 
 Sources=\
 	crc16_T10DIF_128x_extended.S \
+	crc32c.cc \
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
@@ -49,6 +50,8 @@ Sources=\
 	bu/DiskWriter.cc \
 	bu/Event.cc \
 	bu/EventBuilder.cc \
+	bu/EventInfo.cc \
+	bu/FedInfo.cc \
 	bu/FileHandler.cc \
 	bu/FragmentChain.cc \
 	bu/ResourceManager.cc \

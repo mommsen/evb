@@ -16,13 +16,13 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/readoutunit/BUposter.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "evb/readoutunit/SuperFragment.h"
 #include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
-#include "i2o/utils/AddressMap.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -121,7 +121,7 @@ namespace evb {
       void updateRequestCounters(const FragmentRequestPtr&);
       bool process(toolbox::task::WorkLoop*);
       bool processRequest(FragmentRequestPtr&,SuperFragments&);
-      void fillRequest(const msg::ReadoutMsg*, FragmentRequestPtr&) const;
+      void handleRequest(const msg::ReadoutMsg*, FragmentRequestPtr&);
       void sendData(const FragmentRequestPtr&, const SuperFragments&);
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb) const;
       void fillSuperFragmentHeader
@@ -138,6 +138,7 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       typename ReadoutUnit::InputPtr input_;
+      BUposter<ReadoutUnit> buPoster_;
       I2O_TID tid_;
       toolbox::mem::Pool* superFragmentPool_;
 
@@ -151,8 +152,12 @@ namespace evb {
       bool processingRequest_;
 
       typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
-      FragmentRequestFIFO fragmentRequestFIFO_;
-      boost::mutex fragmentRequestFIFOmutex_;
+      typedef boost::shared_ptr<FragmentRequestFIFO> FragmentRequestFIFOPtr;
+      typedef std::map<I2O_TID,FragmentRequestFIFOPtr> FragmentRequestFIFOs;
+      FragmentRequestFIFOs::iterator nextBU_;
+      FragmentRequestFIFOs fragmentRequestFIFOs_; //used on the EVM
+      FragmentRequestFIFO fragmentRequestFIFO_;   //used on the RU
+      mutable boost::mutex fragmentRequestFIFOmutex_;
 
       typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
@@ -194,6 +199,7 @@ namespace evb {
 template<class ReadoutUnit>
 evb::readoutunit::BUproxy<ReadoutUnit>::BUproxy(ReadoutUnit* readoutUnit) :
 readoutUnit_(readoutUnit),
+buPoster_(readoutUnit),
 tid_(0),
 doProcessing_(false),
 nbActiveProcesses_(0),
@@ -246,6 +252,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::startProcessing()
 {
   resetMonitoringCounters();
+  buPoster_.startProcessing();
 
   processingRequest_ = false;
   doProcessing_ = true;
@@ -261,6 +268,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::drain()
 {
   while ( ! isEmpty() ) ::usleep(1000);
+  buPoster_.drain();
 }
 
 
@@ -269,6 +277,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
   processingRequest_ = false;
+  buPoster_.stopProcessing();
 }
 
 
@@ -289,11 +298,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
     fragmentRequest->buTid = readoutMsg->buTid;
     fragmentRequest->buResourceId = readoutMsg->buResourceId;
     fragmentRequest->nbRequests = readoutMsg->nbRequests;
-    fillRequest(readoutMsg, fragmentRequest);
+    handleRequest(readoutMsg, fragmentRequest);
 
     updateRequestCounters(fragmentRequest);
-
-    fragmentRequestFIFO_.enqWait(fragmentRequest);
   }
 
   bufRef->release();
@@ -319,6 +326,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const Fragmen
 template<class ReadoutUnit>
 bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl)
 {
+  if ( ! doProcessing_ ) return false;
+
   const std::string wlName =  wl->getName();
   const size_t startPos = wlName.find_last_of("_") + 1;
   const size_t endPos = wlName.find("/",startPos);
@@ -476,26 +485,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
   }
 
-  xdaq::ApplicationDescriptor* bu = 0;
-  try
-  {
-    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(fragmentRequest->buTid);
-  }
-  catch(xcept::Exception& e)
-  {
-    std::ostringstream oss;
-    oss << "Failed to get application descriptor for BU with tid ";
-    oss << fragmentRequest->buTid;
-    XCEPT_RAISE(exception::I2O, oss.str());
-  }
-
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
   uint32_t i2oCount = 0;
   uint32_t lastEventNumberToBUs = 0;
   uint32_t lastLumiSectionToBUs = 0;
 
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
   // Prepare each event data block for the BU
   while (bufRef)
@@ -534,35 +529,21 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
     ++i2oCount;
 
-    try
-    {
-      readoutUnit_->getApplicationContext()->
-        postFrame(
-          bufRef,
-          readoutUnit_->getApplicationDescriptor(),
-          bu//,
-          //i2oExceptionHandler_,
-          //bu
-        );
-    }
-    catch(xcept::Exception& e)
-    {
-      std::ostringstream oss;
-      oss << "Failed to send super fragment to BU TID ";
-      oss << fragmentRequest->buTid;
-      XCEPT_RETHROW(exception::I2O, oss.str(), e);
-    }
-
+    buPoster_.sendFrame(fragmentRequest->buTid,bufRef);
     bufRef = nextRef;
   }
 
-  dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
-  dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
-  dataMonitoring_.outstandingEvents += nbSuperFragments;
-  dataMonitoring_.i2oCount += i2oCount;
-  dataMonitoring_.payload += payloadSize;
-  dataMonitoring_.logicalCount += nbSuperFragments;
-  dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
+  {
+    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+
+    dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
+    dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
+    dataMonitoring_.outstandingEvents += nbSuperFragments;
+    dataMonitoring_.i2oCount += i2oCount;
+    dataMonitoring_.payload += payloadSize;
+    dataMonitoring_.logicalCount += nbSuperFragments;
+    dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
+  }
 }
 
 
@@ -625,8 +606,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 {
-  fragmentRequestFIFO_.clear();
-  fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+  {
+     boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+     fragmentRequestFIFO_.clear();
+     fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+     fragmentRequestFIFOs_.clear();
+     nextBU_ = fragmentRequestFIFOs_.begin();
+  }
 
   if ( readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks.value_ > 0 )
   {
@@ -710,7 +697,16 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
-  activeRequests_ = fragmentRequestFIFO_.elements();
+  {
+    boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+    activeRequests_ = fragmentRequestFIFO_.elements();
+    for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
+         it != fragmentRequestFIFOs_.end(); ++it)
+    {
+      activeRequests_.value_ += it->second->elements();
+    }
+  }
   if ( processingRequest_ ) ++activeRequests_;
 
   {
@@ -845,9 +841,26 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
 
     div.add(table);
-    div.add(fragmentRequestFIFO_.getHtmlSnipped());
+
+    {
+      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+
+      if ( fragmentRequestFIFOs_.empty() )
+      {
+        div.add(fragmentRequestFIFO_.getHtmlSnipped());
+      }
+      else
+      {
+        for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
+             it != fragmentRequestFIFOs_.end(); ++it)
+        {
+          div.add(it->second->getHtmlSnipped());
+        }
+      }
+    }
   }
 
+  div.add(buPoster_.getPosterFIFOs());
   div.add(getStatisticsPerBU());
 
   return div;

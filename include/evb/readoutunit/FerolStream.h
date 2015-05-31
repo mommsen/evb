@@ -348,10 +348,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::writeFragmentToFi
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragment(FedFragmentPtr& fedFragment)
 {
-  if ( ! doProcessing_ )
+  if ( ! doProcessing_ || syncLoss_ )
     throw exception::HaltRequested();
-
-  if ( syncLoss_ ) return false;
 
   return fragmentFIFO_.deq(fedFragment);
 }

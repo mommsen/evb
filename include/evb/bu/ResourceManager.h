@@ -19,6 +19,9 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/bu/DiskUsage.h"
 #include "evb/bu/Event.h"
+#include "toolbox/lang/Class.h"
+#include "toolbox/task/Action.h"
+#include "toolbox/task/WaitingWorkLoop.h"
 #include "xdata/Double.h"
 #include "xdata/Integer32.h"
 #include "xdata/UnsignedInteger32.h"
@@ -144,7 +147,8 @@ namespace evb {
       void configureDiskUsageMonitors();
       float getAvailableResources();
       float getOverThreshold();
-      void updateResources();
+      void startResourceMonitorWorkLoop();
+      bool resourceMonitor(toolbox::task::WorkLoop*);
       void handleResourceSummaryFailure(const std::string& msg);
 
       BU* bu_;
@@ -154,20 +158,23 @@ namespace evb {
       typedef std::list<EvBid> EvBidList;
       struct ResourceInfo
       {
-        uint16_t builderId;
+        int16_t builderId;
+        bool blocked;
         EvBidList evbIdList;
       };
-      typedef std::map<uint16_t,ResourceInfo> AllocatedResources;
-      AllocatedResources allocatedResources_;
-      mutable boost::mutex allocatedResourcesMutex_;
-      uint32_t eventsToDiscard_;
+      typedef std::map<uint16_t,ResourceInfo> BuilderResources;
+      BuilderResources builderResources_;
+      mutable boost::mutex builderResourcesMutex_;
 
+      typedef OneToOneQueue<BuilderResources::iterator> ResourceFIFO;
+      ResourceFIFO resourceFIFO_;
+      mutable boost::mutex resourceFIFOmutex_;
+
+      uint32_t eventsToDiscard_;
       uint32_t nbResources_;
-      uint32_t resourcesToBlock_;
+      uint32_t blockedResources_;
       uint16_t builderId_;
-      typedef OneToOneQueue<uint16_t> ResourceFIFO;
-      ResourceFIFO freeResourceFIFO_;
-      ResourceFIFO blockedResourceFIFO_;
+
       boost::filesystem::path resourceSummary_;
       bool resourceSummaryFailureAlreadyNotified_;
 
@@ -178,7 +185,9 @@ namespace evb {
       LumiSectionAccounts lumiSectionAccounts_;
       mutable boost::mutex lumiSectionAccountsMutex_;
       uint32_t oldestIncompleteLumiSection_;
-      volatile bool draining_;
+      volatile bool doProcessing_;
+      toolbox::task::WorkLoop* resourceMonitorWL_;
+      toolbox::task::ActionSignature* resourceMonitorAction_;
 
       struct EventMonitoring
       {
@@ -200,10 +209,12 @@ namespace evb {
       xdata::UnsignedInteger32 nbBlockedResources_;
       xdata::UnsignedInteger32 fuSlotsHLT_;
       xdata::UnsignedInteger32 fuSlotsCloud_;
+      xdata::UnsignedInteger32 fuSlotsStale_;
       xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
 
+      friend std::ostream& operator<<(std::ostream&,const BuilderResources::const_iterator);
     };
 
     inline std::ostream& operator<<
@@ -218,6 +229,34 @@ namespace evb {
         s << "nbEvents=" << lumiAccount->nbEvents;
       }
 
+      return s;
+    }
+
+    inline std::ostream& operator<<
+    (
+      std::ostream& s,
+      const evb::bu::ResourceManager::BuilderResources::const_iterator it
+    )
+    {
+      s << "resourceId=" << it->first << " ";
+      if ( it->second.blocked )
+      {
+        s << "BLOCKED";
+      }
+      else if ( it->second.builderId == -1 )
+      {
+        s << "free";
+      }
+      else
+      {
+        s << "builderId=" << it->second.builderId << " ";
+        for (evb::bu::ResourceManager::EvBidList::const_iterator evbIt =
+               it->second.evbIdList.begin(), evbItEnd = it->second.evbIdList.end();
+             evbIt != evbItEnd; ++evbIt)
+        {
+          s << *evbIt << " ";
+        }
+      }
       return s;
     }
 

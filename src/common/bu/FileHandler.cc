@@ -1,15 +1,13 @@
 #include <boost/filesystem/convenience.hpp>
 
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <unistd.h>
 
 #include "evb/Exception.h"
+#include "evb/bu/EventInfo.h"
+#include "evb/bu/FedInfo.h"
 #include "evb/bu/FileHandler.h"
 #include "xcept/tools.h"
 
@@ -43,40 +41,15 @@ evb::bu::FileHandler::~FileHandler()
 }
 
 
-void* evb::bu::FileHandler::getMemMap(const size_t length)
+void evb::bu::FileHandler::writeEvent(const EventPtr& event)
 {
-  const int result = lseek(fileDescriptor_, fileSize_+length-1, SEEK_SET);
-  if ( result == -1 )
-  {
-    std::ostringstream oss;
-    oss << "Failed to stretch the output file " << rawFileName_
-      << " by " << length << " Bytes: " << strerror(errno);
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
-  }
+  const EventInfoPtr& eventInfo = event->getEventInfo();
+  write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
-  // Something needs to be written at the end of the file to
-  // have the file actually have the new size.
-  // Just writing an empty string at the current file position will do.
-  if ( ::write(fileDescriptor_, "", 1) != 1 )
-  {
-    std::ostringstream oss;
-    oss << "Failed to write last byte to output file " << rawFileName_
-      << ": " << strerror(errno);
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
-  }
+  const FedInfo::DataLocations& locs = event->getDataLocations();
+  writev(fileDescriptor_,&locs[0],locs.size());
 
-  void* map = mmap(0, length, PROT_WRITE, MAP_SHARED, fileDescriptor_, fileSize_);
-  if (map == MAP_FAILED)
-  {
-    std::ostringstream oss;
-    oss << "Failed to mmap the output file " << rawFileName_
-      << ": " << strerror(errno);
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
-  }
-
-  fileSize_ += length;
-
-  return map;
+  fileSize_ += sizeof(EventInfo) + eventInfo->eventSize();
 }
 
 

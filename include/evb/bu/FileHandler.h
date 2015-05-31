@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "evb/bu/Event.h"
+
 
 namespace evb {
   namespace bu {
@@ -24,11 +26,9 @@ namespace evb {
       ~FileHandler();
 
       /**
-       * Return a memory mapped portion of the file with
-       * the specified length. The length must be a multiple of
-       * the memory page size as returned by sysconf(_SC_PAGE_SIZE).
+       * Write the event to disk
        */
-      void* getMemMap(const size_t length);
+      void writeEvent(const EventPtr&);
 
       /**
        * Close the file and do the bookkeeping.

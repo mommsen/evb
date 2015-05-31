@@ -66,6 +66,11 @@ XCEPT_DEFINE_EXCEPTION(evb, TCP)
 XCEPT_DEFINE_EXCEPTION(evb, TCDS)
 
 /**
+ * Exception raised by the BU if there's an error on the file-based filter farm
+ */
+XCEPT_DEFINE_EXCEPTION(evb, FFF)
+
+/**
  * Exception raised when an unexpeced event number is received
  */
 XCEPT_DEFINE_EXCEPTION(evb, EventOutOfSequence)

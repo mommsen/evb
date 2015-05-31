@@ -24,37 +24,59 @@ evb::bu::ResourceManager::ResourceManager
 ) :
   bu_(bu),
   configuration_(bu->getConfiguration()),
+  resourceFIFO_(bu,"resourceFIFO"),
+  eventsToDiscard_(0),
   nbResources_(1),
-  resourcesToBlock_(1),
   builderId_(0),
-  freeResourceFIFO_(bu,"freeResourceFIFO"),
-  blockedResourceFIFO_(bu,"blockedResourceFIFO"),
-  draining_(false)
+  doProcessing_(false)
 {
+  startResourceMonitorWorkLoop();
   resetMonitoringCounters();
+  eventMonitoring_.outstandingRequests = 0;
+}
+
+
+void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
+{
+  try
+  {
+    resourceMonitorWL_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( bu_->getIdentifier("resourceMonitor"), "waiting" );
+
+    if ( ! resourceMonitorWL_->isActive() )
+    {
+      resourceMonitorAction_ =
+        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
+                            bu_->getIdentifier("resourceMonitor") );
+
+      resourceMonitorWL_->activate();
+    }
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloop 'resourceMonitor'";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
 }
 
 
 uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
 {
-  boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
-
-  const AllocatedResources::iterator pos = allocatedResources_.find(dataBlockMsg->buResourceId);
+  const BuilderResources::iterator pos = builderResources_.find(dataBlockMsg->buResourceId);
   const I2O_TID ruTid = ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
 
-  if ( pos == allocatedResources_.end() )
+  if ( pos == builderResources_.end() )
   {
     std::ostringstream oss;
     oss << "The buResourceId " << dataBlockMsg->buResourceId;
     oss << " received from RU tid " << ruTid;
-    oss << " is not in the allocated resources" ;
+    oss << " is not in the builder resources" ;
     XCEPT_RAISE(exception::EventOrder, oss.str());
   }
 
   if ( pos->second.evbIdList.empty() )
   {
     // first answer defines the EvBids handled by this resource
-    pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
     for (uint32_t i=0; i < dataBlockMsg->nbSuperFragments; ++i)
     {
       const EvBid& evbId = dataBlockMsg->evbIds[i];
@@ -106,6 +128,7 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
   }
   return pos->second.builderId;
 }
+
 
 uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 {
@@ -180,7 +203,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
     return true;
   }
 
-  if ( blockedResourceFIFO_.full() )
+  if ( blockedResources_ == nbResources_ )
   {
     // do not expire any lumi section if all resources are blocked
     time_t now = time(0);
@@ -196,7 +219,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
   if ( oldestLumiSection->second->nbIncompleteEvents == 0 )
   {
     if ( lumiSectionAccounts_.size() > 1 // there are newer lumi sections
-         || draining_ )
+         || !doProcessing_ )
     {
       lumiSectionAccount = oldestLumiSection->second;
       lumiSectionAccounts_.erase(oldestLumiSection);
@@ -233,11 +256,11 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
 
 void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
-  eventCompletedForLumiSection(event->lumiSection());
+  eventCompletedForLumiSection(event->getEventInfo()->lumiSection());
 
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-  const uint32_t eventSize = event->eventSize();
+  const uint32_t eventSize = event->getEventInfo()->eventSize();
   eventMonitoring_.perf.sumOfSizes += eventSize;
   eventMonitoring_.perf.sumOfSquares += eventSize*eventSize;
   ++eventMonitoring_.perf.logicalCount;
@@ -247,105 +270,92 @@ void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 
 void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 {
+  const BuilderResources::iterator pos = builderResources_.find(event->buResourceId());
+
+  if ( pos == builderResources_.end() )
   {
-    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
-
-    const AllocatedResources::iterator pos = allocatedResources_.find(event->buResourceId());
-
-    if ( pos == allocatedResources_.end() )
-    {
-      std::ostringstream oss;
-      oss << "The buResourceId " << event->buResourceId();
-      oss << " is not in the allocated resources" ;
-      XCEPT_RAISE(exception::EventOrder, oss.str());
-    }
-
-    pos->second.evbIdList.remove(event->getEvBid());
-    ++eventsToDiscard_;
-
-    if ( pos->second.evbIdList.empty() )
-    {
-      allocatedResources_.erase(pos);
-
-      if ( blockedResourceFIFO_.elements() < resourcesToBlock_ )
-        blockedResourceFIFO_.enqWait( event->buResourceId() );
-      else
-        freeResourceFIFO_.enqWait( event->buResourceId() );
-    }
+    std::ostringstream oss;
+    oss << "The buResourceId " << event->buResourceId();
+    oss << " is not in the builder resources" ;
+    XCEPT_RAISE(exception::EventOrder, oss.str());
   }
+
+  pos->second.evbIdList.remove(event->getEvBid());
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     --eventMonitoring_.nbEventsInBU;
+    ++eventsToDiscard_;
+  }
+
+  if ( pos->second.evbIdList.empty() )
+  {
+    pos->second.builderId = -1;
+    boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+    resourceFIFO_.enqWait(pos);
   }
 }
 
 
 bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& eventsToDiscard)
 {
-  bool gotResource = freeResourceFIFO_.deq(buResourceId);
+  bool haveResource = false;
 
-  if ( !gotResource && blockedResourceFIFO_.elements() > resourcesToBlock_ && blockedResourceFIFO_.deq(buResourceId) )
+  BuilderResources::iterator pos;
+  if ( resourceFIFO_.deq(pos) )
   {
-    gotResource = true;
-  }
-
-  if ( gotResource )
-  {
+    if ( pos->second.blocked )
     {
-      boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+      ::usleep(configuration_->sleepTimeBlocked*1000);
 
-      if ( ! allocatedResources_.insert(AllocatedResources::value_type(buResourceId,ResourceInfo())).second )
-      {
-        std::ostringstream oss;
-        oss << "The buResourceId " << buResourceId;
-        oss << " is already in the allocated resources, while it was also found in the free resources";
-        XCEPT_RAISE(exception::EventOrder, oss.str());
-      }
-
-      eventsToDiscard = eventsToDiscard_;
-      eventsToDiscard_ = 0;
+      boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+      resourceFIFO_.enqWait(pos);
     }
-
+    else
     {
       boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-      ++eventMonitoring_.outstandingRequests;
-    }
 
-    return true;
+      pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
+      buResourceId = pos->first;
+      eventsToDiscard = eventsToDiscard_;
+      eventsToDiscard_ = 0;
+      ++eventMonitoring_.outstandingRequests;
+      haveResource = true;
+    }
   }
-  else if ( eventsToDiscard_ > 0 )
+
+  if ( !haveResource && eventsToDiscard_ > 0 )
   {
-    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     buResourceId = 0;
     eventsToDiscard = eventsToDiscard_;
     eventsToDiscard_ = 0;
-
-    return true;
+    haveResource = true;
   }
 
-  return false;
+  return haveResource;
 }
 
 
 void evb::bu::ResourceManager::startProcessing()
 {
   oldestIncompleteLumiSection_ = 0;
-  draining_ = false;
+  doProcessing_ = true;
+  resourceMonitorWL_->submit(resourceMonitorAction_);
   resetMonitoringCounters();
 }
 
 
 void evb::bu::ResourceManager::drain()
 {
-  draining_ = true;
+  doProcessing_ = false;
 }
 
 
 void evb::bu::ResourceManager::stopProcessing()
 {
-  draining_ = true;
+  doProcessing_ = false;
 }
 
 
@@ -370,12 +380,13 @@ float evb::bu::ResourceManager::getAvailableResources()
     boost::property_tree::read_json(resourceSummary_.string(), pt);
     fuSlotsHLT_ = pt.get<int>("active_resources");
     fuSlotsCloud_ = pt.get<int>("cloud");
+    fuSlotsStale_ = pt.get<int>("stale_resources");
     queuedLumiSectionsOnFUs_ = pt.get<int>("activeRunNumQueuedLS");
   }
   catch(boost::property_tree::ptree_error& e)
   {
     std::ostringstream oss;
-    oss << "Failed to parse " << resourceSummary_ << ": ";
+    oss << "Failed to parse " << resourceSummary_.string() << ": ";
     oss << e.what();
     handleResourceSummaryFailure(oss.str());
     return 0;
@@ -406,6 +417,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
 
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
+  fuSlotsStale_ = 0;
   queuedLumiSectionsOnFUs_ = -1;
   resourceSummaryFailureAlreadyNotified_ = true;
 }
@@ -442,19 +454,79 @@ float evb::bu::ResourceManager::getOverThreshold()
 }
 
 
-void evb::bu::ResourceManager::updateResources()
+bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
+  if ( ! doProcessing_ ) return false;
+
+  uint32_t resourcesToBlock;
   const float overThreshold = getOverThreshold();
 
   if ( overThreshold >= 1 )
   {
-    resourcesToBlock_ = nbResources_;
+    resourcesToBlock = nbResources_;
   }
   else
   {
     const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
-    resourcesToBlock_ = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
+    resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
+
+  {
+    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+
+    BuilderResources::reverse_iterator rit = builderResources_.rbegin();
+    const BuilderResources::reverse_iterator ritEnd = builderResources_.rend();
+    while ( blockedResources_ < resourcesToBlock && rit != ritEnd )
+    {
+      if ( !rit->second.blocked && rit->second.builderId != -1 )
+      {
+        rit->second.blocked = true;
+        ++blockedResources_;
+      }
+      ++rit;
+    }
+
+    BuilderResources::iterator it = builderResources_.begin();
+    const BuilderResources::iterator itEnd = builderResources_.end();
+    while ( blockedResources_ > resourcesToBlock && it != itEnd )
+    {
+      if ( it->second.blocked )
+      {
+        it->second.blocked = false;
+        --blockedResources_;
+      }
+      ++it;
+    }
+  }
+
+  if ( fuSlotsHLT_ == 0U && fuSlotsStale_ > 0U )
+  {
+    XCEPT_DECLARE(exception::FFF, e,
+                  "All FUs in the appliance are reporting a stale file handle");
+    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  else if ( resourcesToBlock == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
+  {
+    bu_->getStateMachine()->processFSMEvent( Release() );
+  }
+  else if ( resourcesToBlock == nbResources_ )
+  {
+    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+      bu_->getStateMachine()->processFSMEvent( Clouded() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Block() );
+  }
+  else if ( resourcesToBlock > 0U && outstandingRequests_ == 0U )
+  {
+    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+      bu_->getStateMachine()->processFSMEvent( Misted() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Throttle() );
+  }
+
+  ::sleep(1);
+
+  return doProcessing_;
 }
 
 
@@ -471,6 +543,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   nbBlockedResources_ = 0;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
+  fuSlotsStale_ = 0;
   queuedLumiSectionsOnFUs_ = 0;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
@@ -486,6 +559,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
+  items.add("fuSlotsStale", &fuSlotsStale_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
@@ -494,9 +568,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
-  updateResources();
   nbTotalResources_ = nbResources_;
-  nbBlockedResources_ = blockedResourceFIFO_.elements();
+  nbBlockedResources_ = blockedResources_;
 
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
@@ -510,25 +583,6 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
 
     eventMonitoring_.perf.reset();
-  }
-
-  if ( nbBlockedResources_ == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
-  {
-    bu_->getStateMachine()->processFSMEvent( Release() );
-  }
-  else if ( nbBlockedResources_ == nbResources_ )
-  {
-    if ( fuSlotsCloud_ > 0U )
-      bu_->getStateMachine()->processFSMEvent( Clouded() );
-    else
-      bu_->getStateMachine()->processFSMEvent( Block() );
-  }
-  else if ( nbBlockedResources_ > 0U && outstandingRequests_ == 0U )
-  {
-    if ( fuSlotsCloud_ > 0U )
-      bu_->getStateMachine()->processFSMEvent( Misted() );
-    else
-      bu_->getStateMachine()->processFSMEvent( Throttle() );
   }
 }
 
@@ -545,9 +599,7 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
 void evb::bu::ResourceManager::configure()
 {
-  freeResourceFIFO_.clear();
-  blockedResourceFIFO_.clear();
-  allocatedResources_.clear();
+  resourceFIFO_.clear();
   lumiSectionAccounts_.clear();
   diskUsageMonitors_.clear();
   resourceSummary_.clear();
@@ -561,23 +613,35 @@ void evb::bu::ResourceManager::configure()
   nbResources_ = std::max(1U,
                           configuration_->maxEvtsUnderConstruction.value_ /
                           configuration_->eventsPerRequest.value_);
-  freeResourceFIFO_.resize(nbResources_);
-  blockedResourceFIFO_.resize(nbResources_);
+  resourceFIFO_.resize(nbResources_);
 
-  if ( configuration_->dropEventData )
   {
-    resourcesToBlock_ = 0;
-    for (uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId)
-      assert( freeResourceFIFO_.enq(buResourceId) );
+    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+    if (configuration_->dropEventData)
+      blockedResources_ = 0;
+    else
+      blockedResources_ = nbResources_;
+
+    builderResources_.clear();
+    for (uint32_t resourceId = 1; resourceId <= nbResources_; ++resourceId)
+    {
+      ResourceInfo resourceInfo;
+      resourceInfo.builderId = -1;
+      resourceInfo.blocked = !configuration_->dropEventData;
+      std::pair<BuilderResources::iterator,bool> result =
+        builderResources_.insert(BuilderResources::value_type(resourceId,resourceInfo));
+      if ( ! result.second )
+      {
+        std::ostringstream oss;
+        oss << "Failed to insert resource " << resourceId << " into builder resource map";
+        XCEPT_RAISE(exception::DiskWriting, oss.str());
+      }
+      assert( resourceFIFO_.enq(result.first) );
+    }
   }
-  else
-  {
-    resourcesToBlock_ = nbResources_;
-    for (uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId)
-      assert( blockedResourceFIFO_.enq(buResourceId) );
 
+  if ( ! configuration_->dropEventData )
     configureDiskUsageMonitors();
-  }
 
   resetMonitoringCounters();
 }
@@ -676,6 +740,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
               .add(td("# FU slots used for cloud"))
               .add(td(boost::lexical_cast<std::string>(fuSlotsCloud_.value_))));
     table.add(tr()
+              .add(td("# stale FU slots"))
+              .add(td(boost::lexical_cast<std::string>(fuSlotsStale_.value_))));
+    table.add(tr()
               .add(td("# queued lumi sections on FUs"))
               .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
 
@@ -704,8 +771,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     cgicc::div resources;
     resources.set("title","A resource is used to request a number of events ('eventsPerRequest'). Resources are blocked if not enough FU cores are available or if the output disk becomes full. The number of resources per FU slot is governed by the configuration parameter 'resourcesPerCore'.");
 
-    resources.add(freeResourceFIFO_.getHtmlSnipped());
-    resources.add(blockedResourceFIFO_.getHtmlSnipped());
+    resources.add(resourceFIFO_.getHtmlSnipped());
 
     div.add(resources);
   }
@@ -770,43 +836,43 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnippedForResourceTable() const
   const std::string colspan = boost::lexical_cast<std::string>(configuration_->eventsPerRequest+1);
 
   {
-    boost::mutex::scoped_lock sl(allocatedResourcesMutex_);
+    boost::mutex::scoped_lock sl(builderResourcesMutex_);
 
-    for ( uint16_t buResourceId = 1; buResourceId <= nbResources_; ++buResourceId )
+    for (BuilderResources::const_iterator it = builderResources_.begin(), itEnd = builderResources_.end();
+          it != itEnd; ++it)
     {
       tr row;
-      row.add(td((boost::lexical_cast<std::string>(buResourceId))));
+      row.add(td((boost::lexical_cast<std::string>(it->first))));
 
-      const AllocatedResources::const_iterator pos = allocatedResources_.find(buResourceId);
-
-      if ( pos != allocatedResources_.end() )
+      if ( it->second.blocked )
       {
-        if ( pos->second.evbIdList.empty() )
-        {
-           row.add(td("outstanding").set("colspan",colspan));
-        }
-        else
-        {
-          row.add(td(boost::lexical_cast<std::string>(pos->second.builderId)));
-
-          uint32_t colCount = 0;
-          for ( EvBidList::const_iterator it = pos->second.evbIdList.begin(), itEnd = pos->second.evbIdList.end();
-                it != itEnd; ++it)
-          {
-            std::ostringstream evbid;
-            evbid << *it;
-            row.add(td(evbid.str()));
-            ++colCount;
-          }
-          for ( uint32_t i = colCount; i < configuration_->eventsPerRequest; ++i)
-          {
-            row.add(td(" "));
-          }
-        }
+        row.add(td("BLOCKED").set("colspan",colspan));
+      }
+      else if ( it->second.builderId == -1 )
+      {
+        row.add(td("free").set("colspan",colspan));
+      }
+      else if ( it->second.evbIdList.empty() )
+      {
+        row.add(td("outstanding").set("colspan",colspan));
       }
       else
       {
-        row.add(td("unused").set("colspan",colspan));
+        row.add(td(boost::lexical_cast<std::string>(it->second.builderId)));
+
+        uint32_t colCount = 0;
+        for (EvBidList::const_iterator evbIt = it->second.evbIdList.begin(), evbItEnd = it->second.evbIdList.end();
+             evbIt != evbItEnd; ++evbIt)
+        {
+          std::ostringstream evbid;
+          evbid << *evbIt;
+          row.add(td(evbid.str()));
+          ++colCount;
+        }
+        for ( uint32_t i = colCount; i < configuration_->eventsPerRequest; ++i)
+        {
+          row.add(td(" "));
+        }
       }
 
       table.add(row);
