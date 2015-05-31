@@ -209,35 +209,54 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
   bool workDone = false;
   toolbox::mem::Reference* bufRef;
 
-  do {
-    workDone = false;
-    for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
+  try
+  {
+    do {
+      workDone = false;
+      for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
            it != buFrameQueueMap_.end(); ++it)
-    {
-      if ( it->second.frameFIFO->deq(bufRef) )
       {
-        try
+        if ( it->second.frameFIFO->deq(bufRef) )
         {
-          readoutUnit_->getApplicationContext()->
-            postFrame(
-              bufRef,
-              readoutUnit_->getApplicationDescriptor(),
-              it->second.bu
-            );
+          try
+          {
+            readoutUnit_->getApplicationContext()->
+              postFrame(
+                bufRef,
+                readoutUnit_->getApplicationDescriptor(),
+                it->second.bu
+              );
+          }
+          catch(xcept::Exception& e)
+          {
+            std::ostringstream oss;
+            oss << "Failed to send super fragment to BU TID ";
+            oss << it->first;
+            XCEPT_RETHROW(exception::I2O, oss.str(), e);
+          }
+          workDone = true;
         }
-        catch(xcept::Exception& e)
-        {
-          std::ostringstream oss;
-          oss << "Failed to send super fragment to BU TID ";
-          oss << it->first;
-          XCEPT_RETHROW(exception::I2O, oss.str(), e);
-        }
-        workDone = true;
       }
-    }
-  } while ( doProcessing_ && workDone );
+    } while ( doProcessing_ && workDone );
 
-  ::usleep(100);
+    ::usleep(100);
+  }
+  catch(xcept::Exception& e)
+  {
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, e.what());
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, "unkown exception");
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
 
   return doProcessing_;
 }
