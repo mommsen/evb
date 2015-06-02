@@ -65,7 +65,7 @@ namespace evb {
           maxEvtsUnderConstruction(256),
           eventsPerRequest(8),
           resourcesPerCore(0.2),
-          sleepTimeBlocked(100),
+          sleepTimeBlocked(5),
           maxFuLumiSectionLatency(3),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
