@@ -147,6 +147,7 @@ namespace evb {
       void configureDiskUsageMonitors();
       float getAvailableResources();
       float getOverThreshold();
+      void updateDiskUsages();
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
       void handleResourceSummaryFailure(const std::string& msg);
@@ -180,6 +181,7 @@ namespace evb {
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;
+      mutable boost::mutex diskUsageMonitorsMutex_;
 
       typedef std::map<uint32_t,LumiSectionAccountPtr> LumiSectionAccounts;
       LumiSectionAccounts lumiSectionAccounts_;

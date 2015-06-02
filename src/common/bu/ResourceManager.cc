@@ -423,11 +423,9 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
 }
 
 
-float evb::bu::ResourceManager::getOverThreshold()
+void evb::bu::ResourceManager::updateDiskUsages()
 {
-  if ( diskUsageMonitors_.empty() ) return 0;
-
-  float overThreshold = 0;
+  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
   for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
         it != itEnd; ++it)
@@ -446,7 +444,21 @@ float evb::bu::ResourceManager::getOverThreshold()
       }
       ++pathIter;
     }
+  }
+}
 
+
+float evb::bu::ResourceManager::getOverThreshold()
+{
+  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+
+  if ( diskUsageMonitors_.empty() ) return 0;
+
+  float overThreshold = 0;
+
+  for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+        it != itEnd; ++it)
+  {
     overThreshold = std::max(overThreshold,(*it)->overThreshold());
   }
 
@@ -568,6 +580,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
+  updateDiskUsages();
+
   nbTotalResources_ = nbResources_;
   nbBlockedResources_ = blockedResources_;
 
@@ -601,7 +615,6 @@ void evb::bu::ResourceManager::configure()
 {
   resourceFIFO_.clear();
   lumiSectionAccounts_.clear();
-  diskUsageMonitors_.clear();
   resourceSummary_.clear();
 
   eventsToDiscard_ = 0;
@@ -640,15 +653,19 @@ void evb::bu::ResourceManager::configure()
     }
   }
 
-  if ( ! configuration_->dropEventData )
-    configureDiskUsageMonitors();
-
+  configureDiskUsageMonitors();
   resetMonitoringCounters();
 }
 
 
 void evb::bu::ResourceManager::configureDiskUsageMonitors()
 {
+  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+
+  diskUsageMonitors_.clear();
+
+  if ( configuration_->dropEventData ) return;
+
   if ( !configuration_->ignoreResourceSummary && !configuration_->deleteRawDataFiles )
   {
     resourceSummary_ = boost::filesystem::path(configuration_->rawDataDir.value_) / configuration_->resourceSummaryFileName.value_;
@@ -746,21 +763,25 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
               .add(td("# queued lumi sections on FUs"))
               .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
 
-    if ( ! diskUsageMonitors_.empty() )
     {
-      table.add(tr()
-                .add(th("Output disk usage").set("colspan","2")));
+      boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
-      for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
-            it != itEnd; ++it)
+      if ( ! diskUsageMonitors_.empty() )
       {
-        std::ostringstream str;
-        str.setf(std::ios::fixed);
-        str.precision(1);
-        str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
         table.add(tr()
-                  .add(td((*it)->path().string()))
-                  .add(td(str.str())));
+                  .add(th("Output disk usage").set("colspan","2")));
+
+        for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
+              it != itEnd; ++it)
+        {
+          std::ostringstream str;
+          str.setf(std::ios::fixed);
+          str.precision(1);
+          str << (*it)->relDiskUsage()*100 << "% of " << (*it)->diskSizeGB() << " GB";
+          table.add(tr()
+                    .add(td((*it)->path().string()))
+                    .add(td(str.str())));
+        }
       }
     }
 
