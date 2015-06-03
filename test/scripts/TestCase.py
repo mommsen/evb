@@ -319,7 +319,7 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir,runNumber,activeResources=160,staleResources=0,activeRunNumQueuedLS=-1,cloud=0):
+    def prepareAppliance(self,testDir,runNumber,activeResources=160,staleResources=0,activeRunCMSSWMaxLS=-1,activeRunNumQueuedLS=-1,cloud=0):
         try:
             shutil.rmtree(testDir)
         except OSError:
@@ -333,6 +333,7 @@ class TestCase:
                 ', "activeFURun": '+str(runNumber)+
                 ', "active_resources": '+str(activeResources)+
                 ', "stale_resources": '+str(staleResources)+
+                ', "activeRunCMSSWMaxLS": '+str(activeRunCMSSWMaxLS)+
                 ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
                 ', "cloud": '+str(cloud)+'}')
         with open(testDir+'/HltConfig.py','w') as config:
