@@ -31,6 +31,8 @@ namespace evb {
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
       xdata::Double resourcesPerCore;                      // Number of resource IDs per active FU core
       xdata::UnsignedInteger32 sleepTimeBlocked;           // Time to sleep in ms for each blocked resource
+      xdata::UnsignedInteger32 lumiSectionLatencyLow;      // Low water mark on how many LS may be queued for the FUs
+      xdata::UnsignedInteger32 lumiSectionLatencyHigh;     // High water mark on how many LS may be queued for the FUs
       xdata::UnsignedInteger32 maxFuLumiSectionLatency;    // Maximum number of lumi sections the FUs may lag behind
       xdata::UnsignedInteger32 staleResourceTime;          // Number of seconds after which a FU resource is no longer considered
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
@@ -66,6 +68,8 @@ namespace evb {
           eventsPerRequest(8),
           resourcesPerCore(0.2),
           sleepTimeBlocked(5),
+          lumiSectionLatencyLow(3),
+          lumiSectionLatencyHigh(6),
           maxFuLumiSectionLatency(3),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
@@ -110,6 +114,8 @@ namespace evb {
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("resourcesPerCore", &resourcesPerCore);
         params.add("sleepTimeBlocked", &sleepTimeBlocked);
+        params.add("lumiSectionLatencyLow", &lumiSectionLatencyLow);
+        params.add("lumiSectionLatencyHigh", &lumiSectionLatencyHigh);
         params.add("maxFuLumiSectionLatency", &maxFuLumiSectionLatency);
         params.add("staleResourceTime", &staleResourceTime);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);

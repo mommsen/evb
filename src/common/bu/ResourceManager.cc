@@ -25,6 +25,7 @@ evb::bu::ResourceManager::ResourceManager
   bu_(bu),
   configuration_(bu->getConfiguration()),
   resourceFIFO_(bu,"resourceFIFO"),
+  runNumber_(0),
   eventsToDiscard_(0),
   nbResources_(1),
   builderId_(0),
@@ -342,6 +343,7 @@ void evb::bu::ResourceManager::startProcessing()
 {
   oldestIncompleteLumiSection_ = 0;
   doProcessing_ = true;
+  runNumber_ = bu_->getStateMachine()->getRunNumber();
   resourceMonitorWL_->submit(resourceMonitorAction_);
   resetMonitoringCounters();
 }
@@ -382,6 +384,13 @@ float evb::bu::ResourceManager::getAvailableResources()
     fuSlotsCloud_ = pt.get<int>("cloud");
     fuSlotsStale_ = pt.get<int>("stale_resources");
     queuedLumiSectionsOnFUs_ = pt.get<int>("activeRunNumQueuedLS");
+
+    const int activeFURun = pt.get<int>("activeFURun");
+    const int activeRunCMSSWMaxLS = pt.get<int>("activeRunCMSSWMaxLS");
+    if ( activeFURun == static_cast<int>(runNumber_) && activeRunCMSSWMaxLS > 0 )
+      queuedLumiSections_ = oldestIncompleteLumiSection_ - activeRunCMSSWMaxLS;
+    else
+      queuedLumiSections_ = -1;
   }
   catch(boost::property_tree::ptree_error& e)
   {
@@ -394,15 +403,24 @@ float evb::bu::ResourceManager::getAvailableResources()
   resourceSummaryFailureAlreadyNotified_ = false;
 
 
-  if ( queuedLumiSectionsOnFUs_ > static_cast<int>(configuration_->maxFuLumiSectionLatency) )
+  if ( queuedLumiSectionsOnFUs_ > static_cast<int>(configuration_->maxFuLumiSectionLatency) ||
+       queuedLumiSections_ > static_cast<int>(configuration_->lumiSectionLatencyHigh) )
   {
     return 0;
   }
-  else
+
+  float resourcesFromFUs = fuSlotsHLT_ * configuration_->resourcesPerCore;
+
+  if ( queuedLumiSections_ > static_cast<int>(configuration_->lumiSectionLatencyLow) )
   {
-    const float resourcesFromFUs = fuSlotsHLT_ * configuration_->resourcesPerCore;
-    return std::min(resourcesFromFUs,static_cast<float>(nbResources_));
+    resourcesFromFUs *= 1 - ( (queuedLumiSections_ - configuration_->lumiSectionLatencyLow) /
+                              (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
   }
+
+  if ( resourcesFromFUs < 1 )
+    return 1;
+  else
+    return std::min(resourcesFromFUs,static_cast<float>(nbResources_));
 }
 
 
@@ -490,7 +508,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     const BuilderResources::reverse_iterator ritEnd = builderResources_.rend();
     while ( blockedResources_ < resourcesToBlock && rit != ritEnd )
     {
-      if ( !rit->second.blocked && rit->second.builderId != -1 )
+      if ( !rit->second.blocked )
       {
         rit->second.blocked = true;
         ++blockedResources_;
@@ -760,8 +778,14 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
               .add(td("# stale FU slots"))
               .add(td(boost::lexical_cast<std::string>(fuSlotsStale_.value_))));
     table.add(tr()
+              .add(td("# queued lumi sections for FUs"))
+              .add(td(boost::lexical_cast<std::string>(queuedLumiSections_.value_))));
+    table.add(tr()
               .add(td("# queued lumi sections on FUs"))
               .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
+    table.add(tr()
+              .add(td("# blocked resources"))
+              .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));
 
     {
       boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);

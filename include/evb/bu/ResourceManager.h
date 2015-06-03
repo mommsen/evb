@@ -171,6 +171,7 @@ namespace evb {
       ResourceFIFO resourceFIFO_;
       mutable boost::mutex resourceFIFOmutex_;
 
+      uint32_t runNumber_;
       uint32_t eventsToDiscard_;
       uint32_t nbResources_;
       uint32_t blockedResources_;
@@ -212,6 +213,7 @@ namespace evb {
       xdata::UnsignedInteger32 fuSlotsHLT_;
       xdata::UnsignedInteger32 fuSlotsCloud_;
       xdata::UnsignedInteger32 fuSlotsStale_;
+      xdata::Integer32 queuedLumiSections_;
       xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
