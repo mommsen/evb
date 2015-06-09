@@ -14,9 +14,9 @@ class Context:
         self.apps = {
             'app':None,
             'instance':None,
-            'ptApp':None,
+            'ptUtcp':None,
+            'ptFrl':None,
             'ptInstance':Context.ptInstance,
-            'network':[],
             'tid':None
             }
         Context.ptInstance += 1
@@ -27,7 +27,7 @@ class Context:
 
 
     def getConfig(self):
-        config = self.getConfigForPtFrl()
+        config = self.getConfigForPeerTransport()
         config += self.getConfigForPtUtcp()
         config += self.getConfigForApplication()
 
@@ -48,14 +48,14 @@ class Context:
             return """      <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>\n""" % self.apps
 
 
-    def getConfigForPtFrl(self):
+    def getConfigForPeerTransport(self):
         return ""
 
 
     def getConfigForPtUtcp(self):
         global id
-        if self.apps['ptApp'] != "pt::utcp::Application":
-             return ""
+        if self.apps['ptUtcp'] is None:
+            return ""
 
         config = """
       <xc:Endpoint protocol="atcp" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="tcp"/>
@@ -108,6 +108,8 @@ class FEROL(Context):
         FEROL.instance += 1
 
         self._params.append(('fedId','unsignedInt',fedId))
+        self._params.append(('sourceHost','string',self.apps['frlHostname']))
+        self._params.append(('sourcePort','unsignedInt',str(self.apps['frlPort'])))
         self._params.append(('destinationHost','string',destination.apps['frlHostname']))
         self._params.append(('destinationPort','unsignedInt',str(destination.apps['frlPort'])))
 
@@ -147,8 +149,11 @@ class RU(Context):
         self.apps['instance'] = RU.instance
         self.apps.update( symbolMap.getHostInfo('RU'+str(RU.instance)) )
         self.apps['tid'] = RU.instance+1
-        self.apps['ptApp'] = "pt::utcp::Application"
+        self.apps['ptUtcp'] = "pt::utcp::Application"
         self.apps['ferolSources'] = []
+        self.apps['inputSource'] = self.getInputSource()
+        if self.apps['inputSource'] == 'FEROL':
+            self.apps['ptFrl'] = "pt::frl::Application"
         RU.instance += 1
 
 
@@ -197,22 +202,54 @@ class RU(Context):
                     ('className','string',self.apps['app']),
                     ('instance','string',str(self.apps['instance']))
                     ) )
-            self._params.append( ('ferolPort','unsignedInt',self.apps['frlPort']) );
             self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
         self._params.append( ('ferolSources','Struct',ferolSources) )
         return routing
 
 
-    def getConfigForPtFrl(self):
-        global id
-        routing = self.fillFerolSources()
+    def getInputSource(self):
         for param in self._params:
             try:
-                if param[0] == 'inputSource' and param[2] in ('Local','Socket'):
-                    return ""
+                if param[0] == 'inputSource':
+                    return param[2]
             except KeyError:
                 pass
 
+
+    def getConfigForPeerTransport(self):
+        routing = self.fillFerolSources()
+        if self.apps['inputSource'] == 'FEROL':
+            return self.getConfigForPtFrl(routing)
+        elif self.apps['inputSource'] == 'Socket':
+            self.fillFerolSources()
+            return self.getConfigForPtBlit()
+        else:
+            return ""
+
+
+    def getConfigForPtBlit(self):
+        global id
+        config = """
+      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true"  pollingCycle="1" rmode="select"  nonblock="true" maxbulksize="131072" />
+
+      <xc:Application class="pt::blit::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
+        <properties xmlns="urn:xdaq-application:pt::blit::Application" xsi:type="soapenc:Struct">
+"""  % dict(self.apps.items() + [('id',id)])
+        id += 1
+
+        config += self.fillProperties([
+            ('maxClients','unsignedInt','32'),
+            ('maxReceiveBuffers','unsignedInt','32'),
+            ('maxBlockSize','unsignedInt','131072')
+            ])
+        config += "        </properties>\n      </xc:Application>\n"
+
+        config += "\n"
+        return config
+
+
+    def getConfigForPtFrl(self,routing):
+        global id
         config = """
       <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
 
@@ -241,9 +278,6 @@ class RU(Context):
             ])
         config += "        </properties>\n      </xc:Application>\n"
 
-        for network in self.apps['network']:
-            config += "\n      <xc:Alias name=\""+network+"\">ferol</xc:Alias>"
-
         config += "\n"
         return config
 
@@ -259,7 +293,7 @@ class BU(Context):
         self.apps['instance'] = BU.instance
         self.apps.update( symbolMap.getHostInfo('BU'+str(BU.instance)) )
         self.apps['tid'] = BU.instance+30
-        self.apps['ptApp'] = "pt::utcp::Application"
+        self.apps['ptUtcp'] = "pt::utcp::Application"
         BU.instance += 1
 
 
@@ -283,7 +317,8 @@ class Configuration():
 
     def __init__(self):
         self.contexts = []
-        self.pt = []
+        self.ptUtcp = []
+        self.ptFrl = []
         self.applications = {}
 
 
@@ -299,10 +334,14 @@ class Configuration():
             appInfo['app'] = nested.apps['app']
             appInfo['instance'] = nested.apps['instance']
             self.applications[nested.role].append(copy.deepcopy(appInfo))
-        if context.apps['ptApp'] is not None:
-            appInfo['app'] = context.apps['ptApp']
+        if context.apps['ptUtcp'] is not None:
+            appInfo['app'] = context.apps['ptUtcp']
             appInfo['instance'] = context.apps['ptInstance']
-            self.pt.append(appInfo)
+            self.ptUtcp.append(copy.deepcopy(appInfo))
+        if context.apps['ptFrl'] is not None:
+            appInfo['app'] = context.apps['ptFrl']
+            appInfo['instance'] = context.apps['ptInstance']
+            self.ptFrl.append(appInfo)
 
 
     def getPartition(self):

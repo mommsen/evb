@@ -234,10 +234,16 @@ class TestCase:
 
     def startPt(self):
         print("Starting pt")
-        for application in self._config.pt:
+        for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Configure',**application)
-        for application in self._config.pt:
+        for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Enable',**application)
+
+
+    def resetPtFrl(self):
+        print("Resetting pt::frl")
+        for application in self._config.ptFrl:
+            messengers.sendCmdToApp(command='Reset',**application)
 
 
     def configureEvB(self):
@@ -292,6 +298,7 @@ class TestCase:
         self.halt('RU')
         self.halt('BU')
         self.checkState('Halted')
+        self.resetPtFrl();
 
 
     def checkEVM(self,superFragmentSize,eventRate=1000):
