@@ -18,6 +18,8 @@ namespace evb {
        */
       struct Configuration
       {
+        xdata::String sourceHost;
+        xdata::UnsignedInteger32 sourcePort;
         xdata::String destinationHost;
         xdata::UnsignedInteger32 destinationPort;
         xdata::UnsignedInteger32 fedId;
@@ -35,7 +37,9 @@ namespace evb {
         xdata::UnsignedInteger32 maxTriggerRate;
 
         Configuration()
-          : destinationHost("localhost"),
+          : sourceHost("localhost"),
+            sourcePort(0),
+            destinationHost("localhost"),
             destinationPort(0),
             fedId(0),
             fedSize(2048),
@@ -58,6 +62,8 @@ namespace evb {
           xdaq::ApplicationContext* context
         )
         {
+          params.add("sourceHost", &sourceHost);
+          params.add("sourcePort", &sourcePort);
           params.add("destinationHost", &destinationHost);
           params.add("destinationPort", &destinationPort);
           params.add("fedId", &fedId);

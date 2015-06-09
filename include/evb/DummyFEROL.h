@@ -37,7 +37,7 @@ namespace evb {
 
       DummyFEROL(xdaq::ApplicationStub*);
 
-      virtual ~DummyFEROL() {};
+      virtual ~DummyFEROL();
 
       XDAQ_INSTANTIATOR();
 

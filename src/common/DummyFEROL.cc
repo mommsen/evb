@@ -13,6 +13,9 @@
 #include "xcept/tools.h"
 
 #include <algorithm>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -34,6 +37,12 @@ evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   initialize();
 
   LOG4CPLUS_INFO(getApplicationLogger(), "End of constructor");
+}
+
+
+evb::test::DummyFEROL::~DummyFEROL()
+{
+  closeConnection();
 }
 
 
@@ -219,8 +228,59 @@ void evb::test::DummyFEROL::configure()
 
 void evb::test::DummyFEROL::openConnection()
 {
+  sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if ( sockfd_ < 0 )
+  {
+    XCEPT_RAISE(exception::TCP, "Failed to open socket");
+  }
+
+  // Allow socket to reuse the address
+  int yes = 1;
+  if ( setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0 )
+  {
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to set SO_REUSEADDR on socket: " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
+  }
+
+  // Allow socket to reuse the port
+  if ( setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes)) < 0 )
+  {
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to set SO_REUSEPORT on socket: " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
+  }
+
+  // Set connection Abort on close
+  struct linger so_linger;
+  so_linger.l_onoff = 1;
+  so_linger.l_linger = 0;
+  if ( setsockopt(sockfd_, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger)) < 0 )
+  {
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to set SO_LINGER on socket: " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
+  }
+
+  sockaddr_in sa_local;
+  memset(&sa_local, 0, sizeof(sa_local));
+  sa_local.sin_family = AF_INET;
+  sa_local.sin_port = htons(configuration_->sourcePort.value_);
+  sa_local.sin_addr.s_addr = inet_addr(configuration_->sourceHost.value_.c_str());
+
+  if ( bind(sockfd_, (struct sockaddr*)&sa_local, sizeof(struct sockaddr)) < 0 )
+  {
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to bind socket to local port " << configuration_->sourceHost.value_ << ":" << configuration_->sourcePort;
+    msg << " : " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
+  }
+
   addrinfo hints, *servinfo;
-  //Ensure that servinfo is clear
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
@@ -233,23 +293,29 @@ void evb::test::DummyFEROL::openConnection()
     &hints,&servinfo);
   if ( result != 0 )
   {
-    std::ostringstream oss;
-    oss << "Failed to get server info: " << gai_strerror(result);
-    XCEPT_RAISE(exception::TCP, oss.str());
+    std::ostringstream msg;
+    msg << "Failed to get server info for " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+    msg << " : " << gai_strerror(result);
+    XCEPT_RAISE(exception::TCP, msg.str());
   }
 
-  sockfd_ = socket(servinfo->ai_family,servinfo->ai_socktype,servinfo->ai_protocol);
-  if ( sockfd_ < 0 )
+  if ( connect(sockfd_,servinfo->ai_addr,servinfo->ai_addrlen) < 0 )
   {
-    XCEPT_RAISE(exception::TCP, "Failed to open socket");
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to connect to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+    msg << " : " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
   }
 
-  if (connect(sockfd_,servinfo->ai_addr,servinfo->ai_addrlen) < 0)
+  // Set socket to non-blocking
+  const int flags = fcntl(sockfd_, F_GETFL, 0);
+  if ( fcntl(sockfd_, F_SETFL, flags|O_NONBLOCK) < 0 )
   {
-    close(sockfd_);
-    std::ostringstream oss;
-    oss << "Failed to connect to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
-    XCEPT_RAISE(exception::TCP, oss.str());
+    closeConnection();
+    std::ostringstream msg;
+    msg << "Failed to set O_NONBLOCK on socket: " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
   }
 }
 
@@ -275,14 +341,20 @@ void evb::test::DummyFEROL::drain()
 void evb::test::DummyFEROL::stopProcessing()
 {
   doProcessing_ = false;
-  while ( generatingActive_ ) ::usleep(1000);
+  while ( generatingActive_ || sendingActive_ ) ::usleep(1000);
   fragmentFIFO_.clear();
 }
 
 
 void evb::test::DummyFEROL::closeConnection()
 {
-  close(sockfd_);
+  if ( close(sockfd_) < 0 )
+  {
+    std::ostringstream msg;
+    msg << "Failed to close socket to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+    msg << " : " << strerror(errno);
+    XCEPT_RAISE(exception::TCP, msg.str());
+  }
   sockfd_ = 0;
 }
 
@@ -424,11 +496,27 @@ inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRe
 
 inline void evb::test::DummyFEROL::sendData(toolbox::mem::Reference* bufRef)
 {
-  if ( write(sockfd_,bufRef->getDataLocation(),bufRef->getDataSize()) < 0 )
+  char* buf = (char*)bufRef->getDataLocation();
+  ssize_t len = bufRef->getDataSize();
+
+  while ( len > 0 && doProcessing_ )
   {
-    std::ostringstream oss;
-    oss << "Failed to send data to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
-    XCEPT_RAISE(exception::TCP, oss.str());
+    const ssize_t written = write(sockfd_,buf,len);
+    if ( written < 0 )
+    {
+      if ( errno != EWOULDBLOCK )
+      {
+        std::ostringstream msg;
+        msg << "Failed to send data to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
+        msg << " : " << strerror(errno);
+        XCEPT_RAISE(exception::TCP, msg.str());
+      }
+    }
+    else
+    {
+      len -= written;
+      buf += written;
+    }
   }
   bufRef->release();
 }
