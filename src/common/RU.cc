@@ -1,6 +1,7 @@
 #include "evb/RU.h"
 #include "evb/readoutunit/BUproxy.h"
 #include "evb/readoutunit/Configuration.h"
+#include "evb/readoutunit/FerolConnectionManager.h"
 #include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/States.h"
 
@@ -10,6 +11,7 @@ evb::RU::RU(xdaq::ApplicationStub* app) :
 {
   this->stateMachine_.reset( new ru::RUStateMachine(this) );
   this->input_.reset( new readoutunit::Input<RU,readoutunit::Configuration>(this) );
+  this->ferolConnectionManager_.reset( new readoutunit::FerolConnectionManager<RU,readoutunit::Configuration>(this) );
   this->buProxy_.reset( new readoutunit::BUproxy<RU>(this) );
 
   this->initialize();
