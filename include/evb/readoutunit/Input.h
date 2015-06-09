@@ -151,6 +151,8 @@ namespace evb {
       ReadoutUnit* getReadoutUnit() const
       { return readoutUnit_; }
 
+      typedef boost::shared_ptr< FerolStream<ReadoutUnit,Configuration> > FerolStreamPtr;
+      typedef std::map<uint16_t,FerolStreamPtr> FerolStreams;
 
     private:
 
@@ -168,8 +170,6 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
 
-      typedef boost::shared_ptr< FerolStream<ReadoutUnit,Configuration> > FerolStreamPtr;
-      typedef std::map<uint16_t,FerolStreamPtr> FerolStreams;
       FerolStreams ferolStreams_;
       mutable boost::shared_mutex ferolStreamsMutex_;
       typename FerolStreams::iterator masterStream_;
@@ -614,29 +614,36 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     ferolStreams_.clear();
 
-    typename Configuration::FerolSources::const_iterator it, itEnd;
-    for (it = configuration->ferolSources.begin(),
-           itEnd = configuration->ferolSources.end(); it != itEnd; ++it)
+    if ( configuration->inputSource == "Socket" )
     {
-      const uint16_t fedId = it->bag.fedId.value_;
-      if (fedId > FED_COUNT)
+      readoutUnit_->getFerolConnectionManager()->getAllFerolStreams(ferolStreams_);
+    }
+    else
+    {
+      typename Configuration::FerolSources::const_iterator it, itEnd;
+      for (it = configuration->ferolSources.begin(),
+             itEnd = configuration->ferolSources.end(); it != itEnd; ++it)
       {
-        std::ostringstream oss;
-        oss << "The fedSourceId " << fedId;
-        oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
-        XCEPT_RAISE(exception::Configuration, oss.str());
+        const uint16_t fedId = it->bag.fedId.value_;
+        if (fedId > FED_COUNT)
+        {
+          std::ostringstream oss;
+          oss << "The fedSourceId " << fedId;
+          oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
+          XCEPT_RAISE(exception::Configuration, oss.str());
+        }
+
+        FerolStreamPtr ferolStream;
+
+        if ( configuration->inputSource == "FEROL" )
+          ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+        else if ( configuration->inputSource == "Local" )
+          ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+        else
+          XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
+
+        ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
       }
-
-      FerolStreamPtr ferolStream;
-
-      if ( configuration->inputSource == "FEROL" )
-        ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-      else if ( configuration->inputSource == "Local" )
-        ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-      else
-        XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
-
-      ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
     }
 
     setMasterStream();

@@ -164,6 +164,9 @@ namespace evb {
       virtual ~Active()
       { this->safeExitAction(); }
 
+      virtual void entryAction();
+      virtual void exitAction();
+
     };
 
 
@@ -342,6 +345,23 @@ namespace evb {
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class Owner>
+void evb::readoutunit::Active<Owner>::entryAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
+  owner->getFerolConnectionManager()->acceptConnections();
+}
+
+
+template<class Owner>
+void evb::readoutunit::Active<Owner>::exitAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
+  owner->getFerolConnectionManager()->dropConnections();
+}
+
 
 template<class Owner>
 void evb::readoutunit::Configuring<Owner>::entryAction()
@@ -407,6 +427,7 @@ void evb::readoutunit::Running<Owner>::entryAction()
   const Owner* owner = stateMachine.getOwner();
   const uint32_t runNumber = stateMachine.getRunNumber();
 
+  owner->getFerolConnectionManager()->startProcessing();
   owner->getInput()->startProcessing(runNumber);
   owner->getBUproxy()->startProcessing();
   doStartProcessing(owner,runNumber);
@@ -419,6 +440,7 @@ void evb::readoutunit::Running<Owner>::exitAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const Owner* owner = stateMachine.getOwner();
 
+  owner->getFerolConnectionManager()->stopProcessing();
   owner->getInput()->stopProcessing();
   owner->getBUproxy()->stopProcessing();
   doStopProcessing(owner);
@@ -445,6 +467,7 @@ void evb::readoutunit::Draining<Owner>::activity()
   std::string msg = "Failed to drain the components";
   try
   {
+    if (doDraining_) owner->getFerolConnectionManager()->drain();
     if (doDraining_) owner->getInput()->drain();
     if (doDraining_) owner->getBUproxy()->drain();
     if (doDraining_) doDraining(owner);

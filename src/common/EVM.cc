@@ -3,6 +3,7 @@
 #include "evb/EVM.h"
 #include "evb/evm/Configuration.h"
 #include "evb/readoutunit/BUproxy.h"
+#include "evb/readoutunit/FerolConnectionManager.h"
 #include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/States.h"
 #include "interface/shared/GlobalEventNumber.h"
@@ -15,7 +16,8 @@ evb::EVM::EVM(xdaq::ApplicationStub* app) :
   toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
 
   this->stateMachine_.reset( new evm::EVMStateMachine(this) );
-  this->input_.reset( new evm::Input(this) );
+  this->input_.reset( new readoutunit::Input<EVM,evm::Configuration>(this) );
+  this->ferolConnectionManager_.reset( new readoutunit::FerolConnectionManager<EVM,evm::Configuration>(this) );
   this->ruProxy_.reset( new evm::RUproxy(this,this->stateMachine_,fastCtrlMsgPool) );
   this->buProxy_.reset( new readoutunit::BUproxy<EVM>(this) );
 

@@ -52,6 +52,7 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
       xdata::UnsignedInteger32 checkCRC;                     // Check the CRC of the FED fragments for every Nth event
       xdata::UnsignedInteger32 writeNextFragmentsToFile;     // Write the next N fragments to text files
+      xdata::Boolean dropAtSocket;                           // If set to true, data is discarded after reading from the socket
       xdata::Boolean dropInputData;                          // If set to true, the input data is dropped
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
@@ -66,7 +67,6 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
-      xdata::UnsignedInteger32 ferolPort;                    // Port number to listen for FEROL connections
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
@@ -81,6 +81,7 @@ namespace evb {
           fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
           checkCRC(0),
           writeNextFragmentsToFile(0),
+          dropAtSocket(false),
           dropInputData(false),
           computeCRC(true),
           usePlayback(false),
@@ -93,7 +94,6 @@ namespace evb {
           dummyScalFedSize(0),
           scalFedId(999),
           fragmentPoolSize(200000000),
-          ferolPort(10000),
           tolerateCorruptedEvents(false),
           maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
@@ -114,6 +114,7 @@ namespace evb {
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
         params.add("checkCRC", &checkCRC);
         params.add("writeNextFragmentsToFile", &writeNextFragmentsToFile, InfoSpaceItems::change);
+        params.add("dropAtSocket", &dropAtSocket);
         params.add("dropInputData", &dropInputData);
         params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
@@ -128,7 +129,6 @@ namespace evb {
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds, InfoSpaceItems::change);
         params.add("ferolSources", &ferolSources);
-        params.add("ferolPort", &ferolPort);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);

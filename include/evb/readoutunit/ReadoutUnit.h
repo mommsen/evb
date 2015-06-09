@@ -9,6 +9,7 @@
 #include "evb/EvBApplication.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/readoutunit/BUproxy.h"
+#include "evb/readoutunit/FerolConnectionManager.h"
 #include "evb/readoutunit/Input.h"
 #include "i2o/Method.h"
 #include "interface/shared/i2oXFunctionCodes.h"
@@ -52,6 +53,10 @@ namespace evb {
       InputPtr getInput() const
       { return input_; }
 
+      typedef boost::shared_ptr< FerolConnectionManager<Unit,Configuration> > FerolConnectionManagerPtr;
+      FerolConnectionManagerPtr getFerolConnectionManager() const
+      { return ferolConnectionManager_; }
+
       typedef boost::shared_ptr< BUproxy<Unit> > BUproxyPtr;
       BUproxyPtr getBUproxy() const
       { return buProxy_; }
@@ -63,6 +68,7 @@ namespace evb {
     protected:
 
       InputPtr input_;
+      FerolConnectionManagerPtr ferolConnectionManager_;
       BUproxyPtr buProxy_;
 
     private:
