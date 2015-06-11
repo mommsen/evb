@@ -114,11 +114,6 @@ class TestCase:
             pass
 
 
-    def changeState(self,cmd,newState):
-        for app in self._config.applications.keys():
-            self.sendStateCmd(cmd,newState,app)
-
-
     def checkAppState(self,targetState,app,instance=None):
         try:
             for application in self._config.applications[app]:
@@ -249,7 +244,11 @@ class TestCase:
     def configureEvB(self):
         sys.stdout.write("Configuring EvB")
         sys.stdout.flush()
-        self.changeState('Configure','Configuring')
+        self.configure('FEROL')
+        self.waitForAppState('Ready','FEROL')
+        self.configure('EVM')
+        self.configure('RU')
+        self.configure('BU')
         self.waitForState('Ready')
         print(" done")
 
