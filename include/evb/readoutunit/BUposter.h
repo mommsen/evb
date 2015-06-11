@@ -24,7 +24,7 @@ namespace evb {
 
     /**
      * \ingroup xdaqApps
-     * \brief Singleton to post I2O messages to BU
+     * \brief Post I2O messages to BU
      */
 
     template<class ReadoutUnit>
