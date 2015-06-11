@@ -9,7 +9,7 @@
 
 evb::readoutunit::FedFragment::FedFragment()
   : typeOfNextComponent_(FEROL_HEADER),fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
-    isCorrupted_(false),isComplete_(false),bufRef_(0),cache_(0)
+    isCorrupted_(false),isComplete_(false),bufRef_(0),cache_(0),copiedHeaderBytes_(0)
 {}
 
 
@@ -81,12 +81,37 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
     {
       case FEROL_HEADER:
       {
-        const ferolh_t* ferolHeader = (ferolh_t*)(pos + usedSize);
-
-        if ( remainingBufferSize < sizeof(ferolh_t) )
+        ferolh_t* ferolHeader;
+        if ( copiedHeaderBytes_ > 0 )
         {
-          XCEPT_RAISE(exception::TCP,"FIXME: FEROL header not fully contained in buffer");
+          // previous buffer contained part of this header
+          const uint32_t missingHeaderBytes = sizeof(ferolh_t)-copiedHeaderBytes_;
+          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          usedSize += missingHeaderBytes;
+          remainingBufferSize -= missingHeaderBytes;
+          copiedHeaderBytes_ = 0;
+          ferolHeader = (ferolh_t*)&tmpBuffer_[0];
         }
+        else if ( remainingBufferSize < sizeof(ferolh_t) )
+        {
+          // the header is not fully contained in this buffer
+          // safe it for the next round
+          if ( tmpBuffer_.size() < sizeof(ferolh_t) )
+            tmpBuffer_.resize( sizeof(ferolh_t) );
+
+          memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
+          copiedHeaderBytes_ = remainingBufferSize;
+          usedSize += remainingBufferSize;
+          remainingBufferSize = 0;
+          break;
+        }
+        else
+        {
+          ferolHeader = (ferolh_t*)(pos + usedSize);
+          usedSize += sizeof(ferolh_t);
+          remainingBufferSize -= sizeof(ferolh_t);
+        }
+
         if ( fedId_ > FED_COUNT )
         {
           fedId_ = ferolHeader->fed_id();
@@ -94,8 +119,6 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         }
         const uint32_t dataLength = checkFerolHeader(ferolHeader);
         fedSize_ += dataLength;
-        remainingBufferSize -= sizeof(ferolh_t);
-        usedSize += sizeof(ferolh_t);
 
         // skip the FEROL header
         if ( dataLocation.iov_len > 0 )
@@ -135,15 +158,41 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
       case FED_HEADER:
       {
-        if ( remainingBufferSize < sizeof(fedh_t) )
+        const fedh_t* fedHeader;
+        if ( copiedHeaderBytes_ > 0 )
         {
-          XCEPT_RAISE(exception::TCP,"FIXME: FED header not fully contained in buffer");
+          // previous buffer contained part of this header
+          const uint32_t missingHeaderBytes = sizeof(fedh_t)-copiedHeaderBytes_;
+          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          usedSize += missingHeaderBytes;
+          dataLocation.iov_len += missingHeaderBytes;
+          remainingBufferSize -= missingHeaderBytes;
+          copiedHeaderBytes_ = 0;
+          fedHeader = (fedh_t*)&tmpBuffer_[0];
         }
-        const fedh_t* fedHeader = (fedh_t*)(pos + usedSize);
+        else if ( remainingBufferSize < sizeof(fedh_t) )
+        {
+          // the header is not fully contained in this buffer
+          // safe it for the next round
+          if ( tmpBuffer_.size() < sizeof(fedh_t) )
+            tmpBuffer_.resize( sizeof(fedh_t) );
+
+          memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
+          copiedHeaderBytes_ = remainingBufferSize;
+          usedSize += remainingBufferSize;
+          dataLocation.iov_len += remainingBufferSize;
+          remainingBufferSize = 0;
+          break;
+        }
+        else
+        {
+          fedHeader = (fedh_t*)(pos + usedSize);
+          usedSize += sizeof(fedh_t);
+          dataLocation.iov_len += sizeof(fedh_t);
+          remainingBufferSize -= sizeof(fedh_t);
+        }
+
         checkFedHeader(fedHeader);
-        remainingBufferSize -= sizeof(fedh_t);
-        usedSize += sizeof(fedh_t);
-        dataLocation.iov_len += sizeof(fedh_t);
         typeOfNextComponent_ = FED_PAYLOAD;
         break;
       }
@@ -174,14 +223,41 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
       case FED_TRAILER:
       {
-        if ( remainingBufferSize < sizeof(fedt_t) )
+        const fedt_t* fedTrailer;
+        if ( copiedHeaderBytes_ > 0 )
         {
-          XCEPT_RAISE(exception::TCP,"FIXME: FED trailer not fully contained in buffer");
+          // previous buffer contained part of this header
+          const uint32_t missingHeaderBytes = sizeof(fedt_t)-copiedHeaderBytes_;
+          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          usedSize += missingHeaderBytes;
+          dataLocation.iov_len += missingHeaderBytes;
+          remainingBufferSize -= missingHeaderBytes;
+          copiedHeaderBytes_ = 0;
+          fedTrailer = (fedt_t*)&tmpBuffer_[0];
         }
-        const fedt_t* fedTrailer = (fedt_t*)(pos + usedSize);
+        else if ( remainingBufferSize < sizeof(fedt_t) )
+        {
+          // the header is not fully contained in this buffer
+          // safe it for the next round
+          if ( tmpBuffer_.size() < sizeof(fedt_t) )
+            tmpBuffer_.resize( sizeof(fedt_t) );
+
+          memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
+          copiedHeaderBytes_ = remainingBufferSize;
+          usedSize += remainingBufferSize;
+          dataLocation.iov_len += remainingBufferSize;
+          remainingBufferSize = 0;
+          break;
+        }
+        else
+        {
+          fedTrailer = (fedt_t*)(pos + usedSize);
+          usedSize += sizeof(fedt_t);
+          dataLocation.iov_len += sizeof(fedt_t);
+          remainingBufferSize -= sizeof(fedt_t);
+        }
+
         checkFedTrailer(fedTrailer);
-        usedSize += sizeof(fedt_t);
-        dataLocation.iov_len += sizeof(fedt_t);
         isComplete_ = true;
         break;
       }

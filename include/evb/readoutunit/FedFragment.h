@@ -81,6 +81,9 @@ namespace evb {
       bool isLastFerolHeader_;
       uint32_t payloadLength_;
 
+      uint32_t copiedHeaderBytes_;
+      std::vector<char> tmpBuffer_;
+
     };
 
     typedef boost::shared_ptr<FedFragment> FedFragmentPtr;
