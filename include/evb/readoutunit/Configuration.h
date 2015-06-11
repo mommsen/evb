@@ -38,7 +38,6 @@ namespace evb {
           bag->addField("fedId",&fedId);
           bag->addField("hostname",&hostname);
           bag->addField("port",&port);
-          bag->addField("active",&active);
         }
       };
       typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
@@ -127,24 +126,13 @@ namespace evb {
         params.add("dummyScalFedSize", &dummyScalFedSize);
         params.add("scalFedId", &scalFedId);
         params.add("fragmentPoolSize", &fragmentPoolSize);
-        params.add("fedSourceIds", &fedSourceIds, InfoSpaceItems::change);
+        params.add("fedSourceIds", &fedSourceIds);
         params.add("ferolSources", &ferolSources);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 
-      void maskFerolSourcesFromSourceIds()
-      {
-        for (FerolSources::iterator it = ferolSources.begin(), itEnd = ferolSources.end();
-               it != itEnd; ++it)
-        {
-          if ( std::find(fedSourceIds.begin(),fedSourceIds.end(),it->bag.fedId) == fedSourceIds.end() )
-            it->bag.active = false;
-          else
-            it->bag.active = true;
-        }
-      }
     };
 
     typedef boost::shared_ptr<Configuration> ConfigurationPtr;

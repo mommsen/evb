@@ -191,10 +191,6 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   {
     input_->stopLocalInputAtEvent(stopLocalInputAtEvent_);
   }
-  else if (item == "fedSourceIds")
-  {
-    this->getConfiguration()->maskFerolSourcesFromSourceIds();
-  }
   else
   {
     localItemChangedEvent(item);
