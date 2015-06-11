@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "evb/OneToOneQueue.h"
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
@@ -13,6 +14,9 @@
 #include "pt/blit/InputPipe.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Reference.h"
+#include "toolbox/task/Action.h"
+#include "toolbox/task/WaitingWorkLoop.h"
+#include "toolbox/task/WorkLoopFactory.h"
 #include "xcept/tools.h"
 
 
@@ -38,6 +42,11 @@ namespace evb {
       void addBuffer(toolbox::mem::Reference*, pt::blit::InputPipe*);
 
       /**
+       * Configure
+       */
+      void configure();
+
+      /**
        * Start processing events
        */
       virtual void startProcessing(const uint32_t runNumber);
@@ -60,8 +69,19 @@ namespace evb {
 
 
     private:
+      void startProcessingWorkLoop();
+      bool process(toolbox::task::WorkLoop*);
 
       const typename Configuration::FerolSource* ferolSource_;
+
+      typedef OneToOneQueue<SocketBufferPtr> SocketBufferFIFO;
+      SocketBufferFIFO socketBufferFIFO_;
+
+      toolbox::task::WorkLoop* processingWorkLoop_;
+      toolbox::task::ActionSignature* processingAction_;
+
+      volatile bool processingActive_;
+
       FedFragmentPtr currentFragment_;
 
     };
@@ -80,8 +100,38 @@ evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
   const typename Configuration::FerolSource* ferolSource
 ) :
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,ferolSource->fedId.value_),
-  ferolSource_(ferolSource)
-{}
+  ferolSource_(ferolSource),
+  socketBufferFIFO_(readoutUnit,"socketBufferFIFO"),
+  processingActive_(false)
+{
+  startProcessingWorkLoop();
+}
+
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startProcessingWorkLoop()
+{
+  try
+  {
+    processingWorkLoop_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( this->readoutUnit_->getIdentifier("socketStream"), "waiting" );
+
+    if ( ! processingWorkLoop_->isActive() )
+    {
+      processingAction_ =
+        toolbox::task::bind(this, &evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::process,
+                            this->readoutUnit_->getIdentifier("processSocketBuffers") );
+
+      processingWorkLoop_->activate();
+    }
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloop 'socketStream'";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
+  }
+}
 
 
 template<class ReadoutUnit,class Configuration>
@@ -89,22 +139,50 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(toolbo
 {
   SocketBufferPtr socketBuffer( new SocketBuffer(bufRef,inputPipe) );
 
-  // todo: split this into a separate thread
+  if ( this->doProcessing_ )
+    socketBufferFIFO_.enqWait(socketBuffer);
 
-  uint32_t usedSize = 0;
+  // if we are not processing, we just drop the data to the floor
+  // SocketBuffer takes care of freeing the resources
+}
 
-  while ( usedSize < bufRef->getDataSize() )
+
+template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::process(toolbox::task::WorkLoop* wl)
+{
+  if ( ! this->doProcessing_ ) return false;
+
+  SocketBufferPtr socketBuffer;
+  while ( socketBufferFIFO_.deq(socketBuffer) )
   {
-    if ( ! currentFragment_ )
-      currentFragment_ = this->fedFragmentFactory_.getFedFragment();
-    this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize);
+    const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
+    uint32_t usedSize = 0;
 
-    if ( currentFragment_->isComplete() )
+    while ( usedSize < bufSize )
     {
-      this->addFedFragment(currentFragment_);
-      currentFragment_.reset();
+      if ( ! currentFragment_ )
+        currentFragment_ = this->fedFragmentFactory_.getFedFragment();
+
+      this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize);
+
+      if ( currentFragment_->isComplete() )
+      {
+        this->addFedFragment(currentFragment_);
+        currentFragment_.reset();
+      }
     }
   }
+
+  ::usleep(10);
+
+  return this->doProcessing_;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::configure()
+{
+  socketBufferFIFO_.resize(this->readoutUnit_->getConfiguration()->socketBufferFIFOCapacity);
 }
 
 
@@ -112,12 +190,14 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
+  processingWorkLoop_->submit(processingAction_);
 }
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::drain()
 {
+  while ( processingActive_ || !socketBufferFIFO_.empty() ) ::sleep(1000);
   FerolStream<ReadoutUnit,Configuration>::drain();
 }
 
@@ -126,6 +206,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
+  socketBufferFIFO_.clear();
 }
 
 

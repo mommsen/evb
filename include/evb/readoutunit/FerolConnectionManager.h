@@ -417,6 +417,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
         const uint32_t fedId = it->second->getFerolSource()->fedId.value_;
         if ( fedIds.erase(fedId) )
         {
+          it->second->configure();
           ferolStreams.insert( typename Input<ReadoutUnit,Configuration>::FerolStreams::value_type(fedId,it->second) );
         }
       }
