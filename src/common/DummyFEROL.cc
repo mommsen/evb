@@ -504,7 +504,11 @@ inline void evb::test::DummyFEROL::sendData(toolbox::mem::Reference* bufRef)
     const ssize_t written = write(sockfd_,buf,len);
     if ( written < 0 )
     {
-      if ( errno != EWOULDBLOCK )
+      if ( errno == EWOULDBLOCK )
+      {
+        ::usleep(100);
+      }
+      else
       {
         std::ostringstream msg;
         msg << "Failed to send data to " << configuration_->destinationHost.value_ << ":" << configuration_->destinationPort;
