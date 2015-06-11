@@ -4,7 +4,7 @@ from TestCase import TestCase
 from Configuration import FEROL,RU,BU
 
 
-class case_1x1_ferol_1xdaq(TestCase):
+class case_1x1_ferol_1xdaq_ptfrl(TestCase):
 
     def runTest(self):
         self.configureEvB()
@@ -26,7 +26,7 @@ class case_1x1_ferol_1xdaq(TestCase):
              ('lumiSectionTimeout','unsignedInt','0')
             ])
         evm = RU(symbolMap,[
-             ('inputSource','string','Socket')
+             ('inputSource','string','FEROL')
             ],(bu,))
         self._config.add( FEROL(symbolMap,evm,512) )
         self._config.add( evm )

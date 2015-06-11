@@ -2,7 +2,7 @@ from TestCase import TestCase
 from Configuration import FEROL,RU,BU
 
 
-class case_1x2_ferol(TestCase):
+class case_1x2_ferol_ptfrl(TestCase):
 
     def runTest(self):
         self.configureEvB()
@@ -14,7 +14,7 @@ class case_1x2_ferol(TestCase):
 
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
-             ('inputSource','string','Socket')
+             ('inputSource','string','FEROL')
             ])
         for id in range(1,9):
             self._config.add( FEROL(symbolMap,evm,id) )

@@ -5,7 +5,7 @@ from TestCase import *
 from Configuration import FEROL,RU,BU
 
 
-class case_3x1_incompleteEvents(TestCase):
+class case_3x1_incompleteEvents_ptfrl(TestCase):
 
     def runTest(self):
         testDir="/tmp/evb_test/ramdisk"
@@ -39,20 +39,20 @@ class case_3x1_incompleteEvents(TestCase):
 
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
              ('fakeLumiSectionDuration','unsignedInt','5')
             ])
         for id in range(0,1):
             self._config.add( FEROL(symbolMap,evm,id) )
 
         ru1 = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
             ])
         for id in range(1,4):
             self._config.add( FEROL(symbolMap,ru1,id) )
 
         ru2 = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
             ])
         for id in range(4,7):
             self._config.add( FEROL(symbolMap,ru2,id) )

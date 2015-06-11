@@ -5,7 +5,7 @@ from TestCase import *
 from Configuration import FEROL,RU,BU
 
 
-class case_2x1_corruptedEvents(TestCase):
+class case_2x1_corruptedEvents_ptfrl(TestCase):
 
     def checkIt(self):
         self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
@@ -52,7 +52,7 @@ class case_2x1_corruptedEvents(TestCase):
 
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1'),
              ('tolerateCorruptedEvents','boolean','true')
             ])
@@ -60,7 +60,7 @@ class case_2x1_corruptedEvents(TestCase):
             self._config.add( FEROL(symbolMap,evm,id) )
 
         ru = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1'),
              ('tolerateCorruptedEvents','boolean','false')
             ])

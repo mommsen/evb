@@ -5,7 +5,7 @@ from TestCase import *
 from Configuration import FEROL,RU,BU
 
 
-class case_2x1_crcErrors(TestCase):
+class case_2x1_crcErrors_ptfrl(TestCase):
 
     def checkIt(self,crcErrors=0):
         self.checkEVM(8192)
@@ -59,14 +59,14 @@ class case_2x1_crcErrors(TestCase):
 
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1')
             ])
         for id in range(0,4):
             self._config.add( FEROL(symbolMap,evm,id) )
 
         ru = RU(symbolMap,[
-             ('inputSource','string','Socket'),
+             ('inputSource','string','FEROL'),
              ('checkCRC','unsignedInt','1'),
              ('maxCRCErrorRate','double','10')
             ])
