@@ -164,9 +164,8 @@ namespace evb {
       cgicc::table getFedTable() const;
 
       // these methods are only implemented for EVM
-      uint32_t getLumiSectionFromTCDS(const unsigned char*) const;
-      uint32_t getLumiSectionFromGTP(const unsigned char*) const;
-      uint32_t getLumiSectionFromGTPe(const unsigned char*) const;
+      uint32_t getLumiSectionFromTCDS(const FedFragment::DataLocations&) const;
+      uint32_t getLumiSectionFromGTPe(const FedFragment::DataLocations&) const;
 
       ReadoutUnit* readoutUnit_;
 
@@ -187,8 +186,6 @@ namespace evb {
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
       uint32_t incompleteEvents_;
-
-      double lastMonitoringTime_;
 
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::UnsignedInteger32 eventRate_;
@@ -218,8 +215,7 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 ) :
 readoutUnit_(readoutUnit),
 runNumber_(0),
-incompleteEvents_(0),
-lastMonitoringTime_(0)
+incompleteEvents_(0)
 {}
 
 
@@ -230,15 +226,15 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
   tcpla::MemoryCache* cache
 )
 {
-  FedFragmentPtr fedFragment( new FedFragment(bufRef,cache) );
+  const I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
 
   boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
-  const typename FerolStreams::iterator pos = ferolStreams_.find(fedFragment->getFedId());
+  const typename FerolStreams::iterator pos = ferolStreams_.find(frame->fedid);
   if ( pos == ferolStreams_.end() )
   {
     std::ostringstream msg;
-    msg << "The received FED id " << fedFragment->getFedId();
+    msg << "The received FED id " << frame->fedid;
     msg << " is not in the excepted FED list: ";
 
     typename Configuration::FerolSources::const_iterator it, itEnd;
@@ -250,7 +246,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
-  pos->second->addFedFragment(fedFragment);
+  pos->second->addFedFragment(bufRef,cache);
 }
 
 
@@ -316,14 +312,13 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
       typename FerolStreams::iterator it = ferolStreams_.begin();
       if ( it->second->getNextFedFragment(fedFragment) )
       {
-        uint32_t size = 0;
-        size = fedFragment->getLength() - (fedFragment->getLength()/FEROL_BLOCK_SIZE + 1) * sizeof(ferolh_t);
+        uint32_t size = fedFragment->getFedSize();
         const uint32_t eventNumber = fedFragment->getEventNumber();
 
         while ( ++it != ferolStreams_.end() )
         {
           while ( ! it->second->getNextFedFragment(fedFragment) ) { sched_yield(); }
-          size += fedFragment->getLength() - (fedFragment->getLength()/FEROL_BLOCK_SIZE + 1) * sizeof(ferolh_t);
+          size += fedFragment->getFedSize();
         }
 
         {
@@ -534,10 +529,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     fedDataCorruption_.clear();
     fedCRCerrors_.clear();
 
-    struct timeval time;
-    gettimeofday(&time,0);
-    const double now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
-    const double deltaT = lastMonitoringTime_>0 ? now - lastMonitoringTime_ : 0;
     uint32_t dataReadyCount = 0;
     uint32_t maxElements = 0;
 
@@ -548,7 +539,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       uint32_t corruptedEvents = 0;
       uint32_t crcErrors = 0;
 
-      it->second->retrieveMonitoringQuantities(deltaT,dataReadyCount,queueElements,corruptedEvents,crcErrors);
+      it->second->retrieveMonitoringQuantities(dataReadyCount,queueElements,corruptedEvents,crcErrors);
 
       if ( queueElements > maxElements )
         maxElements = queueElements;
@@ -565,7 +556,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     }
     incompleteSuperFragmentCount_ = maxElements;
     dataReadyCount_.value_ += dataReadyCount;
-    lastMonitoringTime_ = now;
   }
 
   {
@@ -616,7 +606,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     if ( configuration->inputSource == "Socket" )
     {
-      readoutUnit_->getFerolConnectionManager()->getAllFerolStreams(ferolStreams_);
+      readoutUnit_->getFerolConnectionManager()->getActiveFerolStreams(ferolStreams_);
     }
     else
     {
@@ -838,7 +828,6 @@ namespace evb
         *out << "FED fragment:" << std::endl;
         *out << "  FED id: " << fragment->getFedId() << std::endl;
         *out << "  trigger no: " << fragment->getEventNumber() << std::endl;
-        *out << "  length: " << fragment->getLength() << std::endl;
         *out << "  FED size: " << fragment->getFedSize() << std::endl;
       }
       else

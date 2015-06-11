@@ -284,7 +284,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
 
   assert( dataOffset == dataForCurrentLumiSection_.size() );
 
-  fedFragment.reset( new FedFragment(this->fedId_,evbId,bufRef) );
+  fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,evbId,bufRef);
 }
 
 

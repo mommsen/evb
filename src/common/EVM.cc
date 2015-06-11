@@ -3,6 +3,7 @@
 #include "evb/EVM.h"
 #include "evb/evm/Configuration.h"
 #include "evb/readoutunit/BUproxy.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolConnectionManager.h"
 #include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/States.h"
@@ -31,69 +32,55 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS(const unsigned char* payload) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS(const FedFragment::DataLocations& dataLocations) const
     {
       using namespace evtn;
 
-      return *(uint32_t*)(payload + sizeof(fedh_t) +
-                          7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE) & 0xffffffff;
+      uint32_t offset = sizeof(fedh_t) + 7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE;
+      FedFragment::DataLocations::const_iterator it = dataLocations.begin();
+      const FedFragment::DataLocations::const_iterator itEnd = dataLocations.end();
+
+      while ( it != itEnd && offset > it->iov_len )
+      {
+        offset -= it->iov_len;
+        ++it;
+      }
+
+      if ( it == itEnd )
+      {
+        std::ostringstream msg;
+        msg << "Premature end of TCDS data block from FED " << TCDS_FED_ID;
+        XCEPT_RAISE(exception::TCDS, msg.str());
+      }
+
+      return *(uint32_t*)((unsigned char*)it->iov_base + offset) & 0xffffffff;
     }
 
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTP(const unsigned char* payload) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe(const FedFragment::DataLocations& dataLocations) const
     {
       using namespace evtn;
 
-      //set the evm board sense
-      if (! set_evm_board_sense(payload) )
+      uint32_t offset = sizeof(fedh_t) + GTPE_ORBTNR_OFFSET * SLINK_HALFWORD_SIZE;
+
+      FedFragment::DataLocations::const_iterator it = dataLocations.begin();
+      const FedFragment::DataLocations::const_iterator itEnd = dataLocations.end();
+
+      while ( it != itEnd && offset > it->iov_len )
+      {
+        offset -= it->iov_len;
+        ++it;
+      }
+
+      if ( it == itEnd )
       {
         std::ostringstream msg;
-        msg << "Cannot decode EVM board sense for GTP FED " << GTP_FED_ID;
+        msg << "Premature end of GTPe data block from FED " << GTPe_FED_ID;
         XCEPT_RAISE(exception::TCDS, msg.str());
       }
 
-      //check that we've got the FDL chip
-      if (! has_evm_fdl(payload) )
-      {
-        std::ostringstream msg;
-        msg << "No FDL chip found in GTP FED " << GTP_FED_ID;
-        XCEPT_RAISE(exception::TCDS, msg.str());
-      }
-
-      //check that we got the right bunch crossing
-      if ( getfdlbxevt(payload) != 0 )
-      {
-        std::ostringstream msg;
-        msg << "Wrong bunch crossing in event (expect 0): "
-          << getfdlbxevt(payload);
-        XCEPT_RAISE(exception::TCDS, msg.str());
-      }
-
-      //extract lumi section number
-      const uint32_t ls = (*(uint32_t*)( payload + sizeof(fedh_t) +
-                                         ( EVM_GTFE_BLOCK + EVM_TCS_BLOCK
-                                           + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2) ) * SLINK_WORD_SIZE +
-                                         12 * SLINK_HALFWORD_SIZE) & 0xffff0000 ) >> 16;
-
-      //use offline numbering scheme where LS starts with 1
-      return ls + 1;
-    }
-
-
-    template<>
-    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe(const unsigned char* payload) const
-    {
-      using namespace evtn;
-
-      if (! gtpe_board_sense(payload) )
-      {
-        std::ostringstream msg;
-        msg << "Received trigger fragment from GTPe FED " << GTPe_FED_ID << " without GTPe board id.";
-        XCEPT_RAISE(exception::TCDS, msg.str());
-      }
-
-      const uint32_t orbitNumber = gtpe_getorbit(payload);
+      const uint32_t orbitNumber = *(uint32_t*)((unsigned char*)it->iov_base + offset);
 
       return (orbitNumber / ORBITS_PER_LS) + 1;
     }
@@ -106,7 +93,7 @@ namespace evb {
 
       if ( ferolStreams_.empty() || readoutUnit_->getConfiguration()->dropInputData ) return;
 
-      boost::function< uint32_t(const unsigned char*) > lumiSectionFunction = 0;
+      boost::function< uint32_t(const FedFragment::DataLocations&) > lumiSectionFunction = 0;
 
       if ( readoutUnit_->getConfiguration()->getLumiSectionFromTrigger )
       {
@@ -117,19 +104,11 @@ namespace evb {
         }
         else
         {
-          masterStream_ = ferolStreams_.find(GTP_FED_ID);
+          masterStream_ = ferolStreams_.find(GTPe_FED_ID);
           if ( masterStream_ != ferolStreams_.end() )
           {
-            lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTP, this, _1);
-          }
-          else
-          {
-            masterStream_ = ferolStreams_.find(GTPe_FED_ID);
-            if ( masterStream_ != ferolStreams_.end() )
-            {
-              lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe, this, _1);
+            lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe, this, _1);
             }
-          }
         }
       }
 
@@ -146,7 +125,7 @@ namespace evb {
       const uint32_t eventNumber = fedFragment->getEventNumber();
       if ( lumiSectionFunction_ )
       {
-        const uint32_t lsNumber = lumiSectionFunction_(fedFragment->getFedPayload());
+        const uint32_t lsNumber = lumiSectionFunction_(fedFragment->getDataLocations());
         return evbIdFactory_.getEvBid(eventNumber,lsNumber);
       }
       else

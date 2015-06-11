@@ -142,6 +142,8 @@ namespace evb {
       virtual ~Halted()
       { this->safeExitAction(); }
 
+      virtual void entryAction();
+
     };
 
 
@@ -163,9 +165,6 @@ namespace evb {
       { this->safeEntryAction(); }
       virtual ~Active()
       { this->safeExitAction(); }
-
-      virtual void entryAction();
-      virtual void exitAction();
 
     };
 
@@ -346,20 +345,12 @@ namespace evb {
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class Owner>
-void evb::readoutunit::Active<Owner>::entryAction()
-{
-  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
-  const Owner* owner = stateMachine.getOwner();
-  owner->getFerolConnectionManager()->acceptConnections();
-}
-
-
-template<class Owner>
-void evb::readoutunit::Active<Owner>::exitAction()
+void evb::readoutunit::Halted<Owner>::entryAction()
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const Owner* owner = stateMachine.getOwner();
   owner->getFerolConnectionManager()->dropConnections();
+  owner->getFerolConnectionManager()->acceptConnections();
 }
 
 

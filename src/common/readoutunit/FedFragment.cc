@@ -4,260 +4,329 @@
 #include "evb/DumpUtility.h"
 #include "evb/Exception.h"
 #include "evb/readoutunit/FedFragment.h"
-#include "interface/shared/fed_header.h"
-#include "interface/shared/fed_trailer.h"
-#include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
+evb::readoutunit::FedFragment::FedFragment()
+  : typeOfNextComponent_(FEROL_HEADER),fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
+    isCorrupted_(false),isComplete_(false),bufRef_(0),cache_(0)
+{}
 
-evb::readoutunit::FedFragment::FedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-  : fedSize_(0),isCorrupted_(false),bufRef_(bufRef),cache_(cache)
+
+void evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  assert(bufRef);
+  bufRef_ = bufRef;
+  cache_ = cache;
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   fedId_ = msg->fedid;
   eventNumber_ = msg->triggerno;
-  payload_ = ((unsigned char*)msg)+sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  length_ = msg->partLength;
-  assert( length_ == msg->totalLength );
+  assert( msg->partLength == msg->totalLength );
+  uint32_t usedSize = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  parse(bufRef,usedSize);
+  assert( usedSize == bufRef->getDataSize() );
 }
 
 
-evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
-  : fedId_(fedId),evbId_(evbId),fedSize_(0),isCorrupted_(false),
-    bufRef_(bufRef),cache_(0)
+void evb::readoutunit::FedFragment::append(uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
 {
+  bufRef_ = bufRef;
+  fedId_ = fedId;
+  evbId_ = evbId;
   eventNumber_ = evbId.eventNumber();
-  payload_ = (unsigned char*)bufRef->getDataLocation();
-  length_ = bufRef->getDataSize();
+  uint32_t usedSize = 0;
+  parse(bufRef,usedSize);
+  assert( usedSize == bufRef->getDataSize() );
 }
 
 
-evb::readoutunit::FedFragment::FedFragment(uint16_t fedId, uint32_t eventNumber, unsigned char* payload, size_t length)
-  : fedId_(fedId),eventNumber_(eventNumber),fedSize_(0),isCorrupted_(false),
-    payload_(payload),length_(length),bufRef_(0),cache_(0)
-{}
+void evb::readoutunit::FedFragment::append(SocketBufferPtr& socketBuffer, uint32_t& usedSize)
+{
+  parse(socketBuffer->getBufRef(), usedSize);
+  socketBuffers_.push_back(socketBuffer);
+}
 
 
 evb::readoutunit::FedFragment::~FedFragment()
 {
-  if ( bufRef_ )
+  toolbox::mem::Reference* nextBufRef;
+  while ( bufRef_ )
   {
-    // break any chain
+    nextBufRef = bufRef_->getNextReference();
     bufRef_->setNextReference(0);
+
     if ( cache_ )
       cache_->grantFrame(bufRef_);
-    else
+    else if ( socketBuffers_.empty() )
       bufRef_->release();
-  }
-  else
-  {
-    // Release payload
-  }
+
+    bufRef_ = nextBufRef;
+  };
 }
 
 
-unsigned char* evb::readoutunit::FedFragment::getFedPayload() const
+void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint32_t& usedSize)
 {
-  return payload_ + sizeof(ferolh_t);
-}
+  assert( ! isComplete_ );
 
+  uint32_t remainingBufferSize = bufRef->getDataSize() - usedSize;
+  const unsigned char* pos = (unsigned char*)bufRef->getDataLocation();
 
-uint32_t evb::readoutunit::FedFragment::getFedSize()
-{
-  if ( fedSize_ == 0 )
-    calculateSize();
-  return fedSize_;
-}
-
-
-void evb::readoutunit::FedFragment::calculateSize()
-{
-  fedSize_ = 0;
-  uint32_t ferolOffset = 0;
-  ferolh_t* ferolHeader;
+  iovec dataLocation;
+  dataLocation.iov_base = (void*)(pos + usedSize);
+  dataLocation.iov_len = 0;
 
   do
   {
-    ferolHeader = (ferolh_t*)(payload_ + ferolOffset);
-    assert( ferolHeader->signature() == FEROL_SIGNATURE );
+    switch (typeOfNextComponent_)
+    {
+      case FEROL_HEADER:
+      {
+        const ferolh_t* ferolHeader = (ferolh_t*)(pos + usedSize);
 
-    const uint32_t dataLength = ferolHeader->data_length();
-    fedSize_ += dataLength;
-    ferolOffset += dataLength + sizeof(ferolh_t);
+        if ( remainingBufferSize < sizeof(ferolh_t) )
+        {
+          XCEPT_RAISE(exception::TCP,"FIXME: FEROL header not fully contained in buffer");
+        }
+        if ( fedId_ > FED_COUNT )
+        {
+          fedId_ = ferolHeader->fed_id();
+          eventNumber_ = ferolHeader->event_number();
+        }
+        const uint32_t dataLength = checkFerolHeader(ferolHeader);
+        fedSize_ += dataLength;
+        remainingBufferSize -= sizeof(ferolh_t);
+        usedSize += sizeof(ferolh_t);
+
+        // skip the FEROL header
+        if ( dataLocation.iov_len > 0 )
+        {
+          dataLocations_.push_back(dataLocation);
+          dataLocation.iov_base = (void*)(pos + usedSize);
+          dataLocation.iov_len = 0;
+        }
+        else
+        {
+          dataLocation.iov_base = (void*)(pos + usedSize);
+        }
+
+        payloadLength_ = dataLength;
+
+        if ( ferolHeader->is_first_packet() )
+        {
+          payloadLength_ -= sizeof(fedh_t);
+          typeOfNextComponent_ = FED_HEADER;
+        }
+        else
+        {
+          typeOfNextComponent_ = FED_PAYLOAD;
+        }
+
+        if ( ferolHeader->is_last_packet() )
+        {
+          payloadLength_ -= sizeof(fedt_t);
+          isLastFerolHeader_ = true;
+        }
+        else
+        {
+          isLastFerolHeader_ = false;
+        }
+        break;
+      }
+
+      case FED_HEADER:
+      {
+        if ( remainingBufferSize < sizeof(fedh_t) )
+        {
+          XCEPT_RAISE(exception::TCP,"FIXME: FED header not fully contained in buffer");
+        }
+        const fedh_t* fedHeader = (fedh_t*)(pos + usedSize);
+        checkFedHeader(fedHeader);
+        remainingBufferSize -= sizeof(fedh_t);
+        usedSize += sizeof(fedh_t);
+        dataLocation.iov_len += sizeof(fedh_t);
+        typeOfNextComponent_ = FED_PAYLOAD;
+        break;
+      }
+
+      case FED_PAYLOAD:
+      {
+        if ( remainingBufferSize > payloadLength_ )
+        {
+          // the whole payload is in this buffer
+          if ( isLastFerolHeader_ )
+            typeOfNextComponent_ = FED_TRAILER;
+          else
+            typeOfNextComponent_ = FEROL_HEADER;
+          remainingBufferSize -= payloadLength_;
+          usedSize += payloadLength_;
+          dataLocation.iov_len += payloadLength_;
+        }
+        else
+        {
+          // only part of the data is in this buffer
+          payloadLength_ -= remainingBufferSize;
+          usedSize += remainingBufferSize;
+          dataLocation.iov_len += remainingBufferSize;
+          remainingBufferSize = 0;
+        }
+        break;
+      }
+
+      case FED_TRAILER:
+      {
+        if ( remainingBufferSize < sizeof(fedt_t) )
+        {
+          XCEPT_RAISE(exception::TCP,"FIXME: FED trailer not fully contained in buffer");
+        }
+        const fedt_t* fedTrailer = (fedt_t*)(pos + usedSize);
+        checkFedTrailer(fedTrailer);
+        usedSize += sizeof(fedt_t);
+        dataLocation.iov_len += sizeof(fedt_t);
+        isComplete_ = true;
+        break;
+      }
+    }
   }
-  while ( !ferolHeader->is_last_packet() && ferolOffset < length_ );
+  while ( remainingBufferSize > 0 && !isComplete_ );
+
+  if ( dataLocation.iov_len > 0 )
+    dataLocations_.push_back(dataLocation);
 }
 
 
-void evb::readoutunit::FedFragment::checkIntegrity(FedErrors& fedErrors, const uint32_t checkCRC)
+uint32_t evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader)
 {
-  uint16_t crc = 0xffff;
-  const bool computeCRC = ( checkCRC > 0 && eventNumber_ % checkCRC == 0 );
-  fedSize_ = 0;
-  uint32_t usedSize = 0;
-  unsigned char* pos = payload_;
-  ferolh_t* ferolHeader;
 
-  do
-  {
-    ferolHeader = (ferolh_t*)pos;
-
-    if ( ferolHeader->signature() != FEROL_SIGNATURE )
-    {
-      isCorrupted_ = true;
-      ++fedErrors.corruptedEvents;
-      std::ostringstream msg;
-      msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
-      msg << ", but found " << std::hex << ferolHeader->signature();
-      msg << " in FED " << std::dec << fedId_;
-      XCEPT_RAISE(exception::DataCorruption, msg.str());
-    }
-
-    if ( fedId_ != ferolHeader->fed_id() )
-    {
-      isCorrupted_ = true;
-      ++fedErrors.corruptedEvents;
-      std::ostringstream msg;
-      msg << "Mismatch of FED id in FEROL header:";
-      msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
-      msg << " for event " << eventNumber_;
-      XCEPT_RAISE(exception::DataCorruption, msg.str());
-    }
-
-    if ( eventNumber_ != ferolHeader->event_number() )
-    {
-      isCorrupted_ = true;
-      ++fedErrors.corruptedEvents;
-      std::ostringstream msg;
-      msg << "Mismatch of event number in FEROL header:";
-      msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
-      msg << " for FED " << fedId_;
-      XCEPT_RAISE(exception::DataCorruption, msg.str());
-    }
-
-    pos += sizeof(ferolh_t);
-
-    if ( ferolHeader->is_first_packet() )
-    {
-      const fedh_t* fedHeader = (fedh_t*)pos;
-
-      if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream oss;
-        oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-        oss << " but got event id 0x" << fedHeader->eventid;
-        oss << " and source id 0x" << fedHeader->sourceid;
-        oss << " for FED " << std::dec << fedId_;
-        XCEPT_RAISE(exception::DataCorruption, oss.str());
-      }
-
-      const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
-      if ( eventId != eventNumber_ )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream oss;
-        oss << "FED header \"eventid\" " << eventId << " does not match";
-        oss << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
-        oss << " of FED " << fedId_;
-        XCEPT_RAISE(exception::DataCorruption, oss.str());
-      }
-
-      const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
-      if ( sourceId != fedId_ )
-      {
-        isCorrupted_ = true;
-        ++fedErrors.corruptedEvents;
-        std::ostringstream oss;
-        oss << "FED header \"sourceId\" " << sourceId << " does not match";
-        oss << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
-        XCEPT_RAISE(exception::DataCorruption, oss.str());
-      }
-    }
-
-    const uint32_t dataLength = ferolHeader->data_length();
-
-    if ( computeCRC )
-    {
-      if ( ferolHeader->is_last_packet() )
-        crcCalculator_.compute(crc,pos,dataLength-sizeof(fedt_t)); // omit the FED trailer
-      else
-        crcCalculator_.compute(crc,pos,dataLength);
-    }
-
-    pos += dataLength;
-    fedSize_ += dataLength;
-    usedSize += dataLength + sizeof(ferolh_t);
-  }
-  while ( !ferolHeader->is_last_packet() );
-
-  fedt_t* trailer = (fedt_t*)(pos - sizeof(fedt_t));
-
-  if ( FED_TCTRLID_EXTRACT(trailer->eventsize) != FED_SLINK_END_MARKER )
+  if ( ferolHeader->signature() != FEROL_SIGNATURE )
   {
     isCorrupted_ = true;
-    ++fedErrors.corruptedEvents;
+    std::ostringstream msg;
+    msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
+    msg << ", but found " << std::hex << ferolHeader->signature();
+    msg << " in FED " << std::dec << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+
+  if ( fedId_ != ferolHeader->fed_id() )
+  {
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    msg << "Mismatch of FED id in FEROL header:";
+    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    msg << " for event " << eventNumber_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+
+  if ( eventNumber_ != ferolHeader->event_number() )
+  {
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    msg << "Mismatch of event number in FEROL header:";
+    msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
+    msg << " for FED " << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+
+  return ferolHeader->data_length();
+}
+
+
+void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
+{
+  if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
+  {
+    isCorrupted_ = true;
+    std::ostringstream oss;
+    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
+    oss << " but got event id 0x" << fedHeader->eventid;
+    oss << " and source id 0x" << fedHeader->sourceid;
+    oss << " for FED " << std::dec << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
+  }
+
+  const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
+  if ( eventId != eventNumber_ )
+  {
+    isCorrupted_ = true;
+    std::ostringstream oss;
+    oss << "FED header \"eventid\" " << eventId << " does not match";
+    oss << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    oss << " of FED " << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
+  }
+
+  const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
+  if ( sourceId != fedId_ )
+  {
+    isCorrupted_ = true;
+    std::ostringstream oss;
+    oss << "FED header \"sourceId\" " << sourceId << " does not match";
+    oss << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    XCEPT_RAISE(exception::DataCorruption, oss.str());
+  }
+}
+
+
+void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
+{
+  if ( FED_TCTRLID_EXTRACT(fedTrailer->eventsize) != FED_SLINK_END_MARKER )
+  {
+    isCorrupted_ = true;
     std::ostringstream oss;
     oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << trailer->eventsize;
-    oss << " and conscheck 0x" << trailer->conscheck;
+    oss << " but got event size 0x" << fedTrailer->eventsize;
+    oss << " and conscheck 0x" << fedTrailer->conscheck;
     oss << " for FED " << std::dec << fedId_;
     oss << " with expected size " << fedSize_ << " Bytes";
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  const uint32_t evsz = FED_EVSZ_EXTRACT(trailer->eventsize)<<3;
+  const uint32_t evsz = FED_EVSZ_EXTRACT(fedTrailer->eventsize)<<3;
   if ( evsz != fedSize_ )
   {
     isCorrupted_ = true;
-    ++fedErrors.corruptedEvents;
     std::ostringstream oss;
     oss << "Inconsistent event size for FED " << fedId_ << ":";
     oss << " FED trailer claims " << evsz << " Bytes,";
     oss << " while sum of FEROL headers yield " << fedSize_;
-    if (trailer->conscheck & 0x8004)
+    if (fedTrailer->conscheck & 0x8004)
     {
-      oss << ". Trailer indicates that " << trailerBitToString(trailer->conscheck);
+      oss << ". Trailer indicates that " << trailerBitToString(fedTrailer->conscheck);
     }
     XCEPT_RAISE(exception::DataCorruption, oss.str());
   }
 
-  if ( computeCRC )
-  {
-    // Force C,F,R & CRC field to zero before re-computing the CRC.
-    // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-    const uint32_t conscheck = trailer->conscheck;
-    trailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
-    crcCalculator_.compute(crc,pos-sizeof(fedt_t),sizeof(fedt_t));
-    trailer->conscheck = conscheck;
+  // if ( computeCRC )
+  // {
+  //   // Force C,F,R & CRC field to zero before re-computing the CRC.
+  //   // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+  //   const uint32_t conscheck = trailer->conscheck;
+  //   trailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
+  //   crcCalculator_.compute(crc,pos-sizeof(fedt_t),sizeof(fedt_t));
+  //   trailer->conscheck = conscheck;
 
-    const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
-    if ( trailerCRC != crc )
-    {
-      if ( evb::isFibonacci( ++fedErrors.crcErrors ) )
-      {
-        std::ostringstream oss;
-        oss << "Received " << fedErrors.crcErrors << " events with wrong CRC checksum from FED " << fedId_ << ":";
-        oss << " FED trailer claims 0x" << std::hex << trailerCRC;
-        oss << ", but recalculation gives 0x" << crc;
-        XCEPT_RAISE(exception::CRCerror, oss.str());
-      }
-    }
-  }
+  //   const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+  //   if ( trailerCRC != crc )
+  //   {
+  //     if ( evb::isFibonacci( ++fedErrors.crcErrors ) )
+  //     {
+  //       std::ostringstream oss;
+  //       oss << "Received " << fedErrors.crcErrors << " events with wrong CRC checksum from FED " << fedId_ << ":";
+  //       oss << " FED trailer claims 0x" << std::hex << trailerCRC;
+  //       oss << ", but recalculation gives 0x" << crc;
+  //       XCEPT_RAISE(exception::CRCerror, oss.str());
+  //     }
+  //   }
+  // }
 
-  if ( (trailer->conscheck & 0xC004) &&
-       evb::isFibonacci( ++fedErrors.fedErrors ) )
-  {
-    std::ostringstream oss;
-    oss << "Received " << fedErrors.fedErrors << " events from FED " << fedId_ << " where ";
-    oss << trailerBitToString(trailer->conscheck);
-    XCEPT_RAISE(exception::FEDerror, oss.str());
-  }
+  // if ( (trailer->conscheck & 0xC004) &&
+  //      evb::isFibonacci( ++fedErrors.fedErrors ) )
+  // {
+  //   std::ostringstream oss;
+  //   oss << "Received " << fedErrors.fedErrors << " events from FED " << fedId_ << " where ";
+  //   oss << trailerBitToString(trailer->conscheck);
+  //   XCEPT_RAISE(exception::FEDerror, oss.str());
+  // }
 }
 
 
@@ -284,18 +353,20 @@ void evb::readoutunit::FedFragment::dump
   const std::string& reasonForDump
 )
 {
-  s << "==================== DUMP ======================" << std::endl;
-  s << "Reason for dump: " << reasonForDump << std::endl;
+  // const unsigned char* payload = (unsigned char*)bufRef_->getDataLocation() + offset_;
 
-  s << "Buffer data location (hex): " << toolbox::toString("%x", getPayload()) << std::endl;
-  s << "Buffer data size     (dec): " << getLength() << std::endl;
-  s << "FED size             (dec): " << getFedSize() << std::endl;
-  s << "FED id               (dec): " << getFedId() << std::endl;
-  s << "Trigger no           (dec): " << getEventNumber() << std::endl;
-  s << "EvB id                    : " << getEvBid() << std::endl;
-  DumpUtility::dumpBlockData(s, payload_, length_);
+  // s << "==================== DUMP ======================" << std::endl;
+  // s << "Reason for dump: " << reasonForDump << std::endl;
 
-  s << "================ END OF DUMP ===================" << std::endl;
+  // s << "Buffer data location (hex): " << toolbox::toString("%x", payload) << std::endl;
+  // s << "Buffer data size     (dec): " << getLength() << std::endl;
+  // s << "FED size             (dec): " << getFedSize() << std::endl;
+  // s << "FED id               (dec): " << getFedId() << std::endl;
+  // s << "Trigger no           (dec): " << getEventNumber() << std::endl;
+  // s << "EvB id                    : " << getEvBid() << std::endl;
+  // DumpUtility::dumpBlockData(s, payload, length_);
+
+  // s << "================ END OF DUMP ===================" << std::endl;
 }
 
 

@@ -423,42 +423,23 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
 
     const SuperFragment::FedFragments& fedFragments = superFragment->getFedFragments();
-    SuperFragment::FedFragments::const_iterator currentFragment = fedFragments.begin();
-    const SuperFragment::FedFragments::const_iterator lastFragment = fedFragments.end();
-
-    while ( currentFragment != lastFragment )
+    for ( SuperFragment::FedFragments::const_iterator it = fedFragments.begin(), itEnd = fedFragments.end();
+          it != itEnd; ++it)
     {
-      ferolh_t* ferolHeader;
-      uint32_t ferolOffset = 0;
-
-      do
+      const FedFragment::DataLocations& fedData = (*it)->getDataLocations();
+      for ( FedFragment::DataLocations::const_iterator it = fedData.begin(), itEnd = fedData.end();
+            it != itEnd; ++it)
       {
-        if ( ferolOffset > ((*currentFragment)->getLength()) )
-        {
-          XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer");
-        }
+        const unsigned char* chunkBase  = (unsigned char*)it->iov_base;
+        uint32_t chunkSize = it->iov_len;
+        uint32_t copiedSize = 0;
 
-        const unsigned char* ferolData = (*currentFragment)->getPayload() + ferolOffset;
-
-        ferolHeader = (ferolh_t*)ferolData;
-        assert( ferolHeader->signature() == FEROL_SIGNATURE );
-
-        if ( ferolHeader->is_first_packet() )
-        {
-          const fedh_t* fedHeader = (fedh_t*)(ferolData + sizeof(ferolh_t));
-          assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
-        }
-
-        uint32_t currentFragmentSize = ferolHeader->data_length();
-        ferolOffset += currentFragmentSize + sizeof(ferolh_t);
-        uint32_t copiedSize = sizeof(ferolh_t); // skip the ferol header
-
-        while ( currentFragmentSize > remainingPayloadSize )
+        while ( chunkSize > remainingPayloadSize )
         {
           // fill the remaining block
-          memcpy(payload, ferolData + copiedSize, remainingPayloadSize);
+          memcpy(payload, chunkBase + copiedSize, remainingPayloadSize);
           copiedSize += remainingPayloadSize;
-          currentFragmentSize -= remainingPayloadSize;
+          chunkSize -= remainingPayloadSize;
           remainingSuperFragmentSize -= remainingPayloadSize;
 
           // get a new block
@@ -471,17 +452,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         }
 
         // fill the remaining fragment into the block
-        memcpy(payload, ferolData + copiedSize, currentFragmentSize);
-        payload += currentFragmentSize;
-        remainingPayloadSize -= currentFragmentSize;
-        remainingSuperFragmentSize -= currentFragmentSize;
+        memcpy(payload, chunkBase + copiedSize, chunkSize);
+        payload += chunkSize;
+        remainingPayloadSize -= chunkSize;
+        remainingSuperFragmentSize -= chunkSize;
       }
-      while ( ! ferolHeader->is_last_packet() );
 
       const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
-
-      ++currentFragment;
     }
   }
 
