@@ -69,18 +69,19 @@ namespace evb {
 
 
     private:
-      void startProcessingWorkLoop();
-      bool process(toolbox::task::WorkLoop*);
+
+      void startParseSocketBuffersWorkLoop();
+      bool parseSocketBuffers(toolbox::task::WorkLoop*);
 
       const typename Configuration::FerolSource* ferolSource_;
 
       typedef OneToOneQueue<SocketBufferPtr> SocketBufferFIFO;
       SocketBufferFIFO socketBufferFIFO_;
 
-      toolbox::task::WorkLoop* processingWorkLoop_;
-      toolbox::task::ActionSignature* processingAction_;
+      toolbox::task::WorkLoop* parseSocketBuffersWL_;
+      toolbox::task::ActionSignature* parseSocketBuffersAction_;
 
-      volatile bool processingActive_;
+      volatile bool parseSocketBuffersActive_;
 
       FedFragmentPtr currentFragment_;
 
@@ -102,33 +103,35 @@ evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,ferolSource->fedId.value_),
   ferolSource_(ferolSource),
   socketBufferFIFO_(readoutUnit,"socketBufferFIFO"),
-  processingActive_(false)
+  parseSocketBuffersActive_(false)
 {
-  startProcessingWorkLoop();
+  startParseSocketBuffersWorkLoop();
 }
 
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startProcessingWorkLoop()
+void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startParseSocketBuffersWorkLoop()
 {
   try
   {
-    processingWorkLoop_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( this->readoutUnit_->getIdentifier("socketStream"), "waiting" );
+    const std::string fedIdStr = boost::lexical_cast<std::string>(ferolSource_->fedId.value_);
 
-    if ( ! processingWorkLoop_->isActive() )
+    parseSocketBuffersWL_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( this->readoutUnit_->getIdentifier("parseSocketBuffers_"+fedIdStr), "waiting" );
+
+    if ( ! parseSocketBuffersWL_->isActive() )
     {
-      processingAction_ =
-        toolbox::task::bind(this, &evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::process,
-                            this->readoutUnit_->getIdentifier("processSocketBuffers") );
+      parseSocketBuffersAction_ =
+        toolbox::task::bind(this, &evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffers,
+                            this->readoutUnit_->getIdentifier("parseSocketBuffersAction_"+fedIdStr) );
 
-      processingWorkLoop_->activate();
+      parseSocketBuffersWL_->activate();
     }
   }
   catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start workloop 'socketStream'";
+    std::string msg = "Failed to start workloop 'parseSocketBuffers'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -148,32 +151,58 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(toolbo
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::process(toolbox::task::WorkLoop* wl)
+bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffers(toolbox::task::WorkLoop* wl)
 {
   if ( ! this->doProcessing_ ) return false;
 
-  SocketBufferPtr socketBuffer;
-  while ( socketBufferFIFO_.deq(socketBuffer) )
+  parseSocketBuffersActive_ = true;
+
+  try
   {
-    const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
-    uint32_t usedSize = 0;
-
-    while ( usedSize < bufSize )
+    SocketBufferPtr socketBuffer;
+    while ( socketBufferFIFO_.deq(socketBuffer) )
     {
-      if ( ! currentFragment_ )
-        currentFragment_ = this->fedFragmentFactory_.getFedFragment();
+      const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
+      uint32_t usedSize = 0;
 
-      this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize);
-
-      if ( currentFragment_->isComplete() )
+      while ( usedSize < bufSize )
       {
-        this->addFedFragment(currentFragment_);
-        currentFragment_.reset();
+        if ( ! currentFragment_ )
+          currentFragment_ = this->fedFragmentFactory_.getFedFragment();
+
+        this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize);
+
+        if ( currentFragment_->isComplete() )
+        {
+          this->addFedFragment(currentFragment_);
+          currentFragment_.reset();
+        }
       }
     }
   }
+  catch(xcept::Exception& e)
+  {
+    parseSocketBuffersActive_ = false;
+    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    parseSocketBuffersActive_ = false;
+    XCEPT_DECLARE(exception::TCP,
+                  sentinelException, e.what());
+    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    parseSocketBuffersActive_ = false;
+    XCEPT_DECLARE(exception::TCP,
+                  sentinelException, "unkown exception");
+    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
 
-  ::usleep(10);
+  parseSocketBuffersActive_ = false;
+
+  ::usleep(100);
 
   return this->doProcessing_;
 }
@@ -190,14 +219,14 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
-  processingWorkLoop_->submit(processingAction_);
+  parseSocketBuffersWL_->submit(parseSocketBuffersAction_);
 }
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::drain()
 {
-  while ( processingActive_ || !socketBufferFIFO_.empty() ) ::sleep(1000);
+  while ( parseSocketBuffersActive_ || !socketBufferFIFO_.empty() ) ::usleep(1000);
   FerolStream<ReadoutUnit,Configuration>::drain();
 }
 
@@ -206,6 +235,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
+  while ( parseSocketBuffersActive_ ) ::usleep(1000);
   socketBufferFIFO_.clear();
 }
 
