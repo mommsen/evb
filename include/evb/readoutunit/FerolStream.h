@@ -146,7 +146,6 @@ namespace evb {
 
       boost::function< uint32_t(const FedFragment::DataLocations&) > lumiSectionFunction_;
       uint16_t writeNextFragments_;
-      uint32_t runNumber_;
 
       InputMonitor inputMonitor_;
       mutable boost::mutex inputMonitorMutex_;
@@ -175,8 +174,7 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   eventNumberToStop_(0),
   fedFragmentFactory_(readoutUnit),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
-  writeNextFragments_(0),
-  runNumber_(0)
+  writeNextFragments_(0)
 {
   fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
 }
@@ -329,7 +327,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
-  runNumber_ = runNumber;
   resetMonitoringCounters();
   evbIdFactory_.reset(runNumber);
   fedFragmentFactory_.reset(runNumber);
