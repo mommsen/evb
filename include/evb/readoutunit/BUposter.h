@@ -190,10 +190,10 @@ void evb::readoutunit::BUposter<ReadoutUnit>::sendFrame(const I2O_TID tid, toolb
     }
     catch(xcept::Exception& e)
     {
-      std::ostringstream oss;
-      oss << "Failed to get application descriptor for BU with tid ";
-      oss << tid;
-      XCEPT_RAISE(exception::I2O, oss.str());
+      std::ostringstream msg;
+      msg << "Failed to get application descriptor for BU with tid ";
+      msg << tid;
+      XCEPT_RAISE(exception::I2O, msg.str());
     }
   }
 
@@ -229,10 +229,10 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
           }
           catch(xcept::Exception& e)
           {
-            std::ostringstream oss;
-            oss << "Failed to send super fragment to BU TID ";
-            oss << it->first;
-            XCEPT_RETHROW(exception::I2O, oss.str(), e);
+            std::ostringstream msg;
+            msg << "Failed to send super fragment to BU TID ";
+            msg << it->first;
+            XCEPT_RETHROW(exception::I2O, msg.str(), e);
           }
           workDone = true;
         }

@@ -44,36 +44,36 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
 {
   if (fedId > FED_COUNT)
   {
-    std::ostringstream oss;
-    oss << "The fedSourceId " << fedId;
-    oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The fedSourceId " << fedId;
+    msg << " is larger than maximal value FED_COUNT=" << FED_COUNT;
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
   fedId_ = fedId;
 
   fedSize_ = fedSize;
   if ( fedSize_ % 8 != 0 )
   {
-    std::ostringstream oss;
-    oss << "The requested FED payload of " << fedSize_ << " bytes";
-    oss << " is not a multiple of 8 bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The requested FED payload of " << fedSize_ << " bytes";
+    msg << " is not a multiple of 8 bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   frameSize_ = frameSize;
   if ( frameSize_ < FEROL_BLOCK_SIZE )
   {
-    std::ostringstream oss;
-    oss << "The frame size " << frameSize_ ;
-    oss << " must at least hold one FEROL block of " << FEROL_BLOCK_SIZE << " Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The frame size " << frameSize_ ;
+    msg << " must at least hold one FEROL block of " << FEROL_BLOCK_SIZE << " Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
   if ( frameSize_ % FEROL_BLOCK_SIZE != 0 )
   {
-    std::ostringstream oss;
-    oss << "The frame size " << frameSize_ ;
-    oss << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The frame size " << frameSize_ ;
+    msg << " must be a multiple of the FEROL block size of " << FEROL_BLOCK_SIZE << " Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   usePlayback_ = usePlayback;

@@ -195,10 +195,10 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
             }
             catch(xcept::Exception& e)
             {
-              std::ostringstream oss;
-              oss << "Failed to send message to RU TID ";
-              oss << it->tid;
-              XCEPT_RETHROW(exception::I2O, oss.str(), e);
+              std::ostringstream msg;
+              msg << "Failed to send message to RU TID ";
+              msg << it->tid;
+              XCEPT_RETHROW(exception::I2O, msg.str(), e);
             }
           }
         }
@@ -370,10 +370,10 @@ void evb::evm::RUproxy::fillRUInstance(xdata::UnsignedInteger32 instance)
   }
   catch(xcept::Exception &e)
   {
-    std::stringstream oss;
-    oss << "Failed to get application descriptor for RU ";
-    oss << instance.toString();
-    XCEPT_RETHROW(exception::Configuration, oss.str(), e);
+    std::ostringstream msg;
+    msg << "Failed to get application descriptor for RU ";
+    msg << instance.toString();
+    XCEPT_RETHROW(exception::Configuration, msg.str(), e);
   }
 
   try
@@ -382,18 +382,18 @@ void evb::evm::RUproxy::fillRUInstance(xdata::UnsignedInteger32 instance)
   }
   catch(xcept::Exception &e)
   {
-    std::stringstream oss;
-    oss << "Failed to get I2O TID for RU ";
-    oss << instance.toString();
-    XCEPT_RETHROW(exception::I2O, oss.str(), e);
+    std::ostringstream msg;
+    msg << "Failed to get I2O TID for RU ";
+    msg << instance.toString();
+    XCEPT_RETHROW(exception::I2O, msg.str(), e);
   }
 
   if ( std::find(participatingRUs_.begin(),participatingRUs_.end(),ru) != participatingRUs_.end() )
   {
-    std::stringstream oss;
-    oss << "Participating RU instance " << instance.toString();
-    oss << " is a duplicate.";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "Participating RU instance " << instance.toString();
+    msg << " is a duplicate.";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   participatingRUs_.push_back(ru);

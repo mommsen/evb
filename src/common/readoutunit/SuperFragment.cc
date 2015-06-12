@@ -15,12 +15,12 @@ void evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
   {
     missingFedIds_.push_back(fedFragment->getFedId());
 
-    std::ostringstream oss;
-    oss << "Mismatch detected: expected evb id "
+    std::ostringstream msg;
+    msg << "Mismatch detected: expected evb id "
       << evbId_ << ", but found evb id "
       << fedFragment->getEvBid() << " in data block from FED "
       << fedFragment->getFedId();
-    XCEPT_RAISE(exception::MismatchDetected, oss.str());
+    XCEPT_RAISE(exception::MismatchDetected, msg.str());
   }
 
   if ( fedFragment->isCorrupted() )

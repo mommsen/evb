@@ -49,35 +49,35 @@ void evb::bu::FedInfo::checkData(const uint32_t eventNumber, const bool computeC
 {
   if ( FED_HCTRLID_EXTRACT(header_->eventid) != FED_SLINK_START_MARKER )
   {
-    std::ostringstream oss;
-    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-    oss << " but got event id 0x" << std::hex << header_->eventid;
-    oss << " and source id 0x" << std::hex << header_->sourceid;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
+    msg << " but got event id 0x" << std::hex << header_->eventid;
+    msg << " and source id 0x" << std::hex << header_->sourceid;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   if ( eventId() != eventNumber )
   {
-    std::ostringstream oss;
-    oss << "FED header \"eventid\" " << eventId() << " does not match";
-    oss << " expected eventNumber " << eventNumber;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "FED header \"eventid\" " << eventId() << " does not match";
+    msg << " expected eventNumber " << eventNumber;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   if ( fedId() >= FED_COUNT )
   {
-    std::ostringstream oss;
-    oss << "The FED id " << fedId() << " is larger than the maximum " << FED_COUNT;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "The FED id " << fedId() << " is larger than the maximum " << FED_COUNT;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   if ( FED_TCTRLID_EXTRACT(trailer_->eventsize) != FED_SLINK_END_MARKER )
   {
-    std::ostringstream oss;
-    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << std::hex << trailer_->eventsize;
-    oss << " and conscheck 0x" << std::hex << trailer_->conscheck;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
+    msg << " but got event size 0x" << std::hex << trailer_->eventsize;
+    msg << " and conscheck 0x" << std::hex << trailer_->conscheck;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   if ( computeCRC )
@@ -99,11 +99,11 @@ void evb::bu::FedInfo::checkData(const uint32_t eventNumber, const bool computeC
 
     if ( trailerCRC != crc )
     {
-      std::ostringstream oss;
-      oss << "Wrong CRC checksum in FED trailer for FED " << fedId();
-      oss << ": found 0x" << std::hex << trailerCRC;
-      oss << ", but calculated 0x" << std::hex << crc;
-      XCEPT_RAISE(exception::CRCerror, oss.str());
+      std::ostringstream msg;
+      msg << "Wrong CRC checksum in FED trailer for FED " << fedId();
+      msg << ": found 0x" << std::hex << trailerCRC;
+      msg << ", but calculated 0x" << std::hex << crc;
+      XCEPT_RAISE(exception::CRCerror, msg.str());
     }
   }
 }

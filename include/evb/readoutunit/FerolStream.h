@@ -207,11 +207,11 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   }
   catch(exception::TCDS& e)
   {
-    std::ostringstream oss;
-    oss << "Failed to extract lumi section from FED " << fedId_;
+    std::ostringstream msg;
+    msg << "Failed to extract lumi section from FED " << fedId_;
 
     XCEPT_DECLARE_NESTED(exception::TCDS, sentinelException,
-                         oss.str(),e);
+                         msg.str(),e);
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(exception::EventOutOfSequence& e)
@@ -219,11 +219,11 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
     syncLoss_ = true;
     fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
 
-    std::ostringstream oss;
-    oss << "Received an event out of sequence from FED " << fedId_;
+    std::ostringstream msg;
+    msg << "Received an event out of sequence from FED " << fedId_;
 
     XCEPT_DECLARE_NESTED(exception::EventOutOfSequence, sentinelException,
-                         oss.str(),e);
+                         msg.str(),e);
     readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
   }
 }

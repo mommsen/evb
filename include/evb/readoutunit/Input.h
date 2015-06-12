@@ -617,10 +617,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
         const uint16_t fedId = it->bag.fedId.value_;
         if (fedId > FED_COUNT)
         {
-          std::ostringstream oss;
-          oss << "The fedSourceId " << fedId;
-          oss << " is larger than maximal value FED_COUNT=" << FED_COUNT;
-          XCEPT_RAISE(exception::Configuration, oss.str());
+          std::ostringstream msg;
+          msg << "The fedSourceId " << fedId;
+          msg << " is larger than maximal value FED_COUNT=" << FED_COUNT;
+          XCEPT_RAISE(exception::Configuration, msg.str());
         }
 
         FerolStreamPtr ferolStream;

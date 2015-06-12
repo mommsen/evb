@@ -314,10 +314,10 @@ inline void evb::bu::EventBuilder::buildEvent
 
   if (superFragmentCount != nbSuperFragments)
   {
-    std::ostringstream oss;
-    oss << "Incomplete I2O_DATA_BLOCK_MESSAGE_FRAME from RU TID " << ruTid;
-    oss << ": expected " << nbSuperFragments << " super fragments, but found " << superFragmentCount;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+    std::ostringstream msg;
+    msg << "Incomplete I2O_DATA_BLOCK_MESSAGE_FRAME from RU TID " << ruTid;
+    msg << ": expected " << nbSuperFragments << " super fragments, but found " << superFragmentCount;
+    XCEPT_RAISE(exception::SuperFragment, msg.str());
   }
 }
 

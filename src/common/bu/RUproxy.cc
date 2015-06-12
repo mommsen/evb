@@ -138,12 +138,12 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           // new data block
           if ( dataBlockMsg->blockNb != 1 )
           {
-            std::ostringstream oss;
-            oss << "Received a first super-fragment block from RU tid " << index.ruTid;
-            oss << " for BU resource id " << index.buResourceId;
-            oss << " which is already block number " <<  dataBlockMsg->blockNb;
-            oss << " of " << dataBlockMsg->nbBlocks;
-            XCEPT_RAISE(exception::SuperFragment, oss.str());
+            std::ostringstream msg;
+            msg << "Received a first super-fragment block from RU tid " << index.ruTid;
+            msg << " for BU resource id " << index.buResourceId;
+            msg << " which is already block number " <<  dataBlockMsg->blockNb;
+            msg << " of " << dataBlockMsg->nbBlocks;
+            XCEPT_RAISE(exception::SuperFragment, msg.str());
           }
 
           FragmentChainPtr dataBlock( new FragmentChain(dataBlockMsg->nbBlocks) );
@@ -152,11 +152,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
         if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
         {
-          std::ostringstream oss;
-          oss << "Received a super-fragment block from RU tid " << index.ruTid;
-          oss << " for BU resource id " << index.buResourceId;
-          oss << " with a duplicated block number " <<  dataBlockMsg->blockNb;
-          XCEPT_RAISE(exception::SuperFragment, oss.str());
+          std::ostringstream msg;
+          msg << "Received a super-fragment block from RU tid " << index.ruTid;
+          msg << " for BU resource id " << index.buResourceId;
+          msg << " with a duplicated block number " <<  dataBlockMsg->blockNb;
+          XCEPT_RAISE(exception::SuperFragment, msg.str());
         }
 
         const uint16_t builderId = resourceManager_->underConstruction(dataBlockMsg);
@@ -297,10 +297,10 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
       }
       catch(xcept::Exception& e)
       {
-        std::ostringstream oss;
-        oss << "Failed to send message to EVM TID ";
-        oss << evm_.tid;
-        XCEPT_RETHROW(exception::I2O, oss.str(), e);
+        std::ostringstream msg;
+        msg << "Failed to send message to EVM TID ";
+        msg << evm_.tid;
+        XCEPT_RETHROW(exception::I2O, msg.str(), e);
       }
 
       boost::mutex::scoped_lock sl(requestMonitoringMutex_);
@@ -476,10 +476,10 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     }
     catch(xcept::Exception& e)
     {
-      std::ostringstream oss;
-      oss << "Failed to get application descriptor of EVM";
-      oss << configuration_->evmInstance.toString();
-      XCEPT_RETHROW(exception::Configuration, oss.str(), e);
+      std::ostringstream msg;
+      msg << "Failed to get application descriptor of EVM";
+      msg << configuration_->evmInstance.toString();
+      XCEPT_RETHROW(exception::Configuration, msg.str(), e);
     }
   }
 
@@ -526,17 +526,17 @@ uint32_t evb::bu::RUproxy::getValueFromEVM(const std::string& url)
     }
     catch(boost::bad_lexical_cast& e)
     {
-      std::ostringstream oss;
-      oss << "Received bad response from EVM: " << curlBuffer_;
-      XCEPT_RAISE(exception::DiskWriting,oss.str());
+      std::ostringstream msg;
+      msg << "Received bad response from EVM: " << curlBuffer_;
+      XCEPT_RAISE(exception::DiskWriting,msg.str());
     }
   }
   else
   {
-    std::ostringstream oss;
-    oss << "Failed to get value from EVM at " << url <<": ";
-    oss << curl_easy_strerror(result);
-    XCEPT_RAISE(exception::DiskWriting,oss.str());
+    std::ostringstream msg;
+    msg << "Failed to get value from EVM at " << url <<": ";
+    msg << curl_easy_strerror(result);
+    XCEPT_RAISE(exception::DiskWriting,msg.str());
   }
 
   curlBuffer_.clear();

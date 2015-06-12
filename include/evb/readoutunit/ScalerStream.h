@@ -216,9 +216,9 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
 
   if ( (fedSize & 0x7) != 0 )
   {
-    std::ostringstream oss;
-    oss << "The SCAL FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The SCAL FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   // ceil(x/y) can be expressed as (x+y-1)/y for positive integers

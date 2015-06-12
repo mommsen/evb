@@ -217,9 +217,9 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
 
   if ( (fedSize & 0x7) != 0 )
   {
-    std::ostringstream oss;
-    oss << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);

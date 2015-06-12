@@ -33,10 +33,10 @@ evb::FragmentTracker::FragmentTracker
 {
   if (minFedSize < sizeof(fedh_t) + sizeof(fedt_t))
   {
-    std::ostringstream oss;
-    oss << "The minimal FED size in the configuration (minFedSize) must be at least ";
-    oss << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << minFedSize << " Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The minimal FED size in the configuration (minFedSize) must be at least ";
+    msg << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << minFedSize << " Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
   if (useLogNormal)
   {
@@ -49,12 +49,12 @@ uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
 {
   if ( typeOfNextComponent_ != FED_HEADER )
   {
-    std::ostringstream oss;
-    oss << "Request to start a new dummy FED fragment for evb id " << evbId;
-    oss << " with FED id " << fedId_;
-    oss << ", while the previous fragment for evb id " << evbId_;
-    oss << " is not yet complete";
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "Request to start a new dummy FED fragment for evb id " << evbId;
+    msg << " with FED id " << fedId_;
+    msg << ", while the previous fragment for evb id " << evbId_;
+    msg << " is not yet complete";
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   waitForNextTrigger();

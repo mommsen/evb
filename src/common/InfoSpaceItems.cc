@@ -60,10 +60,10 @@ void evb::InfoSpaceItems::putIntoInfoSpace(xdata::InfoSpace* s, xdata::ActionLis
     }
     catch(xcept::Exception& e)
     {
-      std::ostringstream oss;
-      oss << "Failed to put " << it->first;
-      oss << " into infospace " << s->name();
-      XCEPT_RETHROW(exception::Monitoring, oss.str(), e);
+      std::ostringstream msg;
+      msg << "Failed to put " << it->first;
+      msg << " into infospace " << s->name();
+      XCEPT_RETHROW(exception::Monitoring, msg.str(), e);
     }
   }
 }

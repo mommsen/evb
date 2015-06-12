@@ -25,11 +25,11 @@ evb::bu::DiskUsage::DiskUsage
 {
   if ( lowWaterMark >= highWaterMark )
   {
-    std::ostringstream oss;
-    oss << "The lowWaterMark " << lowWaterMark;
-    oss << " must be smaller than the highWaterMark " << highWaterMark;
-    oss << " for " << path;
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The lowWaterMark " << lowWaterMark;
+    msg << " must be smaller than the highWaterMark " << highWaterMark;
+    msg << " for " << path;
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   diskUsageThread_ = boost::thread( boost::bind( &DiskUsage::doStatFs, this ) );
