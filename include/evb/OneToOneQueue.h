@@ -294,7 +294,11 @@ namespace evb {
   {
     while ( printingElements_ ) {};
     T element;
-    while ( deq(element) ) {};
+    while ( !empty() )
+    {
+      while ( deq(element) ) {};
+      ::usleep(1000);
+    }
   }
 
 
