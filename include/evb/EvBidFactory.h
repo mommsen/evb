@@ -56,6 +56,7 @@ namespace evb {
     boost::posix_time::seconds fakeLumiSectionDuration_;
     uint32_t fakeLumiSection_;
     boost::shared_ptr<boost::thread> fakeLumiThread_;
+    volatile bool doFakeLumiSections_;
 
   };
 
