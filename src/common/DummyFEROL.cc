@@ -366,14 +366,12 @@ void evb::test::DummyFEROL::startWorkLoops()
     generatingWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( getIdentifier("generating"), "waiting" );
 
-    if ( ! generatingWL_->isActive() )
-    {
-      generatingAction_ =
-        toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
-                            getIdentifier("generatingAction") );
+    generatingAction_ =
+      toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
+                          getIdentifier("generatingAction") );
 
+    if ( ! generatingWL_->isActive() )
       generatingWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {
@@ -386,14 +384,12 @@ void evb::test::DummyFEROL::startWorkLoops()
     sendingWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( getIdentifier("sending"), "waiting" );
 
-    if ( ! sendingWL_->isActive() )
-    {
-      sendingAction_ =
-        toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
-                            getIdentifier("sendingAction") );
+    sendingAction_ =
+      toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
+                          getIdentifier("sendingAction") );
 
+    if ( ! sendingWL_->isActive() )
       sendingWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {

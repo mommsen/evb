@@ -120,14 +120,12 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startParseSocket
     parseSocketBuffersWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( this->readoutUnit_->getIdentifier("parseSocketBuffers_"+fedIdStr), "waiting" );
 
-    if ( ! parseSocketBuffersWL_->isActive() )
-    {
-      parseSocketBuffersAction_ =
-        toolbox::task::bind(this, &evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffers,
-                            this->readoutUnit_->getIdentifier("parseSocketBuffersAction_"+fedIdStr) );
+    parseSocketBuffersAction_ =
+      toolbox::task::bind(this, &evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffers,
+                          this->readoutUnit_->getIdentifier("parseSocketBuffersAction_"+fedIdStr) );
 
+    if ( ! parseSocketBuffersWL_->isActive() )
       parseSocketBuffersWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {

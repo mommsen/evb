@@ -667,14 +667,12 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startDummySuperFragment
     dummySuperFragmentWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( readoutUnit_->getIdentifier("dummySuperFragment"), "waiting" );
 
-    if ( ! dummySuperFragmentWL_->isActive() )
-    {
-      dummySuperFragmentAction_ =
-        toolbox::task::bind(this, &evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragments,
-                            readoutUnit_->getIdentifier("buildDummySuperFragments") );
+    dummySuperFragmentAction_ =
+      toolbox::task::bind(this, &evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragments,
+                          readoutUnit_->getIdentifier("buildDummySuperFragments") );
 
+    if ( ! dummySuperFragmentWL_->isActive() )
       dummySuperFragmentWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {

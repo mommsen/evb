@@ -222,14 +222,12 @@ void evb::bu::RUproxy::startProcessingWorkLoop()
     requestFragmentsWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("requestFragments"), "waiting" );
 
-    if ( ! requestFragmentsWL_->isActive() )
-    {
-      requestFragmentsAction_ =
-        toolbox::task::bind(this, &evb::bu::RUproxy::requestFragments,
-                            bu_->getIdentifier("ruProxyRequestFragments") );
+    requestFragmentsAction_ =
+      toolbox::task::bind(this, &evb::bu::RUproxy::requestFragments,
+                          bu_->getIdentifier("ruProxyRequestFragments") );
 
+    if ( ! requestFragmentsWL_->isActive() )
       requestFragmentsWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {

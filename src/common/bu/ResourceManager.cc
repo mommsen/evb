@@ -44,14 +44,12 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
     resourceMonitorWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("resourceMonitor"), "waiting" );
 
-    if ( ! resourceMonitorWL_->isActive() )
-    {
-      resourceMonitorAction_ =
-        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
-                            bu_->getIdentifier("resourceMonitor") );
+    resourceMonitorAction_ =
+      toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
+                          bu_->getIdentifier("resourceMonitor") );
 
+    if ( ! resourceMonitorWL_->isActive() )
       resourceMonitorWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {

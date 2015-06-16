@@ -111,14 +111,12 @@ void evb::readoutunit::BUposter<ReadoutUnit>::startPosterWorkLoop()
     posterWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( readoutUnit_->getIdentifier("buPoster"), "waiting" );
 
-    if ( ! posterWL_->isActive() )
-    {
-      posterAction_ =
-        toolbox::task::bind(this, &evb::readoutunit::BUposter<ReadoutUnit>::postFrames,
-                            readoutUnit_->getIdentifier("postFrames") );
+    posterAction_ =
+      toolbox::task::bind(this, &evb::readoutunit::BUposter<ReadoutUnit>::postFrames,
+                          readoutUnit_->getIdentifier("postFrames") );
 
+    if ( ! posterWL_->isActive() )
       posterWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {
