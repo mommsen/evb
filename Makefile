@@ -110,6 +110,7 @@ TestLibraries = \
 	mimetic \
 	numa \
 	peer \
+	ptblit \
 	tcpla \
 	toolbox \
 	asyncresolv \
