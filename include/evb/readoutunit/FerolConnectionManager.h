@@ -99,23 +99,20 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
 
-      toolbox::task::WorkLoop* pipesWorkLoop_;
-      toolbox::task::ActionSignature* pipesAction_;
-
-      volatile bool pipesActive_;
       volatile bool acceptConnections_;
       volatile bool doProcessing_;
+      volatile bool processPipes_;
+      volatile bool pipesActive_;
 
       pt::blit::PipeService* pipeService_;
 
       typedef std::vector<pt::blit::InputPipe*> InputPipes;
       InputPipes inputPipes_;
-      mutable boost::mutex inputPipesMutex_;
 
       typedef boost::shared_ptr< SocketStream<ReadoutUnit,Configuration> > SocketStreamPtr;
       typedef std::map<uint16_t,SocketStreamPtr> SocketStreams;
       SocketStreams socketStreams_;
-      mutable boost::mutex socketStreamsMutex_;
+      mutable boost::mutex mutex_;
 
     };
 
@@ -132,9 +129,10 @@ evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::FerolConnec
   ReadoutUnit* readoutUnit
 ) :
   readoutUnit_(readoutUnit),
-  pipesActive_(false),
   acceptConnections_(false),
   doProcessing_(false),
+  processPipes_(false),
+  pipesActive_(false),
   pipeService_(0)
 {
   try
@@ -148,13 +146,31 @@ evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::FerolConnec
 
   startPipesWorkLoop();
   pipeService_->addPipeServiceListener(this);
+
+  std::list<pt::blit::PipeAdvertisement> advs = pipeService_->getPipeAdvertisements("blit", "btcp");
+  for (std::list<pt::blit::PipeAdvertisement>::iterator it = advs.begin(); it != advs.end(); ++it )
+  {
+    std::ostringstream msg;
+    msg << "Creating input pipe for PSP index '" << (*it).getIndex() <<  "'";
+    LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
+
+    inputPipes_.push_back(pipeService_->createInputPipe((*it), this));
+  }
 }
 
 
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::~FerolConnectionManager()
 {
-  dropConnections();
+  boost::mutex::scoped_lock sl(mutex_);
+  processPipes_ = false;
+
+  for ( InputPipes::iterator it = inputPipes_.begin(); it != inputPipes_.end(); ++it )
+  {
+    pipeService_->destroyInputPipe(*it);
+  }
+  inputPipes_.clear();
+  socketStreams_.clear();
 }
 
 
@@ -170,7 +186,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::pipeSe
       XCEPT_RAISE(exception::TCP,msg.str());
     }
 
-    boost::mutex::scoped_lock sl(inputPipesMutex_);
+    boost::mutex::scoped_lock sl(mutex_);
     inputPipes_.push_back(pipeService_->createInputPipe(adv, this));
   }
   catch(xcept::Exception &e)
@@ -212,8 +228,6 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
 
     const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
-    boost::mutex::scoped_lock sl(socketStreamsMutex_);
-
     typename Configuration::FerolSources::const_iterator it = configuration->ferolSources.begin();
     const typename Configuration::FerolSources::const_iterator itEnd = configuration->ferolSources.end();
     bool found = false;
@@ -237,7 +251,10 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
           new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,&it->bag)
         );
 
-        socketStreams_.insert( typename SocketStreams::value_type(pca.getSID(),socketStream) );
+        {
+          boost::mutex::scoped_lock sl(mutex_);
+          socketStreams_.insert( typename SocketStreams::value_type(pca.getSID(),socketStream) );
+        }
 
         std::ostringstream msg;
         msg << "Accepted connection from " << peer << ":" << pca.getPort();
@@ -295,22 +312,24 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
 {
   try
   {
-    boost::mutex::scoped_lock sl(socketStreamsMutex_);
-
     std::ostringstream msg;
 
-    const typename SocketStreams::iterator pos = socketStreams_.find(sid);
-    if ( pos != socketStreams_.end() )
     {
-      const typename Configuration::FerolSource* ferolSource = pos->second->getFerolSource();
-      msg <<
-        ferolSource->hostname.value_ << ":" <<
-        ferolSource->port.value_ << " " << how << " the connection";
-      socketStreams_.erase(pos);
-    }
-    else
-    {
-      msg << "Connection " << how << " from unknown peer with SID " << sid << " and pipe index " << pipeIndex;
+      boost::mutex::scoped_lock sl(mutex_);
+
+      const typename SocketStreams::iterator pos = socketStreams_.find(sid);
+      if ( pos != socketStreams_.end() )
+      {
+        const typename Configuration::FerolSource* ferolSource = pos->second->getFerolSource();
+        msg << ferolSource->hostname.value_ << ":" << ferolSource->port.value_;
+        msg << " (FED id " << ferolSource->fedId.value_ << ") ";
+        msg << how << " the connection";
+        socketStreams_.erase(pos);
+      }
+      else
+      {
+        msg << "Connection " << how << " from unknown peer with SID " << sid << " and pipe index " << pipeIndex;
+      }
     }
     LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
   }
@@ -338,24 +357,8 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::accept
 {
   if ( ! pipeService_ ) return;
 
-  {
-    boost::mutex::scoped_lock sl(socketStreamsMutex_);
-    acceptConnections_ = true;
-  }
-
-  {
-    boost::mutex::scoped_lock sl(inputPipesMutex_);
-
-    std::list<pt::blit::PipeAdvertisement> advs = pipeService_->getPipeAdvertisements("blit", "btcp");
-    for (std::list<pt::blit::PipeAdvertisement>::iterator it = advs.begin(); it != advs.end(); ++it )
-    {
-      std::ostringstream msg;
-      msg << "Creating input pipe for PSP index '" << (*it).getIndex() <<  "'";
-      LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
-
-      inputPipes_.push_back(pipeService_->createInputPipe((*it), this));
-    }
-  }
+  boost::mutex::scoped_lock sl(mutex_);
+  acceptConnections_ = true;
 }
 
 
@@ -364,22 +367,10 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::dropCo
 {
   if ( ! pipeService_ ) return;
 
-  {
-    boost::mutex::scoped_lock sl(socketStreamsMutex_);
-    acceptConnections_ = false;
-    socketStreams_.clear();
-  }
+  boost::mutex::scoped_lock sl(mutex_);
+  acceptConnections_ = false;
 
-  {
-    boost::mutex::scoped_lock sl(inputPipesMutex_);
-
-    for ( InputPipes::iterator it = inputPipes_.begin(); it != inputPipes_.end(); ++it )
-    {
-      pipeService_->destroyInputPipe(*it);
-    }
-
-    inputPipes_.clear();
-  }
+  socketStreams_.clear();
 }
 
 
@@ -409,7 +400,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
   do
   {
     {
-      boost::mutex::scoped_lock sl(socketStreamsMutex_);
+      boost::mutex::scoped_lock sl(mutex_);
 
       for ( typename SocketStreams::const_iterator it = socketStreams_.begin(), itEnd = socketStreams_.end();
             it != itEnd; ++it)
@@ -443,16 +434,20 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::startP
 {
   try
   {
-    pipesWorkLoop_ =
+    processPipes_ = true;
+
+    toolbox::task::WorkLoop* pipesWorkLoop =
       toolbox::task::getWorkLoopFactory()->getWorkLoop(this->readoutUnit_->getIdentifier("pipes"), "waiting");
 
-    if ( !pipesWorkLoop_->isActive() )
-      pipesWorkLoop_->activate();
+    if ( !pipesWorkLoop->isActive() )
+      pipesWorkLoop->activate();
 
-    pipesAction_ =
+    toolbox::task::ActionSignature* pipesAction =
       toolbox::task::bind(this,
                           &evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::processPipes,
                           this->readoutUnit_->getIdentifier("pipesAction"));
+
+    pipesWorkLoop->submit(pipesAction);
   }
   catch(xcept::Exception& e)
   {
@@ -465,17 +460,17 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::startP
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::processPipes(toolbox::task::WorkLoop*)
 {
-  if ( ! doProcessing_ ) return false;
+  if ( ! processPipes_ ) return false;
 
-  boost::mutex::scoped_lock sl(inputPipesMutex_);
-
-  pipesActive_ = true;
   bool workDone;
+  pipesActive_ = true;
 
   try
   {
     do
     {
+      boost::mutex::scoped_lock sl(mutex_);
+
       workDone = false;
 
       for ( InputPipes::iterator it = inputPipes_.begin(); it != inputPipes_.end(); ++it )
@@ -498,16 +493,13 @@ bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::proces
             }
             else
             {
-              std::ostringstream msg;
-              msg << "Received a BulkTransferEvent with SID " << event.sid;
-              msg << " for which there was no connection established";
-              XCEPT_RAISE(exception::TCP, msg.str());
-           }
+              (*it)->grantBuffer(event.ref);
+            }
           }
         }
       }
     }
-    while ( workDone && doProcessing_ );
+    while ( workDone );
   }
   catch(xcept::Exception &e)
   {
@@ -533,7 +525,7 @@ bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::proces
 
   ::usleep(100);
 
-  return doProcessing_;
+  return processPipes_;
 }
 
 
@@ -543,7 +535,6 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::startP
   if ( ! pipeService_ ) return;
 
   doProcessing_ = true;
-  pipesWorkLoop_->submit(pipesAction_);
 }
 
 
