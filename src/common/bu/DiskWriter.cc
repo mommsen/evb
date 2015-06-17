@@ -363,7 +363,9 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
   json << "{"                                                                     << std::endl;
-  json << "   \"data\" : [ \""     << fileStatistics->nbEventsWritten << "\" ],"  << std::endl;
+  json << "   \"data\" : [ \""
+    << fileStatistics->nbEventsWritten  << "\", \""
+    << fileStatistics->fileSize << "\" ],"                                        << std::endl;
   json << "   \"definition\" : \"" << rawDataDefFile_.string() << "\","           << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_  << "\""                        << std::endl;
   json << "}"                                                                     << std::endl;
@@ -386,6 +388,7 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
 
   ++(lumiStatistics->second->fileCount);
   lumiStatistics->second->nbEventsWritten += fileStatistics->nbEventsWritten;
+  lumiStatistics->second->nbBytesWritten += fileStatistics->fileSize;
 }
 
 
@@ -653,7 +656,8 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
     << lumiInfo->nbEventsWritten << "\", \""
     << lumiInfo->fileCount << "\", \""
     << lumiInfo->totalEvents << "\", \""
-    << lumiInfo->nbIncompleteEvents << "\" ],"                             << std::endl;
+    << lumiInfo->nbIncompleteEvents << "\", \""
+    << lumiInfo->nbBytesWritten << "\" ],"                                 << std::endl;
   json << "   \"definition\" : \"" << eolsDefFile_.string() << "\","       << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_ << "\""                  << std::endl;
   json << "}"                                                              << std::endl;
@@ -686,7 +690,7 @@ void evb::bu::DiskWriter::writeEoR() const
     << diskWriterMonitoring_.nbEventsWritten << "\", \""
     << diskWriterMonitoring_.nbFiles         << "\", \""
     << diskWriterMonitoring_.nbLumiSections  << "\", \""
-    << diskWriterMonitoring_.lastLumiSection << "\" ],"  << std::endl;
+    << diskWriterMonitoring_.lastLumiSection << "\" ],"                                 << std::endl;
   json << "   \"definition\" : \"" << eorDefFile_.string() << "\","                     << std::endl;
   json << "   \"source\" : \"BU-"  << buInstance_   << "\""                             << std::endl;
   json << "}"                                                                           << std::endl;
@@ -705,6 +709,11 @@ void evb::bu::DiskWriter::defineRawData(const boost::filesystem::path& jsdDir)
   json << "   \"legend\" : ["                                 << std::endl;
   json << "      {"                                           << std::endl;
   json << "         \"name\" : \"NEvents\","                  << std::endl;
+  json << "         \"operation\" : \"sum\","                 << std::endl;
+  json << "         \"type\" : \"integer\""                   << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NBytes\","                   << std::endl;
   json << "         \"operation\" : \"sum\","                 << std::endl;
   json << "         \"type\" : \"integer\""                   << std::endl;
   json << "      }"                                           << std::endl;
@@ -741,6 +750,11 @@ void evb::bu::DiskWriter::defineEoLS(const boost::filesystem::path& jsdDir)
   json << "      },"                                          << std::endl;
   json << "      {"                                           << std::endl;
   json << "         \"name\" : \"NLostEvents\","              << std::endl;
+  json << "         \"operation\" : \"sum\","                 << std::endl;
+  json << "         \"type\" : \"integer\""                   << std::endl;
+  json << "      },"                                          << std::endl;
+  json << "      {"                                           << std::endl;
+  json << "         \"name\" : \"NBytes\","                   << std::endl;
   json << "         \"operation\" : \"sum\","                 << std::endl;
   json << "         \"type\" : \"integer\""                   << std::endl;
   json << "      }"                                           << std::endl;
