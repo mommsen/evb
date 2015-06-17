@@ -44,6 +44,7 @@ void evb::EvBidFactory::stopFakeLumiThread()
   if ( fakeLumiThread_.get() )
   {
     doFakeLumiSections_ = false;
+    fakeLumiThread_->interrupt();
     fakeLumiThread_->join();
   }
 }
