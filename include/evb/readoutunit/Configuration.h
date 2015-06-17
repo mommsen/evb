@@ -107,6 +107,8 @@ namespace evb {
         xdaq::ApplicationContext* context
       )
       {
+        fillDefaultFedSourceIds(instance);
+
         params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource);
         params.add("numberOfResponders", &numberOfResponders);
@@ -137,6 +139,19 @@ namespace evb {
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 
+      void fillDefaultFedSourceIds(const uint32_t instance)
+      {
+        fedSourceIds.clear();
+
+        // Default is 12 FEDs per super-fragment
+        // RU0 has 0 to 11, RU1 has 12 to 23, etc.
+        const uint32_t firstSourceId = (instance * 12);
+        const uint32_t lastSourceId  = (instance * 12) + 11;
+        for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
+        {
+          fedSourceIds.push_back(sourceId);
+        }
+      }
     };
 
     typedef boost::shared_ptr<Configuration> ConfigurationPtr;
