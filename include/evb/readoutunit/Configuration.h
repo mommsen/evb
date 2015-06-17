@@ -8,6 +8,7 @@
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "xdaq/ApplicationContext.h"
+#include "xdata/Bag.h"
 #include "xdata/Boolean.h"
 #include "xdata/Double.h"
 #include "xdata/String.h"
@@ -25,15 +26,33 @@ namespace evb {
      */
     struct Configuration
     {
+      struct FerolSource
+      {
+        xdata::UnsignedInteger32 fedId;
+        xdata::String hostname;
+        xdata::UnsignedInteger32 port;
+        xdata::Boolean active;
+
+        void registerFields(xdata::Bag<FerolSource>* bag)
+        {
+          bag->addField("fedId",&fedId);
+          bag->addField("hostname",&hostname);
+          bag->addField("port",&port);
+        }
+      };
+      typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
+
       xdata::String sendPoolName;                            // The pool name used for evb messages
       xdata::String inputSource;                             // Input mode selection: FEROL or Local
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
       xdata::UnsignedInteger32 numberOfPreallocatedBlocks;   // Number of blocks pre-allocated during configure
+      xdata::UnsignedInteger32 socketBufferFIFOCapacity;     // Capacity of the FIFO used to store socket buffers
       xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
       xdata::UnsignedInteger32 checkCRC;                     // Check the CRC of the FED fragments for every Nth event
       xdata::UnsignedInteger32 writeNextFragmentsToFile;     // Write the next N fragments to text files
+      xdata::Boolean dropAtSocket;                           // If set to true, data is discarded after reading from the socket
       xdata::Boolean dropInputData;                          // If set to true, the input data is dropped
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
@@ -46,8 +65,8 @@ namespace evb {
       xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
       xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
-      xdata::UnsignedInteger32 frameSize;                    // The frame size in Bytes used for dummy events
-      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of FED ids
+      xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
+      FerolSources ferolSources;                             // Vector of FEROL sources
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
@@ -58,10 +77,12 @@ namespace evb {
           numberOfResponders(4),
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
+          socketBufferFIFOCapacity(128),
           fragmentFIFOCapacity(128),
           fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
           checkCRC(0),
           writeNextFragmentsToFile(0),
+          dropAtSocket(false),
           dropInputData(false),
           computeCRC(true),
           usePlayback(false),
@@ -74,7 +95,6 @@ namespace evb {
           dummyScalFedSize(0),
           scalFedId(999),
           fragmentPoolSize(200000000),
-          frameSize(32768),
           tolerateCorruptedEvents(false),
           maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
@@ -87,17 +107,17 @@ namespace evb {
         xdaq::ApplicationContext* context
       )
       {
-        fillDefaultFedSourceIds(instance);
-
         params.add("sendPoolName", &sendPoolName);
         params.add("inputSource", &inputSource);
         params.add("numberOfResponders", &numberOfResponders);
         params.add("blockSize", &blockSize);
         params.add("numberOfPreallocatedBlocks", &numberOfPreallocatedBlocks);
+        params.add("socketBufferFIFOCapacity", &socketBufferFIFOCapacity);
         params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
         params.add("checkCRC", &checkCRC);
         params.add("writeNextFragmentsToFile", &writeNextFragmentsToFile, InfoSpaceItems::change);
+        params.add("dropAtSocket", &dropAtSocket);
         params.add("dropInputData", &dropInputData);
         params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
@@ -110,26 +130,13 @@ namespace evb {
         params.add("dummyScalFedSize", &dummyScalFedSize);
         params.add("scalFedId", &scalFedId);
         params.add("fragmentPoolSize", &fragmentPoolSize);
-        params.add("frameSize", &frameSize);
         params.add("fedSourceIds", &fedSourceIds);
+        params.add("ferolSources", &ferolSources);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 
-      void fillDefaultFedSourceIds(const uint32_t instance)
-      {
-        fedSourceIds.clear();
-
-        // Default is 12 FEDs per super-fragment
-        // RU0 has 0 to 11, RU1 has 12 to 23, etc.
-        const uint32_t firstSourceId = (instance * 12);
-        const uint32_t lastSourceId  = (instance * 12) + 11;
-        for (uint32_t sourceId=firstSourceId; sourceId<=lastSourceId; ++sourceId)
-        {
-          fedSourceIds.push_back(sourceId);
-        }
-      }
     };
 
     typedef boost::shared_ptr<Configuration> ConfigurationPtr;
