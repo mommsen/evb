@@ -187,8 +187,15 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   tcpla::MemoryCache* cache
 )
 {
-  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(bufRef,cache);
-  addFedFragment(fedFragment);
+  try
+  {
+    FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(bufRef,cache);
+    addFedFragment(fedFragment);
+  }
+  catch(exception::DataCorruption& e)
+  {
+    readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
 }
 
 

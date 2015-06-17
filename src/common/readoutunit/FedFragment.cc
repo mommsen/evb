@@ -7,8 +7,9 @@
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::readoutunit::FedFragment::FedFragment()
-  : typeOfNextComponent_(FEROL_HEADER),fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
+evb::readoutunit::FedFragment::FedFragment(uint32_t& fedErrorCount)
+  : typeOfNextComponent_(FEROL_HEADER),fedErrorCount_(fedErrorCount),
+    fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isComplete_(false),bufRef_(0),cache_(0),copiedHeaderBytes_(0)
 {}
 
@@ -257,8 +258,8 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
           remainingBufferSize -= sizeof(fedt_t);
         }
 
-        checkFedTrailer(fedTrailer);
         isComplete_ = true;
+        checkFedTrailer(fedTrailer);
         break;
       }
     }
@@ -312,33 +313,33 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
   if ( FED_HCTRLID_EXTRACT(fedHeader->eventid) != FED_SLINK_START_MARKER )
   {
     isCorrupted_ = true;
-    std::ostringstream oss;
-    oss << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
-    oss << " but got event id 0x" << fedHeader->eventid;
-    oss << " and source id 0x" << fedHeader->sourceid;
-    oss << " for FED " << std::dec << fedId_;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
+    msg << " but got event id 0x" << fedHeader->eventid;
+    msg << " and source id 0x" << fedHeader->sourceid;
+    msg << " for FED " << std::dec << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
   if ( eventId != eventNumber_ )
   {
     isCorrupted_ = true;
-    std::ostringstream oss;
-    oss << "FED header \"eventid\" " << eventId << " does not match";
-    oss << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
-    oss << " of FED " << fedId_;
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "FED header \"eventid\" " << eventId << " does not match";
+    msg << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    msg << " of FED " << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
   if ( sourceId != fedId_ )
   {
     isCorrupted_ = true;
-    std::ostringstream oss;
-    oss << "FED header \"sourceId\" " << sourceId << " does not match";
-    oss << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "FED header \"sourceId\" " << sourceId << " does not match";
+    msg << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 }
 
@@ -348,28 +349,28 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
   if ( FED_TCTRLID_EXTRACT(fedTrailer->eventsize) != FED_SLINK_END_MARKER )
   {
     isCorrupted_ = true;
-    std::ostringstream oss;
-    oss << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
-    oss << " but got event size 0x" << fedTrailer->eventsize;
-    oss << " and conscheck 0x" << fedTrailer->conscheck;
-    oss << " for FED " << std::dec << fedId_;
-    oss << " with expected size " << fedSize_ << " Bytes";
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    std::ostringstream msg;
+    msg << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
+    msg << " but got event size 0x" << fedTrailer->eventsize;
+    msg << " and conscheck 0x" << fedTrailer->conscheck;
+    msg << " for FED " << std::dec << fedId_;
+    msg << " with expected size " << fedSize_ << " Bytes";
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   const uint32_t evsz = FED_EVSZ_EXTRACT(fedTrailer->eventsize)<<3;
   if ( evsz != fedSize_ )
   {
     isCorrupted_ = true;
-    std::ostringstream oss;
-    oss << "Inconsistent event size for FED " << fedId_ << ":";
-    oss << " FED trailer claims " << evsz << " Bytes,";
-    oss << " while sum of FEROL headers yield " << fedSize_;
+    std::ostringstream msg;
+    msg << "Inconsistent event size for FED " << fedId_ << ":";
+    msg << " FED trailer claims " << evsz << " Bytes,";
+    msg << " while sum of FEROL headers yield " << fedSize_;
     if (fedTrailer->conscheck & 0x8004)
     {
-      oss << ". Trailer indicates that " << trailerBitToString(fedTrailer->conscheck);
+      msg << ". Trailer indicates that " << trailerBitToString(fedTrailer->conscheck);
     }
-    XCEPT_RAISE(exception::DataCorruption, oss.str());
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
   // if ( computeCRC )
@@ -386,23 +387,22 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
   //   {
   //     if ( evb::isFibonacci( ++fedErrors.crcErrors ) )
   //     {
-  //       std::ostringstream oss;
-  //       oss << "Received " << fedErrors.crcErrors << " events with wrong CRC checksum from FED " << fedId_ << ":";
-  //       oss << " FED trailer claims 0x" << std::hex << trailerCRC;
-  //       oss << ", but recalculation gives 0x" << crc;
-  //       XCEPT_RAISE(exception::CRCerror, oss.str());
+  //       std::ostringstream msg;
+  //       msg << "Received " << fedErrors.crcErrors << " events with wrong CRC checksum from FED " << fedId_ << ":";
+  //       msg << " FED trailer claims 0x" << std::hex << trailerCRC;
+  //       msg << ", but recalculation gives 0x" << crc;
+  //       XCEPT_RAISE(exception::CRCerror, msg.str());
   //     }
   //   }
   // }
 
-  // if ( (trailer->conscheck & 0xC004) &&
-  //      evb::isFibonacci( ++fedErrors.fedErrors ) )
-  // {
-  //   std::ostringstream oss;
-  //   oss << "Received " << fedErrors.fedErrors << " events from FED " << fedId_ << " where ";
-  //   oss << trailerBitToString(trailer->conscheck);
-  //   XCEPT_RAISE(exception::FEDerror, oss.str());
-  // }
+  if ( (fedTrailer->conscheck & 0xC004) &&
+       evb::isFibonacci( ++fedErrorCount_ ) )  {
+    std::ostringstream msg;
+    msg << "Received " << fedErrorCount_ << " events from FED " << fedId_ << " where ";
+    msg << trailerBitToString(fedTrailer->conscheck);
+    XCEPT_RAISE(exception::FEDerror, msg.str());
+  }
 }
 
 
@@ -429,19 +429,24 @@ void evb::readoutunit::FedFragment::dump
   const std::string& reasonForDump
 )
 {
-  // const unsigned char* payload = (unsigned char*)bufRef_->getDataLocation() + offset_;
+  // std::vector<unsigned char> buffer;
+  // buffer.resize( getFedSize() );
+  // uint32_t copiedSize = 0;
+  // for ( DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
+  //       it != itEnd; ++it)
+  // {
+  //   memcpy(&buffer[copiedSize],it->iov_base,it->iov_len);
+  //   copiedSize += it->iov_len;
+  // }
 
   // s << "==================== DUMP ======================" << std::endl;
   // s << "Reason for dump: " << reasonForDump << std::endl;
 
-  // s << "Buffer data location (hex): " << toolbox::toString("%x", payload) << std::endl;
-  // s << "Buffer data size     (dec): " << getLength() << std::endl;
   // s << "FED size             (dec): " << getFedSize() << std::endl;
   // s << "FED id               (dec): " << getFedId() << std::endl;
   // s << "Trigger no           (dec): " << getEventNumber() << std::endl;
   // s << "EvB id                    : " << getEvBid() << std::endl;
-  // DumpUtility::dumpBlockData(s, payload, length_);
-
+  // DumpUtility::dumpBlockData(s, &buffer[0], copiedSize);
   // s << "================ END OF DUMP ===================" << std::endl;
 }
 

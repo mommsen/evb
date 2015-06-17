@@ -28,7 +28,7 @@ namespace evb {
     {
     public:
 
-      FedFragment();
+      FedFragment(uint32_t& fedErrorCount);
       ~FedFragment();
 
       void append(toolbox::mem::Reference*, tcpla::MemoryCache*);
@@ -67,6 +67,7 @@ namespace evb {
       };
       FedComponent typeOfNextComponent_;
 
+      uint32_t& fedErrorCount_;
       uint16_t fedId_;
       uint32_t eventNumber_;
       EvBid evbId_;
@@ -82,7 +83,7 @@ namespace evb {
       uint32_t payloadLength_;
 
       uint32_t copiedHeaderBytes_;
-      std::vector<char> tmpBuffer_;
+      std::vector<unsigned char> tmpBuffer_;
 
     };
 

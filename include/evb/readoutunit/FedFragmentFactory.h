@@ -46,12 +46,13 @@ namespace evb {
 
     private:
 
+      FedFragmentPtr makeFedFragment();
       void errorHandler(const FedFragmentPtr&);
 
       ReadoutUnit* readoutUnit_;
       uint32_t runNumber_;
 
-      CRCCalculator crcCalculator_;
+      static CRCCalculator crcCalculator_;
 
       struct FedErrors
       {
@@ -74,6 +75,9 @@ namespace evb {
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class ReadoutUnit>
+evb::CRCCalculator evb::readoutunit::FedFragmentFactory<ReadoutUnit>::crcCalculator_;
+
 
 template<class ReadoutUnit>
 evb::readoutunit::FedFragmentFactory<ReadoutUnit>::FedFragmentFactory(ReadoutUnit* readoutUnit) :
@@ -94,7 +98,7 @@ template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
 evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment()
 {
-  return FedFragmentPtr( new FedFragment() );
+  return makeFedFragment();
 }
 
 
@@ -102,7 +106,7 @@ template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
 evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  FedFragmentPtr fedFragment( new FedFragment() );
+  const FedFragmentPtr fedFragment = makeFedFragment();
   try
   {
     fedFragment->append(bufRef,cache);
@@ -120,7 +124,7 @@ template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
 evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
 {
-  FedFragmentPtr fedFragment( new FedFragment() );
+  const FedFragmentPtr fedFragment = makeFedFragment();
   try
   {
     fedFragment->append(fedId,evbId,bufRef);
@@ -149,6 +153,13 @@ void evb::readoutunit::FedFragmentFactory<ReadoutUnit>::append(FedFragmentPtr& f
 
 
 template<class ReadoutUnit>
+evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUnit>::makeFedFragment()
+{
+  return FedFragmentPtr( new FedFragment(fedErrors_.fedErrors) );
+}
+
+
+template<class ReadoutUnit>
 void evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFragmentPtr& fedFragment)
 {
   try
@@ -170,17 +181,16 @@ void evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
     }
     else
     {
-      readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
-      return;
+      // don't dump any more events if we go to failed
+      fedErrors_.nbDumps = readoutUnit_->getConfiguration()->maxDumpsPerFED + 1;
+      throw;
     }
   }
   catch(exception::FEDerror& e)
   {
-    ++fedErrors_.fedErrors;
-
-    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+    LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),
                     xcept::stdformat_exception_history(e));
-    readoutUnit_->notifyQualified("error",e);
+    readoutUnit_->notifyQualified("warn",e);
 
     if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
