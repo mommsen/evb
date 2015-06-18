@@ -180,7 +180,7 @@ namespace evb {
       uint32_t fusCloud_;
       uint32_t fusStale_;
       uint32_t initiallyQueuedLS_;
-      int32_t queuedLS_;
+      uint32_t queuedLS_;
       int32_t queuedLSonFUs_;
 
       boost::filesystem::path resourceSummary_;

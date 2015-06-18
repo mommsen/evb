@@ -386,16 +386,12 @@ float evb::bu::ResourceManager::getAvailableResources()
 
     const int activeFURun = pt.get<int>("activeFURun");
     const int activeRunCMSSWMaxLS = pt.get<int>("activeRunCMSSWMaxLS");
+    queuedLS_ = oldestIncompleteLumiSection_;
     if ( activeFURun == static_cast<int>(runNumber_) && activeRunCMSSWMaxLS > 0 )
     {
-      const uint32_t deltaLS = oldestIncompleteLumiSection_ - activeRunCMSSWMaxLS;
-      if ( queuedLS_ == -1 )
-        initiallyQueuedLS_ = deltaLS;
-      queuedLS_ = deltaLS;
-    }
-    else
-    {
-      queuedLS_ = -1;
+      queuedLS_ -= activeRunCMSSWMaxLS;
+      if ( initiallyQueuedLS_ == 0 )
+        initiallyQueuedLS_ = queuedLS_;
     }
   }
   catch(boost::property_tree::ptree_error& e)
@@ -408,7 +404,8 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
   resourceSummaryFailureAlreadyNotified_ = false;
 
-  const uint32_t lsLatency = queuedLS_>0 ? queuedLS_ - initiallyQueuedLS_ : 0;
+  const uint32_t lsLatency = (initiallyQueuedLS_ > 0) && (queuedLS_ > initiallyQueuedLS_) ?
+    queuedLS_ - initiallyQueuedLS_ : 0;
   if ( lsLatency > configuration_->lumiSectionLatencyHigh.value_ )
   {
     if ( ! resourceLimitiationAlreadyNotified_ )
@@ -441,7 +438,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     if ( ! resourceLimitiationAlreadyNotified_ )
     {
       std::ostringstream msg;
-      msg << "Throttling requests as there are " << lsLatency << " LS queued on FUs which is above the low water mark of "
+      msg << "Throttling requests as there are " << lsLatency << " LS queued for FUs which is above the low water mark of "
         << configuration_->lumiSectionLatencyLow.value_ << " LS";
       LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
       resourceLimitiationAlreadyNotified_ = true;
@@ -475,8 +472,8 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
   fusHLT_ = 0;
   fusCloud_ = 0;
   fusStale_ = 0;
-  initiallyQueuedLS_ = -1;
-  queuedLS_ = -1;
+  initiallyQueuedLS_ = 0;
+  queuedLS_ = 0;
   queuedLSonFUs_ = -1;
   resourceSummaryFailureAlreadyNotified_ = true;
 }
@@ -676,7 +673,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 void evb::bu::ResourceManager::resetMonitoringCounters()
 {
   oldestIncompleteLumiSection_ = 0;
-  queuedLS_ = -1;
+  queuedLS_ = 0;
   initiallyQueuedLS_ = 0;
 
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
