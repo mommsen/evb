@@ -441,7 +441,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     if ( ! resourceLimitiationAlreadyNotified_ )
     {
       std::ostringstream msg;
-      msg << "Throttling requests as there are " << queuedLSonFUs_ << " LS queued on FUs which is above the low water mark of "
+      msg << "Throttling requests as there are " << lsLatency << " LS queued on FUs which is above the low water mark of "
         << configuration_->lumiSectionLatencyLow.value_ << " LS";
       LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
       resourceLimitiationAlreadyNotified_ = true;
