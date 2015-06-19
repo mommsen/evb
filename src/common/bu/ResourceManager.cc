@@ -29,6 +29,9 @@ evb::bu::ResourceManager::ResourceManager
   eventsToDiscard_(0),
   nbResources_(1),
   builderId_(0),
+  fusHLT_(0),
+  fusCloud_(0),
+  fusStale_(0),
   doProcessing_(false)
 {
   startResourceMonitorWorkLoop();
