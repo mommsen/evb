@@ -261,9 +261,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
   }
   catch(exception::FEDerror& e)
   {
-    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+    LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),
                     xcept::stdformat_exception_history(e));
-    readoutUnit_->notifyQualified("error",e);
+    readoutUnit_->notifyQualified("warn",e);
 
     if ( ++fedErrors_.nbDumps <= configuration_->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
