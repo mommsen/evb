@@ -182,6 +182,7 @@ namespace evb {
       uint32_t initiallyQueuedLS_;
       uint32_t queuedLS_;
       int32_t queuedLSonFUs_;
+      mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
       bool resourceSummaryFailureAlreadyNotified_;
