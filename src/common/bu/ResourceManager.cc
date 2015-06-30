@@ -389,7 +389,8 @@ float evb::bu::ResourceManager::getAvailableResources()
     fusHLT_ = pt.get<int>("active_resources");
     fusCloud_ = pt.get<int>("cloud");
     fusStale_ = pt.get<int>("stale_resources");
-    resourcesFromFUs = fusHLT_ * configuration_->resourcesPerCore;
+    resourcesFromFUs = (fusHLT_ == 0) ? 0 :
+      std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
 
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
     const int activeFURun = pt.get<int>("activeFURun");
@@ -461,7 +462,7 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
   else
   {
-    return std::max(1.0F,resourcesFromFUs);
+    return resourcesFromFUs;
   }
 }
 
