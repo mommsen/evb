@@ -344,10 +344,10 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
 void evb::bu::ResourceManager::startProcessing()
 {
+  resetMonitoringCounters();
   doProcessing_ = true;
   runNumber_ = bu_->getStateMachine()->getRunNumber();
   resourceMonitorWL_->submit(resourceMonitorAction_);
-  resetMonitoringCounters();
 }
 
 
@@ -577,39 +577,43 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     }
   }
 
+  bool allFUsStale;
+  bool fusInCloud;
+  {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    allFUsStale = (fusHLT_ == 0U) && (fusStale_ > 0U);
+    fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
+  }
+
   uint32_t outstandingRequests;
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
+  if ( allFUsStale )
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
-
-    if ( fusHLT_ == 0U && fusStale_ > 0U )
-    {
-      XCEPT_DECLARE(exception::FFF, e,
-                    "All FUs in the appliance are reporting a stale file handle");
-      bu_->getStateMachine()->processFSMEvent( Fail(e) );
-    }
-    else if ( resourcesToBlock == 0U || outstandingRequests > configuration_->numberOfBuilders )
-    {
-      bu_->getStateMachine()->processFSMEvent( Release() );
-    }
-    else if ( resourcesToBlock == nbResources_ )
-    {
-      if ( fusCloud_ > 0U && fusStale_ == 0U )
-        bu_->getStateMachine()->processFSMEvent( Clouded() );
-      else
-        bu_->getStateMachine()->processFSMEvent( Block() );
-    }
-    else if ( resourcesToBlock > 0U && outstandingRequests == 0 )
-    {
-      if ( fusCloud_ > 0U && fusStale_ == 0U )
-        bu_->getStateMachine()->processFSMEvent( Misted() );
-      else
-        bu_->getStateMachine()->processFSMEvent( Throttle() );
-    }
+    XCEPT_DECLARE(exception::FFF, e,
+                  "All FUs in the appliance are reporting a stale file handle");
+    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  else if ( resourcesToBlock == 0U || outstandingRequests > configuration_->numberOfBuilders )
+  {
+    bu_->getStateMachine()->processFSMEvent( Release() );
+  }
+  else if ( resourcesToBlock == nbResources_ )
+  {
+    if ( fusInCloud )
+      bu_->getStateMachine()->processFSMEvent( Clouded() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Block() );
+  }
+  else if ( resourcesToBlock > 0U && outstandingRequests == 0 )
+  {
+    if ( fusInCloud )
+      bu_->getStateMachine()->processFSMEvent( Misted() );
+    else
+      bu_->getStateMachine()->processFSMEvent( Throttle() );
   }
 
   ::sleep(1);
