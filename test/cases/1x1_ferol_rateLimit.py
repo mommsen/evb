@@ -9,7 +9,7 @@ class case_1x1_ferol_rateLimit(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(2048,490)
+        self.checkEVM(2048,300)
         self.checkAppParam("eventRate","unsignedInt",510,operator.lt,"EVM")
         self.checkBU(2048,490)
         self.stopEvB()

@@ -176,9 +176,17 @@ namespace evb {
       uint32_t nbResources_;
       uint32_t blockedResources_;
       uint16_t builderId_;
+      uint32_t fusHLT_;
+      uint32_t fusCloud_;
+      uint32_t fusStale_;
+      uint32_t initiallyQueuedLS_;
+      uint32_t queuedLS_;
+      int32_t queuedLSonFUs_;
+      mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
       bool resourceSummaryFailureAlreadyNotified_;
+      bool resourceLimitiationAlreadyNotified_;
 
       typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
       DiskUsageMonitors diskUsageMonitors_;

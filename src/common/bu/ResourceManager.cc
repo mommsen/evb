@@ -29,6 +29,9 @@ evb::bu::ResourceManager::ResourceManager
   eventsToDiscard_(0),
   nbResources_(1),
   builderId_(0),
+  fusHLT_(0),
+  fusCloud_(0),
+  fusStale_(0),
   doProcessing_(false)
 {
   startResourceMonitorWorkLoop();
@@ -339,11 +342,10 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
 void evb::bu::ResourceManager::startProcessing()
 {
-  oldestIncompleteLumiSection_ = 0;
+  resetMonitoringCounters();
   doProcessing_ = true;
   runNumber_ = bu_->getStateMachine()->getRunNumber();
   resourceMonitorWL_->submit(resourceMonitorAction_);
-  resetMonitoringCounters();
 }
 
 
@@ -374,21 +376,32 @@ float evb::bu::ResourceManager::getAvailableResources()
     return 0;
   }
 
+  uint32_t lsLatency = 0;
+  float resourcesFromFUs =  0;
   try
   {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(resourceSummary_.string(), pt);
-    fuSlotsHLT_ = pt.get<int>("active_resources");
-    fuSlotsCloud_ = pt.get<int>("cloud");
-    fuSlotsStale_ = pt.get<int>("stale_resources");
-    queuedLumiSectionsOnFUs_ = pt.get<int>("activeRunNumQueuedLS");
+    fusHLT_ = pt.get<int>("active_resources");
+    fusCloud_ = pt.get<int>("cloud");
+    fusStale_ = pt.get<int>("stale_resources");
+    resourcesFromFUs = (fusHLT_ == 0) ? 0 :
+      std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
 
+    queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
     const int activeFURun = pt.get<int>("activeFURun");
     const int activeRunCMSSWMaxLS = pt.get<int>("activeRunCMSSWMaxLS");
+    queuedLS_ = oldestIncompleteLumiSection_;
     if ( activeFURun == static_cast<int>(runNumber_) && activeRunCMSSWMaxLS > 0 )
-      queuedLumiSections_ = oldestIncompleteLumiSection_ - activeRunCMSSWMaxLS;
-    else
-      queuedLumiSections_ = -1;
+    {
+      queuedLS_ -= activeRunCMSSWMaxLS;
+      if ( initiallyQueuedLS_ == 0 )
+        initiallyQueuedLS_ = queuedLS_;
+    }
+    lsLatency = (initiallyQueuedLS_ > 0) && (queuedLS_ > initiallyQueuedLS_) ?
+      queuedLS_ - initiallyQueuedLS_ : 0;
   }
   catch(boost::property_tree::ptree_error& e)
   {
@@ -400,25 +413,55 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
   resourceSummaryFailureAlreadyNotified_ = false;
 
-
-  if ( queuedLumiSectionsOnFUs_ > static_cast<int>(configuration_->maxFuLumiSectionLatency) ||
-       queuedLumiSections_ > static_cast<int>(configuration_->lumiSectionLatencyHigh) )
+  if ( lsLatency > configuration_->lumiSectionLatencyHigh.value_ )
   {
+    if ( ! resourceLimitiationAlreadyNotified_ )
+    {
+      std::ostringstream msg;
+      msg << "There are " << lsLatency << " LS queued for the FUs which is more than the allowed latency of "
+        << configuration_->lumiSectionLatencyHigh.value_ << " LS";
+      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
+      resourceLimitiationAlreadyNotified_ = true;
+    }
+    return 0;
+  }
+  if ( queuedLSonFUs_ > static_cast<int32_t>(configuration_->maxFuLumiSectionLatency.value_) )
+  {
+    if ( ! resourceLimitiationAlreadyNotified_ )
+    {
+      std::ostringstream msg;
+      msg << "There are " << queuedLSonFUs_ << " LS queued on FUs which is more than the allowed latency of "
+        << configuration_->maxFuLumiSectionLatency.value_ << " LS";
+      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
+      resourceLimitiationAlreadyNotified_ = true;
+    }
     return 0;
   }
 
-  float resourcesFromFUs = fuSlotsHLT_ * configuration_->resourcesPerCore;
-
-  if ( queuedLumiSections_ > static_cast<int>(configuration_->lumiSectionLatencyLow) )
+  if ( lsLatency > configuration_->lumiSectionLatencyLow.value_ )
   {
-    resourcesFromFUs *= 1 - ( (queuedLumiSections_ - configuration_->lumiSectionLatencyLow) /
+    if ( ! resourceLimitiationAlreadyNotified_ )
+    {
+      std::ostringstream msg;
+      msg << "Throttling requests as there are " << lsLatency << " LS queued for FUs which is above the low water mark of "
+        << configuration_->lumiSectionLatencyLow.value_ << " LS";
+      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
+      resourceLimitiationAlreadyNotified_ = true;
+    }
+
+    resourcesFromFUs *= 1 - ( (lsLatency - configuration_->lumiSectionLatencyLow) /
                               (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
   }
 
-  if ( resourcesFromFUs < 1 )
-    return 1;
+  if ( resourcesFromFUs >= static_cast<float>(nbResources_) )
+  {
+    resourceLimitiationAlreadyNotified_ = false;
+    return nbResources_;
+  }
   else
-    return std::min(resourcesFromFUs,static_cast<float>(nbResources_));
+  {
+    return resourcesFromFUs;
+  }
 }
 
 
@@ -431,11 +474,17 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
   XCEPT_DECLARE(exception::DiskWriting,sentinelError,msg);
   bu_->notifyQualified("error",sentinelError);
 
-  fuSlotsHLT_ = 0;
-  fuSlotsCloud_ = 0;
-  fuSlotsStale_ = 0;
-  queuedLumiSectionsOnFUs_ = -1;
-  resourceSummaryFailureAlreadyNotified_ = true;
+  {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+
+    fusHLT_ = 0;
+    fusCloud_ = 0;
+    fusStale_ = 0;
+    initiallyQueuedLS_ = 0;
+    queuedLS_ = 0;
+    queuedLSonFUs_ = -1;
+    resourceSummaryFailureAlreadyNotified_ = true;
+  }
 }
 
 
@@ -527,26 +576,40 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     }
   }
 
-  if ( fuSlotsHLT_ == 0U && fuSlotsStale_ > 0U )
+  bool allFUsStale;
+  bool fusInCloud;
+  {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    allFUsStale = (fusHLT_ == 0U) && (fusStale_ > 0U);
+    fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
+  }
+
+  uint32_t outstandingRequests;
+  {
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
+  }
+
+  if ( allFUsStale )
   {
     XCEPT_DECLARE(exception::FFF, e,
                   "All FUs in the appliance are reporting a stale file handle");
     bu_->getStateMachine()->processFSMEvent( Fail(e) );
   }
-  else if ( resourcesToBlock == 0U || outstandingRequests_ > configuration_->numberOfBuilders )
+  else if ( resourcesToBlock == 0U || outstandingRequests > configuration_->numberOfBuilders )
   {
     bu_->getStateMachine()->processFSMEvent( Release() );
   }
   else if ( resourcesToBlock == nbResources_ )
   {
-    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+    if ( fusInCloud )
       bu_->getStateMachine()->processFSMEvent( Clouded() );
     else
       bu_->getStateMachine()->processFSMEvent( Block() );
   }
-  else if ( resourcesToBlock > 0U && outstandingRequests_ == 0U )
+  else if ( resourcesToBlock > 0U && outstandingRequests == 0 )
   {
-    if ( fuSlotsCloud_ > 0U && fuSlotsStale_ == 0U )
+    if ( fusInCloud )
       bu_->getStateMachine()->processFSMEvent( Misted() );
     else
       bu_->getStateMachine()->processFSMEvent( Throttle() );
@@ -572,7 +635,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
   fuSlotsStale_ = 0;
-  queuedLumiSectionsOnFUs_ = 0;
+  queuedLumiSections_ = -1;
+  queuedLumiSectionsOnFUs_ = -1;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
 
@@ -588,6 +652,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
   items.add("fuSlotsStale", &fuSlotsStale_);
+  items.add("queuedLumiSections", &queuedLumiSections_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
@@ -602,15 +667,24 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   nbBlockedResources_ = blockedResources_;
 
   {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+
+    fuSlotsHLT_ = fusHLT_;
+    fuSlotsCloud_ = fusCloud_;
+    fuSlotsStale_ = fusStale_;
+    queuedLumiSections_ = queuedLS_;
+    queuedLumiSectionsOnFUs_ = queuedLSonFUs_;
+  }
+  {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
     nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
     eventRate_ = eventMonitoring_.perf.logicalRate();
     bandwidth_ = eventMonitoring_.perf.bandwidth();
-    outstandingRequests_ = std::max(0,eventMonitoring_.outstandingRequests);
     eventSize_ = eventMonitoring_.perf.size();
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
+    outstandingRequests_ = std::max(0,eventMonitoring_.outstandingRequests);
 
     eventMonitoring_.perf.reset();
   }
@@ -619,11 +693,20 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 
 void evb::bu::ResourceManager::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
 
-  eventMonitoring_.nbEventsInBU = 0;
-  eventMonitoring_.nbEventsBuilt = 0;
-  eventMonitoring_.perf.reset();
+    oldestIncompleteLumiSection_ = 0;
+    queuedLS_ = 0;
+    initiallyQueuedLS_ = 0;
+  }
+  {
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+
+    eventMonitoring_.nbEventsInBU = 0;
+    eventMonitoring_.nbEventsBuilt = 0;
+    eventMonitoring_.perf.reset();
+  }
 }
 
 
@@ -636,6 +719,7 @@ void evb::bu::ResourceManager::configure()
   eventsToDiscard_ = 0;
   eventMonitoring_.outstandingRequests = 0;
   resourceSummaryFailureAlreadyNotified_ = false;
+  resourceLimitiationAlreadyNotified_ = false;
 
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
@@ -766,25 +850,28 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table table;
     table.set("title","If no FU slots are available or the output disk is full, no events are requested unless 'dropEventData' is set to true in the configuration.");
 
-    table.add(tr()
-              .add(td("# FU slots available"))
-              .add(td(boost::lexical_cast<std::string>(fuSlotsHLT_.value_))));
-    table.add(tr()
-              .add(td("# FU slots used for cloud"))
-              .add(td(boost::lexical_cast<std::string>(fuSlotsCloud_.value_))));
-    table.add(tr()
-              .add(td("# stale FU slots"))
-              .add(td(boost::lexical_cast<std::string>(fuSlotsStale_.value_))));
-    table.add(tr()
-              .add(td("# queued lumi sections for FUs"))
-              .add(td(boost::lexical_cast<std::string>(queuedLumiSections_.value_))));
-    table.add(tr()
-              .add(td("# queued lumi sections on FUs"))
-              .add(td(boost::lexical_cast<std::string>(queuedLumiSectionsOnFUs_.value_))));
-    table.add(tr()
-              .add(td("# blocked resources"))
-              .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));
+    {
+      boost::mutex::scoped_lock sl(lsLatencyMutex_);
 
+      table.add(tr()
+                .add(td("# FU slots available"))
+                .add(td(boost::lexical_cast<std::string>(fusHLT_))));
+      table.add(tr()
+                .add(td("# FU slots used for cloud"))
+                .add(td(boost::lexical_cast<std::string>(fusCloud_))));
+      table.add(tr()
+                .add(td("# stale FU slots"))
+                .add(td(boost::lexical_cast<std::string>(fusStale_))));
+      table.add(tr()
+                .add(td("# queued lumi sections for FUs"))
+                .add(td(boost::lexical_cast<std::string>(queuedLS_))));
+      table.add(tr()
+                .add(td("# queued lumi sections on FUs"))
+                .add(td(boost::lexical_cast<std::string>(queuedLSonFUs_))));
+      table.add(tr()
+                .add(td("# blocked resources"))
+                .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));
+    }
     {
       boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
