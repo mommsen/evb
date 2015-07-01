@@ -181,14 +181,14 @@ namespace evb {
     template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      boost::mutex::scoped_lock sl(processingRequestMutex_);
+      boost::mutex::scoped_lock prm(processingRequestMutex_);
 
       FragmentChainPtr superFragment;
 
       try
       {
         {
-          boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
+          boost::mutex::scoped_lock frm(fragmentRequestFIFOsMutex_);
 
           if ( fragmentRequestFIFOs_.empty() ) return false;
 

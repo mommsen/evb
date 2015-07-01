@@ -713,7 +713,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(processingRequestMutex_, boost::try_to_lock);
-    if ( ! sl ) ++activeRequests_;
+    if ( ! sl ) ++activeRequests_.value_;
   }
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
