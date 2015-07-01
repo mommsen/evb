@@ -32,6 +32,9 @@ evb::bu::ResourceManager::ResourceManager
   fusHLT_(0),
   fusCloud_(0),
   fusStale_(0),
+  initiallyQueuedLS_(0),
+  queuedLS_(0),
+  queuedLSonFUs_(-1),
   doProcessing_(false)
 {
   startResourceMonitorWorkLoop();
