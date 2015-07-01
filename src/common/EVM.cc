@@ -160,7 +160,7 @@ namespace evb {
       fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
 
-      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+      boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
 
       FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(readoutMsg->buTid);
       if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(readoutMsg->buTid,pos->first) )
@@ -181,31 +181,34 @@ namespace evb {
     template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+      boost::mutex::scoped_lock sl(processingRequestMutex_);
 
-      if ( fragmentRequestFIFOs_.empty() ) return false;
-
-      // search the next request FIFO which is non-empty
-      const FragmentRequestFIFOs::iterator lastBU = nextBU_;
-      while ( nextBU_->second->empty() )
-      {
-        if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
-          nextBU_ = fragmentRequestFIFOs_.begin();
-
-        if ( lastBU == nextBU_ ) return false;
-      }
+      FragmentChainPtr superFragment;
 
       try
       {
-        FragmentChainPtr superFragment;
-        if ( !input_->getNextAvailableSuperFragment(superFragment) ) return false;
+        {
+          boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
 
-        processingRequest_ = true;
+          if ( fragmentRequestFIFOs_.empty() ) return false;
 
-        // this must succeed as we checked that the queue is non-empty
-        assert( nextBU_->second->deq(fragmentRequest) );
-        if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
-          nextBU_ = fragmentRequestFIFOs_.begin();
+          // search the next request FIFO which is non-empty
+          const FragmentRequestFIFOs::iterator lastBU = nextBU_;
+          while ( nextBU_->second->empty() )
+          {
+            if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
+              nextBU_ = fragmentRequestFIFOs_.begin();
+
+            if ( lastBU == nextBU_ ) return false;
+          }
+
+          if ( !input_->getNextAvailableSuperFragment(superFragment) ) return false;
+
+          // this must succeed as we checked that the queue is non-empty
+          assert( nextBU_->second->deq(fragmentRequest) );
+          if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
+            nextBU_ = fragmentRequestFIFOs_.begin();
+        }
 
         fragmentRequest->evbIds.clear();
         fragmentRequest->evbIds.reserve(fragmentRequest->nbRequests);
@@ -235,7 +238,6 @@ namespace evb {
       }
       catch(exception::HaltRequested)
       {
-        processingRequest_ = false;
         return false;
       }
 
@@ -243,7 +245,6 @@ namespace evb {
 
       readoutUnit_->getRUproxy()->sendRequest(fragmentRequest);
 
-      processingRequest_ = false;
       return true;
     }
 

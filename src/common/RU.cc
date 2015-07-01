@@ -34,10 +34,9 @@ namespace evb {
     template<>
     bool BUproxy<RU>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      boost::mutex::scoped_lock sl(fragmentRequestFIFOmutex_);
+      boost::mutex::scoped_lock sl(processingRequestMutex_);
 
       if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
-      processingRequest_ = true;
 
       try
       {
@@ -57,11 +56,9 @@ namespace evb {
       }
       catch(exception::HaltRequested)
       {
-        processingRequest_ = false;
         return false;
       }
 
-      processingRequest_ = false;
       return true;
     }
 
