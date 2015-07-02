@@ -92,6 +92,8 @@ namespace evb {
 
     private:
 
+      void createPipes();
+      void destroyPipes();
       void startPipesWorkLoop();
       bool processPipes(toolbox::task::WorkLoop*);
       void connectionGone(const int sid, const int pipeIndex, const std::string how);
@@ -146,16 +148,7 @@ evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::FerolConnec
 
   startPipesWorkLoop();
   pipeService_->addPipeServiceListener(this);
-
-  std::list<pt::blit::PipeAdvertisement> advs = pipeService_->getPipeAdvertisements("blit", "btcp");
-  for (std::list<pt::blit::PipeAdvertisement>::iterator it = advs.begin(); it != advs.end(); ++it )
-  {
-    std::ostringstream msg;
-    msg << "Creating input pipe for PSP index '" << (*it).getIndex() <<  "'";
-    LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
-
-    inputPipes_.push_back(pipeService_->createInputPipe((*it), this));
-  }
+  createPipes();
 }
 
 
@@ -164,13 +157,7 @@ evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::~FerolConne
 {
   boost::mutex::scoped_lock sl(mutex_);
   processPipes_ = false;
-
-  for ( InputPipes::iterator it = inputPipes_.begin(); it != inputPipes_.end(); ++it )
-  {
-    pipeService_->destroyInputPipe(*it);
-  }
-  inputPipes_.clear();
-  socketStreams_.clear();
+  destroyPipes();
 }
 
 
@@ -358,6 +345,8 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::accept
   if ( ! pipeService_ ) return;
 
   boost::mutex::scoped_lock sl(mutex_);
+
+  createPipes();
   acceptConnections_ = true;
 }
 
@@ -369,8 +358,35 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::dropCo
 
   boost::mutex::scoped_lock sl(mutex_);
   acceptConnections_ = false;
+  destroyPipes();
+}
 
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::createPipes()
+{
+  std::list<pt::blit::PipeAdvertisement> advs = pipeService_->getPipeAdvertisements("blit", "btcp");
+  for (std::list<pt::blit::PipeAdvertisement>::iterator it = advs.begin(); it != advs.end(); ++it )
+  {
+    std::ostringstream msg;
+    msg << "Creating input pipe for PSP index '" << (*it).getIndex() <<  "'";
+    LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
+
+    inputPipes_.push_back(pipeService_->createInputPipe((*it), this));
+  }
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::destroyPipes()
+{
   socketStreams_.clear();
+
+  for ( InputPipes::iterator it = inputPipes_.begin(); it != inputPipes_.end(); ++it )
+  {
+    pipeService_->destroyInputPipe(*it);
+  }
+  inputPipes_.clear();
 }
 
 
