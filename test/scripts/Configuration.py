@@ -221,7 +221,6 @@ class RU(Context):
         if self.apps['inputSource'] == 'FEROL':
             return self.getConfigForPtFrl(routing)
         elif self.apps['inputSource'] == 'Socket':
-            self.fillFerolSources()
             return self.getConfigForPtBlit()
         else:
             return ""
@@ -238,7 +237,7 @@ class RU(Context):
         id += 1
 
         config += self.fillProperties([
-            ('maxClients','unsignedInt','32'),
+            ('maxClients','unsignedInt','16'),
             ('maxReceiveBuffers','unsignedInt','32'),
             ('maxBlockSize','unsignedInt','131072')
             ])
