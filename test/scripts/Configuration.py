@@ -32,6 +32,9 @@ class Context:
         config += self.getConfigForApplication()
 
         config += """
+      <xc:Application class="xmem::probe::Application" id="61" instance="0" network="local" />
+      <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
+
       <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
