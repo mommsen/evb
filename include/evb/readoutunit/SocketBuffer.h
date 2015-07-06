@@ -2,6 +2,7 @@
 #define _evb_readoutunit_SocketBuffer_h_
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <stdint.h>
 
@@ -21,11 +22,9 @@ namespace evb {
     {
     public:
 
-      SocketBuffer(toolbox::mem::Reference* bufRef, pt::blit::InputPipe* inputPipe)
-        : bufRef_(bufRef),inputPipe_(inputPipe) {}
+      SocketBuffer(toolbox::mem::Reference*, pt::blit::InputPipe*);
 
-      ~SocketBuffer()
-      { inputPipe_->grantBuffer(bufRef_); }
+      ~SocketBuffer();
 
       toolbox::mem::Reference* getBufRef() const
       { return bufRef_; }
@@ -34,6 +33,8 @@ namespace evb {
 
       toolbox::mem::Reference* bufRef_;
       pt::blit::InputPipe* inputPipe_;
+
+      static boost::mutex mutex_;
 
     };
 

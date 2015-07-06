@@ -67,6 +67,11 @@ namespace evb {
       const typename Configuration::FerolSource* getFerolSource() const
       { return ferolSource_; }
 
+      /**
+       * Return the content of the socket and fragment FIFO as HTML snipped
+       */
+      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const;
+
 
     private:
 
@@ -102,12 +107,11 @@ evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
 ) :
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,ferolSource->fedId.value_),
   ferolSource_(ferolSource),
-  socketBufferFIFO_(readoutUnit,"socketBufferFIFO"),
+  socketBufferFIFO_(readoutUnit,"socketBufferFIFO_FED_"+boost::lexical_cast<std::string>(ferolSource->fedId.value_)),
   parseSocketBuffersActive_(false)
 {
   startParseSocketBuffersWorkLoop();
 }
-
 
 
 template<class ReadoutUnit,class Configuration>
@@ -138,13 +142,15 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startParseSocket
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(toolbox::mem::Reference* bufRef, pt::blit::InputPipe* inputPipe)
 {
-  SocketBufferPtr socketBuffer( new SocketBuffer(bufRef,inputPipe) );
-
   if ( this->doProcessing_ )
+  {
+    SocketBufferPtr socketBuffer( new SocketBuffer(bufRef,inputPipe) );
     socketBufferFIFO_.enqWait(socketBuffer);
-
-  // if we are not processing, we just drop the data to the floor
-  // SocketBuffer takes care of freeing the resources
+  }
+  else
+  {
+    inputPipe->grantBuffer(bufRef);
+  }
 }
 
 
@@ -158,7 +164,7 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
   try
   {
     SocketBufferPtr socketBuffer;
-    while ( socketBufferFIFO_.deq(socketBuffer) )
+    while ( this->doProcessing_ && socketBufferFIFO_.deq(socketBuffer) )
     {
       const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
       uint32_t usedSize = 0;
@@ -232,11 +238,22 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::drain()
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
-  FerolStream<ReadoutUnit,Configuration>::stopProcessing();
-  while ( parseSocketBuffersActive_ ) ::usleep(1000);
+  this->doProcessing_ = false;
+  this->fragmentFIFO_.clear();
+  parseSocketBuffersWL_->cancel();
   socketBufferFIFO_.clear();
+  this->fragmentFIFO_.clear();
 }
 
+
+template<class ReadoutUnit,class Configuration>
+cgicc::div evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::getHtmlSnippedForFragmentFIFO() const
+{
+  cgicc::div div;
+  div.add( socketBufferFIFO_.getHtmlSnipped() );
+  div.add( this->fragmentFIFO_.getHtmlSnipped() );
+  return div;
+}
 
 #endif // _evb_readoutunit_SocketStream_h_
 

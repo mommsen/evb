@@ -41,6 +41,7 @@ Sources=\
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
 	readoutunit/FedFragment.cc \
+	readoutunit/SocketBuffer.cc \
 	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \

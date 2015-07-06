@@ -114,7 +114,7 @@ namespace evb {
       /**
        * Return the content of the fragment FIFO as HTML snipped
        */
-      cgicc::div getHtmlSnippedForFragmentFIFO() const
+      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const
       { return fragmentFIFO_.getHtmlSnipped(); }
 
 
