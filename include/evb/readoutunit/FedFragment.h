@@ -76,7 +76,8 @@ namespace evb {
       bool isComplete_;
       toolbox::mem::Reference* bufRef_;
       tcpla::MemoryCache* cache_;
-      std::vector<SocketBufferPtr> socketBuffers_;
+      typedef std::vector<SocketBufferPtr> SocketBuffers;
+      SocketBuffers socketBuffers_;
       DataLocations dataLocations_;
 
       bool isLastFerolHeader_;

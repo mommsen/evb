@@ -42,8 +42,8 @@ void evb::readoutunit::FedFragment::append(uint16_t fedId, const EvBid& evbId, t
 
 void evb::readoutunit::FedFragment::append(SocketBufferPtr& socketBuffer, uint32_t& usedSize)
 {
-  parse(socketBuffer->getBufRef(), usedSize);
   socketBuffers_.push_back(socketBuffer);
+  parse(socketBuffer->getBufRef(), usedSize);
 }
 
 
@@ -317,7 +317,8 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     msg << "Expected FED header maker 0x" << std::hex << FED_SLINK_START_MARKER;
     msg << " but got event id 0x" << fedHeader->eventid;
     msg << " and source id 0x" << fedHeader->sourceid;
-    msg << " for FED " << std::dec << fedId_;
+    msg << " for event " << std::dec << eventNumber_;
+    msg << " from FED " << fedId_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
@@ -327,7 +328,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     isCorrupted_ = true;
     std::ostringstream msg;
     msg << "FED header \"eventid\" " << eventId << " does not match";
-    msg << " the eventNumber " << eventNumber_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    msg << " the eventNumber " << eventNumber_ << " found in FEROL header";
     msg << " of FED " << fedId_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
@@ -338,7 +339,8 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     isCorrupted_ = true;
     std::ostringstream msg;
     msg << "FED header \"sourceId\" " << sourceId << " does not match";
-    msg << " the FED id " << fedId_ << " found in I2O_DATA_READY_MESSAGE_FRAME";
+    msg << " the FED id " << fedId_ << " found in FEROL header";
+    msg << " for event " << eventNumber_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 }
@@ -353,7 +355,8 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
     msg << "Expected FED trailer 0x" << std::hex << FED_SLINK_END_MARKER;
     msg << " but got event size 0x" << fedTrailer->eventsize;
     msg << " and conscheck 0x" << fedTrailer->conscheck;
-    msg << " for FED " << std::dec << fedId_;
+    msg << " for event " << std::dec << eventNumber_;
+    msg << " from FED " << fedId_;
     msg << " with expected size " << fedSize_ << " Bytes";
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
@@ -366,6 +369,7 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
     msg << "Inconsistent event size for FED " << fedId_ << ":";
     msg << " FED trailer claims " << evsz << " Bytes,";
     msg << " while sum of FEROL headers yield " << fedSize_;
+    msg << " for event " << eventNumber_;
     if (fedTrailer->conscheck & 0x8004)
     {
       msg << ". Trailer indicates that " << trailerBitToString(fedTrailer->conscheck);
@@ -429,25 +433,40 @@ void evb::readoutunit::FedFragment::dump
   const std::string& reasonForDump
 )
 {
-  // std::vector<unsigned char> buffer;
-  // buffer.resize( getFedSize() );
-  // uint32_t copiedSize = 0;
-  // for ( DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
-  //       it != itEnd; ++it)
-  // {
-  //   memcpy(&buffer[copiedSize],it->iov_base,it->iov_len);
-  //   copiedSize += it->iov_len;
-  // }
+  std::vector<unsigned char> buffer;
+  uint32_t copiedSize = 0;
+  if ( isComplete_ )
+  {
+    buffer.resize( getFedSize() );
+    for ( DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
+          it != itEnd; ++it)
+    {
+      memcpy(&buffer[copiedSize],it->iov_base,it->iov_len);
+      copiedSize += it->iov_len;
+    }
+  }
+  else
+  {
+    for ( SocketBuffers::const_iterator it = socketBuffers_.begin(), itEnd = socketBuffers_.end();
+          it != itEnd; ++it)
+    {
+      toolbox::mem::Reference* bufRef = (*it)->getBufRef();
+      buffer.resize( copiedSize + bufRef->getDataSize() );
+      memcpy(&buffer[copiedSize],bufRef->getDataLocation(),bufRef->getDataSize());
+      copiedSize += bufRef->getDataSize();
+    }
+  }
 
-  // s << "==================== DUMP ======================" << std::endl;
-  // s << "Reason for dump: " << reasonForDump << std::endl;
+  s << "==================== DUMP ======================" << std::endl;
+  s << "Reason for dump: " << reasonForDump << std::endl;
 
-  // s << "FED size             (dec): " << getFedSize() << std::endl;
-  // s << "FED id               (dec): " << getFedId() << std::endl;
-  // s << "Trigger no           (dec): " << getEventNumber() << std::endl;
-  // s << "EvB id                    : " << getEvBid() << std::endl;
-  // DumpUtility::dumpBlockData(s, &buffer[0], copiedSize);
-  // s << "================ END OF DUMP ===================" << std::endl;
+  s << "Buffer size          (dec): " << copiedSize << std::endl;
+  s << "FED size             (dec): " << getFedSize() << std::endl;
+  s << "FED id               (dec): " << getFedId() << std::endl;
+  s << "Trigger no           (dec): " << getEventNumber() << std::endl;
+  s << "EvB id                    : " << getEvBid() << std::endl;
+  DumpUtility::dumpBlockData(s, &buffer[0], copiedSize);
+  s << "================ END OF DUMP ===================" << std::endl;
 }
 
 
