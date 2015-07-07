@@ -182,6 +182,7 @@ namespace evb {
 
       toolbox::task::WorkLoop* dummySuperFragmentWL_;
       toolbox::task::ActionSignature* dummySuperFragmentAction_;
+      volatile bool buildDummySuperFragmentActive_;
 
       InputMonitor superFragmentMonitor_;
       mutable boost::mutex superFragmentMonitorMutex_;
@@ -215,6 +216,7 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::Input
 ) :
 readoutUnit_(readoutUnit),
 runNumber_(0),
+buildDummySuperFragmentActive_(false),
 incompleteEvents_(0)
 {}
 
@@ -312,6 +314,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
       typename FerolStreams::iterator it = ferolStreams_.begin();
       if ( it->second->getNextFedFragment(fedFragment) )
       {
+        buildDummySuperFragmentActive_ = true;
         uint32_t size = fedFragment->getFedSize();
         const uint32_t eventNumber = fedFragment->getEventNumber();
 
@@ -332,15 +335,18 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
       }
       else
       {
+        buildDummySuperFragmentActive_ = false;
         ::usleep(10);
       }
     }
   }
   catch(exception::HaltRequested)
   {
+    buildDummySuperFragmentActive_ = false;
     return false;
   }
 
+  buildDummySuperFragmentActive_ = false;
   return true;
 }
 
@@ -456,6 +462,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::stopProcessing()
       it->second->stopProcessing();
     }
   }
+  while ( buildDummySuperFragmentActive_ ) ::usleep(1000);
 }
 
 
