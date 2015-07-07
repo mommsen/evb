@@ -39,7 +39,7 @@ namespace evb {
       /**
        * Handle the next buffer from pt::blit
        */
-      void addBuffer(toolbox::mem::Reference*, pt::blit::InputPipe*);
+      void addBuffer(SocketBufferPtr&);
 
       /**
        * Configure
@@ -140,17 +140,10 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startParseSocket
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(toolbox::mem::Reference* bufRef, pt::blit::InputPipe* inputPipe)
+void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(SocketBufferPtr& socketBuffer)
 {
   if ( this->doProcessing_ )
-  {
-    SocketBufferPtr socketBuffer( new SocketBuffer(bufRef,inputPipe) );
     socketBufferFIFO_.enqWait(socketBuffer);
-  }
-  else
-  {
-    inputPipe->grantBuffer(bufRef);
-  }
 }
 
 
@@ -239,9 +232,10 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   this->doProcessing_ = false;
-  this->fragmentFIFO_.clear();
+  this->fragmentFIFO_.clear(); //clear fragment FIFO to unblock workloop in case that the FIFO is full
   parseSocketBuffersWL_->cancel();
   socketBufferFIFO_.clear();
+  currentFragment_.reset();
   this->fragmentFIFO_.clear();
 }
 

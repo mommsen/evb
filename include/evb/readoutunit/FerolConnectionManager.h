@@ -93,7 +93,7 @@ namespace evb {
     private:
 
       void createPipes();
-      void connectionGone(const int sid, const int pipeIndex, const std::string how);
+      bool handlersIdle() const;
       std::string getHostName(const std::string& ip);
 
       ReadoutUnit* readoutUnit_;
@@ -143,14 +143,14 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::pipeSe
 {
   try
   {
+    boost::mutex::scoped_lock sl(mutex_);
+
     if ( ! acceptConnections_ )
     {
       std::ostringstream msg;
       msg << "Received a PSP advertisement to create input pipe '" << adv.getIndex() << "' while not accepting connections";
       XCEPT_RAISE(exception::TCP,msg.str());
     }
-
-    boost::mutex::scoped_lock sl(mutex_);
 
     pt::blit::InputPipe* inputPipe = pipeService_->createInputPipe(adv, this);
     const PipeHandlerPtr pipeHandler(
@@ -272,61 +272,12 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connectionClosedByPeerEvent(pt::blit::PipeConnectionClosedByPeer& pcc)
-{
-  connectionGone(pcc.getSID(), pcc.getPipeIndex(), "closed");
-}
+{}
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connectionResetByPeerEvent(pt::blit::PipeConnectionResetByPeer& pcr)
-{
-  connectionGone(pcr.getSID(), pcr.getPipeIndex(), "reset");
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connectionGone(const int sid, const int pipeIndex, const std::string how)
-{
-  try
-  {
-    bool success = false;
-
-    do
-    {
-      boost::mutex::scoped_lock sl(mutex_,boost::try_to_lock);
-
-      if (sl)
-      {
-        const typename PipeHandlers::iterator handler = pipeHandlers_.find(pipeIndex);
-        if ( handler != pipeHandlers_.end() )
-        {
-          handler->second->closeConnection(sid,how);
-        }
-        success = true;
-      }
-      else
-      {
-        ::usleep(1000);
-      }
-    } while (!success);
-  }
-  catch(xcept::Exception &e)
-  {
-    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
-  }
-  catch(std::exception& e)
-  {
-    XCEPT_DECLARE(exception::TCP,
-                  sentinelException, e.what());
-    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    XCEPT_DECLARE(exception::TCP,
-                  sentinelException, "unkown exception");
-    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-}
+{}
 
 
 template<class ReadoutUnit,class Configuration>
@@ -432,18 +383,47 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::startP
 {
   if ( ! pipeService_ ) return;
 
-   acceptConnections_ = false;
+  boost::mutex::scoped_lock sl(mutex_);
+
+  acceptConnections_ = false;
 }
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::drain() const
-{}
+{
+  bool idle = handlersIdle();
+
+  while ( ! idle )
+  {
+    ::usleep(1000);
+    idle = handlersIdle();
+  }
+}
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::stopProcessing()
-{}
+{
+  if ( ! handlersIdle() )
+  {
+    XCEPT_RAISE(exception::TCP,"Failed to free all pt::blit buffers");
+  }
+}
+
+
+template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::handlersIdle() const
+{
+  boost::mutex::scoped_lock sl(mutex_);
+
+  for ( typename PipeHandlers::const_iterator it = pipeHandlers_.begin(), itEnd = pipeHandlers_.end();
+        it != itEnd; ++it)
+  {
+    if ( ! it->second->idle() ) return false;
+  }
+  return true;
+}
 
 
 template<class ReadoutUnit,class Configuration>

@@ -9,10 +9,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include "evb/readoutunit/SocketBuffer.h"
 #include "evb/readoutunit/SocketStream.h"
 #include "pt/blit/InputPipe.h"
 #include "pt/blit/PipeService.h"
 #include "toolbox/lang/Class.h"
+#include "toolbox/mem/Buffer.h"
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "xcept/tools.h"
@@ -38,21 +40,30 @@ namespace evb {
 
       void createStream(const int sid, const typename Configuration::FerolSource*);
 
-      void closeConnection(const int sid, const std::string how);
-
       void addFerolStreams(typename Input<ReadoutUnit,Configuration>::FerolStreams&, std::set<uint32_t>& fedIds);
 
+      bool idle() const;
 
     private:
 
-      void startPipeWorkLoop(const int index);
+      void startPipeWorkLoop();
       bool processPipe(toolbox::task::WorkLoop*);
+      void releaseBuffer(toolbox::mem::Reference*);
 
       ReadoutUnit* readoutUnit_;
       pt::blit::PipeService* pipeService_;
       pt::blit::InputPipe* inputPipe_;
+      const int index_;
+
       toolbox::task::WorkLoop* pipeWorkLoop_;
       volatile bool processPipe_;
+      volatile bool pipeActive_;
+      int outstandingBuffers_;
+
+      SocketBuffer::ReleaseFunction releaseFunction_;
+      typedef OneToOneQueue<toolbox::mem::Reference*> GrantFIFO;
+      GrantFIFO grantFIFO_;
+      mutable boost::mutex grantFIFOmutex_;
 
       typedef boost::shared_ptr< SocketStream<ReadoutUnit,Configuration> > SocketStreamPtr;
       typedef std::map<uint16_t,SocketStreamPtr> SocketStreams;
@@ -79,9 +90,15 @@ evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::PipeHandler
   readoutUnit_(readoutUnit),
   pipeService_(pipeService),
   inputPipe_(inputPipe),
-  processPipe_(false)
+  index_(index),
+  processPipe_(false),
+  pipeActive_(false),
+  outstandingBuffers_(0),
+  grantFIFO_(readoutUnit,"grantFIFO_"+boost::lexical_cast<std::string>(index))
 {
-  startPipeWorkLoop(index);
+  releaseFunction_ = boost::bind(&evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::releaseBuffer, this, _1);
+  grantFIFO_.resize(readoutUnit_->getConfiguration()->socketBufferFIFOCapacity);
+  startPipeWorkLoop();
 }
 
 
@@ -92,6 +109,15 @@ evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::~PipeHandler()
   pipeWorkLoop_->cancel();
   socketStreams_.clear();
   pipeService_->destroyInputPipe(inputPipe_);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::idle() const
+{
+  while ( pipeActive_ || !grantFIFO_.empty() ) ::usleep(1000);
+  std::cout << "*** " << index_ << "\t" << pipeActive_ << "\t" << outstandingBuffers_ << "\t" << grantFIFO_.elements() << std::endl;
+  return ( outstandingBuffers_ == 0 );
 }
 
 
@@ -108,30 +134,6 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::createStream
     new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,ferolSource)
   );
   socketStreams_.insert( typename SocketStreams::value_type(sid,socketStream) );
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::closeConnection(const int sid, const std::string how)
-{
-  boost::mutex::scoped_lock sl(socketStreamsMutex_);
-
-  std::ostringstream msg;
-
-  const typename SocketStreams::iterator pos = socketStreams_.find(sid);
-  if ( pos != socketStreams_.end() )
-  {
-    const typename Configuration::FerolSource* ferolSource = pos->second->getFerolSource();
-    msg << ferolSource->hostname.value_ << ":" << ferolSource->port.value_;
-    msg << " (FED id " << ferolSource->fedId.value_ << ") ";
-    msg << how << " the connection";
-    socketStreams_.erase(pos);
-  }
-  else
-  {
-    msg << "Connection " << how << " from unknown peer with SID " << sid;
-  }
-  LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
 }
 
 
@@ -158,11 +160,11 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::addFerolStreams
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::startPipeWorkLoop(const int index)
+void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::startPipeWorkLoop()
 {
   const std::string identifier = readoutUnit_->getIdentifier();
   std::ostringstream workLoopName;
-  workLoopName << identifier << "/Pipe_" << index;
+  workLoopName << identifier << "/Pipe_" << index_;
 
   try
   {
@@ -196,6 +198,9 @@ bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::processPipe(toolb
 
   bool workDone;
   pt::blit::BulkTransferEvent event;
+  toolbox::mem::Reference* bufRef;
+
+  pipeActive_ = true;
 
   try
   {
@@ -205,49 +210,62 @@ bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::processPipe(toolb
 
       if ( inputPipe_->dequeue(&event) )
       {
+        SocketBufferPtr socketBuffer( new SocketBuffer(event.ref,releaseFunction_) );
+        ++outstandingBuffers_;
         workDone = true;
 
-        if ( readoutUnit_->getConfiguration()->dropAtSocket )
-        {
-          inputPipe_->grantBuffer(event.ref);
-        }
-        else
+        if ( ! readoutUnit_->getConfiguration()->dropAtSocket )
         {
           boost::mutex::scoped_lock sl(socketStreamsMutex_);
           const typename SocketStreams::iterator pos = socketStreams_.find(event.sid);
           if ( pos != socketStreams_.end() )
-          {
-            pos->second->addBuffer(event.ref,inputPipe_);
-          }
-          else
-          {
-            inputPipe_->grantBuffer(event.ref);
-          }
+            pos->second->addBuffer(socketBuffer);
         }
       }
+
+      if ( grantFIFO_.deq(bufRef) )
+      {
+        inputPipe_->grantBuffer(bufRef);
+        --outstandingBuffers_;
+        workDone = true;
+      }
     }
-    while ( processPipe_ && workDone );
+    while ( workDone );
   }
   catch(xcept::Exception &e)
   {
+    pipeActive_ = false;
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
+    pipeActive_ = false;
     XCEPT_DECLARE(exception::DummyData,
                   sentinelException, e.what());
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
+    pipeActive_ = false;
     XCEPT_DECLARE(exception::DummyData,
                   sentinelException, "unkown exception");
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
+  pipeActive_ = false;
+
   ::usleep(100);
 
   return processPipe_;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::releaseBuffer(toolbox::mem::Reference* bufRef)
+{
+  boost::mutex::scoped_lock sl(grantFIFOmutex_);
+
+  grantFIFO_.enqWait(bufRef);
 }
 
 
