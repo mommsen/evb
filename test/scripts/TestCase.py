@@ -272,7 +272,7 @@ class TestCase:
     def stopEvB(self):
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(3*eventRate,1000)
+        eventToStop = lastEvent + max(2*eventRate,10000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop))
         sys.stdout.flush()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
