@@ -116,7 +116,6 @@ template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::idle() const
 {
   while ( pipeActive_ || !grantFIFO_.empty() ) ::usleep(1000);
-  std::cout << "*** " << index_ << "\t" << pipeActive_ << "\t" << outstandingBuffers_ << "\t" << grantFIFO_.elements() << std::endl;
   return ( outstandingBuffers_ == 0 );
 }
 
