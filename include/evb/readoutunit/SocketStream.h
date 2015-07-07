@@ -231,8 +231,7 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::drain()
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
-  this->doProcessing_ = false;
-  this->fragmentFIFO_.clear(); //clear fragment FIFO to unblock workloop in case that the FIFO is full
+  FerolStream<ReadoutUnit,Configuration>::stopProcessing();
   while ( parseSocketBuffersActive_ ) ::usleep(1000);
   socketBufferFIFO_.clear();
   currentFragment_.reset();

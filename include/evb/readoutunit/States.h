@@ -431,8 +431,8 @@ void evb::readoutunit::Running<Owner>::exitAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const Owner* owner = stateMachine.getOwner();
 
-  owner->getInput()->stopProcessing();
   owner->getBUproxy()->stopProcessing();
+  owner->getInput()->stopProcessing();
   doStopProcessing(owner);
   owner->getFerolConnectionManager()->stopProcessing();
 }
