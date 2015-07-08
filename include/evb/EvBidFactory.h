@@ -4,8 +4,12 @@
 #include <stdint.h>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+
+#include "evb/DataLocations.h"
+
 
 namespace evb {
 
@@ -19,11 +23,16 @@ namespace evb {
     ~EvBidFactory();
 
     /**
+     * Pass the function to extract the lumi section information from the payload
+     */
+    typedef boost::function< uint32_t(const DataLocations&) > LumiSectionFunction;
+    void setLumiSectionFunction(LumiSectionFunction&);
+
+    /**
      * Set the duration of the fake lumi section in seconds.
      * Setting it to 0 disables the generation of fake lumi sections.
      */
-    void setFakeLumiSectionDuration(const uint32_t duration)
-    { fakeLumiSectionDuration_ = boost::posix_time::seconds(duration); }
+    void setFakeLumiSectionDuration(const uint32_t duration);
 
     /**
      * Return EvBid with a fake eventNumber and lumi section
@@ -41,6 +50,11 @@ namespace evb {
     EvBid getEvBid(const uint32_t eventNumber, const uint32_t lumiSection);
 
     /**
+     * Return EvBid corresponding to the FED fragment
+     */
+    EvBid getEvBid(const uint32_t eventNumber, const DataLocations&);
+
+    /**
      * Reset the counters for a new run
      */
     void reset(const uint32_t runNumber);
@@ -53,12 +67,15 @@ namespace evb {
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
+    LumiSectionFunction lumiSectionFunction_;
     boost::posix_time::seconds fakeLumiSectionDuration_;
     uint32_t fakeLumiSection_;
     boost::shared_ptr<boost::thread> fakeLumiThread_;
     volatile bool doFakeLumiSections_;
 
   };
+
+  typedef boost::shared_ptr<EvBidFactory> EvBidFactoryPtr;
 
 } // namespace evb
 

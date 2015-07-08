@@ -32,13 +32,13 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS(const FedFragment::DataLocations& dataLocations) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS(const DataLocations& dataLocations) const
     {
       using namespace evtn;
 
       uint32_t offset = sizeof(fedh_t) + 7 * SLINK_WORD_SIZE + SLINK_HALFWORD_SIZE;
-      FedFragment::DataLocations::const_iterator it = dataLocations.begin();
-      const FedFragment::DataLocations::const_iterator itEnd = dataLocations.end();
+      DataLocations::const_iterator it = dataLocations.begin();
+      const DataLocations::const_iterator itEnd = dataLocations.end();
 
       while ( it != itEnd && offset > it->iov_len )
       {
@@ -58,14 +58,14 @@ namespace evb {
 
 
     template<>
-    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe(const FedFragment::DataLocations& dataLocations) const
+    uint32_t evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe(const DataLocations& dataLocations) const
     {
       using namespace evtn;
 
       uint32_t offset = sizeof(fedh_t) + GTPE_ORBTNR_OFFSET * SLINK_HALFWORD_SIZE;
 
-      FedFragment::DataLocations::const_iterator it = dataLocations.begin();
-      const FedFragment::DataLocations::const_iterator itEnd = dataLocations.end();
+      DataLocations::const_iterator it = dataLocations.begin();
+      const DataLocations::const_iterator itEnd = dataLocations.end();
 
       while ( it != itEnd && offset > it->iov_len )
       {
@@ -93,7 +93,7 @@ namespace evb {
 
       if ( ferolStreams_.empty() || readoutUnit_->getConfiguration()->dropInputData ) return;
 
-      boost::function< uint32_t(const FedFragment::DataLocations&) > lumiSectionFunction = 0;
+      EvBidFactory::LumiSectionFunction lumiSectionFunction = 0;
 
       if ( readoutUnit_->getConfiguration()->getLumiSectionFromTrigger )
       {
@@ -108,30 +108,18 @@ namespace evb {
           if ( masterStream_ != ferolStreams_.end() )
           {
             lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe, this, _1);
-            }
+          }
         }
       }
 
       if ( masterStream_ == ferolStreams_.end() )
         masterStream_ = ferolStreams_.begin();
 
-      masterStream_->second->setLumiSectionFunction(lumiSectionFunction);
-    }
-
-
-    template<>
-    evb::EvBid evb::readoutunit::FerolStream<EVM,evm::Configuration>::getEvBid(const FedFragmentPtr& fedFragment)
-    {
-      const uint32_t eventNumber = fedFragment->getEventNumber();
-      if ( lumiSectionFunction_ )
-      {
-        const uint32_t lsNumber = lumiSectionFunction_(fedFragment->getDataLocations());
-        return evbIdFactory_.getEvBid(eventNumber,lsNumber);
-      }
+      const EvBidFactoryPtr evbIdFactory = masterStream_->second->getEvBidFactory();
+      if ( lumiSectionFunction )
+        evbIdFactory->setLumiSectionFunction(lumiSectionFunction);
       else
-      {
-        return evbIdFactory_.getEvBid(eventNumber);
-      }
+        evbIdFactory->setFakeLumiSectionDuration(readoutUnit_->getConfiguration()->fakeLumiSectionDuration);
     }
 
 

@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <sstream>
 
-#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -61,12 +60,6 @@ namespace evb {
       virtual void appendFedFragment(SuperFragmentPtr&);
 
       /**
-       * Define the function to be used to extract the lumi section from the payload
-       * If the function is null, fake lumi sections with fakeLumiSectionDuration are generated
-       */
-      void setLumiSectionFunction(boost::function< uint32_t(const FedFragment::DataLocations&) >& lumiSectionFunction);
-
-      /**
        * Start processing events
        */
       virtual void startProcessing(const uint32_t runNumber);
@@ -99,6 +92,12 @@ namespace evb {
       { eventNumberToStop_ = value; }
 
       /**
+       * Return the EvBid factory for this stream
+       */
+      EvBidFactoryPtr getEvBidFactory() const
+      { return evbIdFactory_; }
+
+      /**
        * Return the requested monitoring quantities.
        */
       void retrieveMonitoringQuantities(uint32_t& dataReadyCount,
@@ -121,7 +120,6 @@ namespace evb {
     protected:
 
       void addFedFragment(FedFragmentPtr&);
-      void addFedFragmentWithEvBid(FedFragmentPtr&);
       void maybeDumpFragmentToFile(const FedFragmentPtr&);
       void updateInputMonitor(const FedFragmentPtr&);
 
@@ -132,7 +130,7 @@ namespace evb {
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
 
-      EvBidFactory evbIdFactory_;
+      EvBidFactoryPtr evbIdFactory_;
       FedFragmentFactory<ReadoutUnit> fedFragmentFactory_;
 
       typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
@@ -141,10 +139,8 @@ namespace evb {
 
     private:
 
-      EvBid getEvBid(const FedFragmentPtr&);
       void resetMonitoringCounters();
 
-      boost::function< uint32_t(const FedFragment::DataLocations&) > lumiSectionFunction_;
       uint16_t writeNextFragments_;
 
       InputMonitor inputMonitor_;
@@ -172,7 +168,8 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   doProcessing_(false),
   syncLoss_(false),
   eventNumberToStop_(0),
-  fedFragmentFactory_(readoutUnit),
+  evbIdFactory_( new EvBidFactory() ),
+  fedFragmentFactory_(readoutUnit,evbIdFactory_),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   writeNextFragments_(0)
 {
@@ -187,57 +184,13 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   tcpla::MemoryCache* cache
 )
 {
-  try
-  {
-    FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(bufRef,cache);
-    addFedFragment(fedFragment);
-  }
-  catch(exception::DataCorruption& e)
-  {
-    readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
-  }
+  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(bufRef,cache);
+  addFedFragment(fedFragment);
 }
 
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
-(
-  FedFragmentPtr& fedFragment
-)
-{
-  try
-  {
-    const EvBid evbId = getEvBid(fedFragment);
-    fedFragment->setEvBid(evbId);
-
-    addFedFragmentWithEvBid(fedFragment);
-  }
-  catch(exception::TCDS& e)
-  {
-    std::ostringstream msg;
-    msg << "Failed to extract lumi section from FED " << fedId_;
-
-    XCEPT_DECLARE_NESTED(exception::TCDS, sentinelException,
-                         msg.str(),e);
-    readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-  catch(exception::EventOutOfSequence& e)
-  {
-    syncLoss_ = true;
-    fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
-
-    std::ostringstream msg;
-    msg << "Received an event out of sequence from FED " << fedId_;
-
-    XCEPT_DECLARE_NESTED(exception::EventOutOfSequence, sentinelException,
-                         msg.str(),e);
-    readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
-  }
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWithEvBid
 (
   FedFragmentPtr& fedFragment
 )
@@ -248,26 +201,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragmentWit
   maybeDumpFragmentToFile(fedFragment);
 
   fragmentFIFO_.enqWait(fedFragment);
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::setLumiSectionFunction
-(
-  boost::function< uint32_t(const FedFragment::DataLocations&) >& lumiSectionFunction
-)
-{
-  if ( lumiSectionFunction )
-    lumiSectionFunction_ = lumiSectionFunction;
-  else
-    evbIdFactory_.setFakeLumiSectionDuration(configuration_->fakeLumiSectionDuration);
-}
-
-
-template<class ReadoutUnit,class Configuration>
-evb::EvBid evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getEvBid(const FedFragmentPtr& fedFragment)
-{
-    return evbIdFactory_.getEvBid(fedFragment->getEventNumber());
 }
 
 
@@ -335,7 +268,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
   resetMonitoringCounters();
-  evbIdFactory_.reset(runNumber);
+  evbIdFactory_->reset(runNumber);
   fedFragmentFactory_.reset(runNumber);
   doProcessing_ = true;
   syncLoss_ = false;

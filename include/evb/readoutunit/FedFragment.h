@@ -7,7 +7,9 @@
 #include <sys/uio.h>
 #include <vector>
 
+#include "evb/DataLocations.h"
 #include "evb/EvBid.h"
+#include "evb/EvBidFactory.h"
 #include "evb/readoutunit/SocketBuffer.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
@@ -28,11 +30,11 @@ namespace evb {
     {
     public:
 
-      FedFragment(uint32_t& fedErrorCount);
+      FedFragment(const EvBidFactoryPtr&, uint32_t& fedErrorCount);
       ~FedFragment();
 
       void append(toolbox::mem::Reference*, tcpla::MemoryCache*);
-      void append(uint16_t fedId, const EvBid&, toolbox::mem::Reference*);
+      void append(const EvBid&, toolbox::mem::Reference*);
       void append(SocketBufferPtr&, uint32_t& usedSize);
 
       void setEvBid(const EvBid& evbId) { evbId_ = evbId; }
@@ -46,7 +48,6 @@ namespace evb {
       uint32_t getFedSize() const { return fedSize_; }
       void dump(std::ostream&, const std::string& reasonForDump);
 
-      typedef std::vector<iovec> DataLocations;
       const DataLocations& getDataLocations() const { return dataLocations_; }
 
 
@@ -67,6 +68,7 @@ namespace evb {
       };
       FedComponent typeOfNextComponent_;
 
+      const EvBidFactoryPtr evbIdFactory_;
       uint32_t& fedErrorCount_;
       uint16_t fedId_;
       uint32_t eventNumber_;

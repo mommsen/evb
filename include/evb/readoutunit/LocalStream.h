@@ -162,7 +162,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
   generatingActive_ = true;
   toolbox::mem::Reference* bufRef = 0;
   fragmentTracker_.startRun();
-  EvBid evbId = this->evbIdFactory_.getEvBid();
+  EvBid evbId = this->evbIdFactory_->getEvBid();
 
   try
   {
@@ -170,9 +170,9 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {
-        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,evbId,bufRef);
-        this->addFedFragmentWithEvBid(fedFragment);
-        evbId = this->evbIdFactory_.getEvBid();
+        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(evbId,bufRef);
+        this->addFedFragment(fedFragment);
+        evbId = this->evbIdFactory_->getEvBid();
       }
       else
       {

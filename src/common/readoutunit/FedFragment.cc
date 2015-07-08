@@ -7,10 +7,12 @@
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::readoutunit::FedFragment::FedFragment(uint32_t& fedErrorCount)
-  : typeOfNextComponent_(FEROL_HEADER),fedErrorCount_(fedErrorCount),
+evb::readoutunit::FedFragment::FedFragment(const EvBidFactoryPtr& evbIdFactory, uint32_t& fedErrorCount)
+  : typeOfNextComponent_(FEROL_HEADER),
+    evbIdFactory_(evbIdFactory),fedErrorCount_(fedErrorCount),
     fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
-    isCorrupted_(false),isComplete_(false),bufRef_(0),cache_(0),copiedHeaderBytes_(0)
+    isCorrupted_(false),isComplete_(false),
+    bufRef_(0),cache_(0),copiedHeaderBytes_(0)
 {}
 
 
@@ -19,8 +21,6 @@ void evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpl
   bufRef_ = bufRef;
   cache_ = cache;
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  fedId_ = msg->fedid;
-  eventNumber_ = msg->triggerno;
   assert( msg->partLength == msg->totalLength );
   uint32_t usedSize = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   parse(bufRef,usedSize);
@@ -28,12 +28,10 @@ void evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpl
 }
 
 
-void evb::readoutunit::FedFragment::append(uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
+void evb::readoutunit::FedFragment::append(const EvBid& evbId, toolbox::mem::Reference* bufRef)
 {
-  bufRef_ = bufRef;
-  fedId_ = fedId;
   evbId_ = evbId;
-  eventNumber_ = evbId.eventNumber();
+  bufRef_ = bufRef;
   uint32_t usedSize = 0;
   parse(bufRef,usedSize);
   assert( usedSize == bufRef->getDataSize() );
@@ -113,30 +111,14 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
           remainingBufferSize -= sizeof(ferolh_t);
         }
 
-        if ( fedId_ > FED_COUNT )
-        {
-          fedId_ = ferolHeader->fed_id();
-          eventNumber_ = ferolHeader->event_number();
-        }
         const uint32_t dataLength = checkFerolHeader(ferolHeader);
         fedSize_ += dataLength;
-
-        // skip the FEROL header
-        if ( dataLocation.iov_len > 0 )
-        {
-          dataLocations_.push_back(dataLocation);
-          dataLocation.iov_base = (void*)(pos + usedSize);
-          dataLocation.iov_len = 0;
-        }
-        else
-        {
-          dataLocation.iov_base = (void*)(pos + usedSize);
-        }
-
         payloadLength_ = dataLength;
 
         if ( ferolHeader->is_first_packet() )
         {
+          fedId_ = ferolHeader->fed_id();
+          eventNumber_ = ferolHeader->event_number();
           payloadLength_ -= sizeof(fedh_t);
           typeOfNextComponent_ = FED_HEADER;
         }
@@ -154,6 +136,19 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         {
           isLastFerolHeader_ = false;
         }
+
+        // skip the FEROL header
+        if ( dataLocation.iov_len > 0 )
+        {
+          dataLocations_.push_back(dataLocation);
+          dataLocation.iov_base = (void*)(pos + usedSize);
+          dataLocation.iov_len = 0;
+        }
+        else
+        {
+          dataLocation.iov_base = (void*)(pos + usedSize);
+        }
+
         break;
       }
 
@@ -259,12 +254,16 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         }
 
         isComplete_ = true;
+        dataLocations_.push_back(dataLocation);
+        if ( !evbId_.isValid() )
+          evbId_ = evbIdFactory_->getEvBid(eventNumber_, dataLocations_);
+        // check the trailer last such that we get the full event dump in case of errors
         checkFedTrailer(fedTrailer);
-        break;
+        return;
       }
     }
   }
-  while ( remainingBufferSize > 0 && !isComplete_ );
+  while ( remainingBufferSize > 0 );
 
   if ( dataLocation.iov_len > 0 )
     dataLocations_.push_back(dataLocation);
@@ -284,24 +283,27 @@ uint32_t evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHe
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
-  if ( fedId_ != ferolHeader->fed_id() )
+  if ( ! ferolHeader->is_first_packet() )
   {
-    isCorrupted_ = true;
-    std::ostringstream msg;
-    msg << "Mismatch of FED id in FEROL header:";
-    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
-    msg << " for event " << eventNumber_;
-    XCEPT_RAISE(exception::DataCorruption, msg.str());
-  }
+    if ( fedId_ != ferolHeader->fed_id() )
+    {
+      isCorrupted_ = true;
+      std::ostringstream msg;
+      msg << "Mismatch of FED id in FEROL header:";
+      msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+      msg << " for event " << eventNumber_;
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
+    }
 
-  if ( eventNumber_ != ferolHeader->event_number() )
-  {
-    isCorrupted_ = true;
-    std::ostringstream msg;
-    msg << "Mismatch of event number in FEROL header:";
-    msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
-    msg << " for FED " << fedId_;
-    XCEPT_RAISE(exception::DataCorruption, msg.str());
+    if ( eventNumber_ != ferolHeader->event_number() )
+    {
+      isCorrupted_ = true;
+      std::ostringstream msg;
+      msg << "Mismatch of event number in FEROL header:";
+      msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
+      msg << " for FED " << fedId_;
+      XCEPT_RAISE(exception::DataCorruption, msg.str());
+    }
   }
 
   return ferolHeader->data_length();
@@ -459,13 +461,18 @@ void evb::readoutunit::FedFragment::dump
 
   s << "==================== DUMP ======================" << std::endl;
   s << "Reason for dump: " << reasonForDump << std::endl;
-
+  s << "FED completely received   : " << (isComplete_?"true":"false") << std::endl;
   s << "Buffer size          (dec): " << copiedSize << std::endl;
   s << "FED size             (dec): " << getFedSize() << std::endl;
   s << "FED id               (dec): " << getFedId() << std::endl;
   s << "Trigger no           (dec): " << getEventNumber() << std::endl;
   s << "EvB id                    : " << getEvBid() << std::endl;
-  DumpUtility::dumpBlockData(s, &buffer[0], copiedSize);
+
+  if ( bufRef_ )
+    DumpUtility::dumpBlockData(s, (unsigned char*)bufRef_->getDataLocation(), bufRef_->getDataSize());
+  else
+    DumpUtility::dumpBlockData(s, &buffer[0], copiedSize);
+
   s << "================ END OF DUMP ===================" << std::endl;
 }
 

@@ -21,6 +21,18 @@ evb::EvBidFactory::~EvBidFactory()
 }
 
 
+void evb::EvBidFactory::setLumiSectionFunction(LumiSectionFunction& lumiSectionFunction)
+{
+  lumiSectionFunction_ = lumiSectionFunction;
+}
+
+
+void evb::EvBidFactory::setFakeLumiSectionDuration(const uint32_t duration)
+{
+  fakeLumiSectionDuration_ = boost::posix_time::seconds(duration);
+}
+
+
 void evb::EvBidFactory::reset(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
@@ -109,6 +121,20 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_
   previousEventNumber_ = eventNumber;
 
   return EvBid(resyncCount_,eventNumber,lumiSection,runNumber_);
+}
+
+
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const DataLocations& dataLocations)
+{
+  if ( lumiSectionFunction_ )
+  {
+    const uint32_t lsNumber = lumiSectionFunction_(dataLocations);
+    return getEvBid(eventNumber,lsNumber);
+  }
+  else
+  {
+    return getEvBid(eventNumber);
+  }
 }
 
 
