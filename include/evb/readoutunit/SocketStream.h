@@ -162,14 +162,12 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
       const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
       uint32_t usedSize = 0;
 
-      while ( usedSize < bufSize )
+      while ( this->doProcessing_ && usedSize < bufSize )
       {
         if ( ! currentFragment_ )
           currentFragment_ = this->fedFragmentFactory_.getFedFragment();
 
-        this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize);
-
-        if ( currentFragment_->isComplete() )
+        if ( this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize) )
         {
           this->addFedFragment(currentFragment_);
           currentFragment_.reset();
@@ -232,7 +230,6 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
-  while ( parseSocketBuffersActive_ ) ::usleep(1000);
   socketBufferFIFO_.clear();
   currentFragment_.reset();
   this->fragmentFIFO_.clear();

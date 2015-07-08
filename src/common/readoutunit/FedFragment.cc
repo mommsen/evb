@@ -7,41 +7,48 @@
 #include "interface/shared/i2ogevb2g.h"
 
 
-evb::readoutunit::FedFragment::FedFragment(const EvBidFactoryPtr& evbIdFactory, uint32_t& fedErrorCount)
+evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
+
+evb::readoutunit::FedFragment::FedFragment
+(
+  const EvBidFactoryPtr& evbIdFactory,
+  const uint32_t checkCRC,
+  uint32_t& fedErrorCount,
+  uint32_t& crcErrors
+)
   : typeOfNextComponent_(FEROL_HEADER),
-    evbIdFactory_(evbIdFactory),fedErrorCount_(fedErrorCount),
+    evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
+    fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
     fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isComplete_(false),
-    bufRef_(0),cache_(0),copiedHeaderBytes_(0)
+    bufRef_(0),cache_(0),tmpBufferSize_(0)
 {}
 
 
-void evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+bool evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   bufRef_ = bufRef;
   cache_ = cache;
   const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
   assert( msg->partLength == msg->totalLength );
   uint32_t usedSize = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  parse(bufRef,usedSize);
-  assert( usedSize == bufRef->getDataSize() );
+  return parse(bufRef,usedSize);
 }
 
 
-void evb::readoutunit::FedFragment::append(const EvBid& evbId, toolbox::mem::Reference* bufRef)
+bool evb::readoutunit::FedFragment::append(const EvBid& evbId, toolbox::mem::Reference* bufRef)
 {
   evbId_ = evbId;
   bufRef_ = bufRef;
   uint32_t usedSize = 0;
-  parse(bufRef,usedSize);
-  assert( usedSize == bufRef->getDataSize() );
+  return parse(bufRef,usedSize);
 }
 
 
-void evb::readoutunit::FedFragment::append(SocketBufferPtr& socketBuffer, uint32_t& usedSize)
+bool evb::readoutunit::FedFragment::append(SocketBufferPtr& socketBuffer, uint32_t& usedSize)
 {
   socketBuffers_.push_back(socketBuffer);
-  parse(socketBuffer->getBufRef(), usedSize);
+  return parse(socketBuffer->getBufRef(), usedSize);
 }
 
 
@@ -63,7 +70,7 @@ evb::readoutunit::FedFragment::~FedFragment()
 }
 
 
-void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint32_t& usedSize)
+bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint32_t& usedSize)
 {
   assert( ! isComplete_ );
 
@@ -81,14 +88,14 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
       case FEROL_HEADER:
       {
         ferolh_t* ferolHeader;
-        if ( copiedHeaderBytes_ > 0 )
+        if ( tmpBufferSize_ > 0 )
         {
           // previous buffer contained part of this header
-          const uint32_t missingHeaderBytes = sizeof(ferolh_t)-copiedHeaderBytes_;
-          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          const uint32_t missingHeaderBytes = sizeof(ferolh_t)-tmpBufferSize_;
+          memcpy(&tmpBuffer_[tmpBufferSize_],pos+usedSize,missingHeaderBytes);
           usedSize += missingHeaderBytes;
           remainingBufferSize -= missingHeaderBytes;
-          copiedHeaderBytes_ = 0;
+          tmpBufferSize_ = 0;
           ferolHeader = (ferolh_t*)&tmpBuffer_[0];
         }
         else if ( remainingBufferSize < sizeof(ferolh_t) )
@@ -99,7 +106,7 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
             tmpBuffer_.resize( sizeof(ferolh_t) );
 
           memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
-          copiedHeaderBytes_ = remainingBufferSize;
+          tmpBufferSize_ = remainingBufferSize;
           usedSize += remainingBufferSize;
           remainingBufferSize = 0;
           break;
@@ -155,15 +162,15 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
       case FED_HEADER:
       {
         const fedh_t* fedHeader;
-        if ( copiedHeaderBytes_ > 0 )
+        if ( tmpBufferSize_ > 0 )
         {
           // previous buffer contained part of this header
-          const uint32_t missingHeaderBytes = sizeof(fedh_t)-copiedHeaderBytes_;
-          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          const uint32_t missingHeaderBytes = sizeof(fedh_t)-tmpBufferSize_;
+          memcpy(&tmpBuffer_[tmpBufferSize_],pos+usedSize,missingHeaderBytes);
           usedSize += missingHeaderBytes;
           dataLocation.iov_len += missingHeaderBytes;
           remainingBufferSize -= missingHeaderBytes;
-          copiedHeaderBytes_ = 0;
+          tmpBufferSize_ = 0;
           fedHeader = (fedh_t*)&tmpBuffer_[0];
         }
         else if ( remainingBufferSize < sizeof(fedh_t) )
@@ -174,7 +181,7 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
             tmpBuffer_.resize( sizeof(fedh_t) );
 
           memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
-          copiedHeaderBytes_ = remainingBufferSize;
+          tmpBufferSize_ = remainingBufferSize;
           usedSize += remainingBufferSize;
           dataLocation.iov_len += remainingBufferSize;
           remainingBufferSize = 0;
@@ -219,16 +226,16 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
       case FED_TRAILER:
       {
-        const fedt_t* fedTrailer;
-        if ( copiedHeaderBytes_ > 0 )
+        fedt_t* fedTrailer;
+        if ( tmpBufferSize_ > 0 )
         {
           // previous buffer contained part of this header
-          const uint32_t missingHeaderBytes = sizeof(fedt_t)-copiedHeaderBytes_;
-          memcpy(&tmpBuffer_[copiedHeaderBytes_],pos+usedSize,missingHeaderBytes);
+          const uint32_t missingHeaderBytes = sizeof(fedt_t)-tmpBufferSize_;
+          memcpy(&tmpBuffer_[tmpBufferSize_],pos+usedSize,missingHeaderBytes);
           usedSize += missingHeaderBytes;
           dataLocation.iov_len += missingHeaderBytes;
           remainingBufferSize -= missingHeaderBytes;
-          copiedHeaderBytes_ = 0;
+          tmpBufferSize_ = 0;
           fedTrailer = (fedt_t*)&tmpBuffer_[0];
         }
         else if ( remainingBufferSize < sizeof(fedt_t) )
@@ -239,7 +246,7 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
             tmpBuffer_.resize( sizeof(fedt_t) );
 
           memcpy(&tmpBuffer_[0],pos+usedSize,remainingBufferSize);
-          copiedHeaderBytes_ = remainingBufferSize;
+          tmpBufferSize_ = remainingBufferSize;
           usedSize += remainingBufferSize;
           dataLocation.iov_len += remainingBufferSize;
           remainingBufferSize = 0;
@@ -259,7 +266,9 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
           evbId_ = evbIdFactory_->getEvBid(eventNumber_, dataLocations_);
         // check the trailer last such that we get the full event dump in case of errors
         checkFedTrailer(fedTrailer);
-        return;
+        if ( checkCRC_ > 0 && eventNumber_ % checkCRC_ == 0 )
+          checkCRC(fedTrailer);
+        return true;
       }
     }
   }
@@ -267,6 +276,8 @@ void evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
   if ( dataLocation.iov_len > 0 )
     dataLocations_.push_back(dataLocation);
+
+  return false;
 }
 
 
@@ -379,35 +390,60 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
-  // if ( computeCRC )
-  // {
-  //   // Force C,F,R & CRC field to zero before re-computing the CRC.
-  //   // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-  //   const uint32_t conscheck = trailer->conscheck;
-  //   trailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
-  //   crcCalculator_.compute(crc,pos-sizeof(fedt_t),sizeof(fedt_t));
-  //   trailer->conscheck = conscheck;
-
-  //   const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
-  //   if ( trailerCRC != crc )
-  //   {
-  //     if ( evb::isFibonacci( ++fedErrors.crcErrors ) )
-  //     {
-  //       std::ostringstream msg;
-  //       msg << "Received " << fedErrors.crcErrors << " events with wrong CRC checksum from FED " << fedId_ << ":";
-  //       msg << " FED trailer claims 0x" << std::hex << trailerCRC;
-  //       msg << ", but recalculation gives 0x" << crc;
-  //       XCEPT_RAISE(exception::CRCerror, msg.str());
-  //     }
-  //   }
-  // }
-
   if ( (fedTrailer->conscheck & 0xC004) &&
        evb::isFibonacci( ++fedErrorCount_ ) )  {
     std::ostringstream msg;
     msg << "Received " << fedErrorCount_ << " events from FED " << fedId_ << " where ";
     msg << trailerBitToString(fedTrailer->conscheck);
     XCEPT_RAISE(exception::FEDerror, msg.str());
+  }
+}
+
+
+void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
+{
+  // Force C,F,R & CRC field to zero before re-computing the CRC.
+  // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
+  const uint32_t conscheck = fedTrailer->conscheck;
+  fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
+
+  // We need to assure here that the buffer given to the CRC calculator is Byte aligned.
+  uint16_t crc = 0xffff;
+  std::vector<unsigned char> buffer; //don't use tmpBuffer here as it might contain the FED trailer
+  uint8_t overflow = 0;
+  for ( DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
+        it != itEnd; ++it)
+  {
+    uint8_t offset = 0;
+    if ( overflow > 0 )
+    {
+      offset = 8 - overflow;
+      memcpy(&buffer[overflow],(uint8_t*)it->iov_base,offset);
+      crcCalculator_.compute(crc,&buffer[0],8);
+    }
+    const uint32_t remainingSize = it->iov_len - offset;
+    overflow = remainingSize % 8;
+    crcCalculator_.compute(crc,(uint8_t*)it->iov_base+offset,remainingSize-overflow);
+    if ( overflow > 0 )
+    {
+      buffer.resize(8);
+      memcpy(&buffer[0],(uint8_t*)it->iov_base+offset+remainingSize-overflow,overflow);
+    }
+  }
+
+  fedTrailer->conscheck = conscheck;
+
+  const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+  if ( trailerCRC != crc )
+  {
+    if ( evb::isFibonacci( ++crcErrors_ ) )
+    {
+      std::ostringstream msg;
+      msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << ":";
+      msg << " FED trailer claims 0x" << std::hex << trailerCRC;
+      msg << ", but recalculation gives 0x" << crc;
+      XCEPT_RAISE(exception::CRCerror, msg.str());
+    }
   }
 }
 

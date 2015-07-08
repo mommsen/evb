@@ -7,6 +7,7 @@
 #include <sys/uio.h>
 #include <vector>
 
+#include "evb/CRCCalculator.h"
 #include "evb/DataLocations.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
@@ -30,14 +31,12 @@ namespace evb {
     {
     public:
 
-      FedFragment(const EvBidFactoryPtr&, uint32_t& fedErrorCount);
+      FedFragment(const EvBidFactoryPtr&, const uint32_t checkCRC, uint32_t& fedErrorCount, uint32_t& crcErrors);
       ~FedFragment();
 
-      void append(toolbox::mem::Reference*, tcpla::MemoryCache*);
-      void append(const EvBid&, toolbox::mem::Reference*);
-      void append(SocketBufferPtr&, uint32_t& usedSize);
-
-      void setEvBid(const EvBid& evbId) { evbId_ = evbId; }
+      bool append(toolbox::mem::Reference*, tcpla::MemoryCache*);
+      bool append(const EvBid&, toolbox::mem::Reference*);
+      bool append(SocketBufferPtr&, uint32_t& usedSize);
 
       EvBid getEvBid() const { return evbId_; }
       uint16_t getFedId() const { return fedId_; }
@@ -53,10 +52,11 @@ namespace evb {
 
     private:
 
-      void parse(toolbox::mem::Reference*, uint32_t& usedSize);
+      bool parse(toolbox::mem::Reference*, uint32_t& usedSize);
       uint32_t checkFerolHeader(const ferolh_t*);
       void checkFedHeader(const fedh_t*);
       void checkFedTrailer(const fedt_t*);
+      void checkCRC(fedt_t*);
       std::string trailerBitToString(const uint32_t conscheck) const;
 
       enum FedComponent
@@ -69,7 +69,9 @@ namespace evb {
       FedComponent typeOfNextComponent_;
 
       const EvBidFactoryPtr evbIdFactory_;
+      const uint32_t checkCRC_;
       uint32_t& fedErrorCount_;
+      uint32_t& crcErrors_;
       uint16_t fedId_;
       uint32_t eventNumber_;
       EvBid evbId_;
@@ -85,9 +87,10 @@ namespace evb {
       bool isLastFerolHeader_;
       uint32_t payloadLength_;
 
-      uint32_t copiedHeaderBytes_;
+      uint32_t tmpBufferSize_;
       std::vector<unsigned char> tmpBuffer_;
 
+      static CRCCalculator crcCalculator_;
     };
 
     typedef boost::shared_ptr<FedFragment> FedFragmentPtr;
