@@ -409,7 +409,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid)
     + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignment
-  //std::cout << "blockHeaderSize: " << sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << blockHeaderSize << std::endl;
 
   assert( blockHeaderSize % 8 == 0 );
   assert( blockHeaderSize < readoutUnit_->getConfiguration()->blockSize );
