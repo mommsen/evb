@@ -226,6 +226,8 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
     writeFragmentToFile(fedFragment,msg.str());
 
     readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
+
+    return true;
   }
   catch(exception::TCDS& e)
   {
