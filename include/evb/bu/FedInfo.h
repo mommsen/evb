@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "evb/CRCCalculator.h"
+#include "evb/DataLocations.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 
@@ -28,8 +29,6 @@ namespace evb {
       uint16_t fedId()    const { return (header_?FED_SOID_EXTRACT(header_->sourceid):0); }
       uint32_t fedSize()  const { return FED_EVSZ_EXTRACT(trailer_->eventsize)<<3; }
       uint16_t crc()      const { return FED_CRCS_EXTRACT(trailer_->conscheck); }
-
-      typedef std::vector<iovec> DataLocations;
 
     private:
       fedh_t* header_;

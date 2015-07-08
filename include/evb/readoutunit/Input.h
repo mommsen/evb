@@ -19,6 +19,7 @@
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/Constants.h"
+#include "evb/DataLocations.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
@@ -164,8 +165,8 @@ namespace evb {
       cgicc::table getFedTable() const;
 
       // these methods are only implemented for EVM
-      uint32_t getLumiSectionFromTCDS(const FedFragment::DataLocations&) const;
-      uint32_t getLumiSectionFromGTPe(const FedFragment::DataLocations&) const;
+      uint32_t getLumiSectionFromTCDS(const DataLocations&) const;
+      uint32_t getLumiSectionFromGTPe(const DataLocations&) const;
 
       ReadoutUnit* readoutUnit_;
 

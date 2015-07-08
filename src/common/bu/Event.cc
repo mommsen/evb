@@ -127,8 +127,8 @@ void evb::bu::Event::checkEvent() const
     std::cout << std::endl;
   }
 
-  FedInfo::DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
-  const FedInfo::DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
+  DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
+  const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
   std::vector<std::string> crcErrors;

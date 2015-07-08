@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "cgicc/HTMLClasses.h"
+#include "evb/DataLocations.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
 #include "evb/I2OMessages.h"
@@ -426,8 +427,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     for ( SuperFragment::FedFragments::const_iterator it = fedFragments.begin(), itEnd = fedFragments.end();
           it != itEnd; ++it)
     {
-      const FedFragment::DataLocations& fedData = (*it)->getDataLocations();
-      for ( FedFragment::DataLocations::const_iterator it = fedData.begin(), itEnd = fedData.end();
+      const DataLocations& fedData = (*it)->getDataLocations();
+      for ( DataLocations::const_iterator it = fedData.begin(), itEnd = fedData.end();
             it != itEnd; ++it)
       {
         const unsigned char* chunkBase  = (unsigned char*)it->iov_base;

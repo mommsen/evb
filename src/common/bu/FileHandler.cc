@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "evb/Exception.h"
+#include "evb/DataLocations.h"
 #include "evb/bu/EventInfo.h"
 #include "evb/bu/FedInfo.h"
 #include "evb/bu/FileHandler.h"
@@ -46,7 +47,7 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   const EventInfoPtr& eventInfo = event->getEventInfo();
   write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
-  const FedInfo::DataLocations& locs = event->getDataLocations();
+  const DataLocations& locs = event->getDataLocations();
   writev(fileDescriptor_,&locs[0],locs.size());
 
   fileSize_ += sizeof(EventInfo) + eventInfo->eventSize();
