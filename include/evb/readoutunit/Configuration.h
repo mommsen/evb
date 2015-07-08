@@ -80,7 +80,7 @@ namespace evb {
           socketBufferFIFOCapacity(32),
           fragmentFIFOCapacity(128),
           fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
-          checkCRC(0),
+          checkCRC(1),
           writeNextFragmentsToFile(0),
           dropAtSocket(false),
           dropInputData(false),
