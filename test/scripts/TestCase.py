@@ -282,7 +282,7 @@ class TestCase:
         self.stop('FEROL')
         self.waitForAppState('Ready','FEROL',maxTries=15)
         self.stop('EVM')
-        self.waitForAppState('Ready','EVM',maxTries=30)
+        self.waitForAppState('Ready','EVM',maxTries=50)
         self.stop('RU')
         self.stop('BU')
         self.waitForState('Ready')
