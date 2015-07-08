@@ -41,9 +41,7 @@ class case_2x1_crcErrors_ptfrl(TestCase):
         print("100 CRC errors on FED 6")
         self.setAppParam('nbCRCerrors','unsignedInt','100','FEROL',6)
         time.sleep(5)
-        self.checkAppState("Enabled","EVM")
-        self.checkAppState("Failed","RU")
-        self.checkAppState("Enabled","BU")
+        self.checkState("Enabled")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed0006.txt$")
         if len(dumps) != 10:
             raise ValueException("Expected 10 dump file from FED 6, but found: "+str(dumps))
