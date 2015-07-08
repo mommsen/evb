@@ -53,6 +53,7 @@ class case_2x1_crcErrors_ptfrl(TestCase):
         self.configureEvB()
         self.enableEvB()
         self.checkIt()
+        self.haltEvB()
 
 
     def fillConfiguration(self,symbolMap):
