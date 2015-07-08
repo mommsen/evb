@@ -32,9 +32,6 @@ class Context:
         config += self.getConfigForApplication()
 
         config += """
-      <xc:Application class="xmem::probe::Application" id="61" instance="0" network="local" />
-      <xc:Module>$XDAQ_ROOT/lib/libxmemprobe.so</xc:Module>
-
       <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
@@ -108,13 +105,17 @@ class FEROL(Context):
         self.apps['app'] = "evb::test::DummyFEROL"
         self.apps['instance'] = FEROL.instance
         self.apps.update( symbolMap.getHostInfo('FEROL'+str(FEROL.instance)) )
+        if FEROL.instance % 2:
+            frlPort = 'frlPort'
+        else:
+            frlPort = 'frlPort2'
         FEROL.instance += 1
 
         self._params.append(('fedId','unsignedInt',fedId))
         self._params.append(('sourceHost','string',self.apps['frlHostname']))
         self._params.append(('sourcePort','unsignedInt',str(self.apps['frlPort'])))
         self._params.append(('destinationHost','string',destination.apps['frlHostname']))
-        self._params.append(('destinationPort','unsignedInt',str(destination.apps['frlPort'])))
+        self._params.append(('destinationPort','unsignedInt',str(destination.apps[frlPort])))
 
         ferolSource = dict((key, self.apps[key]) for key in ('frlHostname','frlPort'))
         ferolSource['fedId'] = fedId
@@ -232,9 +233,11 @@ class RU(Context):
     def getConfigForPtBlit(self):
         global id
         config = """
-      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true"  pollingCycle="1" rmode="select"  nonblock="true" maxbulksize="131072" />
+      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" rmode="select" nonblock="true" maxbulksize="131072" />
 
-      <xc:Application class="pt::blit::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
+      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort2)s" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" rmode="select" nonblock="true" maxbulksize="131072" />
+
+      <xc:Application class="pt::blit::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
         <properties xmlns="urn:xdaq-application:pt::blit::Application" xsi:type="soapenc:Struct">
 """  % dict(self.apps.items() + [('id',id)])
         id += 1
@@ -253,9 +256,11 @@ class RU(Context):
     def getConfigForPtFrl(self,routing):
         global id
         config = """
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferol" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
+      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferola" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
 
-      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="ferol">
+      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort2)s" network="ferolb" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
+
+      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
         <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
 """  % dict(self.apps.items() + [('id',id)])
         id += 1
