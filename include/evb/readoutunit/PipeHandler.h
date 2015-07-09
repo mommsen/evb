@@ -34,7 +34,7 @@ namespace evb {
     {
     public:
 
-      PipeHandler(ReadoutUnit*, pt::blit::PipeService*, pt::blit::InputPipe*, const int index);
+      PipeHandler(ReadoutUnit*, pt::blit::PipeService*, pt::blit::InputPipe*, const std::string indentifier);
 
       ~PipeHandler();
 
@@ -53,7 +53,7 @@ namespace evb {
       ReadoutUnit* readoutUnit_;
       pt::blit::PipeService* pipeService_;
       pt::blit::InputPipe* inputPipe_;
-      const int index_;
+      const std::string indentifier_;
 
       toolbox::task::WorkLoop* pipeWorkLoop_;
       volatile bool processPipe_;
@@ -85,16 +85,16 @@ evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::PipeHandler
   ReadoutUnit* readoutUnit,
   pt::blit::PipeService* pipeService,
   pt::blit::InputPipe* inputPipe,
-  const int index
+  const std::string indentifier
 ) :
   readoutUnit_(readoutUnit),
   pipeService_(pipeService),
   inputPipe_(inputPipe),
-  index_(index),
+  indentifier_(indentifier),
   processPipe_(false),
   pipeActive_(false),
   outstandingBuffers_(0),
-  grantFIFO_(readoutUnit,"grantFIFO_"+boost::lexical_cast<std::string>(index))
+  grantFIFO_(readoutUnit,"grantFIFO_"+indentifier)
 {
   releaseFunction_ = boost::bind(&evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::releaseBuffer, this, _1);
   grantFIFO_.resize(readoutUnit_->getConfiguration()->socketBufferFIFOCapacity);
@@ -163,7 +163,7 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::startPipeWorkLoop
 {
   const std::string identifier = readoutUnit_->getIdentifier();
   std::ostringstream workLoopName;
-  workLoopName << identifier << "/Pipe_" << index_;
+  workLoopName << identifier << "/Pipe_" << indentifier_;
 
   try
   {

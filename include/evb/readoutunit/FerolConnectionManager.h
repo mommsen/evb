@@ -154,7 +154,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::pipeSe
 
     pt::blit::InputPipe* inputPipe = pipeService_->createInputPipe(adv, this);
     const PipeHandlerPtr pipeHandler(
-      new PipeHandler<ReadoutUnit,Configuration>(readoutUnit_,pipeService_,inputPipe,adv.getIndex())
+      new PipeHandler<ReadoutUnit,Configuration>(readoutUnit_,pipeService_,inputPipe,adv.toString())
     );
     if ( ! pipeHandlers_.insert(typename PipeHandlers::value_type(adv.getIndex(),pipeHandler)).second )
     {
@@ -310,7 +310,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::create
   {
     pt::blit::InputPipe* inputPipe = pipeService_->createInputPipe((*it), this);
     const PipeHandlerPtr pipeHandler(
-      new PipeHandler<ReadoutUnit,Configuration>(readoutUnit_,pipeService_,inputPipe,it->getIndex())
+      new PipeHandler<ReadoutUnit,Configuration>(readoutUnit_,pipeService_,inputPipe,it->toString())
     );
     if ( pipeHandlers_.insert(typename PipeHandlers::value_type(it->getIndex(),pipeHandler)).second )
     {
