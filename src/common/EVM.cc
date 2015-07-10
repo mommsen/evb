@@ -62,7 +62,7 @@ namespace evb {
     {
       using namespace evtn;
 
-      uint32_t offset = sizeof(fedh_t) + GTPE_ORBTNR_OFFSET * SLINK_HALFWORD_SIZE;
+      uint32_t offset = GTPE_ORBTNR_OFFSET * SLINK_HALFWORD_SIZE; // includes FED header
 
       DataLocations::const_iterator it = dataLocations.begin();
       const DataLocations::const_iterator itEnd = dataLocations.end();
@@ -101,6 +101,7 @@ namespace evb {
         if ( masterStream_ != ferolStreams_.end() )
         {
           lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromTCDS, this, _1);
+          LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), "Using TCDS as lumi section source");
         }
         else
         {
@@ -108,6 +109,7 @@ namespace evb {
           if ( masterStream_ != ferolStreams_.end() )
           {
             lumiSectionFunction = boost::bind(&evb::readoutunit::Input<EVM,evm::Configuration>::getLumiSectionFromGTPe, this, _1);
+            LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), "Using GTPe as lumi section source");
           }
         }
       }
@@ -117,9 +119,18 @@ namespace evb {
 
       const EvBidFactoryPtr evbIdFactory = masterStream_->second->getEvBidFactory();
       if ( lumiSectionFunction )
+      {
         evbIdFactory->setLumiSectionFunction(lumiSectionFunction);
+      }
       else
-        evbIdFactory->setFakeLumiSectionDuration(readoutUnit_->getConfiguration()->fakeLumiSectionDuration);
+      {
+        const uint32_t lsDuration = readoutUnit_->getConfiguration()->fakeLumiSectionDuration;
+        evbIdFactory->setFakeLumiSectionDuration(lsDuration);
+
+        std::ostringstream msg;
+        msg << "Emulating a lumi section duration of " << lsDuration << "s";
+        LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(),msg.str());
+      }
     }
 
 
