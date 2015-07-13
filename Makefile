@@ -37,10 +37,11 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
-	FedFragment.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
+	readoutunit/FedFragment.cc \
+	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \
 	RU.cc \
@@ -52,6 +53,7 @@ Sources=\
 	bu/EventInfo.cc \
 	bu/FedInfo.cc \
 	bu/FileHandler.cc \
+	bu/FragmentChain.cc \
 	bu/ResourceManager.cc \
 	bu/RUproxy.cc \
 	bu/StateMachine.cc \
@@ -108,6 +110,7 @@ TestLibraries = \
 	mimetic \
 	numa \
 	peer \
+	ptblit \
 	tcpla \
 	toolbox \
 	asyncresolv \
@@ -150,7 +153,7 @@ UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = interfaceshared xdaq2rc boost_regex boost_filesystem boost_thread-mt boost_system curl
+DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl
 DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX)
 
 #

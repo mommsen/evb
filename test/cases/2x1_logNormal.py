@@ -26,6 +26,7 @@ class case_2x1_logNormal(TestCase):
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13)),
              ('dummyFedSize','unsignedInt','2048'),
              ('dummyFedSizeStdDev','unsignedInt','1024'),
              ('useLogNormal','boolean','true')

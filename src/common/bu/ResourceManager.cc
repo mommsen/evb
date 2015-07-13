@@ -50,14 +50,12 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
     resourceMonitorWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("resourceMonitor"), "waiting" );
 
-    if ( ! resourceMonitorWL_->isActive() )
-    {
-      resourceMonitorAction_ =
-        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
-                            bu_->getIdentifier("resourceMonitor") );
+    resourceMonitorAction_ =
+      toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
+                          bu_->getIdentifier("resourceMonitor") );
 
+    if ( ! resourceMonitorWL_->isActive() )
       resourceMonitorWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {
@@ -74,11 +72,11 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 
   if ( pos == builderResources_.end() )
   {
-    std::ostringstream oss;
-    oss << "The buResourceId " << dataBlockMsg->buResourceId;
-    oss << " received from RU tid " << ruTid;
-    oss << " is not in the builder resources" ;
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "The buResourceId " << dataBlockMsg->buResourceId;
+    msg << " received from RU tid " << ruTid;
+    msg << " is not in the builder resources" ;
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   if ( pos->second.evbIdList.empty() )
@@ -99,12 +97,12 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
     // check consistency
     if ( pos->second.evbIdList.size() != dataBlockMsg->nbSuperFragments )
     {
-      std::ostringstream oss;
-      oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
-      oss << " from RU tid " << ruTid;
-      oss << " with an inconsistent number of super fragments: expected " << pos->second.evbIdList.size();
-      oss << ", but got " << dataBlockMsg->nbSuperFragments;
-      XCEPT_RAISE(exception::SuperFragment, oss.str());
+      std::ostringstream msg;
+      msg << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
+      msg << " from RU tid " << ruTid;
+      msg << " with an inconsistent number of super fragments: expected " << pos->second.evbIdList.size();
+      msg << ", but got " << dataBlockMsg->nbSuperFragments;
+      XCEPT_RAISE(exception::SuperFragment, msg.str());
     }
     uint32_t index = 0;
     for (EvBidList::const_iterator it = pos->second.evbIdList.begin(), itEnd = pos->second.evbIdList.end();
@@ -112,23 +110,23 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
     {
       if ( dataBlockMsg->evbIds[index] != *it )
       {
-        std::ostringstream oss;
-        oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
-        oss << " from RU tid " << ruTid;
-        oss << " with an inconsistent EvBid for super fragment " << index;
-        oss << ": expected " << *it;
-        oss << ", but got " << dataBlockMsg->evbIds[index];
-        XCEPT_RAISE(exception::SuperFragment, oss.str());
+        std::ostringstream msg;
+        msg << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
+        msg << " from RU tid " << ruTid;
+        msg << " with an inconsistent EvBid for super fragment " << index;
+        msg << ": expected " << *it;
+        msg << ", but got " << dataBlockMsg->evbIds[index];
+        XCEPT_RAISE(exception::SuperFragment, msg.str());
       }
       if ( dataBlockMsg->evbIds[index].lumiSection() != it->lumiSection() )
       {
-        std::ostringstream oss;
-        oss << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
-        oss << " from RU tid " << ruTid;
-        oss << " with an inconsistent lumi section for super fragment " << index;
-        oss << ": expected " << it->lumiSection();
-        oss << ", but got " << dataBlockMsg->evbIds[index].lumiSection();
-        XCEPT_RAISE(exception::SuperFragment, oss.str());
+        std::ostringstream msg;
+        msg << "Received an I2O_DATA_BLOCK_MESSAGE_FRAME for buResourceId " << dataBlockMsg->buResourceId;
+        msg << " from RU tid " << ruTid;
+        msg << " with an inconsistent lumi section for super fragment " << index;
+        msg << ": expected " << it->lumiSection();
+        msg << ", but got " << dataBlockMsg->evbIds[index].lumiSection();
+        XCEPT_RAISE(exception::SuperFragment, msg.str());
       }
       ++index;
     }
@@ -162,10 +160,10 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
 
   if ( pos == lumiSectionAccounts_.end() )
   {
-    std::ostringstream oss;
-    oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " that has already been closed.";
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "Received an event from an earlier lumi section " << lumiSection;
+    msg << " that has already been closed.";
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   ++(pos->second->nbEvents);
@@ -181,9 +179,9 @@ void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiS
 
   if ( pos == lumiSectionAccounts_.end() )
   {
-    std::ostringstream oss;
-    oss << "Completed an event from an unknown lumi section " << lumiSection;
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "Completed an event from an unknown lumi section " << lumiSection;
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   --(pos->second->nbIncompleteEvents);
@@ -281,10 +279,10 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 
   if ( pos == builderResources_.end() )
   {
-    std::ostringstream oss;
-    oss << "The buResourceId " << event->buResourceId();
-    oss << " is not in the builder resources" ;
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "The buResourceId " << event->buResourceId();
+    msg << " is not in the builder resources" ;
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   pos->second.evbIdList.remove(event->getEvBid());
@@ -374,10 +372,10 @@ float evb::bu::ResourceManager::getAvailableResources()
   if ( configuration_->staleResourceTime > 0U &&
        (std::time(0) - lastWriteTime) > configuration_->staleResourceTime )
   {
-    std::ostringstream oss;
-    oss << resourceSummary_ << " has not been updated in the last ";
-    oss << configuration_->staleResourceTime << "s";
-    handleResourceSummaryFailure(oss.str());
+    std::ostringstream msg;
+    msg << resourceSummary_ << " has not been updated in the last ";
+    msg << configuration_->staleResourceTime << "s";
+    handleResourceSummaryFailure(msg.str());
     return 0;
   }
 
@@ -410,10 +408,10 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
   catch(boost::property_tree::ptree_error& e)
   {
-    std::ostringstream oss;
-    oss << "Failed to parse " << resourceSummary_.string() << ": ";
-    oss << e.what();
-    handleResourceSummaryFailure(oss.str());
+    std::ostringstream msg;
+    msg << "Failed to parse " << resourceSummary_.string() << ": ";
+    msg << e.what();
+    handleResourceSummaryFailure(msg.str());
     return 0;
   }
   resourceSummaryFailureAlreadyNotified_ = false;
@@ -750,9 +748,9 @@ void evb::bu::ResourceManager::configure()
         builderResources_.insert(BuilderResources::value_type(resourceId,resourceInfo));
       if ( ! result.second )
       {
-        std::ostringstream oss;
-        oss << "Failed to insert resource " << resourceId << " into builder resource map";
-        XCEPT_RAISE(exception::DiskWriting, oss.str());
+        std::ostringstream msg;
+        msg << "Failed to insert resource " << resourceId << " into builder resource map";
+        XCEPT_RAISE(exception::DiskWriting, msg.str());
       }
       assert( resourceFIFO_.enq(result.first) );
     }
@@ -776,10 +774,10 @@ void evb::bu::ResourceManager::configureDiskUsageMonitors()
     resourceSummary_ = boost::filesystem::path(configuration_->rawDataDir.value_) / configuration_->resourceSummaryFileName.value_;
     if ( !boost::filesystem::exists(resourceSummary_) )
     {
-      std::ostringstream oss;
-      oss << "Resource summary file " << resourceSummary_ << " does not exist";
+      std::ostringstream msg;
+      msg << "Resource summary file " << resourceSummary_ << " does not exist";
       resourceSummary_.clear();
-      XCEPT_RAISE(exception::DiskWriting, oss.str());
+      XCEPT_RAISE(exception::DiskWriting, msg.str());
     }
   }
 

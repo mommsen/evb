@@ -31,7 +31,7 @@ class FedKitConfig:
             self._config.write(configFile)
 
         self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
-
+        print(self._xmlConfiguration)
         with open(self.configFilePath,'wb') as xmlFile:
             xmlFile.write(self._xmlConfiguration)
 
@@ -116,44 +116,32 @@ class FedKitConfig:
         """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'operationMode':operationMode,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
 
 
-    def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolDestPort,fedId):
+    def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,fedId):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
-        xdaqProcess.addApplication("pt::frl::Application",0)
         xdaqProcess.addApplication("evb::test::DummyFEROL",0)
         self.xdaqProcesses.append(xdaqProcess)
 
         return """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
 
-        <xc:Endpoint protocol="ftcp" service="frl" hostname="%(xdaqHost)s" port="%(ferolDestPort)s" network="ferol00" sndTimeout="0" rcvTimeout="2000" affinity="RCV:W,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" smode="poll"/>
-
-        <xc:Application class="pt::frl::Application" id="11" instance="0" network="local">
-          <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-            <ioQueueSize xsi:type="xsd:unsignedInt">32768</ioQueueSize>
-            <eventQueueSize xsi:type="xsd:unsignedInt">32768</eventQueueSize>
-          </properties>
-        </xc:Application>
-
-        <xc:Application class="evb::test::DummyFEROL" id="10" instance="0" network="ferol00">
+        <xc:Application class="evb::test::DummyFEROL" id="10" instance="0" network="local">
           <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
           <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
             <fedId xsi:type="xsd:unsignedInt">%(fedId)s</fedId>
-            <destinationClass xsi:type="xsd:string">evb::EVM</destinationClass>
-            <destinationInstance xsi:type="xsd:unsignedInt">0</destinationInstance>
+            <destinationHost xsi:type="xsd:string">%(ferolDestIP)s</destinationHost>
+            <destinationPort xsi:type="xsd:unsignedInt">%(ferolDestPort)s</destinationPort>
           </properties>
         </xc:Application>
 
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-        <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestPort':ferolDestPort,'fedId':fedId}
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'fedId':fedId,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort}
 
 
-    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,runNumber,fedId,writeData):
+    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,ferolSourceIP,runNumber,fedId,writeData):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
-        #xdaqProcess.addApplication("pt::frl::Application",1)
         xdaqProcess.addApplication("evb::EVM",0)
         xdaqProcess.addApplication("evb::BU",0)
         self.xdaqProcesses.append(xdaqProcess)
@@ -172,48 +160,24 @@ class FedKitConfig:
         context = """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
 
-        <xc:Endpoint protocol="ftcp" service="frl" hostname="%(ferolDestIP)s" port="%(ferolDestPort)s" network="ferol00" sndTimeout="2000" rcvTimeout="0" targetId="12" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-
-        <xc:Application class="pt::frl::Application" id="10" instance="1" network="local">
-          <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-            <frlRouting xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[1]">
-              <item xsi:type="soapenc:Struct" soapenc:position="[0]">
-                <fedid xsi:type="xsd:string">%(fedId)s</fedid>
-                <className xsi:type="xsd:string">evb::EVM</className>
-                <instance xsi:type="xsd:string">0</instance>
-              </item>
-            </frlRouting>
-            <frlDispatcher xsi:type="xsd:string">copy</frlDispatcher>
-            <useUdaplPool xsi:type="xsd:boolean">true</useUdaplPool>
-            <autoConnect xsi:type="xsd:boolean">false</autoConnect>
-            <!-- Copy worker configuration -->
-            <i2oFragmentBlockSize xsi:type="xsd:unsignedInt">32768</i2oFragmentBlockSize>
-            <i2oFragmentsNo xsi:type="xsd:unsignedInt">128</i2oFragmentsNo>
-            <i2oFragmentPoolSize xsi:type="xsd:unsignedInt">10000000</i2oFragmentPoolSize>
-            <copyWorkerQueueSize xsi:type="xsd:unsignedInt">16</copyWorkerQueueSize>
-            <copyWorkersNo xsi:type="xsd:unsignedInt">1</copyWorkersNo>
-            <!-- Super fragment configuration -->
-            <doSuperFragment xsi:type="xsd:boolean">false</doSuperFragment>
-            <!-- Input configuration e.g. PSP -->
-            <inputStreamPoolSize xsi:type="xsd:double">1400000</inputStreamPoolSize>
-            <maxClients xsi:type="xsd:unsignedInt">5</maxClients>
-            <ioQueueSize xsi:type="xsd:unsignedInt">64</ioQueueSize>
-            <eventQueueSize xsi:type="xsd:unsignedInt">64</eventQueueSize>
-            <maxInputReceiveBuffers xsi:type="xsd:unsignedInt">8</maxInputReceiveBuffers>
-            <maxInputBlockSize xsi:type="xsd:unsignedInt">131072</maxInputBlockSize>
-          </properties>
-        </xc:Application>
-
         <xc:Application class="evb::EVM" id="12" instance="0" network="local">
           <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
-            <inputSource xsi:type="xsd:string">FEROL</inputSource>
+            <inputSource xsi:type="xsd:string">Socket</inputSource>
             <runNumber xsi:type="xsd:unsignedInt">%(runNumber)s</runNumber>
             <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">%(fakeLumiSectionDuration)s</fakeLumiSectionDuration>
             <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
             <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>
+            <ferolPort xsi:type="xsd:unsignedInt">%(ferolDestPort)s</ferolPort>
             <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
               <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">%(fedId)s</item>
             </fedSourceIds>
+            <ferolSources soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
+              <item soapenc:position="[0]" xsi:type="soapenc:Struct">
+                <fedId xsi:type="xsd:unsignedInt">%(fedId)s</fedId>
+                <hostname xsi:type="xsd:string">%(ferolSourceIP)s</hostname>
+                <port xsi:type="xsd:unsignedInt">10</port>
+              </item>
+            </ferolSources>
           </properties>
         </xc:Application>
 
@@ -233,7 +197,6 @@ class FedKitConfig:
         </xc:Application>
 
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-        <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
@@ -244,7 +207,7 @@ class FedKitConfig:
         <i2o:target class="evb::EVM" instance="0" tid="1"/>
         <i2o:target class="evb::BU" instance="0" tid="30"/>
       </i2o:protocol>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'runNumber':runNumber,'fedId':fedId,
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'ferolSourceIP':ferolSourceIP,'runNumber':runNumber,'fedId':fedId,
            'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration,'lumiSectionTimeout':lumiSectionTimeout}
         return context
 
@@ -255,11 +218,11 @@ class FedKitConfig:
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
 
         if useDummyFEROL:
-            config += self.getDummyFerolContext(hostname,xdaqPort,ferolDestPort,fedId);
+            config += self.getDummyFerolContext(hostname,xdaqPort,ferolDestIP,ferolDestPort,fedId);
         else:
             config += self.getFerolControllerContext(hostname,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP)
 
-        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,runNumber,fedId,writeData)
+        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,ferolSourceIP,runNumber,fedId,writeData)
 
         config += "</xc:Partition>"
 

@@ -117,14 +117,14 @@ void evb::bu::DiskWriter::stopProcessing()
 
   if ( ! lumiStatistics_.empty() )
   {
-    std::ostringstream oss;
-    oss << "There are unaccounted files for the following lumi sections:";
+    std::ostringstream msg;
+    msg << "There are unaccounted files for the following lumi sections:";
     for (LumiStatistics::iterator it = lumiStatistics_.begin(), itEnd = lumiStatistics_.end();
          it != itEnd; ++it)
     {
-      oss << " " << it->first;
+      msg << " " << it->first;
     }
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
 
     lumiStatistics_.clear();
   }
@@ -221,9 +221,9 @@ void evb::bu::DiskWriter::doLumiSectionAccounting(const bool completeLumiSection
       LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
       if ( pos->second->nbEvents > 0 )
       {
-        std::ostringstream oss;
-        oss << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
-        XCEPT_RAISE(exception::EventOrder, oss.str());
+        std::ostringstream msg;
+        msg << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
+        XCEPT_RAISE(exception::EventOrder, msg.str());
       }
       pos->second->nbEvents = lumiSectionAccount->nbEvents;
       pos->second->nbIncompleteEvents = lumiSectionAccount->nbIncompleteEvents;
@@ -355,9 +355,9 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
   jsonFile.replace_extension("jsn");
   if ( boost::filesystem::exists(jsonFile) )
   {
-    std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists";
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "The JSON file " << jsonFile.string() << " already exists";
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
   const std::string path = jsonFile.string() + ".tmp";
@@ -462,9 +462,9 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
   if ( ! boost::filesystem::exists(path) &&
        ( ! boost::filesystem::create_directories(path) ) )
   {
-    std::ostringstream oss;
-    oss << "Failed to create directory " << path.string();
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "Failed to create directory " << path.string();
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 }
 
@@ -474,9 +474,9 @@ void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
   if ( boost::filesystem::exists(path) &&
        ( ! boost::filesystem::remove(path) ) )
   {
-    std::ostringstream oss;
-    oss << "Failed to remove directory " << path.string();
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "Failed to remove directory " << path.string();
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 }
 
@@ -644,9 +644,9 @@ void evb::bu::DiskWriter::writeEoLS(const LumiInfoPtr& lumiInfo) const
 
   if ( boost::filesystem::exists(jsonFile) )
   {
-    std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists";
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "The JSON file " << jsonFile.string() << " already exists";
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
   const std::string path = jsonFile.string() + ".tmp";
@@ -677,9 +677,9 @@ void evb::bu::DiskWriter::writeEoR() const
 
   if ( boost::filesystem::exists(jsonFile) )
   {
-    std::ostringstream oss;
-    oss << "The JSON file " << jsonFile.string() << " already exists";
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "The JSON file " << jsonFile.string() << " already exists";
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
   boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);

@@ -59,15 +59,15 @@ bool evb::bu::Event::appendSuperFragment
   const RUsizes::iterator pos = ruSizes_.find(ruTid);
   if ( pos == ruSizes_.end() )
   {
-    std::ostringstream oss;
-    oss << "Received a duplicated or unexpected super fragment";
-    oss << " from RU TID " << ruTid;
-    oss << " for EvB id " << evbId_;
-    oss << " Outstanding messages from RU TIDs:";
+    std::ostringstream msg;
+    msg << "Received a duplicated or unexpected super fragment";
+    msg << " from RU TID " << ruTid;
+    msg << " for EvB id " << evbId_;
+    msg << " Outstanding messages from RU TIDs:";
     for (RUsizes::const_iterator it = ruSizes_.begin(), itEnd = ruSizes_.end();
          it != itEnd; ++it)
-      oss << " " << it->first;
-    XCEPT_RAISE(exception::SuperFragment, oss.str());
+      msg << " " << it->first;
+    XCEPT_RAISE(exception::SuperFragment, msg.str());
   }
   if ( pos->second == std::numeric_limits<uint32_t>::max() )
   {
@@ -127,8 +127,8 @@ void evb::bu::Event::checkEvent() const
     std::cout << std::endl;
   }
 
-  FedInfo::DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
-  const FedInfo::DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
+  DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
+  const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
   uint32_t chunk = dataLocations_.size() - 1;
   std::set<uint32_t> fedIdsSeen;
   std::vector<std::string> crcErrors;
@@ -163,9 +163,9 @@ void evb::bu::Event::checkEvent() const
       }
       if ( ! fedIdsSeen.insert( fedInfo.fedId() ).second )
       {
-        std::ostringstream oss;
-        oss << "Found a duplicated FED id " << fedInfo.fedId();
-        XCEPT_RAISE(exception::DataCorruption, oss.str());
+        std::ostringstream msg;
+        msg << "Found a duplicated FED id " << fedInfo.fedId();
+        XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
 
       if ( remainingLength == 0 )
@@ -182,25 +182,25 @@ void evb::bu::Event::checkEvent() const
   }
   catch(exception::DataCorruption& e)
   {
-    std::ostringstream oss;
-    oss << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
+    std::ostringstream msg;
+    msg << "Found bad data in chunk " << chunk << " of event with EvB id " << evbId_ << ": " << std::endl;
 
     dumpEventToFile(e.message(),chunk);
 
-    XCEPT_RETHROW(exception::DataCorruption, oss.str(), e);
+    XCEPT_RETHROW(exception::DataCorruption, msg.str(), e);
   }
 
   if ( ! crcErrors.empty() )
   {
-    std::ostringstream oss;
-    oss << "Found CRC errors in event with EvB id " << evbId_ << ": " << std::endl;
+    std::ostringstream msg;
+    msg << "Found CRC errors in event with EvB id " << evbId_ << ": " << std::endl;
     for ( std::vector<std::string>::const_iterator it = crcErrors.begin(), itEnd = crcErrors.end();
           it != itEnd; ++it)
     {
-      oss << *it << std::endl;;
+      msg << *it << std::endl;;
     }
 
-    XCEPT_RAISE(exception::CRCerror, oss.str());
+    XCEPT_RAISE(exception::CRCerror, msg.str());
   }
 }
 

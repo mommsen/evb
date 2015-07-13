@@ -104,7 +104,6 @@ namespace evb {
       void addToInfoSpace
       (
         InfoSpaceItems& params,
-        const uint32_t instance,
         xdaq::ApplicationContext* context
       )
       {

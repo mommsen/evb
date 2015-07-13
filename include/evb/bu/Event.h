@@ -10,6 +10,7 @@
 
 #include "evb/bu/EventInfo.h"
 #include "evb/bu/FedInfo.h"
+#include "evb/DataLocations.h"
 #include "evb/EvBid.h"
 #include "evb/I2OMessages.h"
 #include "i2o/i2oDdmLib.h"
@@ -71,11 +72,11 @@ namespace evb {
       EvBid getEvBid() const { return evbId_; }
       uint16_t buResourceId() const { return buResourceId_; }
       EventInfoPtr getEventInfo() const { return eventInfo_; }
-      FedInfo::DataLocations getDataLocations() const { return dataLocations_; }
+      DataLocations getDataLocations() const { return dataLocations_; }
 
     private:
 
-      FedInfo::DataLocations dataLocations_;
+      DataLocations dataLocations_;
 
       EventInfoPtr eventInfo_;
 

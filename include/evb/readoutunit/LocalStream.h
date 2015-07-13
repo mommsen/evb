@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include "evb/EvBid.h"
-#include "evb/FedFragment.h"
 #include "evb/FragmentTracker.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"
@@ -162,7 +162,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
   generatingActive_ = true;
   toolbox::mem::Reference* bufRef = 0;
   fragmentTracker_.startRun();
-  EvBid evbId = this->evbIdFactory_.getEvBid();
+  EvBid evbId = this->evbIdFactory_->getEvBid();
 
   try
   {
@@ -170,10 +170,9 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {
-        FedFragmentPtr fedFragment( new FedFragment(bufRef) );
-        fedFragment->setEvBid(evbId);
-        this->addFedFragmentWithEvBid(fedFragment);
-        evbId = this->evbIdFactory_.getEvBid();
+        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(evbId,bufRef);
+        this->addFedFragment(fedFragment);
+        evbId = this->evbIdFactory_->getEvBid();
       }
       else
       {
@@ -218,9 +217,9 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
 
   if ( (fedSize & 0x7) != 0 )
   {
-    std::ostringstream oss;
-    oss << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
@@ -229,29 +228,21 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
   const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   assert(ferolBlocks < 2048);
   const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
-  const uint32_t frameSize = ferolSize + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   uint32_t remainingFedSize = fedSize;
 
   try
   {
     bufRef = toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fragmentPool_,frameSize);
+      getFrame(fragmentPool_,ferolSize);
   }
   catch(xcept::Exception)
   {
     return false;
   }
 
-  bufRef->setDataSize(frameSize);
+  bufRef->setDataSize(ferolSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  memset(payload, 0, frameSize);
-  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-  frame->totalLength = ferolSize;
-  frame->fedid = this->fedId_;
-  frame->triggerno = evbId.eventNumber();
-  uint32_t partLength = 0;
-
-  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  memset(payload, 0, ferolSize);
 
   for (uint16_t packetNumber=0; packetNumber < ferolBlocks; ++packetNumber)
   {
@@ -281,10 +272,8 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
     ferolHeader->set_data_length(filledBytes);
 
     payload += filledBytes;
-    partLength += filledBytes + sizeof(ferolh_t);
   }
 
-  frame->partLength = partLength;
   assert( remainingFedSize == 0 );
 
   return true;

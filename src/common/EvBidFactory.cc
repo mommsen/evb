@@ -21,6 +21,18 @@ evb::EvBidFactory::~EvBidFactory()
 }
 
 
+void evb::EvBidFactory::setLumiSectionFunction(LumiSectionFunction& lumiSectionFunction)
+{
+  lumiSectionFunction_ = lumiSectionFunction;
+}
+
+
+void evb::EvBidFactory::setFakeLumiSectionDuration(const uint32_t duration)
+{
+  fakeLumiSectionDuration_ = boost::posix_time::seconds(duration);
+}
+
+
 void evb::EvBidFactory::reset(const uint32_t runNumber)
 {
   runNumber_ = runNumber;
@@ -86,29 +98,43 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_
     }
     else
     {
-      std::ostringstream oss;
+      std::ostringstream msg;
       if ( eventNumber == previousEventNumber_ )
       {
-        oss << "Received a duplicate event number " << eventNumber;
+        msg << "Received a duplicate event number " << eventNumber;
       }
       else if ( eventNumber > 1 && previousEventNumber_ == 0 && resyncCount_ == 0 )
       {
-        oss << "Received " << eventNumber << " as first event number (should be 1.) Have the buffers not be drained?";
+        msg << "Received " << eventNumber << " as first event number (should be 1.) Have the buffers not be drained?";
       }
       else
       {
-        oss << "Skipped from event number " << previousEventNumber_;
-        oss << " to " << eventNumber;
+        msg << "Skipped from event number " << previousEventNumber_;
+        msg << " to " << eventNumber;
       }
 
       previousEventNumber_ = eventNumber;
-      XCEPT_RAISE(exception::EventOutOfSequence,oss.str());
+      XCEPT_RAISE(exception::EventOutOfSequence,msg.str());
     }
   }
 
   previousEventNumber_ = eventNumber;
 
   return EvBid(resyncCount_,eventNumber,lumiSection,runNumber_);
+}
+
+
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const DataLocations& dataLocations)
+{
+  if ( lumiSectionFunction_ )
+  {
+    const uint32_t lsNumber = lumiSectionFunction_(dataLocations);
+    return getEvBid(eventNumber,lsNumber);
+  }
+  else
+  {
+    return getEvBid(eventNumber);
+  }
 }
 
 

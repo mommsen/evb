@@ -21,6 +21,7 @@ class case_2x1_preallocate(TestCase):
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13)),
              ('numberOfPreallocatedBlocks','unsignedInt','128')
             ]) )
         self._config.add( BU(symbolMap,[

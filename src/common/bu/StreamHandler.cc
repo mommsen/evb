@@ -40,11 +40,11 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
   }
   else if ( lumiSection < currentFileStatistics_->lumiSection )
   {
-    std::ostringstream oss;
-    oss << "Received an event from an earlier lumi section " << lumiSection;
-    oss << " while processing lumi section " << currentFileStatistics_->lumiSection;
-    oss << " with evb id " << event->getEvBid();
-    XCEPT_RAISE(exception::EventOrder, oss.str());
+    std::ostringstream msg;
+    msg << "Received an event from an earlier lumi section " << lumiSection;
+    msg << " while processing lumi section " << currentFileStatistics_->lumiSection;
+    msg << " with evb id " << event->getEvBid();
+    XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
   if ( ! fileHandler_.get() )

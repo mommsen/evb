@@ -30,7 +30,8 @@ class case_2x1_rateLimit(TestCase):
              ('maxTriggerRate','unsignedInt',100)
             ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),

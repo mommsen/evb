@@ -44,6 +44,7 @@ class SymbolMap:
                             self._map[hostType + 'SOAP_PORT']     = str(int(self._map['SOAP_BASE_PORT'])     + hostCount)
                             self._map[hostType + 'I2O_PORT']      = str(int(self._map['I2O_BASE_PORT'])      + hostCount)
                             self._map[hostType + 'FRL_PORT']      = str(int(self._map['FRL_BASE_PORT'])      + hostCount)
+                            self._map[hostType + 'FRL_PORT2']     = str(int(self._map['FRL_BASE_PORT']) + 50 + hostCount)
                             hostCount += 1
                         except IndexError:
                             pass
@@ -65,6 +66,7 @@ class SymbolMap:
         try:
             hostInfo['frlHostname'] = self._map[hostType + '_FRL_HOST_NAME']
             hostInfo['frlPort'] = self._map[hostType + '_FRL_PORT']
+            hostInfo['frlPort2'] = self._map[hostType + '_FRL_PORT2']
         except KeyError:
             pass
         return hostInfo

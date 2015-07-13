@@ -45,7 +45,8 @@ class case_2x1_laggingFU(TestCase):
              ('fakeLumiSectionDuration','unsignedInt','5')
             ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','6'),

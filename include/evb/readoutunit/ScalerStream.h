@@ -7,9 +7,10 @@
 
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
-#include "evb/FedFragment.h"
+#include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
+#include "evb/readoutunit/SuperFragment.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
@@ -43,7 +44,7 @@ namespace evb {
       /**
        * Append the next FED fragment to the super fragment
        */
-      virtual void appendFedFragment(FragmentChainPtr&);
+      virtual void appendFedFragment(SuperFragmentPtr&);
 
       /**
        * Start processing events
@@ -55,7 +56,7 @@ namespace evb {
 
       void createScalerPool();
       void startRequestWorkLoop();
-      uint32_t getFedFragment(const EvBid&, FedFragmentPtr&);
+      void getFedFragment(const EvBid&, FedFragmentPtr&);
       bool scalerRequest(toolbox::task::WorkLoop*);
       void requestLastestData();
 
@@ -181,7 +182,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::requestLastestDa
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragment(FragmentChainPtr& superFragment)
+void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
   const EvBid& evbId = superFragment->getEvBid();
 
@@ -193,9 +194,8 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragmen
   }
 
   FedFragmentPtr fedFragment;
-  const uint32_t fedSize = getFedFragment(evbId,fedFragment);
-
-  this->updateInputMonitor(fedFragment,fedSize);
+  getFedFragment(evbId,fedFragment);
+  this->updateInputMonitor(fedFragment);
   this->maybeDumpFragmentToFile(fedFragment);
 
   superFragment->append(fedFragment);
@@ -203,7 +203,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragmen
 
 
 template<class ReadoutUnit,class Configuration>
-uint32_t evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
+void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
 (
   const EvBid& evbId,
   FedFragmentPtr& fedFragment
@@ -216,33 +216,24 @@ uint32_t evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragme
 
   if ( (fedSize & 0x7) != 0 )
   {
-    std::ostringstream oss;
-    oss << "The SCAL FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
-    XCEPT_RAISE(exception::Configuration, oss.str());
+    std::ostringstream msg;
+    msg << "The SCAL FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
   // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
   const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
   assert(ferolBlocks < 2048);
   const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
-  const uint32_t frameSize = ferolSize + sizeof(I2O_DATA_READY_MESSAGE_FRAME);
   uint32_t dataOffset = 0;
   uint16_t crc(0xffff);
 
   toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
-    getFrame(fragmentPool_,frameSize);
+    getFrame(fragmentPool_,ferolSize);
 
-  bufRef->setDataSize(frameSize);
+  bufRef->setDataSize(ferolSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  memset(payload, 0, frameSize);
-
-  I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)payload;
-  frame->totalLength = ferolSize;
-  frame->fedid = this->fedId_;
-  frame->triggerno = eventNumber;
-  uint32_t partLength = 0;
-
-  payload += sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+  memset(payload, 0, ferolSize);
 
   for (uint16_t packetNumber = 0; packetNumber < ferolBlocks; ++packetNumber)
   {
@@ -289,16 +280,11 @@ uint32_t evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragme
 
     assert( dataLength <= ferolPayloadSize );
     ferolHeader->set_data_length(dataLength);
-    partLength += dataLength;
   }
 
-  frame->partLength = partLength;
   assert( dataOffset == dataForCurrentLumiSection_.size() );
 
-  fedFragment.reset( new FedFragment(bufRef) );
-  fedFragment->setEvBid(evbId);
-
-  return fedSize;
+  fedFragment = this->fedFragmentFactory_.getFedFragment(evbId,bufRef);
 }
 
 

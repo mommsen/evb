@@ -16,36 +16,27 @@ class case_3x1_scal(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        evmFedIds = range(4)
         evm = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds),
+             ('inputSource','string','Socket'),
              ('fakeLumiSectionDuration','unsignedInt','23'),
              ('dummyScalFedSize','unsignedInt','1024'),
              ('scalFedId','unsignedInt','997')
             ])
-        for id in evmFedIds:
-            self._config.add( FEROL(symbolMap,evm,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+        for id in range(0,4):
+            self._config.add( FEROL(symbolMap,evm,id) )
 
-        ruFedIds = range(4,8)
         ru = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ruFedIds),
+             ('inputSource','string','Socket'),
              ('dummyScalFedSize','unsignedInt','14624'),
              ('scalFedId','unsignedInt','998')
             ])
-        for id in ruFedIds:
-            self._config.add( FEROL(symbolMap,ru,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+        for id in range(4,8):
+            self._config.add( FEROL(symbolMap,ru,id) )
 
         self._config.add( evm )
         self._config.add( ru )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',()),
+             ('inputSource','string','Socket'),
              ('dummyScalFedSize','unsignedInt','4064'),
              ('scalFedId','unsignedInt','999')
             ]) )

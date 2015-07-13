@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "evb/Exception.h"
+#include "evb/DataLocations.h"
 #include "evb/bu/EventInfo.h"
 #include "evb/bu/FedInfo.h"
 #include "evb/bu/FileHandler.h"
@@ -19,18 +20,18 @@ evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
 {
   if ( boost::filesystem::exists(rawFileName_) )
   {
-    std::ostringstream oss;
-    oss << "The output file " << rawFileName_ << " already exists";
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    std::ostringstream msg;
+    msg << "The output file " << rawFileName_ << " already exists";
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
   fileDescriptor_ = open(rawFileName_.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   if ( fileDescriptor_ == -1 )
   {
-    std::ostringstream oss;
-    oss << "Failed to open output file " << rawFileName_
+    std::ostringstream msg;
+    msg << "Failed to open output file " << rawFileName_
       << ": " << strerror(errno);
-    XCEPT_RAISE(exception::DiskWriting, oss.str());
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 }
 
@@ -46,7 +47,7 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   const EventInfoPtr& eventInfo = event->getEventInfo();
   write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
-  const FedInfo::DataLocations& locs = event->getDataLocations();
+  const DataLocations& locs = event->getDataLocations();
   writev(fileDescriptor_,&locs[0],locs.size());
 
   fileSize_ += sizeof(EventInfo) + eventInfo->eventSize();
@@ -55,7 +56,7 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
 
 uint64_t evb::bu::FileHandler::closeAndGetFileSize()
 {
-  std::string msg = "Failed to close the output file " + rawFileName_;
+  std::string error = "Failed to close the output file " + rawFileName_;
 
   try
   {
@@ -63,23 +64,23 @@ uint64_t evb::bu::FileHandler::closeAndGetFileSize()
     {
       if ( ::close(fileDescriptor_) < 0 )
       {
-        std::ostringstream oss;
-        oss << msg << ": " << strerror(errno);
-        XCEPT_RAISE(exception::DiskWriting, oss.str());
+        std::ostringstream msg;
+        msg << error << ": " << strerror(errno);
+        XCEPT_RAISE(exception::DiskWriting, msg.str());
       }
       fileDescriptor_ = 0;
     }
   }
   catch(std::exception& e)
   {
-    msg += ": ";
-    msg += e.what();
-    XCEPT_RAISE(exception::DiskWriting, msg);
+    error += ": ";
+    error += e.what();
+    XCEPT_RAISE(exception::DiskWriting, error);
   }
   catch(...)
   {
-    msg += ": unknown exception";
-    XCEPT_RAISE(exception::DiskWriting, msg);
+    error += ": unknown exception";
+    XCEPT_RAISE(exception::DiskWriting, error);
   }
 
   return fileSize_;

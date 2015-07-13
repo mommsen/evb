@@ -114,11 +114,6 @@ class TestCase:
             pass
 
 
-    def changeState(self,cmd,newState):
-        for app in self._config.applications.keys():
-            self.sendStateCmd(cmd,newState,app)
-
-
     def checkAppState(self,targetState,app,instance=None):
         try:
             for application in self._config.applications[app]:
@@ -234,16 +229,26 @@ class TestCase:
 
     def startPt(self):
         print("Starting pt")
-        for application in self._config.pt:
+        for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Configure',**application)
-        for application in self._config.pt:
+        for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Enable',**application)
+
+
+    def resetPtFrl(self):
+        print("Resetting pt::frl")
+        for application in self._config.ptFrl:
+            messengers.sendCmdToApp(command='Reset',**application)
 
 
     def configureEvB(self):
         sys.stdout.write("Configuring EvB")
         sys.stdout.flush()
-        self.changeState('Configure','Configuring')
+        self.configure('FEROL')
+        self.waitForAppState('Ready','FEROL')
+        self.configure('EVM')
+        self.configure('RU')
+        self.configure('BU')
         self.waitForState('Ready')
         print(" done")
 
@@ -267,7 +272,7 @@ class TestCase:
     def stopEvB(self):
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(3*eventRate,1000)
+        eventToStop = lastEvent + max(2*eventRate,10000)
         sys.stdout.write("Stopping EvB at event "+str(eventToStop))
         sys.stdout.flush()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
@@ -277,7 +282,7 @@ class TestCase:
         self.stop('FEROL')
         self.waitForAppState('Ready','FEROL',maxTries=15)
         self.stop('EVM')
-        self.waitForAppState('Ready','EVM',maxTries=30)
+        self.waitForAppState('Ready','EVM',maxTries=50)
         self.stop('RU')
         self.stop('BU')
         self.waitForState('Ready')
@@ -292,6 +297,7 @@ class TestCase:
         self.halt('RU')
         self.halt('BU')
         self.checkState('Halted')
+        self.resetPtFrl();
 
 
     def checkEVM(self,superFragmentSize,eventRate=1000):

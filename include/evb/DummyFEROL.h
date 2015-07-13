@@ -37,7 +37,7 @@ namespace evb {
 
       DummyFEROL(xdaq::ApplicationStub*);
 
-      virtual ~DummyFEROL() {};
+      virtual ~DummyFEROL();
 
       XDAQ_INSTANTIATOR();
 
@@ -61,6 +61,11 @@ namespace evb {
        */
       void stopProcessing();
 
+      /**
+       * Close the TCP connection
+       */
+      void closeConnection();
+
 
     private:
 
@@ -74,7 +79,7 @@ namespace evb {
       void fragmentFIFOWebPage(xgi::Input*, xgi::Output*);
 
       void resetMonitoringCounters();
-      void getApplicationDescriptors();
+      void openConnection();
       void startWorkLoops();
       bool generating(toolbox::task::WorkLoop*);
       bool sending(toolbox::task::WorkLoop*);
@@ -82,7 +87,7 @@ namespace evb {
       void sendData(toolbox::mem::Reference*);
       void getPerformance(PerformanceMonitor&);
 
-      xdaq::ApplicationDescriptor* ruDescriptor_;
+      int sockfd_;
 
       volatile bool doProcessing_;
       volatile bool generatingActive_;

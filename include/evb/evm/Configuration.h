@@ -47,12 +47,11 @@ namespace evb {
       void addToInfoSpace
       (
         InfoSpaceItems& params,
-        const uint32_t instance,
         xdaq::ApplicationContext* context
       )
       {
-        readoutunit::Configuration::addToInfoSpace(params,instance,context);
-        fillDefaultRUinstances(instance,context);
+        readoutunit::Configuration::addToInfoSpace(params,context);
+        fillDefaultRUinstances(context);
 
         params.add("triggerType", &triggerType);
         params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
@@ -63,7 +62,7 @@ namespace evb {
         params.add("numberOfAllocators", &numberOfAllocators);
       }
 
-      void fillDefaultRUinstances(const uint32_t instance, xdaq::ApplicationContext* context)
+      void fillDefaultRUinstances(xdaq::ApplicationContext* context)
       {
         ruInstances.clear();
 

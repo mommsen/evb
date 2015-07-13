@@ -24,7 +24,7 @@ namespace evb {
 
     /**
      * \ingroup xdaqApps
-     * \brief Singleton to post I2O messages to BU
+     * \brief Post I2O messages to BU
      */
 
     template<class ReadoutUnit>
@@ -111,14 +111,12 @@ void evb::readoutunit::BUposter<ReadoutUnit>::startPosterWorkLoop()
     posterWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( readoutUnit_->getIdentifier("buPoster"), "waiting" );
 
-    if ( ! posterWL_->isActive() )
-    {
-      posterAction_ =
-        toolbox::task::bind(this, &evb::readoutunit::BUposter<ReadoutUnit>::postFrames,
-                            readoutUnit_->getIdentifier("postFrames") );
+    posterAction_ =
+      toolbox::task::bind(this, &evb::readoutunit::BUposter<ReadoutUnit>::postFrames,
+                          readoutUnit_->getIdentifier("postFrames") );
 
+    if ( ! posterWL_->isActive() )
       posterWL_->activate();
-    }
   }
   catch(xcept::Exception& e)
   {
@@ -190,10 +188,10 @@ void evb::readoutunit::BUposter<ReadoutUnit>::sendFrame(const I2O_TID tid, toolb
     }
     catch(xcept::Exception& e)
     {
-      std::ostringstream oss;
-      oss << "Failed to get application descriptor for BU with tid ";
-      oss << tid;
-      XCEPT_RAISE(exception::I2O, oss.str());
+      std::ostringstream msg;
+      msg << "Failed to get application descriptor for BU with tid ";
+      msg << tid;
+      XCEPT_RAISE(exception::I2O, msg.str());
     }
   }
 
@@ -229,10 +227,10 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
           }
           catch(xcept::Exception& e)
           {
-            std::ostringstream oss;
-            oss << "Failed to send super fragment to BU TID ";
-            oss << it->first;
-            XCEPT_RETHROW(exception::I2O, oss.str(), e);
+            std::ostringstream msg;
+            msg << "Failed to send super fragment to BU TID ";
+            msg << it->first;
+            XCEPT_RETHROW(exception::I2O, msg.str(), e);
           }
           workDone = true;
         }

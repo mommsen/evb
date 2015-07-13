@@ -142,6 +142,8 @@ namespace evb {
       virtual ~Halted()
       { this->safeExitAction(); }
 
+      virtual void entryAction();
+
     };
 
 
@@ -342,6 +344,15 @@ namespace evb {
 // Implementation follows                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class Owner>
+void evb::readoutunit::Halted<Owner>::entryAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
+  owner->getFerolConnectionManager()->dropConnections();
+  owner->getFerolConnectionManager()->acceptConnections();
+}
+
 
 template<class Owner>
 void evb::readoutunit::Configuring<Owner>::entryAction()
@@ -407,6 +418,7 @@ void evb::readoutunit::Running<Owner>::entryAction()
   const Owner* owner = stateMachine.getOwner();
   const uint32_t runNumber = stateMachine.getRunNumber();
 
+  owner->getFerolConnectionManager()->startProcessing();
   owner->getInput()->startProcessing(runNumber);
   owner->getBUproxy()->startProcessing();
   doStartProcessing(owner,runNumber);
@@ -419,9 +431,10 @@ void evb::readoutunit::Running<Owner>::exitAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const Owner* owner = stateMachine.getOwner();
 
-  owner->getInput()->stopProcessing();
   owner->getBUproxy()->stopProcessing();
+  owner->getInput()->stopProcessing();
   doStopProcessing(owner);
+  owner->getFerolConnectionManager()->stopProcessing();
 }
 
 
@@ -445,6 +458,7 @@ void evb::readoutunit::Draining<Owner>::activity()
   std::string msg = "Failed to drain the components";
   try
   {
+    if (doDraining_) owner->getFerolConnectionManager()->drain();
     if (doDraining_) owner->getInput()->drain();
     if (doDraining_) owner->getBUproxy()->drain();
     if (doDraining_) doDraining(owner);

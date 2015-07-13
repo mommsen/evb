@@ -47,7 +47,8 @@ class case_2x2_failBU(TestCase):
              ('fakeLumiSectionDuration','unsignedInt','5')
             ]) )
         self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local')
+             ('inputSource','string','Local'),
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
              ('staleResourceTime','unsignedInt','0')

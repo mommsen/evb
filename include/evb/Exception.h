@@ -56,6 +56,11 @@ XCEPT_DEFINE_EXCEPTION(evb, FSM)
 XCEPT_DEFINE_EXCEPTION(evb, I2O)
 
 /**
+ * Exception raised when a TCP problem occured
+ */
+XCEPT_DEFINE_EXCEPTION(evb, TCP)
+
+/**
  * Exception raised by the EVM if the TCDS information cannot be extracted
  */
 XCEPT_DEFINE_EXCEPTION(evb, TCDS)

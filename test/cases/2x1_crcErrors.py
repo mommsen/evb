@@ -41,9 +41,7 @@ class case_2x1_crcErrors(TestCase):
         print("100 CRC errors on FED 6")
         self.setAppParam('nbCRCerrors','unsignedInt','100','FEROL',6)
         time.sleep(5)
-        self.checkAppState("Enabled","EVM")
-        self.checkAppState("Failed","RU")
-        self.checkAppState("Enabled","BU")
+        self.checkState("Enabled")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed0006.txt$")
         if len(dumps) != 10:
             raise ValueException("Expected 10 dump file from FED 6, but found: "+str(dumps))
@@ -55,31 +53,24 @@ class case_2x1_crcErrors(TestCase):
         self.configureEvB()
         self.enableEvB()
         self.checkIt()
+        self.haltEvB()
 
 
     def fillConfiguration(self,symbolMap):
-        evmFedIds = range(4)
         evm = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',evmFedIds),
+             ('inputSource','string','Socket'),
              ('checkCRC','unsignedInt','1')
             ])
-        for id in evmFedIds:
-            self._config.add( FEROL(symbolMap,evm,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+        for id in range(0,4):
+            self._config.add( FEROL(symbolMap,evm,id) )
 
-        ruFedIds = range(4,8)
         ru = RU(symbolMap,[
-             ('inputSource','string','FEROL'),
-             ('fedSourceIds','unsignedInt',ruFedIds),
+             ('inputSource','string','Socket'),
              ('checkCRC','unsignedInt','1'),
              ('maxCRCErrorRate','double','10')
             ])
-        for id in ruFedIds:
-            self._config.add( FEROL(symbolMap,ru,[
-                ('fedId','unsignedInt',str(id))
-                ]) )
+        for id in range(4,8):
+            self._config.add( FEROL(symbolMap,ru,id) )
 
         self._config.add( evm )
         self._config.add( ru )

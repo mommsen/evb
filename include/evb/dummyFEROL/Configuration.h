@@ -18,8 +18,10 @@ namespace evb {
        */
       struct Configuration
       {
-        xdata::String destinationClass;
-        xdata::UnsignedInteger32 destinationInstance;
+        xdata::String sourceHost;
+        xdata::UnsignedInteger32 sourcePort;
+        xdata::String destinationHost;
+        xdata::UnsignedInteger32 destinationPort;
         xdata::UnsignedInteger32 fedId;
         xdata::UnsignedInteger32 fedSize;
         xdata::Boolean computeCRC;
@@ -35,7 +37,11 @@ namespace evb {
         xdata::UnsignedInteger32 maxTriggerRate;
 
         Configuration()
-          : destinationClass("evb::RU"),
+          : sourceHost("localhost"),
+            sourcePort(0),
+            destinationHost("localhost"),
+            destinationPort(0),
+            fedId(0),
             fedSize(2048),
             computeCRC(true),
             useLogNormal(false),
@@ -53,15 +59,13 @@ namespace evb {
         void addToInfoSpace
         (
           InfoSpaceItems& params,
-          const uint32_t instance,
           xdaq::ApplicationContext* context
         )
         {
-          destinationInstance = instance;
-          fedId = instance;
-
-          params.add("destinationClass", &destinationClass);
-          params.add("destinationInstance", &destinationInstance);
+          params.add("sourceHost", &sourceHost);
+          params.add("sourcePort", &sourcePort);
+          params.add("destinationHost", &destinationHost);
+          params.add("destinationPort", &destinationPort);
           params.add("fedId", &fedId);
           params.add("fedSize", &fedSize);
           params.add("computeCRC", &computeCRC);

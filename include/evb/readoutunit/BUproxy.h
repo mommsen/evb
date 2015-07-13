@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "cgicc/HTMLClasses.h"
+#include "evb/DataLocations.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
-#include "evb/FragmentChain.h"
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
@@ -21,6 +21,8 @@
 #include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FragmentRequest.h"
 #include "evb/readoutunit/StateMachine.h"
+#include "evb/readoutunit/SuperFragment.h"
+#include "i2o/i2oDdmLib.h"
 #include "i2o/Method.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
@@ -112,7 +114,7 @@ namespace evb {
 
     private:
 
-      typedef std::vector<FragmentChainPtr> SuperFragments;
+      typedef std::vector<SuperFragmentPtr> SuperFragments;
 
       void resetMonitoringCounters();
       void startProcessingWorkLoop();
@@ -128,7 +130,7 @@ namespace evb {
         unsigned char*& payload,
         uint32_t& remainingPayloadSize,
         const uint32_t superFragmentNb,
-        const FragmentChainPtr& superFragment,
+        const SuperFragmentPtr& superFragment,
         const uint32_t currentFragmentSize
       ) const;
       bool isEmpty();
@@ -407,7 +409,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   const uint32_t blockHeaderSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME)
     + nbSuperFragments * sizeof(EvBid)
     + ((nbRUtids+1)&~1) * sizeof(I2O_TID); // always have an even number of 32-bit I2O_TIDs to keep 64-bit alignment
-  //std::cout << "blockHeaderSize: " << sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << blockHeaderSize << std::endl;
 
   assert( blockHeaderSize % 8 == 0 );
   assert( blockHeaderSize < readoutUnit_->getConfiguration()->blockSize );
@@ -416,53 +417,29 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   for (uint32_t i=0; i < nbSuperFragments; ++i)
   {
-    const FragmentChainPtr superFragment = superFragments[i];
+    const SuperFragmentPtr superFragment = superFragments[i];
     uint32_t remainingSuperFragmentSize = superFragment->getSize();
 
     fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
 
-    toolbox::mem::Reference* currentFragment = superFragment->head();
-
-    while ( currentFragment )
+    const SuperFragment::FedFragments& fedFragments = superFragment->getFedFragments();
+    for ( SuperFragment::FedFragments::const_iterator it = fedFragments.begin(), itEnd = fedFragments.end();
+          it != itEnd; ++it)
     {
-      ferolh_t* ferolHeader;
-      uint32_t ferolOffset = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-
-      do
+      const DataLocations& fedData = (*it)->getDataLocations();
+      for ( DataLocations::const_iterator it = fedData.begin(), itEnd = fedData.end();
+            it != itEnd; ++it)
       {
-        if ( ferolOffset > (currentFragment->getDataSize()) )
-        {
-          currentFragment = currentFragment->getNextReference();
-          ferolOffset = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
+        const unsigned char* chunkBase  = (unsigned char*)it->iov_base;
+        uint32_t chunkSize = it->iov_len;
+        uint32_t copiedSize = 0;
 
-          if (currentFragment == 0)
-          {
-            XCEPT_RAISE(exception::DataCorruption, "The FEROL data overruns the end of the fragment buffer");
-          }
-        }
-
-        const unsigned char* ferolData = (unsigned char*)currentFragment->getDataLocation()
-          + ferolOffset;
-
-        ferolHeader = (ferolh_t*)ferolData;
-        assert( ferolHeader->signature() == FEROL_SIGNATURE );
-
-        if ( ferolHeader->is_first_packet() )
-        {
-          const fedh_t* fedHeader = (fedh_t*)(ferolData + sizeof(ferolh_t));
-          assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
-        }
-
-        uint32_t currentFragmentSize = ferolHeader->data_length();
-        ferolOffset += currentFragmentSize + sizeof(ferolh_t);
-        uint32_t copiedSize = sizeof(ferolh_t); // skip the ferol header
-
-        while ( currentFragmentSize > remainingPayloadSize )
+        while ( chunkSize > remainingPayloadSize )
         {
           // fill the remaining block
-          memcpy(payload, ferolData + copiedSize, remainingPayloadSize);
+          memcpy(payload, chunkBase + copiedSize, remainingPayloadSize);
           copiedSize += remainingPayloadSize;
-          currentFragmentSize -= remainingPayloadSize;
+          chunkSize -= remainingPayloadSize;
           remainingSuperFragmentSize -= remainingPayloadSize;
 
           // get a new block
@@ -475,17 +452,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
         }
 
         // fill the remaining fragment into the block
-        memcpy(payload, ferolData + copiedSize, currentFragmentSize);
-        payload += currentFragmentSize;
-        remainingPayloadSize -= currentFragmentSize;
-        remainingSuperFragmentSize -= currentFragmentSize;
+        memcpy(payload, chunkBase + copiedSize, chunkSize);
+        payload += chunkSize;
+        remainingPayloadSize -= chunkSize;
+        remainingSuperFragmentSize -= chunkSize;
       }
-      while ( ! ferolHeader->is_last_packet() );
 
       const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
-
-      currentFragment = currentFragment->getNextReference();
     }
   }
 
@@ -574,11 +548,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::fillSuperFragmentHeader
   unsigned char*& payload,
   uint32_t& remainingPayloadSize,
   const uint32_t superFragmentNb,
-  const FragmentChainPtr& superFragment,
+  const SuperFragmentPtr& superFragment,
   const uint32_t currentFragmentSize
 ) const
 {
-  const FragmentChain::MissingFedIds& missingFedIds = superFragment->getMissingFedIds();
+  const SuperFragment::MissingFedIds& missingFedIds = superFragment->getMissingFedIds();
   const uint16_t nbDroppedFeds = missingFedIds.size();
   const uint32_t headerSize = sizeof(msg::SuperFragment)
     + ((nbDroppedFeds-1 + 3) / 4) * sizeof(uint64_t);
