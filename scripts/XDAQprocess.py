@@ -109,6 +109,20 @@ class XDAQprocess:
             self.sendSimpleCommand("Configure",*app)
 
 
+    def waitForHalted(self):
+        for app in self._applications:
+            state = ''
+            tries = 0
+            while not state in ('Halted'):
+                time.sleep(1)
+                state = self.getStateName(*app)
+                if state == 'Failed':
+                    raise(StateException(app[0]+":"+str(app[1])+" has failed"))
+                tries += 1
+                if tries > 30:
+                    raise(StateException(app[0]+":"+str(app[1])+" has not reached Halted state: "+state))
+
+
     def waitForReady(self):
         for app in self._applications:
             state = ''

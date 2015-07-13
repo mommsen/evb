@@ -65,9 +65,11 @@ def main(argv):
 
     time.sleep(2)
 
-    for xdaq in fedKitConfig.xdaqProcesses[::-1]:
+    for xdaq in fedKitConfig.xdaqProcesses:
+        xdaq.waitForHalted()
+
+    for xdaq in fedKitConfig.xdaqProcesses:
         xdaq.configure()
-    for xdaq in fedKitConfig.xdaqProcesses[::-1]:
         xdaq.waitForReady()
     for xdaq in fedKitConfig.xdaqProcesses[::-1]:
         xdaq.enable()

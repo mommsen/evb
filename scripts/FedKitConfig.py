@@ -24,14 +24,15 @@ class FedKitConfig:
         runNumber = self.getRunNumber()
         xdaqPort = self.getXdaqPort()
         ferolSourceIP = self.getFerolSourceIP()
+        ferolSourcePort = self.getFerolSourcePort()
         ferolDestIP = self.getFerolDestIP()
         ferolDestPort = self.getFerolDestPort()
 
         with open(configFile,'wb') as configFile:
             self._config.write(configFile)
 
-        self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
-        print(self._xmlConfiguration)
+        self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
+        #print(self._xmlConfiguration)
         with open(self.configFilePath,'wb') as xmlFile:
             xmlFile.write(self._xmlConfiguration)
 
@@ -40,7 +41,7 @@ class FedKitConfig:
         os.remove(self.configFilePath)
 
 
-    def getFerolControllerContext(self,xdaqHost,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP):
+    def getFerolControllerContext(self,xdaqHost,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP,ferolSourcePort):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("ferol::FerolController",0)
         self.xdaqProcesses.append(xdaqProcess)
@@ -57,8 +58,8 @@ class FedKitConfig:
             <expectedFedId_0 xsi:type="xsd:unsignedInt">%(fedId)s</expectedFedId_0>
             <expectedFedId_1 xsi:type="xsd:unsignedInt">1</expectedFedId_1>
             <SourceIP xsi:type="xsd:string">%(ferolSourceIP)s</SourceIP>
-            <TCP_SOURCE_PORT_FED0 xsi:type="xsd:unsignedInt">10</TCP_SOURCE_PORT_FED0>
-            <TCP_SOURCE_PORT_FED1 xsi:type="xsd:unsignedInt">11</TCP_SOURCE_PORT_FED1>
+            <TCP_SOURCE_PORT_FED0 xsi:type="xsd:unsignedInt">%(ferolSourcePort)s</TCP_SOURCE_PORT_FED0>
+            <TCP_SOURCE_PORT_FED1 xsi:type="xsd:unsignedInt">%(ferolSourcePort)s</TCP_SOURCE_PORT_FED1>
             <enableStream0 xsi:type="xsd:boolean">true</enableStream0>
             <enableStream1 xsi:type="xsd:boolean">false</enableStream1>
             <OperationMode xsi:type="xsd:string">%(operationMode)s</OperationMode>
@@ -113,10 +114,10 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libFerolController.so</xc:Module>
 
       </xc:Context>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'operationMode':operationMode,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP}
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'dataSource':dataSource,'operationMode':operationMode,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP,'ferolSourcePort':ferolSourcePort}
 
 
-    def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,fedId):
+    def getDummyFerolContext(self,xdaqHost,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,fedId):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("evb::test::DummyFEROL",0)
         self.xdaqProcesses.append(xdaqProcess)
@@ -128,6 +129,8 @@ class FedKitConfig:
           <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
           <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
             <fedId xsi:type="xsd:unsignedInt">%(fedId)s</fedId>
+            <sourceHost xsi:type="xsd:string">localhost</sourceHost>
+            <sourcePort xsi:type="xsd:unsignedInt">%(ferolSourcePort)s</sourcePort>
             <destinationHost xsi:type="xsd:string">%(ferolDestIP)s</destinationHost>
             <destinationPort xsi:type="xsd:unsignedInt">%(ferolDestPort)s</destinationPort>
           </properties>
@@ -137,10 +140,10 @@ class FedKitConfig:
         <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
 
       </xc:Context>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'fedId':fedId,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort}
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP,'ferolSourcePort':ferolSourcePort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort}
 
 
-    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,ferolSourceIP,runNumber,fedId,writeData):
+    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("evb::EVM",0)
         xdaqProcess.addApplication("evb::BU",0)
@@ -160,6 +163,16 @@ class FedKitConfig:
         context = """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
 
+         <xc:Endpoint affinity="RCV:P,SND:W,DSR:W,DSS:W" hostname="localhost" maxbulksize="131072" network="ferol" nonblock="true" pollingCycle="1" port="%(ferolDestPort)s" protocol="btcp" rcvTimeout="0" rmode="select" service="blit" singleThread="true" sndTimeout="2000" targetId="11" />
+
+        <xc:Application class="pt::blit::Application" id="11" instance="0" network="local">
+          <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
+            <maxClients xsi:type="xsd:unsignedInt">5</maxClients>
+            <maxReceiveBuffers xsi:type="xsd:unsignedInt">16</maxReceiveBuffers>
+            <maxBlockSize xsi:type="xsd:unsignedInt">131072</maxBlockSize>
+          </properties>
+        </xc:Application>
+
         <xc:Application class="evb::EVM" id="12" instance="0" network="local">
           <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
             <inputSource xsi:type="xsd:string">Socket</inputSource>
@@ -167,7 +180,6 @@ class FedKitConfig:
             <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">%(fakeLumiSectionDuration)s</fakeLumiSectionDuration>
             <numberOfResponders xsi:type="xsd:unsignedInt">1</numberOfResponders>
             <checkCRC xsi:type="xsd:unsignedInt">1</checkCRC>
-            <ferolPort xsi:type="xsd:unsignedInt">%(ferolDestPort)s</ferolPort>
             <fedSourceIds soapenc:arrayType="xsd:ur-type[1]" xsi:type="soapenc:Array">
               <item soapenc:position="[0]" xsi:type="xsd:unsignedInt">%(fedId)s</item>
             </fedSourceIds>
@@ -175,7 +187,7 @@ class FedKitConfig:
               <item soapenc:position="[0]" xsi:type="soapenc:Struct">
                 <fedId xsi:type="xsd:unsignedInt">%(fedId)s</fedId>
                 <hostname xsi:type="xsd:string">%(ferolSourceIP)s</hostname>
-                <port xsi:type="xsd:unsignedInt">10</port>
+                <port xsi:type="xsd:unsignedInt">%(ferolSourcePort)s</port>
               </item>
             </ferolSources>
           </properties>
@@ -197,6 +209,7 @@ class FedKitConfig:
         </xc:Application>
 
         <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
+        <xc:Module>$XDAQ_ROOT/lib/libptblit.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
         <xc:Module>$XDAQ_ROOT/lib/libevb.so</xc:Module>
@@ -206,23 +219,24 @@ class FedKitConfig:
       <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">
         <i2o:target class="evb::EVM" instance="0" tid="1"/>
         <i2o:target class="evb::BU" instance="0" tid="30"/>
-      </i2o:protocol>
-        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'ferolSourceIP':ferolSourceIP,'runNumber':runNumber,'fedId':fedId,
-           'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration,'lumiSectionTimeout':lumiSectionTimeout}
+    </i2o:protocol>
+        """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort,'ferolSourceIP':ferolSourceIP,'ferolSourcePort':ferolSourcePort,
+               'runNumber':runNumber,'fedId':fedId,
+               'dropEventData':dropEventData,'outputDir':outputDir,'fakeLumiSectionDuration':fakeLumiSectionDuration,'lumiSectionTimeout':lumiSectionTimeout}
         return context
 
 
-    def getConfiguration(self,runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolDestIP,ferolDestPort,writeData,useDummyFEROL):
+    def getConfiguration(self,runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,useDummyFEROL):
         hostname = socket.gethostbyaddr(socket.gethostname())[0]
 
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
 
         if useDummyFEROL:
-            config += self.getDummyFerolContext(hostname,xdaqPort,ferolDestIP,ferolDestPort,fedId);
+            config += self.getDummyFerolContext(hostname,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,fedId);
         else:
-            config += self.getFerolControllerContext(hostname,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP)
+            config += self.getFerolControllerContext(hostname,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP,ferolSourcePort)
 
-        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,ferolSourceIP,runNumber,fedId,writeData)
+        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData)
 
         config += "</xc:Partition>"
 
@@ -450,6 +464,23 @@ class FedKitConfig:
         self._config.set('XDAQ','ferolSourceIP',ferolSourceIP)
 
         return ferolSourceIP
+
+
+    def getFerolSourcePort(self):
+        ferolSourcePort = ((self._validPortsMin // 1000) + 2) * 1000
+        try:
+            ferolSourcePort = self._config.get('XDAQ','ferolSourcePort')
+        except ConfigParser.NoSectionError:
+            self._config.add_section('XDAQ')
+        except ConfigParser.NoOptionError:
+            pass
+
+        if self._fullConfig:
+            ferolSourcePort = self.askUserForPort(ferolSourcePort,"FEROL source")
+
+        self._config.set('XDAQ','ferolSourcePort',ferolSourcePort)
+
+        return ferolSourcePort
 
 
     def getFerolDestIP(self):
