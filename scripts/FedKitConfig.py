@@ -22,6 +22,7 @@ class FedKitConfig:
         fedId = self.getFedId()
         writeData = self.getWriteData()
         runNumber = self.getRunNumber()
+        lumiSectionDuration = self.getLumiSectionDuration()
         xdaqPort = self.getXdaqPort()
         ferolSourceIP = self.getFerolSourceIP()
         ferolSourcePort = self.getFerolSourcePort()
@@ -31,7 +32,7 @@ class FedKitConfig:
         with open(configFile,'wb') as configFile:
             self._config.write(configFile)
 
-        self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,useDummyFerol)
+        self._xmlConfiguration = self.getConfiguration(runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,lumiSectionDuration,useDummyFerol)
         #print(self._xmlConfiguration)
         with open(self.configFilePath,'wb') as xmlFile:
             xmlFile.write(self._xmlConfiguration)
@@ -143,7 +144,7 @@ class FedKitConfig:
         """ % {'xdaqHost':xdaqHost,'xdaqPort':xdaqPort,'fedId':fedId,'ferolSourceIP':ferolSourceIP,'ferolSourcePort':ferolSourcePort,'ferolDestIP':ferolDestIP,'ferolDestPort':ferolDestPort}
 
 
-    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData):
+    def getEvBContext(self,xdaqHost,xdaqPort,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData,lumiSectionDuration):
         xdaqProcess = XDAQprocess.XDAQprocess(xdaqHost,xdaqPort)
         xdaqProcess.addApplication("evb::EVM",0)
         xdaqProcess.addApplication("evb::BU",0)
@@ -152,8 +153,8 @@ class FedKitConfig:
         if writeData:
             dropEventData = "false"
             outputDir = self.getOutputDir()
-            fakeLumiSectionDuration = 20
-            lumiSectionTimeout = 30
+            fakeLumiSectionDuration = lumiSectionDuration
+            lumiSectionTimeout = str(int(lumiSectionDuration)+10)
         else:
             dropEventData = "true"
             outputDir = "/tmp"
@@ -226,7 +227,7 @@ class FedKitConfig:
         return context
 
 
-    def getConfiguration(self,runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,useDummyFEROL):
+    def getConfiguration(self,runNumber,dataSource,fedId,xdaqPort,ferolSourceIP,ferolSourcePort,ferolDestIP,ferolDestPort,writeData,lumiSectionDuration,useDummyFEROL):
         hostname = socket.gethostbyaddr(socket.gethostname())[0]
 
         config = """<xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">"""
@@ -236,7 +237,7 @@ class FedKitConfig:
         else:
             config += self.getFerolControllerContext(hostname,xdaqPort,dataSource,ferolDestIP,ferolDestPort,fedId,ferolSourceIP,ferolSourcePort)
 
-        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData)
+        config += self.getEvBContext(hostname,xdaqPort+1,ferolDestIP,ferolDestPort,ferolSourceIP,ferolSourcePort,runNumber,fedId,writeData,lumiSectionDuration)
 
         config += "</xc:Partition>"
 
@@ -373,6 +374,41 @@ class FedKitConfig:
         self._config.set('Input','runNumber',runNumber)
 
         return runNumber
+
+
+    def askUserForLumiSectionDuration(self,defaultLumiSectionDuration):
+        question = "Please enter the duration of the fake lumisection (s) ["+str(defaultLumiSectionDuration)+"]: "
+        answer = raw_input(question)
+        answer = answer or defaultLumiSectionDuration
+        try:
+            lumiSectionDuration=int(answer)
+        except (ValueError,NameError,TypeError):
+            lumiSectionDuration=-1
+
+        while lumiSectionDuration < 0:
+            try:
+                lumiSectionDuration=int(raw_input("Please enter a positive integer as lumi section duration: "))
+            except (ValueError,NameError,TypeError):
+                lumiSectionDuration=-1
+
+        return lumiSectionDuration
+
+
+    def getLumiSectionDuration(self):
+        lumiSectionDuration = 23
+        try:
+            runNumber = self._config.getint('Input','lumiSectionDuration')
+        except ConfigParser.NoSectionError:
+            self._config.add_section('Input')
+        except ConfigParser.NoOptionError:
+            pass
+
+        if self._fullConfig:
+            lumiSectionDuration = self.askUserForLumiSectionDuration(lumiSectionDuration)
+
+        self._config.set('Input','lumiSectionDuration',lumiSectionDuration)
+
+        return lumiSectionDuration
 
 
     def getWriteData(self):
