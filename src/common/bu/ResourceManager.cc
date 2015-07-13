@@ -31,6 +31,7 @@ evb::bu::ResourceManager::ResourceManager
   builderId_(0),
   fusHLT_(0),
   fusCloud_(0),
+  fusQuarantined_(0),
   fusStale_(0),
   initiallyQueuedLS_(0),
   queuedLS_(0),
@@ -393,6 +394,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     boost::property_tree::read_json(resourceSummary_.string(), pt);
     fusHLT_ = pt.get<int>("active_resources");
     fusCloud_ = pt.get<int>("cloud");
+    fusQuarantined_ = pt.get<int>("quarantined");
     fusStale_ = pt.get<int>("stale_resources");
     resourcesFromFUs = (fusHLT_ == 0) ? 0 :
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
@@ -487,6 +489,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
     fusHLT_ = 0;
     fusCloud_ = 0;
     fusStale_ = 0;
+    fusQuarantined_ = 0;
     initiallyQueuedLS_ = 0;
     queuedLS_ = 0;
     queuedLSonFUs_ = -1;
@@ -583,10 +586,12 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     }
   }
 
+  bool allFUsQuarantined;
   bool allFUsStale;
   bool fusInCloud;
   {
     boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    allFUsQuarantined = (fusHLT_ == 0U) && (fusQuarantined_ > 0U);
     allFUsStale = (fusHLT_ == 0U) && (fusStale_ > 0U);
     fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
   }
@@ -597,7 +602,13 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
-  if ( allFUsStale )
+  if ( allFUsQuarantined )
+  {
+    XCEPT_DECLARE(exception::FFF, e,
+                  "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them");
+    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+  }
+  else if ( allFUsStale )
   {
     XCEPT_DECLARE(exception::FFF, e,
                   "All FUs in the appliance are reporting a stale file handle");
@@ -641,6 +652,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   nbBlockedResources_ = 0;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
+  fuSlotsQuarantined_ = 0;
   fuSlotsStale_ = 0;
   queuedLumiSections_ = -1;
   queuedLumiSectionsOnFUs_ = -1;
@@ -658,6 +670,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
+  items.add("fuSlotsQuarantined", &fuSlotsQuarantined_);
   items.add("fuSlotsStale", &fuSlotsStale_);
   items.add("queuedLumiSections", &queuedLumiSections_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
@@ -678,6 +691,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 
     fuSlotsHLT_ = fusHLT_;
     fuSlotsCloud_ = fusCloud_;
+    fuSlotsQuarantined_ = fusQuarantined_;
     fuSlotsStale_ = fusStale_;
     queuedLumiSections_ = queuedLS_;
     queuedLumiSectionsOnFUs_ = queuedLSonFUs_;
@@ -866,6 +880,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       table.add(tr()
                 .add(td("# FU slots used for cloud"))
                 .add(td(boost::lexical_cast<std::string>(fusCloud_))));
+      table.add(tr()
+                .add(td("# FU slots quarantined"))
+                .add(td(boost::lexical_cast<std::string>(fusQuarantined_))));
       table.add(tr()
                 .add(td("# stale FU slots"))
                 .add(td(boost::lexical_cast<std::string>(fusStale_))));

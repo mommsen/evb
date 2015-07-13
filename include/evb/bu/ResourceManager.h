@@ -178,6 +178,7 @@ namespace evb {
       uint16_t builderId_;
       uint32_t fusHLT_;
       uint32_t fusCloud_;
+      uint32_t fusQuarantined_;
       uint32_t fusStale_;
       uint32_t initiallyQueuedLS_;
       uint32_t queuedLS_;
@@ -220,6 +221,7 @@ namespace evb {
       xdata::UnsignedInteger32 nbBlockedResources_;
       xdata::UnsignedInteger32 fuSlotsHLT_;
       xdata::UnsignedInteger32 fuSlotsCloud_;
+      xdata::UnsignedInteger32 fuSlotsQuarantined_;
       xdata::UnsignedInteger32 fuSlotsStale_;
       xdata::Integer32 queuedLumiSections_;
       xdata::Integer32 queuedLumiSectionsOnFUs_;

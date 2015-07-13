@@ -66,8 +66,7 @@ class case_2x1_crcErrors_ptfrl(TestCase):
 
         ru = RU(symbolMap,[
              ('inputSource','string','FEROL'),
-             ('checkCRC','unsignedInt','1'),
-             ('maxCRCErrorRate','double','10')
+             ('checkCRC','unsignedInt','1')
             ])
         for id in range(4,8):
             self._config.add( FEROL(symbolMap,ru,id) )

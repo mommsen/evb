@@ -325,7 +325,7 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir,runNumber,activeResources=160,staleResources=0,activeRunCMSSWMaxLS=-1,activeRunNumQueuedLS=-1,cloud=0):
+    def prepareAppliance(self,testDir,runNumber,activeResources=160,quarantinedResources=0,staleResources=0,activeRunCMSSWMaxLS=-1,activeRunNumQueuedLS=-1,cloud=0):
         try:
             shutil.rmtree(testDir)
         except OSError:
@@ -338,6 +338,7 @@ class TestCase:
                 ', "broken": 0, "idle": 16, "used":'+str(activeResources-16)+
                 ', "activeFURun": '+str(runNumber)+
                 ', "active_resources": '+str(activeResources)+
+                ', "quarantined": '+str(quarantinedResources)+
                 ', "stale_resources": '+str(staleResources)+
                 ', "activeRunCMSSWMaxLS": '+str(activeRunCMSSWMaxLS)+
                 ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
