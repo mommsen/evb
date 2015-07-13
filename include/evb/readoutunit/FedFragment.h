@@ -53,7 +53,7 @@ namespace evb {
     private:
 
       bool parse(toolbox::mem::Reference*, uint32_t& usedSize);
-      uint32_t checkFerolHeader(const ferolh_t*);
+      void checkFerolHeader(const ferolh_t*);
       void checkFedHeader(const fedh_t*);
       void checkFedTrailer(const fedt_t*);
       void checkCRC(fedt_t*);
@@ -73,6 +73,7 @@ namespace evb {
       uint32_t& fedErrorCount_;
       uint32_t& crcErrors_;
       uint16_t fedId_;
+      uint16_t bxId_;
       uint32_t eventNumber_;
       EvBid evbId_;
       uint32_t fedSize_;

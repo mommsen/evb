@@ -67,8 +67,8 @@ namespace evb {
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
+      xdata::Boolean checkBxId;                              // Check if the BX ids match when building super fragments
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
-      xdata::Double maxCRCErrorRate;                         // Tolerated rate in Hz of FED CRC errors
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
 
       Configuration()
@@ -95,8 +95,8 @@ namespace evb {
           dummyScalFedSize(0),
           scalFedId(999),
           fragmentPoolSize(200000000),
+          checkBxId(true),
           tolerateCorruptedEvents(false),
-          maxCRCErrorRate(1000),
           maxDumpsPerFED(10)
       {};
 
@@ -131,8 +131,8 @@ namespace evb {
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("ferolSources", &ferolSources);
+        params.add("checkBxId", &checkBxId);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
-        params.add("maxCRCErrorRate", &maxCRCErrorRate);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
       }
 

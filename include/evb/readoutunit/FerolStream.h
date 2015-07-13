@@ -103,7 +103,8 @@ namespace evb {
       void retrieveMonitoringQuantities(uint32_t& dataReadyCount,
                                         uint32_t& queueElements,
                                         uint32_t& corruptedEvents,
-                                        uint32_t& crcErrors);
+                                        uint32_t& crcErrors,
+                                        uint32_t& bxErrors);
 
       /**
        * Return a CGI table row with statistics for this FED
@@ -125,10 +126,10 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
-      const boost::shared_ptr<Configuration> configuration_;
       volatile bool doProcessing_;
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
+      uint32_t bxErrors_;
 
       EvBidFactoryPtr evbIdFactory_;
       FedFragmentFactory<ReadoutUnit> fedFragmentFactory_;
@@ -164,16 +165,16 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
 ) :
   readoutUnit_(readoutUnit),
   fedId_(fedId),
-  configuration_(readoutUnit->getConfiguration()),
   doProcessing_(false),
   syncLoss_(false),
   eventNumberToStop_(0),
+  bxErrors_(0),
   evbIdFactory_( new EvBidFactory() ),
   fedFragmentFactory_(readoutUnit,evbIdFactory_),
   fragmentFIFO_(readoutUnit,"fragmentFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   writeNextFragments_(0)
 {
-  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
+  fragmentFIFO_.resize(readoutUnit->getConfiguration()->fragmentFIFOCapacity);
 }
 
 
@@ -261,6 +262,19 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
     syncLoss_ = true;
     readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
   }
+
+  if ( readoutUnit_->getConfiguration()->checkBxId &&
+       fedFragment->getEvBid().bxId() != superFragment->getEvBid().bxId() )
+  {
+    ++bxErrors_;
+
+    std::ostringstream msg;
+    msg << "Bunch crossing id "
+      << fedFragment->getEvBid().bxId() << " from FED "
+      << fedFragment->getFedId() << " differs from the expected BX "
+      << superFragment->getEvBid().bxId();
+    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
+  }
 }
 
 
@@ -294,6 +308,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::resetMonitoringCounters()
 {
   inputMonitor_.reset();
+  bxErrors_ = 0;
 }
 
 
@@ -303,7 +318,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   uint32_t& dataReadyCount,
   uint32_t& queueElements,
   uint32_t& corruptedEvents,
-  uint32_t& crcErrors
+  uint32_t& crcErrors,
+  uint32_t& bxErrors
 )
 {
   {
@@ -326,6 +342,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
   corruptedEvents = fedFragmentFactory_.getCorruptedEvents();
   crcErrors = fedFragmentFactory_.getCRCerrors();
+  bxErrors = bxErrors_;
 }
 
 
@@ -358,7 +375,8 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
   }
 
   row.add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCRCerrors())))
-    .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCorruptedEvents())));
+    .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCorruptedEvents())))
+    .add(td(boost::lexical_cast<std::string>(bxErrors_)));
 
   return row;
 }

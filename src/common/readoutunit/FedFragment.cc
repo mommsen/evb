@@ -19,7 +19,8 @@ evb::readoutunit::FedFragment::FedFragment
   : typeOfNextComponent_(FEROL_HEADER),
     evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
     fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
-    fedId_(FED_COUNT+1),eventNumber_(0),fedSize_(0),
+    fedId_(FED_COUNT+1),bxId_(FED_BXID_WIDTH+1),
+    eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isComplete_(false),
     bufRef_(0),cache_(0),tmpBufferSize_(0)
 {}
@@ -118,7 +119,8 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
           remainingBufferSize -= sizeof(ferolh_t);
         }
 
-        const uint32_t dataLength = checkFerolHeader(ferolHeader);
+        checkFerolHeader(ferolHeader);
+        const uint32_t dataLength = ferolHeader->data_length();
         fedSize_ += dataLength;
         payloadLength_ = dataLength;
 
@@ -196,6 +198,8 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         }
 
         checkFedHeader(fedHeader);
+        if ( bxId_ > FED_BXID_WIDTH )
+          bxId_ = FED_BXID_EXTRACT(fedHeader->sourceid);
         typeOfNextComponent_ = FED_PAYLOAD;
         break;
       }
@@ -263,7 +267,7 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         isComplete_ = true;
         dataLocations_.push_back(dataLocation);
         if ( !evbId_.isValid() )
-          evbId_ = evbIdFactory_->getEvBid(eventNumber_, dataLocations_);
+          evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
         // check the trailer last such that we get the full event dump in case of errors
         checkFedTrailer(fedTrailer);
         if ( checkCRC_ > 0 && eventNumber_ % checkCRC_ == 0 )
@@ -281,7 +285,7 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 }
 
 
-uint32_t evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader)
+void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader)
 {
 
   if ( ferolHeader->signature() != FEROL_SIGNATURE )
@@ -316,8 +320,6 @@ uint32_t evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHe
       XCEPT_RAISE(exception::DataCorruption, msg.str());
     }
   }
-
-  return ferolHeader->data_length();
 }
 
 

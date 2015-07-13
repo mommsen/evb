@@ -134,7 +134,7 @@ size_t evb::FragmentTracker::fillData
 
         fedHeader = (fedh_t*)payload;
 
-        fedHeader->sourceid = fedId_ << FED_SOID_SHIFT;
+        fedHeader->sourceid = (evbId_.bxId() << FED_BXID_SHIFT) | (fedId_ << FED_SOID_SHIFT);
         fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | evbId_.eventNumber();
 
         if ( computeCRC_ )

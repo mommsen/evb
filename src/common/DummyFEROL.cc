@@ -56,6 +56,7 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   duplicateNbEvents_ = 0;
   corruptNbEvents_ = 0;
   nbCRCerrors_ = 0;
+  nbBXerrors_ = 0;
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
@@ -63,6 +64,7 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("duplicateNbEvents", &duplicateNbEvents_);
   appInfoSpaceParams.add("corruptNbEvents", &corruptNbEvents_);
   appInfoSpaceParams.add("nbCRCerrors", &nbCRCerrors_);
+  appInfoSpaceParams.add("nbBXerrors", &nbBXerrors_);
 }
 
 
@@ -414,7 +416,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
       if ( fragmentGenerator_.getData(bufRef,stopAtEvent_.value_,lastEventNumber_.value_,
                                       skipNbEvents_.value_,duplicateNbEvents_.value_,
-                                      corruptNbEvents_.value_,nbCRCerrors_.value_) )
+                                      corruptNbEvents_.value_,nbCRCerrors_.value_,nbBXerrors_.value_) )
       {
         fragmentFIFO_.enqWait(bufRef);
       }

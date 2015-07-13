@@ -10,7 +10,7 @@ evb::EvBidFactory::EvBidFactory() :
   previousEventNumber_(0),
   resyncCount_(0),
   fakeLumiSectionDuration_(0),
-  fakeLumiSection_(1),
+  fakeLumiSection_(0),
   doFakeLumiSections_(false)
 {}
 
@@ -40,7 +40,7 @@ void evb::EvBidFactory::reset(const uint32_t runNumber)
   resyncCount_ = 0;
 
   stopFakeLumiThread();
-  fakeLumiSection_ = 1;
+  fakeLumiSection_ = 0;
   if ( fakeLumiSectionDuration_.total_seconds() > 0 )
   {
     doFakeLumiSections_ = true;
@@ -67,9 +67,9 @@ void evb::EvBidFactory::fakeLumiActivity()
   boost::system_time nextLumiSectionStartTime = boost::get_system_time();
   while(doFakeLumiSections_)
   {
+    ++fakeLumiSection_;
     nextLumiSectionStartTime += fakeLumiSectionDuration_;
     boost::this_thread::sleep(nextLumiSectionStartTime);
-    ++fakeLumiSection_;
   }
 }
 
@@ -77,17 +77,17 @@ void evb::EvBidFactory::fakeLumiActivity()
 evb::EvBid evb::EvBidFactory::getEvBid()
 {
   const uint32_t fakeEventNumber = (previousEventNumber_+1) % (1 << 24);
-  return getEvBid(fakeEventNumber);
+  return getEvBid(fakeEventNumber,fakeEventNumber%0xfff);
 }
 
 
-evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber)
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_t bxId)
 {
-  return getEvBid(eventNumber,fakeLumiSection_);
+  return getEvBid(eventNumber,bxId,fakeLumiSection_);
 }
 
 
-evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_t lumiSection)
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_t bxId, const uint32_t lumiSection)
 {
   if ( eventNumber != previousEventNumber_ + 1 )
   {
@@ -120,20 +120,20 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint32_
 
   previousEventNumber_ = eventNumber;
 
-  return EvBid(resyncCount_,eventNumber,lumiSection,runNumber_);
+  return EvBid(resyncCount_,eventNumber,bxId,lumiSection,runNumber_);
 }
 
 
-evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const DataLocations& dataLocations)
+evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_t bxId, const DataLocations& dataLocations)
 {
   if ( lumiSectionFunction_ )
   {
     const uint32_t lsNumber = lumiSectionFunction_(dataLocations);
-    return getEvBid(eventNumber,lsNumber);
+    return getEvBid(eventNumber,bxId,lsNumber);
   }
   else
   {
-    return getEvBid(eventNumber);
+    return getEvBid(eventNumber,bxId);
   }
 }
 

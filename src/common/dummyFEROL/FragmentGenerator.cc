@@ -122,7 +122,7 @@ void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& play
 {
   toolbox::mem::Reference* bufRef = 0;
   uint32_t dummy = 0;
-  fillData(bufRef,dummy,dummy,dummy,dummy,dummy,dummy);
+  fillData(bufRef,dummy,dummy,dummy,dummy,dummy,dummy,dummy);
   playbackData_.push_back(bufRef);
   playbackDataPos_ = playbackData_.begin();
 }
@@ -145,7 +145,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
-  uint32_t& nbCRCerrors
+  uint32_t& nbCRCerrors,
+  uint32_t& nbBXerrors
 )
 {
   if ( usePlayback_ )
@@ -162,7 +163,7 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
   }
   else
   {
-    return fillData(bufRef,stopAtEventNumber,lastEventNumber,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors);
+    return fillData(bufRef,stopAtEventNumber,lastEventNumber,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors,nbBXerrors);
   }
 }
 
@@ -175,7 +176,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
-  uint32_t& nbCRCerrors
+  uint32_t& nbCRCerrors,
+  uint32_t& nbBXerrors
 )
 {
   for ( uint32_t i = 0; i < skipNbEvents; ++i )
@@ -235,12 +237,21 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
       const size_t filledBytes = fragmentTracker_->fillData(frame, length);
       //const size_t filledBytes = length;
 
-      if ( nbCRCerrors > 0 && packetNumber == 0 )
+      if (packetNumber == 0)
       {
-        unsigned char* payload = frame +
-          ( filledBytes / 2 );
-        *payload ^= 0x1;
-        --nbCRCerrors;
+        if ( nbCRCerrors > 0 )
+        {
+          unsigned char* payload = frame +
+            ( filledBytes / 2 );
+          *payload ^= 0x1;
+          --nbCRCerrors;
+        }
+        if ( nbBXerrors > 0 )
+        {
+          fedh_t* fedHeader = (fedh_t*)(frame);
+          fedHeader->sourceid ^= (0x10 << FED_BXID_SHIFT);
+          --nbBXerrors;
+        }
       }
 
       ferolHeader->set_data_length(filledBytes);
@@ -334,139 +345,6 @@ toolbox::mem::Reference* evb::test::dummyFEROL::FragmentGenerator::clone
   }
   return head;
 }
-
-
-void evb::test::dummyFEROL::FragmentGenerator::fillTriggerPayload
-(
-  unsigned char* fedPtr,
-  const uint32_t eventNumber,
-  const L1Information& l1Info
-) const
-{
-  using namespace evtn;
-
-  //set offsets based on record scheme
-  evm_board_setformat(fedSize_);
-
-  unsigned char* ptr = fedPtr + sizeof(fedh_t);
-
-  //board id
-  unsigned char *pptr = ptr + EVM_BOARDID_OFFSET * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = (EVM_BOARDID_VALUE << EVM_BOARDID_SHIFT);
-
-  //setup version
-  pptr = ptr + EVM_GTFE_SETUPVERSION_OFFSET * SLINK_HALFWORD_SIZE;
-  if (EVM_GTFE_BLOCK == EVM_GTFE_BLOCK_V0011)
-    *((uint32_t*)(pptr)) = 0xffffffff & EVM_GTFE_SETUPVERSION_MASK;
-  else
-    *((uint32_t*)(pptr)) = 0x00000000 & EVM_GTFE_SETUPVERSION_MASK;
-
-  //fdl mode
-  pptr = ptr + EVM_GTFE_FDLMODE_OFFSET * SLINK_HALFWORD_SIZE;
-  if (EVM_FDL_NOBX == 5)
-    *((uint32_t*)(pptr)) = 0xffffffff & EVM_GTFE_FDLMODE_MASK;
-  else
-    *((uint32_t*)(pptr)) = 0x00000000 & EVM_GTFE_FDLMODE_MASK;
-
-  //gps time
-  timeval tv;
-  gettimeofday(&tv,0);
-  pptr = ptr + EVM_GTFE_BSTGPS_OFFSET * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = tv.tv_usec;
-  pptr += SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = tv.tv_sec;
-
-  //TCS chip id
-  pptr = ptr + (EVM_GTFE_BLOCK*2 + EVM_TCS_BOARDID_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = ((EVM_TCS_BOARDID_VALUE << EVM_TCS_BOARDID_SHIFT) & EVM_TCS_BOARDID_MASK);
-
-  //event number
-  pptr = ptr + (EVM_GTFE_BLOCK*2 + EVM_TCS_TRIGNR_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = eventNumber;
-
-  //orbit number
-  pptr = ptr + (EVM_GTFE_BLOCK*2 + EVM_TCS_ORBTNR_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = l1Info.orbitNumber;
-
-  //lumi section
-  pptr = ptr + (EVM_GTFE_BLOCK*2 + EVM_TCS_LSBLNR_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = l1Info.lsNumber + ((l1Info.eventType << EVM_TCS_EVNTYP_SHIFT) & EVM_TCS_EVNTYP_MASK);
-
-  // bunch crossing in fdl bx+0 (-1,0,1) for nbx=3 i.e. offset by one full FDB block and leave -1/+1 alone (it will be full of zeros)
-  // add also TCS chip Id
-  pptr = ptr + ((EVM_GTFE_BLOCK + EVM_TCS_BLOCK + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2))*2 + EVM_FDL_BCNRIN_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint32_t*)(pptr)) = (l1Info.bunchCrossing & EVM_TCS_BCNRIN_MASK) + ((EVM_FDL_BOARDID_VALUE << EVM_FDL_BOARDID_SHIFT) & EVM_FDL_BOARDID_MASK);
-
-  // tech trig 64-bit set
-  pptr = ptr + ((EVM_GTFE_BLOCK + EVM_TCS_BLOCK + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2))*2 + EVM_FDL_TECTRG_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint64_t*)(pptr)) = l1Info.l1Technical;
-  pptr = ptr + ((EVM_GTFE_BLOCK + EVM_TCS_BLOCK + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2))*2 + EVM_FDL_ALGOB1_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint64_t*)(pptr)) = l1Info.l1Decision_0_63;
-  pptr = ptr + ((EVM_GTFE_BLOCK + EVM_TCS_BLOCK + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2))*2 + EVM_FDL_ALGOB2_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint64_t*)(pptr)) = l1Info.l1Decision_64_127;
-
-  // prescale version is 0
-  pptr = ptr + ((EVM_GTFE_BLOCK + EVM_TCS_BLOCK + EVM_FDL_BLOCK * (EVM_FDL_NOBX/2))*2 + EVM_FDL_PSCVSN_OFFSET) * SLINK_HALFWORD_SIZE;
-  *((uint64_t*)(pptr)) = 0;
-}
-
-
-void evb::test::dummyFEROL::FragmentGenerator::updateCRC
-(
-  const unsigned char* fedPtr
-) const
-{
-  // fedt_t* fedTrailer = (fedt_t*)(fedPtr + fedSize_ - sizeof(fedt_t));
-
-  // // Force C,F,R & CRC field to zero before re-computing the CRC.
-  // // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-  // fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
-
-  // unsigned short crc = compute_crc(fedPtr,fedSize_);
-  // fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
-}
-
-
-evb::test::dummyFEROL::L1Information::L1Information()
-{
-  reset();
-}
-
-
-void evb::test::dummyFEROL::L1Information::reset()
-{
-  strncpy(reason, "none", sizeof(reason));
-  isValid           = false;
-  runNumber         = 0UL;
-  lsNumber          = 0UL;
-  bunchCrossing     = 0UL;
-  orbitNumber       = 0UL;
-  eventType         = 0U;
-  l1Technical       = 0ULL;
-  l1Decision_0_63   = 0ULL;
-  l1Decision_64_127 = 0ULL;
-}
-
-
-const evb::test::dummyFEROL::L1Information& evb::test::dummyFEROL::L1Information::operator=
-(
-  const L1Information& l1Info
-)
-{
-  strncpy(reason, l1Info.reason, sizeof(reason));
-  isValid           = l1Info.isValid;
-  runNumber         = l1Info.runNumber;
-  lsNumber          = l1Info.lsNumber;
-  bunchCrossing     = l1Info.bunchCrossing;
-  orbitNumber       = l1Info.orbitNumber;
-  eventType         = l1Info.eventType;
-  l1Technical       = l1Info.l1Technical;
-  l1Decision_0_63   = l1Info.l1Decision_0_63;
-  l1Decision_64_127 = l1Info.l1Decision_64_127;
-  return *this;
-}
-
-
 
 
 /// emacs configuration

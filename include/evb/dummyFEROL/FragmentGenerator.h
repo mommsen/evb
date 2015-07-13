@@ -92,7 +92,8 @@ namespace evb {
                      uint32_t& skipNbEvents,
                      uint32_t& duplicateNbEvents,
                      uint32_t& corruptNbEvents,
-                     uint32_t& nbCRCerrors);
+                     uint32_t& nbCRCerrors,
+                     uint32_t& nbBXerrors);
 
         /**
          * Set maximum rate for generating fragments
@@ -109,18 +110,9 @@ namespace evb {
                       uint32_t& skipNbEvents,
                       uint32_t& duplicateNbEvents,
                       uint32_t& corruptNbEvents,
-                      uint32_t& nbCRCerrors);
+                      uint32_t& nbCRCerrors,
+                      uint32_t& nbBXerrors);
         toolbox::mem::Reference* clone(toolbox::mem::Reference*) const;
-        void fillTriggerPayload
-        (
-          unsigned char* fedPtr,
-          const uint32_t eventNumber,
-          const L1Information&
-        ) const;
-        void updateCRC
-        (
-          const unsigned char* fedPtr
-        ) const;
 
         EvBid evbId_;
         uint32_t frameSize_;

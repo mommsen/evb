@@ -35,24 +35,24 @@ namespace evb {
     void setFakeLumiSectionDuration(const uint32_t duration);
 
     /**
-     * Return EvBid with a fake eventNumber and lumi section
+     * Return EvBid with a fake eventNumber, bunch crossing id, and lumi section
      */
     EvBid getEvBid();
 
     /**
-     * Return EvBid for given eventNumber and a fake lumi section
+     * Return EvBid for given eventNumber, bunch crossing id, and a fake lumi section
      */
-    EvBid getEvBid(const uint32_t eventNumber);
+    EvBid getEvBid(const uint32_t eventNumber, const uint16_t bxId);
 
     /**
-     * Return EvBid for given eventNumber and lumi section
+     * Return EvBid for given eventNumber, bunch crossing id, and lumi section
      */
-    EvBid getEvBid(const uint32_t eventNumber, const uint32_t lumiSection);
+    EvBid getEvBid(const uint32_t eventNumber, const uint16_t bxId, const uint32_t lumiSection);
 
     /**
-     * Return EvBid corresponding to the FED fragment
+     * Return EvBid for given eventNumber, bunch crossing id, and extract lumi section from payload
      */
-    EvBid getEvBid(const uint32_t eventNumber, const DataLocations&);
+    EvBid getEvBid(const uint32_t eventNumber, const uint16_t bxId, const DataLocations&);
 
     /**
      * Reset the counters for a new run

@@ -90,7 +90,7 @@ evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
   const uint16_t fedId
 ) :
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
-  dummyScalFedSize_(this->configuration_->dummyScalFedSize),
+  dummyScalFedSize_(readoutUnit->getConfiguration()->dummyScalFedSize),
   currentLumiSection_(0),
   dataIsValid_(false)
 {

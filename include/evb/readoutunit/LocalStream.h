@@ -92,12 +92,12 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
   generatingActive_(false),
   fragmentTracker_(fedId,
-                   this->configuration_->dummyFedSize,
-                   this->configuration_->useLogNormal,
-                   this->configuration_->dummyFedSizeStdDev,
-                   this->configuration_->dummyFedSizeMin,
-                   this->configuration_->dummyFedSizeMax,
-                   this->configuration_->computeCRC)
+                   readoutUnit->getConfiguration()->dummyFedSize,
+                   readoutUnit->getConfiguration()->useLogNormal,
+                   readoutUnit->getConfiguration()->dummyFedSizeStdDev,
+                   readoutUnit->getConfiguration()->dummyFedSizeMin,
+                   readoutUnit->getConfiguration()->dummyFedSizeMax,
+                   readoutUnit->getConfiguration()->computeCRC)
 {
   const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
   createFragmentPool(fedIdStr);
@@ -121,7 +121,8 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::createFragmentPoo
 
   try
   {
-    toolbox::mem::CommittedHeapAllocator* a = new toolbox::mem::CommittedHeapAllocator(this->configuration_->fragmentPoolSize.value_);
+    toolbox::mem::CommittedHeapAllocator* a =
+      new toolbox::mem::CommittedHeapAllocator(this->readoutUnit_->getConfiguration()->fragmentPoolSize.value_);
     fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
   }
   catch(toolbox::mem::exception::Exception& e)

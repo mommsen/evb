@@ -143,6 +143,8 @@ uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
+  if ( lumiSection == 0 ) return;
+
   boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(lumiSection);
@@ -173,6 +175,8 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
 
 void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiSection)
 {
+  if ( lumiSection == 0 ) return;
+
   boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::iterator pos = lumiSectionAccounts_.find(lumiSection);

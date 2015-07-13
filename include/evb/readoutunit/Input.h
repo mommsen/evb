@@ -200,6 +200,7 @@ namespace evb {
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithErrors_;
       xdata::Vector<xdata::UnsignedInteger32> fedDataCorruption_;
       xdata::Vector<xdata::UnsignedInteger32> fedCRCerrors_;
+      xdata::Vector<xdata::UnsignedInteger32> fedBXerrors_;
 
     };
 
@@ -511,6 +512,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   fedIdsWithErrors_.clear();
   fedDataCorruption_.clear();
   fedCRCerrors_.clear();
+  fedBXerrors_.clear();
 
   items.add("lastEventNumber", &lastEventNumber_);
   items.add("eventRate", &eventRate_);
@@ -523,6 +525,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   items.add("fedIdsWithErrors", &fedIdsWithErrors_);
   items.add("fedDataCorruption", &fedDataCorruption_);
   items.add("fedCRCerrors", &fedCRCerrors_);
+  items.add("fedBXerrors", &fedBXerrors_);
 }
 
 
@@ -536,6 +539,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     fedIdsWithErrors_.clear();
     fedDataCorruption_.clear();
     fedCRCerrors_.clear();
+    fedBXerrors_.clear();
 
     uint32_t dataReadyCount = 0;
     uint32_t maxElements = 0;
@@ -546,8 +550,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       uint32_t queueElements = 0;
       uint32_t corruptedEvents = 0;
       uint32_t crcErrors = 0;
+      uint32_t bxErrors = 0;
 
-      it->second->retrieveMonitoringQuantities(dataReadyCount,queueElements,corruptedEvents,crcErrors);
+      it->second->retrieveMonitoringQuantities(dataReadyCount,queueElements,corruptedEvents,crcErrors,bxErrors);
 
       if ( queueElements > maxElements )
         maxElements = queueElements;
@@ -555,11 +560,12 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       if ( queueElements == 0 )
         fedIdsWithoutFragments_.push_back(it->first);
 
-      if ( corruptedEvents > 0 || crcErrors > 0 )
+      if ( corruptedEvents > 0 || crcErrors > 0 || bxErrors > 0 )
       {
         fedIdsWithErrors_.push_back(it->first);
         fedDataCorruption_.push_back(corruptedEvents);
         fedCRCerrors_.push_back(crcErrors);
+        fedBXerrors_.push_back(bxErrors);
       }
     }
     incompleteSuperFragmentCount_ = maxElements;
@@ -797,16 +803,17 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
 
   table fedTable;
 
-  fedTable.add(colgroup().add(col().set("span","7")));
+  fedTable.add(colgroup().add(col().set("span","8")));
   fedTable.add(tr()
-               .add(th("Statistics per FED").set("colspan","7")));
+               .add(th("Statistics per FED").set("colspan","8")));
   fedTable.add(tr()
                .add(td("FED id").set("colspan","2"))
                .add(td("Last event"))
                .add(td("Size (Bytes)"))
                .add(td("B/w (MB/s)"))
                .add(td("#CRC"))
-               .add(td("#corrupt")));
+               .add(td("#corrupt"))
+               .add(td("#BX errors")));
 
   for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
        it != itEnd; ++it)

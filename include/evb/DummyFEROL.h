@@ -111,6 +111,7 @@ namespace evb {
       xdata::UnsignedInteger32 duplicateNbEvents_;
       xdata::UnsignedInteger32 corruptNbEvents_;
       xdata::UnsignedInteger32 nbCRCerrors_;
+      xdata::UnsignedInteger32 nbBXerrors_;
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::Double bandwidth_;
       xdata::Double frameRate_;
