@@ -19,10 +19,10 @@ namespace evb {
   public:
 
     EvBid()
-      : resyncCount_(0), eventNumber_(0), bxId_(0), lumiSection_(0), runNumber_(0) {};
+      : resyncCount_(0),eventNumber_(0),bxId_(0),lumiSection_(0),runNumber_(0),padding_(0) {};
 
     EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t bxId, uint32_t lumiSection, uint32_t runNumber)
-      : resyncCount_(resyncCount), eventNumber_(eventNumber), bxId_(bxId), lumiSection_(lumiSection), runNumber_(runNumber) {};
+      : resyncCount_(resyncCount),eventNumber_(eventNumber),bxId_(bxId),lumiSection_(lumiSection),runNumber_(runNumber),padding_(0) {};
 
     /**
      * Return the resync count
@@ -81,17 +81,17 @@ namespace evb {
 
   inline bool EvBid::operator< (const EvBid& other) const
   {
-    if ( runNumber_ != other.runNumber_ ) return ( runNumber_ < other.runNumber_ );
-    if ( resyncCount_ != other.resyncCount_ ) return ( resyncCount_ < other.resyncCount_ );
-    return ( eventNumber_ < other.eventNumber_ );
+    if ( runNumber() != other.runNumber() ) return ( runNumber() < other.runNumber() );
+    if ( resyncCount() != other.resyncCount() ) return ( resyncCount() < other.resyncCount() );
+    return ( eventNumber() < other.eventNumber() );
   }
 
   inline bool EvBid::operator== (const EvBid& other) const
   {
     return (
-      runNumber_ == other.runNumber_ &&
-      resyncCount_ == other.resyncCount_ &&
-      eventNumber_ == other.eventNumber_
+      runNumber() == other.runNumber() &&
+      resyncCount() == other.resyncCount() &&
+      eventNumber() == other.eventNumber()
     );
   }
 
