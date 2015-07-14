@@ -254,26 +254,23 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
 
   try
   {
-    superFragment->append(fedFragment);
+    if ( ! superFragment->append(fedFragment) && readoutUnit_->getConfiguration()->checkBxId )
+    {
+      ++bxErrors_;
+
+      std::ostringstream msg;
+      msg << "Bunch crossing id "
+        << fedFragment->getEvBid().bxId() << " from FED "
+        << fedFragment->getFedId() << " differs from the expected BX "
+        << superFragment->getEvBid().bxId();
+      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
+    }
   }
   catch(exception::MismatchDetected& e)
   {
     fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
     syncLoss_ = true;
     readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
-  }
-
-  if ( readoutUnit_->getConfiguration()->checkBxId &&
-       fedFragment->getEvBid().bxId() != superFragment->getEvBid().bxId() )
-  {
-    ++bxErrors_;
-
-    std::ostringstream msg;
-    msg << "Bunch crossing id "
-      << fedFragment->getEvBid().bxId() << " from FED "
-      << fedFragment->getFedId() << " differs from the expected BX "
-      << superFragment->getEvBid().bxId();
-    LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
   }
 }
 

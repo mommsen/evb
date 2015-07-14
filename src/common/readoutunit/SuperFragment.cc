@@ -9,7 +9,7 @@ evb::readoutunit::SuperFragment::SuperFragment(const EvBid& evbId)
 {}
 
 
-void evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
+bool evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
 {
   if ( fedFragment->getEvBid() != evbId_ )
   {
@@ -32,6 +32,8 @@ void evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
     fedFragments_.push_back(fedFragment);
     size_ += fedFragment->getFedSize();
   }
+
+  return ( fedFragment->getEvBid().bxId() == evbId_.bxId() );
 }
 
 
