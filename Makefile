@@ -64,6 +64,7 @@ Sources=\
 	dummyFEROL/StateMachine.cc
 
 TestExecutables = \
+	EvBid.cxx \
 	Fibonacci.cxx \
 	OneToOneQueue.cxx \
 	OneToOneQueueWait.cxx

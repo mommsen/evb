@@ -19,10 +19,12 @@ namespace evb {
   public:
 
     EvBid()
-      : resyncCount_(0),eventNumber_(0),bxId_(0),lumiSection_(0),runNumber_(0),padding_(0) {};
+      : runNumber_(0),resyncCount_(0),dataWord1_(0),dataWord2_(0) {};
 
-    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint32_t bxId, uint32_t lumiSection, uint32_t runNumber)
-      : resyncCount_(resyncCount),eventNumber_(eventNumber),bxId_(bxId),lumiSection_(lumiSection),runNumber_(runNumber),padding_(0) {};
+    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint16_t bxId, uint32_t lumiSection, uint32_t runNumber)
+      : runNumber_(runNumber),resyncCount_(resyncCount),
+        dataWord1_(((bxId&0x0ff)<<24)|(eventNumber&0xffffff)),
+        dataWord2_(((bxId&0xf00)<<20)|(lumiSection&0xfffffff)) {}
 
     /**
      * Return the resync count
@@ -34,19 +36,19 @@ namespace evb {
      * Return the event number
      */
     uint32_t eventNumber() const
-    { return eventNumber_; }
+    { return (dataWord1_ & 0xffffff); }
 
     /**
      * Return the bunch crossing id
      */
-    uint32_t bxId() const
-    { return bxId_; }
+    uint16_t bxId() const
+    { return (((dataWord1_&0xff000000) >> 24)|((dataWord2_&0xf0000000) >> 20)); }
 
     /**
      * Return the lumi-section number
      */
     uint32_t lumiSection() const
-    { return lumiSection_; }
+    { return (dataWord2_ & 0xfffffff); }
 
     /**
      * Return the run number
@@ -69,13 +71,12 @@ namespace evb {
 
   private:
 
-    uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
-    uint32_t eventNumber_; // The L1 trigger number, aka event number
-    uint32_t bxId_;        // The bunch crossing id
-    uint32_t lumiSection_; // The lumi-section number. This number is optional
     uint32_t runNumber_;   // The run number
-    uint32_t padding_;     // allign the EvBid to 64 bit
-
+    uint32_t resyncCount_; // The number of L1 trigger number resets due to resyncs
+    uint32_t dataWord1_;   // contains the lumi-section number (28 bits),
+    uint32_t dataWord2_;   // the bunch crossing id (12 bits),
+                           // and the L1 trigger number, aka event number (24 bits)
+                           // Note that using uint64_t with shift operations is undefined
   };
 
 
