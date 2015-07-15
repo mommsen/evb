@@ -70,6 +70,7 @@ namespace evb {
       xdata::Boolean checkBxId;                              // Check if the BX ids match when building super fragments
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
+      xdata::UnsignedInteger32 ferolConnectTimeOut;          // Timeout in seconds when waiting for FEROL connections
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -97,7 +98,8 @@ namespace evb {
           fragmentPoolSize(200000000),
           checkBxId(true),
           tolerateCorruptedEvents(false),
-          maxDumpsPerFED(10)
+          maxDumpsPerFED(10),
+          ferolConnectTimeOut(5)
       {};
 
       void addToInfoSpace
@@ -134,6 +136,7 @@ namespace evb {
         params.add("checkBxId", &checkBxId);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
+        params.add("ferolConnectTimeOut", &ferolConnectTimeOut);
       }
 
     };
