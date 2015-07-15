@@ -404,12 +404,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::drain(
 
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::stopProcessing()
-{
-  if ( ! handlersIdle() )
-  {
-    XCEPT_RAISE(exception::TCP,"Failed to free all pt::blit buffers");
-  }
-}
+{}
 
 
 template<class ReadoutUnit,class Configuration>

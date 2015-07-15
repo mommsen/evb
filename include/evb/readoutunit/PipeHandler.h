@@ -109,6 +109,10 @@ evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::~PipeHandler()
   pipeWorkLoop_->cancel();
   socketStreams_.clear();
   pipeService_->destroyInputPipe(inputPipe_);
+
+  toolbox::mem::Reference* bufRef;
+  while ( grantFIFO_.deq(bufRef) )
+    bufRef->release();
 }
 
 

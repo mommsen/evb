@@ -136,6 +136,7 @@ class TestCase:
                 sys.stdout.write('.')
                 sys.stdout.flush()
                 if tries > maxTries:
+                    print("")
                     raise(e)
                 sleep(1)
 
@@ -302,8 +303,8 @@ class TestCase:
 
     def checkEVM(self,superFragmentSize,eventRate=1000):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
-        self.checkAppParam("eventCount","unsignedLong",500,operator.gt,"EVM")
-        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.gt,"EVM")
+        self.checkAppParam("eventCount","unsignedLong",500,operator.ge,"EVM")
+        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"EVM")
 
 
     def checkRU(self,superFragmentSize,instance=None):
@@ -312,8 +313,8 @@ class TestCase:
 
     def checkBU(self,eventSize,eventRate=1000,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
-        self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.gt,"BU",instance)
-        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.gt,"BU",instance)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.ge,"BU",instance)
+        self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"BU",instance)
 
 
     def checkEventCount(self):
