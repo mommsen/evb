@@ -224,6 +224,10 @@ class TestCase:
         self.sendStateCmd('Stop','Draining',app,instance)
 
 
+    def clear(self,app,instance=None):
+        self.sendStateCmd('Clear','Configuring',app,instance)
+
+
     def halt(self,app,instance=None):
         self.sendStateCmd('Halt','Halted',app,instance)
 
@@ -289,6 +293,16 @@ class TestCase:
         self.waitForState('Ready')
         print(" done")
         self.checkEventCount()
+
+
+    def clearEvB(self):
+        sys.stdout.write("Clearing EvB")
+        sys.stdout.flush()
+        self.clear('EVM')
+        self.clear('RU')
+        self.clear('BU')
+        self.waitForState('Ready')
+        print(" done")
 
 
     def haltEvB(self):

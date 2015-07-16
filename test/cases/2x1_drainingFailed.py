@@ -12,18 +12,14 @@ class case_2x1_drainingFailed(TestCase):
         self.checkRU(8192)
         self.checkBU(16384)
 
-
-    def runTest(self):
-        self.configureEvB()
-        self.enableEvB(runNumber=1)
-        self.checkIt()
-
-        print("Stop sending from FED 2")
-        self.sendStateCmd('Halt','Halted','FEROL',2)
+    def blockFed(self,id):
+        sys.stdout.write("Stop sending from FED "+str(id))
+        sys.stdout.flush()
+        self.sendStateCmd('Stop','Draining','FEROL',id)
+        self.waitForAppState('Ready','FEROL',id)
+        print("done")
         time.sleep(5)
         self.checkEVM(0,0)
-        self.halt('FEROL')
-        self.checkAppState('Halted','FEROL')
         sys.stdout.write("Stopping EVM")
         sys.stdout.flush()
         self.stop('EVM')
@@ -34,9 +30,21 @@ class case_2x1_drainingFailed(TestCase):
         else:
             raise StateException("EvB should not be Ready")
         print("Recovering draining failure")
-        self.haltEvB()
+        for i in range(0,8):
+            if id != i:
+                self.sendStateCmd('Stop','Draining','FEROL',i)
+        self.clearEvB()
+
+
+    def runTest(self):
         self.configureEvB()
-        self.enableEvB(runNumber=2)
+
+        for fed in range(0,8):
+            self.enableEvB(runNumber=fed+1)
+            self.checkIt()
+            self.blockFed(fed)
+
+        self.enableEvB(runNumber=9)
         self.checkIt()
         self.haltEvB()
 

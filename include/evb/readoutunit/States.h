@@ -211,7 +211,8 @@ namespace evb {
 
       typedef EvBState< Ready<Owner>,Active<Owner> > my_state;
       typedef boost::mpl::list<
-        boost::statechart::transition< Enable,Enabled<Owner> >
+        boost::statechart::transition< Enable,Enabled<Owner> >,
+        boost::statechart::in_state_reaction< Clear >
         > reactions;
 
       Ready(typename my_state::boost_state::my_context c) : my_state("Ready", c)
@@ -235,7 +236,9 @@ namespace evb {
     public:
 
       typedef EvBState< Running<Owner>,Active<Owner>,boost::mpl::list< Enabled<Owner> > > my_state;
-      typedef boost::mpl::list<> reactions;
+      typedef boost::mpl::list<
+        boost::statechart::transition< Clear,Configuring<Owner> >
+        > reactions;
 
       Running(typename my_state::boost_state::my_context c) : my_state("Running", c)
       { this->safeEntryAction(); }
@@ -281,7 +284,7 @@ namespace evb {
 
 
     /**
-     * The Draining state of the outer-state Enabled.
+     * The Draining state of the outer-state Running.
      */
     template<class Owner>
     class Draining: public EvBState< Draining<Owner>,Running<Owner> >
