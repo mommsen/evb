@@ -97,7 +97,7 @@ namespace evb {
       void drain();
 
       /**
-       * Start processing events
+       * Stop processing events
        */
       void stopProcessing();
 
@@ -161,7 +161,7 @@ namespace evb {
       typedef std::map<I2O_TID,FragmentRequestFIFOPtr> FragmentRequestFIFOs;
       FragmentRequestFIFOs::iterator nextBU_;
       FragmentRequestFIFOs fragmentRequestFIFOs_;
-      mutable boost::mutex fragmentRequestFIFOsMutex_;
+      mutable boost::shared_mutex fragmentRequestFIFOsMutex_;
 
       typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
@@ -585,7 +585,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
 {
   {
-     boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
+     boost::unique_lock<boost::shared_mutex> ul(fragmentRequestFIFOsMutex_);
 
      fragmentRequestFIFO_.clear();
      fragmentRequestFIFO_.resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
@@ -676,7 +676,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
+    boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
     activeRequests_ = fragmentRequestFIFO_.elements();
     for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
@@ -824,7 +824,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
     div.add(table);
 
     {
-      boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
+      boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
       if ( fragmentRequestFIFOs_.empty() )
       {

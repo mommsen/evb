@@ -140,7 +140,7 @@ namespace evb {
       fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
 
-      boost::mutex::scoped_lock sl(fragmentRequestFIFOsMutex_);
+      boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
       FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(readoutMsg->buTid);
       if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(readoutMsg->buTid,pos->first) )
@@ -168,7 +168,7 @@ namespace evb {
       try
       {
         {
-          boost::mutex::scoped_lock frm(fragmentRequestFIFOsMutex_);
+          boost::shared_lock<boost::shared_mutex> frm(fragmentRequestFIFOsMutex_);
 
           if ( fragmentRequestFIFOs_.empty() ) return false;
 
