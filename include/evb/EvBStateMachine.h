@@ -30,6 +30,7 @@ namespace evb {
   class Halt : public boost::statechart::event<Halt> {};
   class Enable : public boost::statechart::event<Enable> {};
   class Stop : public boost::statechart::event<Stop> {};
+  class Clear : public boost::statechart::event<Clear> {};
 
   ////////////////////////////////
   // Internal transition events //
@@ -37,6 +38,7 @@ namespace evb {
 
   class ConfigureDone: public boost::statechart::event<ConfigureDone> {};
   class DrainingDone: public boost::statechart::event<DrainingDone> {};
+  class ClearingDone: public boost::statechart::event<ClearingDone> {};
 
   class Fail : public boost::statechart::event<Fail>
   {
@@ -235,6 +237,7 @@ evb::EvBStateMachine<MostDerived,InitialState>::EvBStateMachine
   soapFsmEvents_.push_back("Halt");
   soapFsmEvents_.push_back("Enable");
   soapFsmEvents_.push_back("Stop");
+  soapFsmEvents_.push_back("Clear");
   soapFsmEvents_.push_back("Fail");
 }
 
@@ -267,6 +270,8 @@ void evb::EvBStateMachine<MostDerived,InitialState>::do_processSoapEvent
     newStateName = processFSMEvent( Halt() );
   else if ( soapEvent == "Stop" )
     newStateName = processFSMEvent( Stop() );
+  else if ( soapEvent == "Clear" )
+    newStateName = processFSMEvent( Clear() );
   else if ( soapEvent == "Fail" )
   {
     XCEPT_DECLARE(exception::FSM,
