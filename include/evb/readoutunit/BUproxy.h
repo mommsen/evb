@@ -764,10 +764,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   cgicc::div div;
   div.add(p("BUproxy"));
 
-  boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
-  boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
-
   {
+    boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+
     table table;
     table.set("title","Super fragments are sent to the BUs requesting events.");
 
@@ -805,6 +804,8 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   }
 
   {
+    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+
     table table;
     table.set("title",getHelpTextForBuRequests());
 
