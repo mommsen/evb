@@ -97,6 +97,7 @@ namespace evb {
       xdata::UnsignedInteger32 eventRate_;
       xdata::UnsignedInteger32 superFragmentSize_;
       xdata::UnsignedInteger64 eventCount_;
+      xdata::UnsignedInteger64 nbEventsBuilt_;
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::UnsignedInteger32 stopLocalInputAtEvent_;
 
@@ -128,12 +129,14 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendAp
   eventRate_ = 0;
   superFragmentSize_ = 0;
   eventCount_ = 0;
+  nbEventsBuilt_ = 0;
   lastEventNumber_ = 0;
   stopLocalInputAtEvent_ = 0;
 
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("superFragmentSize", &superFragmentSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventCount", &eventCount_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("stopLocalInputAtEvent", &stopLocalInputAtEvent_, InfoSpaceItems::change);
 }
@@ -232,6 +235,17 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
     catch(xdata::exception::Exception)
     {
       eventCount_ = 0;
+    }
+  }
+  else if (item == "nbEventsBuilt")
+  {
+    try
+    {
+      nbEventsBuilt_.setValue( *(this->monitoringInfoSpace_->find("nbEventsBuilt")) );
+    }
+    catch(xdata::exception::Exception)
+    {
+      nbEventsBuilt_ = 0;
     }
   }
   else if (item == "lastEventNumber")

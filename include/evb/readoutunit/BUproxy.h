@@ -188,6 +188,7 @@ namespace evb {
       xdata::UnsignedInteger32 activeRequests_;
       xdata::UnsignedInteger64 requestCount_;
       xdata::UnsignedInteger64 fragmentCount_;
+      xdata::UnsignedInteger64 nbEventsBuilt_;
       xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
       xdata::Vector<xdata::UnsignedInteger64> payloadPerBU_;
 
@@ -661,12 +662,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
   activeRequests_ = 0;
   requestCount_ = 0;
   fragmentCount_ = 0;
+  nbEventsBuilt_ = 0;
   requestCountPerBU_.clear();
   payloadPerBU_.clear();
 
   items.add("activeRequests", &activeRequests_);
   items.add("requestCount", &requestCount_);
   items.add("fragmentCount", &fragmentCount_);
+  items.add("nbEventsBuilt", &nbEventsBuilt_);
   items.add("requestCountPerBU", &requestCountPerBU_);
   items.add("payloadPerBU", &payloadPerBU_);
 }
@@ -706,6 +709,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
     fragmentCount_ = dataMonitoring_.logicalCount;
+    nbEventsBuilt_ = dataMonitoring_.logicalCount - dataMonitoring_.outstandingEvents;
 
     payloadPerBU_.clear();
     payloadPerBU_.reserve(dataMonitoring_.payloadPerBU.size());
