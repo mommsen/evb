@@ -26,9 +26,10 @@ class case_2x2_failBU(TestCase):
         try:
             self.stopEvB()
         except StateException:
-            print(" failed")
+            pass
         else:
             raise StateException("EvB should not drain when a BU failed")
+        self.checkEventCount(allBuilt=False)
         self.haltEvB()
         self.checkBuDir(testDir+"/BU1",runNumber,eventSize=28672,buInstance=1)
         self.configureEvB()

@@ -331,12 +331,15 @@ class TestCase:
         self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"BU",instance)
 
 
-    def checkEventCount(self):
+    def checkEventCount(self,allBuilt=True):
         sleep(1) # assure counters are up-to-date
         evmEventCount = self.getAppParam('eventCount','unsignedLong','EVM')['EVM0']
-        buEventCounts = self.getAppParam('nbEventsBuilt','unsignedLong','BU')
-        buEventCount = reduce(lambda x,y:x+y,buEventCounts.values())
-        if evmEventCount != buEventCount:
+        evmEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','EVM')['EVM0']
+        buEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','BU')
+        buEventCount = reduce(lambda x,y:x+y,buEventsBuilt.values())
+        if evmEventsBuilt != buEventCount:
+            raise ValueError("EVM claims "+str(evmEventsBuilt)+" events were built, while BU count gives "+str(buEventCount)+" events")
+        if allBuilt and evmEventCount != buEventCount:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
