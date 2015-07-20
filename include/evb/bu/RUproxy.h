@@ -129,6 +129,7 @@ namespace evb {
       void getApplicationDescriptors();
       void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
+      void sendRequests();
       void getApplicationDescriptorForEVM();
       cgicc::table getStatisticsPerRU() const;
       uint32_t getValueFromEVM(const std::string& url);

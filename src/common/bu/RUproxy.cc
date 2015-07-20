@@ -212,6 +212,7 @@ void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
   while ( requestFragmentsActive_ ) ::usleep(1000);
+  sendRequests();
 }
 
 
@@ -247,66 +248,7 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 
   try
   {
-    uint16_t buResourceId;
-    uint16_t eventsToDiscard;
-    const uint32_t msgSize = sizeof(msg::ReadoutMsg);
-
-    while ( resourceManager_->getResourceId(buResourceId,eventsToDiscard) )
-    {
-      toolbox::mem::Reference* rqstBufRef =
-        toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, msgSize);
-      rqstBufRef->setDataSize(msgSize);
-
-      I2O_MESSAGE_FRAME* stdMsg =
-        (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
-      I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-      msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
-
-      stdMsg->VersionOffset    = 0;
-      stdMsg->MsgFlags         = 0;
-      stdMsg->MessageSize      = msgSize >> 2;
-      stdMsg->InitiatorAddress = tid_;
-      stdMsg->TargetAddress    = evm_.tid;
-      stdMsg->Function         = I2O_PRIVATE_MESSAGE;
-      pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
-      pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-      readoutMsg->headerSize   = msgSize;
-      readoutMsg->buTid        = tid_;
-      readoutMsg->buResourceId = buResourceId;
-      if ( buResourceId > 0 )
-        readoutMsg->nbRequests = configuration_->eventsPerRequest;
-      else
-        readoutMsg->nbRequests = 0;
-      readoutMsg->nbDiscards   = eventsToDiscard;
-      readoutMsg->nbRUtids     = 0; // will be filled by EVM
-
-      // Send the request to the EVM
-      try
-      {
-        bu_->getApplicationContext()->
-          postFrame(
-            rqstBufRef,
-            bu_->getApplicationDescriptor(),
-            evm_.descriptor //,
-            //i2oExceptionHandler_,
-            //it->descriptor
-          );
-      }
-      catch(xcept::Exception& e)
-      {
-        std::ostringstream msg;
-        msg << "Failed to send message to EVM TID ";
-        msg << evm_.tid;
-        XCEPT_RETHROW(exception::I2O, msg.str(), e);
-      }
-
-      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-
-      requestMonitoring_.payload += msgSize;
-      requestMonitoring_.logicalCount += configuration_->eventsPerRequest;
-      ++requestMonitoring_.i2oCount;
-    }
+    sendRequests();
   }
   catch(xcept::Exception& e)
   {
@@ -331,6 +273,71 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   requestFragmentsActive_ = false;
 
   return doProcessing_;
+}
+
+
+void evb::bu::RUproxy::sendRequests()
+{
+  uint16_t buResourceId;
+  uint16_t eventsToDiscard;
+  const uint32_t msgSize = sizeof(msg::ReadoutMsg);
+
+  while ( resourceManager_->getResourceId(buResourceId,eventsToDiscard) )
+  {
+    toolbox::mem::Reference* rqstBufRef =
+      toolbox::mem::getMemoryPoolFactory()->
+      getFrame(fastCtrlMsgPool_, msgSize);
+    rqstBufRef->setDataSize(msgSize);
+
+    I2O_MESSAGE_FRAME* stdMsg =
+      (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
+    I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
+    msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+
+    stdMsg->VersionOffset    = 0;
+    stdMsg->MsgFlags         = 0;
+    stdMsg->MessageSize      = msgSize >> 2;
+    stdMsg->InitiatorAddress = tid_;
+    stdMsg->TargetAddress    = evm_.tid;
+    stdMsg->Function         = I2O_PRIVATE_MESSAGE;
+    pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
+    pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
+    readoutMsg->headerSize   = msgSize;
+    readoutMsg->buTid        = tid_;
+    readoutMsg->buResourceId = buResourceId;
+    if ( buResourceId > 0 )
+      readoutMsg->nbRequests = configuration_->eventsPerRequest;
+    else
+      readoutMsg->nbRequests = 0;
+    readoutMsg->nbDiscards   = eventsToDiscard;
+    readoutMsg->nbRUtids     = 0; // will be filled by EVM
+
+    // Send the request to the EVM
+    try
+    {
+      bu_->getApplicationContext()->
+        postFrame(
+          rqstBufRef,
+          bu_->getApplicationDescriptor(),
+          evm_.descriptor //,
+          //i2oExceptionHandler_,
+          //it->descriptor
+        );
+    }
+    catch(xcept::Exception& e)
+    {
+      std::ostringstream msg;
+      msg << "Failed to send message to EVM TID ";
+      msg << evm_.tid;
+      XCEPT_RETHROW(exception::I2O, msg.str(), e);
+    }
+
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+
+    requestMonitoring_.payload += msgSize;
+    requestMonitoring_.logicalCount += configuration_->eventsPerRequest;
+    ++requestMonitoring_.i2oCount;
+  }
 }
 
 
