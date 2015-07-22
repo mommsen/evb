@@ -59,6 +59,8 @@ namespace evb {
       xdata::UnsignedInteger32 lumiSectionTimeout;         // Time in seconds after which a lumi-section is considered complete
       xdata::String hltParameterSetURL;                    // URL of the HLT menu
       xdata::Vector<xdata::String> hltFiles;               // List of file names to retrieve from hltParameterSetURL
+      xdata::String blacklistName;                         // Name of the blacklist file
+      xdata::String fuBlacklist;                           // The FUs to blacklist as string
       xdata::UnsignedInteger32 timeSamplePreScale;         // Sample arrival time difference for every Nth I2O mesage (0 disables it)
 
       Configuration()
@@ -95,6 +97,8 @@ namespace evb {
           lumiSectionFIFOCapacity(128),
           lumiSectionTimeout(30),
           hltParameterSetURL(""),
+          blacklistName("blacklist"),
+          fuBlacklist("[]"),
           timeSamplePreScale(10000)
       {
         hltFiles.push_back("HltConfig.py");
@@ -141,6 +145,8 @@ namespace evb {
         params.add("lumiSectionTimeout", &lumiSectionTimeout);
         params.add("hltParameterSetURL", &hltParameterSetURL);
         params.add("hltFiles", &hltFiles);
+        params.add("blacklistName", &blacklistName);
+        params.add("fuBlacklist", &fuBlacklist);
         params.add("timeSamplePreScale", &timeSamplePreScale);
       }
     };

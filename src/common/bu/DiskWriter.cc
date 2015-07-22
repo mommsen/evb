@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <boost/regex.hpp>
+
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
 #include "evb/bu/DiskUsage.h"
@@ -77,7 +79,7 @@ void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
     createDir(runRawDataDir_);
     createDir(runMetaDataDir_);
 
-    getHLTmenu(rawRunDir);
+    populateHltdDirectory(rawRunDir);
     createLockFile(rawRunDir);
 
     const boost::filesystem::path jsdDir = runMetaDataDir_ / configuration_->jsdDirName.value_;
@@ -550,12 +552,21 @@ void evb::bu::DiskWriter::closeAnyOldRuns() const
 }
 
 
-void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) const
+void evb::bu::DiskWriter::populateHltdDirectory(const boost::filesystem::path& runDir) const
+{
+  const boost::filesystem::path tmpPath = runDir / "tmp";
+  createDir(tmpPath);
+  getHLTmenu(tmpPath);
+  writeBlacklist(tmpPath);
+
+  const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_  );
+  boost::filesystem::rename(tmpPath,hltPath);
+}
+
+
+void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& tmpPath) const
 {
   if ( configuration_->hltParameterSetURL.value_.empty() ) return;
-
-  const boost::filesystem::path tmpPath = runDir / "curl";
-  createDir(tmpPath);
 
   std::string url(configuration_->hltParameterSetURL.value_);
 
@@ -584,9 +595,31 @@ void evb::bu::DiskWriter::getHLTmenu(const boost::filesystem::path& runDir) cons
   }
 
   curl_easy_cleanup(curl);
+}
 
-  const boost::filesystem::path hltPath( runDir / configuration_->hltDirName.value_  );
-  boost::filesystem::rename(tmpPath,hltPath);
+
+void evb::bu::DiskWriter::writeBlacklist(const boost::filesystem::path& tmpPath) const
+{
+  const boost::filesystem::path blacklistPath( tmpPath / configuration_->blacklistName.value_ );
+  const char* path = blacklistPath.string().c_str();
+  std::ofstream blacklist(path);
+
+  const boost::regex regex("fu-[a-zA-Z0-9-]+");
+  boost::sregex_iterator res(configuration_->fuBlacklist.value_.begin(), configuration_->fuBlacklist.value_.end(), regex);
+  const boost::sregex_iterator end;
+  if ( res == end )
+  {
+    blacklist << "[]" << std::endl;
+  }
+  else
+  {
+    blacklist << "[\"" << *res  << "\"";
+    while (++res != end) {
+      blacklist << ", \"" << *res << "\"";
+    }
+    blacklist << "]" << std::endl;
+  }
+  blacklist.close();
 }
 
 

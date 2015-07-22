@@ -66,5 +66,6 @@ class case_2x1_write(TestCase):
             ]) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','6'),
-             ('staleResourceTime','unsignedInt','0')
+             ('staleResourceTime','unsignedInt','0'),
+             ('fuBlacklist','string','[fu-c2e07-18-01.cms, fu-c2e07-24-01.cms]')
             ]) )

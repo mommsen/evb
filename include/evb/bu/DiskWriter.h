@@ -129,7 +129,9 @@ namespace evb {
       void createDir(const boost::filesystem::path&) const;
       void removeDir(const boost::filesystem::path&) const;
       void closeAnyOldRuns() const;
-      void getHLTmenu(const boost::filesystem::path& runDir) const;
+      void populateHltdDirectory(const boost::filesystem::path& runDir) const;
+      void getHLTmenu(const boost::filesystem::path& tmpDir) const;
+      void writeBlacklist(const boost::filesystem::path& tmpDir) const;
       void retrieveFromURL(CURL*, const std::string& url, const boost::filesystem::path& output) const;
       void createLockFile(const boost::filesystem::path&) const;
       void writeEoLS(const LumiInfoPtr&) const;
