@@ -13,6 +13,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
+#include "evb/Constants.h"
 #include "evb/DumpUtility.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
@@ -256,14 +257,15 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   {
     if ( ! superFragment->append(fedFragment) && readoutUnit_->getConfiguration()->checkBxId )
     {
-      ++bxErrors_;
-
-      std::ostringstream msg;
-      msg << "Bunch crossing id "
-        << fedFragment->getEvBid().bxId() << " from FED "
-        << fedFragment->getFedId() << " differs from the expected BX "
-        << superFragment->getEvBid().bxId();
-      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),msg.str());
+      if ( evb::isFibonacci(++bxErrors_) )
+      {
+        std::ostringstream msg;
+        msg << "Received " << bxErrors_
+          << " fragments from FED " << fedFragment->getFedId()
+          << " where bunch crossing id " << fedFragment->getEvBid().bxId()
+          << " differs from the expected BX " << superFragment->getEvBid().bxId();
+        LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),msg.str());
+      }
     }
   }
   catch(exception::MismatchDetected& e)
