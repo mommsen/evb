@@ -16,8 +16,13 @@ class case_2x1_crcErrors(TestCase):
 
 
     def runTest(self):
+        testDir="/tmp/evb_test/ramdisk"
+        self.prepareAppliance(testDir,runNumber=1)
+        self.setAppParam('rawDataDir','string',testDir,'BU')
+        self.setAppParam('metaDataDir','string',testDir,'BU')
         self.configureEvB()
-        self.enableEvB(sleepTime=1)
+        self.setAppParam('hltParameterSetURL','string','file://'+testDir,'BU')
+        self.enableEvB(sleepTime=1,runNumber=1)
         self.checkIt()
 
         print("1 CRC error on FED 1")
@@ -49,17 +54,20 @@ class case_2x1_crcErrors(TestCase):
         self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',10,operator.gt,"BU")
 
         self.haltEvB()
-        time.sleep(1)
+        self.checkBuDir(testDir,"000001",eventSize=16384)
+
         self.configureEvB()
-        self.enableEvB()
+        self.enableEvB(runNumber=2)
         self.checkIt()
         self.haltEvB()
+        self.checkBuDir(testDir,"000002",eventSize=16384)
 
 
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
              ('inputSource','string','Socket'),
-             ('checkCRC','unsignedInt','1')
+             ('checkCRC','unsignedInt','1'),
+             ('fakeLumiSectionDuration','unsignedInt','5')
             ])
         for id in range(0,4):
             self._config.add( FEROL(symbolMap,evm,id) )
@@ -76,6 +84,6 @@ class case_2x1_crcErrors(TestCase):
 
         self._config.add( BU(symbolMap,[
              ('checkCRC','unsignedInt','1'),
-             ('dropEventData','boolean','true'),
-             ('lumiSectionTimeout','unsignedInt','0')
+             ('staleResourceTime','unsignedInt','0'),
+             ('lumiSectionTimeout','unsignedInt','6')
             ]) )
