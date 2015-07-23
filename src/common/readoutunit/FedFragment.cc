@@ -270,8 +270,6 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
           evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
         // check the trailer last such that we get the full event dump in case of errors
         checkFedTrailer(fedTrailer);
-        if ( checkCRC_ > 0 && eventNumber_ % checkCRC_ == 0 )
-          checkCRC(fedTrailer);
         return true;
       }
     }
@@ -361,7 +359,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
 }
 
 
-void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
+void evb::readoutunit::FedFragment::checkFedTrailer(fedt_t* fedTrailer)
 {
   if ( FED_TCTRLID_EXTRACT(fedTrailer->eventsize) != FED_SLINK_END_MARKER )
   {
@@ -391,6 +389,9 @@ void evb::readoutunit::FedFragment::checkFedTrailer(const fedt_t* fedTrailer)
     }
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
+
+  if ( checkCRC_ > 0 && eventNumber_ % checkCRC_ == 0 )
+    checkCRC(fedTrailer);
 
   if ( (fedTrailer->conscheck & 0xC004) &&
        evb::isFibonacci( ++fedErrorCount_ ) )  {
@@ -444,6 +445,10 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
       msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << ":";
       msg << " FED trailer claims 0x" << std::hex << trailerCRC;
       msg << ", but recalculation gives 0x" << crc;
+      if (fedTrailer->conscheck & 0x8004)
+      {
+        msg << ". Trailer indicates that " << trailerBitToString(fedTrailer->conscheck);
+      }
       XCEPT_RAISE(exception::CRCerror, msg.str());
     }
   }

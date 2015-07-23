@@ -55,7 +55,7 @@ namespace evb {
       bool parse(toolbox::mem::Reference*, uint32_t& usedSize);
       void checkFerolHeader(const ferolh_t*);
       void checkFedHeader(const fedh_t*);
-      void checkFedTrailer(const fedt_t*);
+      void checkFedTrailer(fedt_t*);
       void checkCRC(fedt_t*);
       std::string trailerBitToString(const uint32_t conscheck) const;
 
