@@ -175,7 +175,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         {
           eventMapMonitor.lowestLumiSection = completeEvents.begin()->first;
           handleCompleteEvents(completeEvents,streamHandler);
-          eventMapMonitor.completeEvents = completeEvents.size();
         }
         catch(exception::DataCorruption& e)
         {
@@ -201,6 +200,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
             LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
           }
         }
+        eventMapMonitor.completeEvents = completeEvents.size();
       }
 
       if ( ! workDone )
