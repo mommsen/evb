@@ -85,7 +85,7 @@ namespace evb {
        * If it is not available or complete, the method returns false.
        * Otherwise, the SuperFragmentPtr holds a vector of FED fragements.
        */
-      bool getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&);
+      void getSuperFragmentWithEvBid(const EvBid&, SuperFragmentPtr&);
 
       /**
        * Get the number of events contained in the given lumi section
@@ -283,7 +283,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
 {
   superFragment.reset( new SuperFragment(evbId) );
 
@@ -297,8 +297,6 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvB
   }
 
   updateSuperFragmentCounters(superFragment);
-
-  return true;
 }
 
 
