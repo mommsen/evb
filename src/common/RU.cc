@@ -38,30 +38,27 @@ namespace evb {
     {
       boost::mutex::scoped_lock sl(processingRequestMutex_);
 
-      if ( ! fragmentRequestFIFO_.deq(fragmentRequest) ) return false;
-
-      try
+      if ( doProcessing_ && fragmentRequestFIFO_.deq(fragmentRequest) )
       {
-        for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
+        try
         {
-          const EvBid& evbId = fragmentRequest->evbIds.at(i);
-          SuperFragmentPtr superFragment;
-
-          while ( ! input_->getSuperFragmentWithEvBid(evbId, superFragment) )
+          for (uint32_t i=0; i < fragmentRequest->nbRequests; ++i)
           {
-            if ( ! doProcessing_ ) return false;
-            ::usleep(10);
+            const EvBid& evbId = fragmentRequest->evbIds.at(i);
+            SuperFragmentPtr superFragment;
+            input_->getSuperFragmentWithEvBid(evbId, superFragment);
+            superFragments.push_back(superFragment);
           }
 
-          superFragments.push_back(superFragment);
+          return true;
+        }
+        catch(exception::HaltRequested)
+        {
+          return false;
         }
       }
-      catch(exception::HaltRequested)
-      {
-        return false;
-      }
 
-      return true;
+      return false;
     }
 
 
