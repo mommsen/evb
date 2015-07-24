@@ -47,7 +47,8 @@ namespace evb {
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
       xdata::UnsignedInteger32 numberOfPreallocatedBlocks;   // Number of blocks pre-allocated during configure
-      xdata::UnsignedInteger32 socketBufferFIFOCapacity;     // Capacity of the FIFO used to store socket buffers
+      xdata::UnsignedInteger32 socketBufferFIFOCapacity;     // Capacity of the FIFO used to store socket buffers per FEROL
+      xdata::UnsignedInteger32 grantFIFOCapacity;            // Capacity of the FIFO used to grant buffers per pipe
       xdata::UnsignedInteger32 fragmentFIFOCapacity;         // Capacity of the FIFO used to store FED data fragments
       xdata::UnsignedInteger32 fragmentRequestFIFOCapacity;  // Capacity of the FIFO to store incoming fragment requests
       xdata::UnsignedInteger32 checkCRC;                     // Check the CRC of the FED fragments for every Nth event
@@ -79,6 +80,7 @@ namespace evb {
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
           socketBufferFIFOCapacity(32),
+          grantFIFOCapacity(256),
           fragmentFIFOCapacity(128),
           fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
           checkCRC(1),
@@ -114,6 +116,7 @@ namespace evb {
         params.add("blockSize", &blockSize);
         params.add("numberOfPreallocatedBlocks", &numberOfPreallocatedBlocks);
         params.add("socketBufferFIFOCapacity", &socketBufferFIFOCapacity);
+        params.add("grantFIFOCapacity", &grantFIFOCapacity);
         params.add("fragmentFIFOCapacity", &fragmentFIFOCapacity);
         params.add("fragmentRequestFIFOCapacity", &fragmentRequestFIFOCapacity);
         params.add("checkCRC", &checkCRC);

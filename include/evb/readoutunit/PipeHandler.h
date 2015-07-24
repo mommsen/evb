@@ -97,7 +97,7 @@ evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::PipeHandler
   grantFIFO_(readoutUnit,"grantFIFO_"+indentifier)
 {
   releaseFunction_ = boost::bind(&evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::releaseBuffer, this, _1);
-  grantFIFO_.resize(readoutUnit_->getConfiguration()->socketBufferFIFOCapacity);
+  grantFIFO_.resize(readoutUnit_->getConfiguration()->grantFIFOCapacity);
   startPipeWorkLoop();
 }
 
