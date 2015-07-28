@@ -604,7 +604,7 @@ void evb::bu::DiskWriter::writeBlacklist(const boost::filesystem::path& tmpPath)
   const char* path = blacklistPath.string().c_str();
   std::ofstream blacklist(path);
 
-  const boost::regex regex("fu-[a-zA-Z0-9-]+");
+  const boost::regex regex("[a-zA-Z]+-[a-zA-Z0-9-]+");
   boost::sregex_iterator res(configuration_->fuBlacklist.value_.begin(), configuration_->fuBlacklist.value_.end(), regex);
   const boost::sregex_iterator end;
   if ( res == end )
