@@ -51,8 +51,12 @@ void evb::bu::EventBuilder::configure()
   eventMapMonitors_.clear();
   writeNextEventsToFile_ = 0;
 
-  processesActive_.clear();
-  processesActive_.resize(configuration_->numberOfBuilders.value_);
+  {
+    boost::mutex::scoped_lock sl(processesActiveMutex_);
+
+    processesActive_.clear();
+    processesActive_.resize(configuration_->numberOfBuilders.value_);
+  }
 
   for (uint16_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
