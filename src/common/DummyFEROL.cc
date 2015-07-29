@@ -223,8 +223,6 @@ void evb::test::DummyFEROL::configure()
   );
 
   openConnection();
-
-  resetMonitoringCounters();
 }
 
 

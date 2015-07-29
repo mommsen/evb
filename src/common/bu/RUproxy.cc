@@ -417,8 +417,6 @@ void evb::bu::RUproxy::configure()
   }
 
   getApplicationDescriptors();
-
-  resetMonitoringCounters();
 }
 
 

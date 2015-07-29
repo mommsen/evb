@@ -296,8 +296,6 @@ void evb::evm::RUproxy::configure()
   }
 
   createProcessingWorkLoops();
-
-  resetMonitoringCounters();
 }
 
 

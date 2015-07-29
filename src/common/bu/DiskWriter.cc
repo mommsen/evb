@@ -456,8 +456,6 @@ void evb::bu::DiskWriter::configure()
   streamHandlers_.clear();
   lumiStatistics_.clear();
 
-  resetMonitoringCounters();
-
   if ( ! configuration_->dropEventData )
   {
     createDir(configuration_->rawDataDir.value_);

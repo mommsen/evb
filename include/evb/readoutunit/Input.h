@@ -654,8 +654,6 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentSiz
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 {
-  resetMonitoringCounters();
-
   const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
   if ( configuration->blockSize % 8 != 0 )

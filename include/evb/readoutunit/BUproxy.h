@@ -628,8 +628,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   }
 
   createProcessingWorkLoops();
-
-  resetMonitoringCounters();
 }
 
 

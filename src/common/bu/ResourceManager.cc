@@ -810,7 +810,6 @@ void evb::bu::ResourceManager::configure()
   }
 
   configureDiskUsageMonitors();
-  resetMonitoringCounters();
 }
 
 
