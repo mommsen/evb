@@ -110,6 +110,16 @@ namespace evb {
        */
       void writeNextEventsToFile(const uint16_t count);
 
+      /**
+       * Return the number of corrupted events since the start of the run
+       */
+      uint64_t getNbCorruptedEvents() const;
+
+      /**
+       * Return the number of events with CRC errors since the start of the run
+       */
+      uint64_t getNbEventsWithCRCerrors() const;
+
 
     private:
 
@@ -154,8 +164,10 @@ namespace evb {
 
       typedef std::map<uint16_t,EventMapMonitor> EventMapMonitors;
       EventMapMonitors eventMapMonitors_;
+
       uint64_t corruptedEvents_;
       uint64_t eventsWithCRCerrors_;
+      mutable boost::mutex errorCountMutex_;
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;

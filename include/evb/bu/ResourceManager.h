@@ -138,6 +138,31 @@ namespace evb {
        */
       cgicc::div getHtmlSnippedForResourceTable() const;
 
+      /**
+       * Return the averaged event size
+       */
+      uint32_t getEventSize() const;
+
+      /**
+       * Return the averaged event rate
+       */
+      uint32_t getEventRate() const;
+
+      /**
+       * Return the averaged bandwidth into the BU
+       */
+      uint32_t getBandwidth() const;
+
+      /**
+       * Return the current number of events in the BU
+       */
+      uint32_t getNbEventsInBU() const;
+
+      /**
+       * Return the number of events built since the start of the run
+       */
+      uint64_t getNbEventsBuilt() const;
+
 
     private:
 

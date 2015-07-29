@@ -147,6 +147,26 @@ namespace evb {
       void setMaxTriggerRate(const uint32_t maxTriggerRate);
 
       /**
+       * Return the event rate
+       */
+      uint32_t getEventRate() const;
+
+      /**
+       * Return the number of events received since the start of the run
+       */
+      uint64_t getEventCount() const;
+
+      /**
+       * Return the last event number received
+       */
+      uint32_t getLastEventNumber() const;
+
+      /**
+       * Return the average size of the super fragment
+       */
+      uint32_t getSuperFragmentSize() const;
+
+      /**
        * Return the readout unit associated with this input
        */
       ReadoutUnit* getReadoutUnit() const
@@ -596,6 +616,38 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
   superFragmentMonitor_.reset();
 
   incompleteEvents_ = 0;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventRate() const
+{
+  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  return superFragmentMonitor_.rate;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getLastEventNumber() const
+{
+  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  return superFragmentMonitor_.lastEventNumber;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+uint64_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCount() const
+{
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    return superFragmentMonitor_.eventCount;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentSize() const
+{
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    return superFragmentMonitor_.eventSize;
 }
 
 

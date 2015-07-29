@@ -731,6 +731,41 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 }
 
 
+uint32_t evb::bu::ResourceManager::getEventSize() const
+{
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  return eventMonitoring_.perf.size();
+}
+
+
+uint32_t evb::bu::ResourceManager::getEventRate() const
+{
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  return eventMonitoring_.perf.logicalRate();
+}
+
+
+uint32_t evb::bu::ResourceManager::getBandwidth() const
+{
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  return eventMonitoring_.perf.bandwidth();
+}
+
+
+uint32_t evb::bu::ResourceManager::getNbEventsInBU() const
+{
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  return eventMonitoring_.nbEventsInBU;
+}
+
+
+uint64_t evb::bu::ResourceManager::getNbEventsBuilt() const
+{
+  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  return eventMonitoring_.nbEventsBuilt;
+}
+
+
 void evb::bu::ResourceManager::configure()
 {
   resourceFIFO_.clear();

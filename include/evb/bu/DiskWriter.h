@@ -94,6 +94,10 @@ namespace evb {
        */
       cgicc::div getHtmlSnipped() const;
 
+      /**
+       * Return the number of lumi sections since the start of the run
+       */
+      uint32_t getNbLumiSections() const;
 
 
     private:

@@ -106,8 +106,11 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
   }
 
   runNumber_ = runNumber;
-  corruptedEvents_ = 0;
-  eventsWithCRCerrors_ = 0;
+  {
+    boost::mutex::scoped_lock sl(errorCountMutex_);
+    corruptedEvents_ = 0;
+    eventsWithCRCerrors_ = 0;
+  }
   doProcessing_ = true;
   for (uint32_t i=0; i < configuration_->numberOfBuilders; ++i)
   {
@@ -182,7 +185,10 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         }
         catch(exception::DataCorruption& e)
         {
-          ++corruptedEvents_;
+          {
+            boost::mutex::scoped_lock sl(errorCountMutex_);
+            ++corruptedEvents_;
+          }
 
           LOG4CPLUS_ERROR(bu_->getApplicationLogger(),
                           xcept::stdformat_exception_history(e));
@@ -190,9 +196,13 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         }
         catch(exception::CRCerror& e)
         {
-          ++eventsWithCRCerrors_;
+          bool reportError;
+          {
+            boost::mutex::scoped_lock sl(errorCountMutex_);
+            reportError =  evb::isFibonacci( ++eventsWithCRCerrors_ );
+          }
 
-          if ( evb::isFibonacci(eventsWithCRCerrors_) )
+          if ( reportError )
           {
             std::ostringstream msg;
             msg << "received " << eventsWithCRCerrors_ << " events with CRC error";
@@ -413,8 +423,24 @@ void evb::bu::EventBuilder::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::EventBuilder::updateMonitoringItems()
 {
+  boost::mutex::scoped_lock sl(errorCountMutex_);
+
   nbCorruptedEvents_ = corruptedEvents_;
   nbEventsWithCRCerrors_ = eventsWithCRCerrors_;
+}
+
+
+uint64_t evb::bu::EventBuilder::getNbCorruptedEvents() const
+{
+  boost::mutex::scoped_lock sl(errorCountMutex_);
+  return corruptedEvents_;
+}
+
+
+uint64_t evb::bu::EventBuilder::getNbEventsWithCRCerrors() const
+{
+  boost::mutex::scoped_lock sl(errorCountMutex_);
+  return eventsWithCRCerrors_;
 }
 
 
@@ -433,6 +459,8 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   div.add(p("EventBuilder"));
 
   {
+    boost::mutex::scoped_lock sl(errorCountMutex_);
+
     cgicc::table table;
     table.set("title","Number of bad events since the beginning of the run.");
 

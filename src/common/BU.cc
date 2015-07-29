@@ -87,93 +87,21 @@ void evb::BU::do_updateMonitoringInfo()
 void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
 {
   if (item == "eventSize")
-  {
-    try
-    {
-      eventSize_.setValue( *(monitoringInfoSpace_->find("eventSize")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      eventSize_ = 0;
-    }
-  }
+    eventSize_ = resourceManager_->getEventSize();
   else if (item == "eventRate")
-  {
-    try
-    {
-      eventRate_.setValue( *(monitoringInfoSpace_->find("eventRate")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      eventRate_ = 0;
-    }
-  }
+    eventRate_ = resourceManager_->getEventRate();
   else if (item == "bandwidth")
-  {
-    try
-    {
-      bandwidth_.setValue( *(monitoringInfoSpace_->find("bandwidth")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      bandwidth_ = 0;
-    }
-  }
+    bandwidth_ = resourceManager_->getBandwidth();
   else if (item == "nbEventsInBU")
-  {
-    try
-    {
-      nbEventsInBU_.setValue( *(monitoringInfoSpace_->find("nbEventsInBU")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbEventsInBU_ = 0;
-    }
-  }
+    nbEventsInBU_ = resourceManager_->getNbEventsInBU();
   else if (item == "nbEventsBuilt")
-  {
-    try
-    {
-      nbEventsBuilt_.setValue( *(monitoringInfoSpace_->find("nbEventsBuilt")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbEventsBuilt_ = 0;
-    }
-  }
+    nbEventsBuilt_ = resourceManager_->getNbEventsBuilt();
   else if (item == "nbLumiSections")
-  {
-    try
-    {
-      nbLumiSections_.setValue( *(monitoringInfoSpace_->find("nbLumiSections")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbLumiSections_ = 0;
-    }
-  }
+    nbLumiSections_ = diskWriter_->getNbLumiSections();
   else if (item == "nbCorruptedEvents")
-  {
-    try
-    {
-      nbCorruptedEvents_.setValue( *(monitoringInfoSpace_->find("nbCorruptedEvents")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbCorruptedEvents_ = 0;
-    }
-  }
+    nbCorruptedEvents_ = eventBuilder_->getNbCorruptedEvents();
   else if (item == "nbEventsWithCRCerrors")
-  {
-    try
-    {
-      nbEventsWithCRCerrors_.setValue( *(monitoringInfoSpace_->find("nbEventsWithCRCerrors")) );
-    }
-    catch(xdata::exception::Exception& e)
-    {
-      nbEventsWithCRCerrors_ = 0;
-    }
-  }
+    nbEventsWithCRCerrors_ = eventBuilder_->getNbEventsWithCRCerrors();
 }
 
 

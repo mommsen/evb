@@ -205,60 +205,15 @@ template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleItemRetrieveEvent(const std::string& item)
 {
   if (item == "eventRate")
-  {
-    try
-    {
-      eventRate_.setValue( *(this->monitoringInfoSpace_->find("eventRate")) );
-    }
-    catch(xdata::exception::Exception)
-    {
-      eventRate_ = 0;
-    }
-  }
-  else if (item == "superFragmentSize")
-  {
-    try
-    {
-      superFragmentSize_.setValue( *(this->monitoringInfoSpace_->find("superFragmentSize")) );
-    }
-    catch(xdata::exception::Exception)
-    {
-      superFragmentSize_ = 0;
-    }
-  }
-  else if (item == "eventCount")
-  {
-    try
-    {
-      eventCount_.setValue( *(this->monitoringInfoSpace_->find("eventCount")) );
-    }
-    catch(xdata::exception::Exception)
-    {
-      eventCount_ = 0;
-    }
-  }
-  else if (item == "nbEventsBuilt")
-  {
-    try
-    {
-      nbEventsBuilt_.setValue( *(this->monitoringInfoSpace_->find("nbEventsBuilt")) );
-    }
-    catch(xdata::exception::Exception)
-    {
-      nbEventsBuilt_ = 0;
-    }
-  }
+    eventRate_ = input_->getEventRate();
   else if (item == "lastEventNumber")
-  {
-    try
-    {
-      lastEventNumber_.setValue( *(this->monitoringInfoSpace_->find("lastEventNumber")) );
-    }
-    catch(xdata::exception::Exception)
-    {
-      lastEventNumber_ = 0;
-    }
-  }
+    lastEventNumber_ = input_->getLastEventNumber();
+  else if (item == "eventCount")
+    eventCount_ = input_->getEventCount();
+  else if (item == "nbEventsBuilt")
+    nbEventsBuilt_ = buProxy_->getNbEventsBuilt();
+  else if (item == "superFragmentSize")
+    superFragmentSize_ = input_->getSuperFragmentSize();
 }
 
 

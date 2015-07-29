@@ -107,6 +107,11 @@ namespace evb {
       uint32_t getLatestLumiSection() const;
 
       /**
+       * Return the number of events built so far
+       */
+      uint64_t getNbEventsBuilt() const;
+
+      /**
        * Return monitoring information as cgicc snipped
        */
       cgicc::div getHtmlSnipped() const;
@@ -749,6 +754,14 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
     dataMonitoring_.i2oCount = 0;
     dataMonitoring_.payloadPerBU.clear();
   }
+}
+
+
+template<class ReadoutUnit>
+uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getNbEventsBuilt() const
+{
+  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  return dataMonitoring_.logicalCount - dataMonitoring_.outstandingEvents;
 }
 
 

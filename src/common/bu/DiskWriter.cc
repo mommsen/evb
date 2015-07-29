@@ -444,6 +444,13 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
 }
 
 
+uint32_t evb::bu::DiskWriter::getNbLumiSections() const
+{
+  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  return diskWriterMonitoring_.nbLumiSections;
+}
+
+
 void evb::bu::DiskWriter::configure()
 {
   streamHandlers_.clear();
