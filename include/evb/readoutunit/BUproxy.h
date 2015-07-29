@@ -794,6 +794,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td("last lumi section to BUs"))
               .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
     table.add(tr()
+              .add(td("# of events built"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.logicalCount - dataMonitoring_.outstandingEvents))));
+    table.add(tr()
               .add(td("# of active responders"))
               .add(td(boost::lexical_cast<std::string>(nbActiveProcesses_))));
     table.add(tr()
