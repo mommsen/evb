@@ -199,7 +199,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
           bool reportError;
           {
             boost::mutex::scoped_lock sl(errorCountMutex_);
-            reportError =  evb::isFibonacci( ++eventsWithCRCerrors_ );
+            reportError = evb::isFibonacci( ++eventsWithCRCerrors_ );
           }
 
           if ( reportError )
@@ -374,8 +374,6 @@ void evb::bu::EventBuilder::handleCompleteEvents
   {
     const EventPtr& event = pos->second;
 
-    resourceManager_->eventCompleted(event);
-
     try
     {
       event->checkEvent();
@@ -388,6 +386,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
     }
     catch(exception::CRCerror& e)
     {
+      resourceManager_->eventCompleted(event);
       streamHandler->writeEvent(event);
       resourceManager_->discardEvent(event);
       completeEvents.erase(pos++);
@@ -404,6 +403,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
       }
     }
 
+    resourceManager_->eventCompleted(event);
     streamHandler->writeEvent(event);
     resourceManager_->discardEvent(event);
     completeEvents.erase(pos++);
