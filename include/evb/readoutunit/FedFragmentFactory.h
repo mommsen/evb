@@ -32,9 +32,9 @@ namespace evb {
 
       FedFragmentFactory(ReadoutUnit*, const EvBidFactoryPtr&);
 
-      FedFragmentPtr getFedFragment();
-      FedFragmentPtr getFedFragment(toolbox::mem::Reference*, tcpla::MemoryCache*);
-      FedFragmentPtr getFedFragment(const EvBid&, toolbox::mem::Reference*);
+      FedFragmentPtr getFedFragment(const uint16_t fedId);
+      FedFragmentPtr getFedFragment(const uint16_t fedId, toolbox::mem::Reference*, tcpla::MemoryCache*);
+      FedFragmentPtr getFedFragment(const uint16_t fedId, const EvBid&, toolbox::mem::Reference*);
 
       bool append(FedFragmentPtr&, SocketBufferPtr&, uint32_t& usedSize);
 
@@ -47,7 +47,7 @@ namespace evb {
 
     private:
 
-      FedFragmentPtr makeFedFragment();
+      FedFragmentPtr makeFedFragment(const uint16_t fedId);
       bool errorHandler(const FedFragmentPtr&);
 
       ReadoutUnit* readoutUnit_;
@@ -99,17 +99,17 @@ void evb::readoutunit::FedFragmentFactory<ReadoutUnit>::reset(const uint32_t run
 
 template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
-evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment()
+evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(const uint16_t fedId)
 {
-  return makeFedFragment();
+  return makeFedFragment(fedId);
 }
 
 
 template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
-evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
+evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(const uint16_t fedId, toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
-  const FedFragmentPtr fedFragment = makeFedFragment();
+  const FedFragmentPtr fedFragment = makeFedFragment(fedId);
   try
   {
     fedFragment->append(bufRef,cache);
@@ -125,9 +125,9 @@ evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(toolbox::mem::
 
 template<class ReadoutUnit>
 evb::readoutunit::FedFragmentPtr
-evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(const EvBid& evbId, toolbox::mem::Reference* bufRef)
+evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment(const uint16_t fedId, const EvBid& evbId, toolbox::mem::Reference* bufRef)
 {
-  const FedFragmentPtr fedFragment = makeFedFragment();
+  const FedFragmentPtr fedFragment = makeFedFragment(fedId);
   try
   {
     fedFragment->append(evbId,bufRef);
@@ -157,10 +157,10 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::append(FedFragmentPtr& f
 
 
 template<class ReadoutUnit>
-evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUnit>::makeFedFragment()
+evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUnit>::makeFedFragment(const uint16_t fedId)
 {
   return FedFragmentPtr(
-    new FedFragment(evbIdFactory_,readoutUnit_->getConfiguration()->checkCRC,fedErrors_.fedErrors,fedErrors_.crcErrors)
+    new FedFragment(fedId,evbIdFactory_,readoutUnit_->getConfiguration()->checkCRC,fedErrors_.fedErrors,fedErrors_.crcErrors)
   );
 }
 

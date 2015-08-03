@@ -186,7 +186,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   tcpla::MemoryCache* cache
 )
 {
-  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(bufRef,cache);
+  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,bufRef,cache);
   addFedFragment(fedFragment);
 }
 

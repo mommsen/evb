@@ -119,7 +119,7 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::startParseSocket
 {
   try
   {
-    const std::string fedIdStr = boost::lexical_cast<std::string>(ferolSource_->fedId.value_);
+    const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
 
     parseSocketBuffersWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( this->readoutUnit_->getIdentifier("parseSocketBuffers_"+fedIdStr), "waiting" );
@@ -165,7 +165,7 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
       while ( this->doProcessing_ && usedSize < bufSize )
       {
         if ( ! currentFragment_ )
-          currentFragment_ = this->fedFragmentFactory_.getFedFragment();
+          currentFragment_ = this->fedFragmentFactory_.getFedFragment(this->fedId_);
 
         if ( this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize) )
         {

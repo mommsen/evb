@@ -31,7 +31,7 @@ namespace evb {
     {
     public:
 
-      FedFragment(const EvBidFactoryPtr&, const uint32_t checkCRC, uint32_t& fedErrorCount, uint32_t& crcErrors);
+      FedFragment(const uint16_t fedId, const EvBidFactoryPtr&, const uint32_t checkCRC, uint32_t& fedErrorCount, uint32_t& crcErrors);
       ~FedFragment();
 
       bool append(toolbox::mem::Reference*, tcpla::MemoryCache*);
@@ -72,7 +72,7 @@ namespace evb {
       const uint32_t checkCRC_;
       uint32_t& fedErrorCount_;
       uint32_t& crcErrors_;
-      uint16_t fedId_;
+      const uint16_t fedId_;
       uint16_t bxId_;
       uint32_t eventNumber_;
       EvBid evbId_;
