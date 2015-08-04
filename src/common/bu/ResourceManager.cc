@@ -28,6 +28,7 @@ evb::bu::ResourceManager::ResourceManager
   runNumber_(0),
   eventsToDiscard_(0),
   nbResources_(1),
+  blockedResources_(1),
   builderId_(0),
   fusHLT_(0),
   fusCloud_(0),
@@ -648,13 +649,13 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
   outstandingRequests_ = 0;
-  nbTotalResources_ = 0;
-  nbBlockedResources_ = 0;
+  nbTotalResources_ = 1;
+  nbBlockedResources_ = 1;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
   fuSlotsQuarantined_ = 0;
   fuSlotsStale_ = 0;
-  queuedLumiSections_ = -1;
+  queuedLumiSections_ = 0;
   queuedLumiSectionsOnFUs_ = -1;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
