@@ -33,7 +33,9 @@ bool evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
     size_ += fedFragment->getFedSize();
   }
 
-  return ( fedFragment->getEvBid().bxId() == evbId_.bxId() );
+  return ( (fedFragment->getEvBid().bxId() == evbId_.bxId()) ||
+           // There's no agreement in CMS on how to label the last/first BX
+           (fedFragment->getEvBid().bxId() == 0 && evbId_.bxId() == 3564) );
 }
 
 
