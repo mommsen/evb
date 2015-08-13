@@ -262,8 +262,10 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
         std::ostringstream msg;
         msg << "Received " << bxErrors_
           << " fragments from FED " << fedFragment->getFedId()
-          << " where bunch crossing id " << fedFragment->getEvBid().bxId()
-          << " differs from the expected BX " << superFragment->getEvBid().bxId();
+          << " with a wrong bunch crossing id."
+          << " The current event " << fedFragment->getEvBid().eventNumber()
+          << " has bunch crossing id " << fedFragment->getEvBid().bxId()
+          << ", but TCDS has BX " << superFragment->getEvBid().bxId();
         LOG4CPLUS_WARN(readoutUnit_->getApplicationLogger(),msg.str());
       }
     }
