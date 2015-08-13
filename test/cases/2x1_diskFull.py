@@ -66,5 +66,6 @@ class case_2x1_diskFull(TestCase):
             ]) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','10'),
-             ('staleResourceTime','unsignedInt','0')
+             ('staleResourceTime','unsignedInt','0'),
+             ('sleepTimeBlocked','unsignedInt','1')
             ]) )
