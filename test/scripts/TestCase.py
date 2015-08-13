@@ -125,7 +125,7 @@ class TestCase:
             pass
 
 
-    def waitForAppState(self,targetState,app,instance=None,maxTries=5):
+    def waitForAppState(self,targetState,app,instance=None,maxTries=10):
         tries = 0
         while True:
             try:
@@ -141,7 +141,7 @@ class TestCase:
                 sleep(1)
 
 
-    def waitForState(self,targetState,maxTries=5):
+    def waitForState(self,targetState,maxTries=10):
          for app in self._config.applications.keys():
             self.waitForAppState(targetState,app,maxTries=maxTries)
 
