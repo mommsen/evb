@@ -140,12 +140,13 @@ namespace evb {
       fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
 
-      boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
+      boost::upgrade_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
       FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(readoutMsg->buTid);
       if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(readoutMsg->buTid,pos->first) )
       {
         // new TID
+        boost::upgrade_to_unique_lock< boost::shared_mutex > ul(sl);
         std::ostringstream name;
         name << "fragmentRequestFIFO_BU" << readoutMsg->buTid;
         const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
