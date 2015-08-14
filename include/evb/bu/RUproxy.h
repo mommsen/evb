@@ -187,18 +187,20 @@ namespace evb {
         uint32_t lastEventNumberFromEVM;
         uint32_t lastEventNumberFromRUs;
         uint32_t incompleteSuperFragments;
-        uint64_t logicalCount;
-        uint64_t payload;
-        uint64_t i2oCount;
+        uint64_t bandwidth;
+        uint32_t fragmentRate;
+        uint32_t i2oRate;
+        PerformanceMonitor perf;
         CountsPerRU countsPerRU;
       } fragmentMonitoring_;
       mutable boost::mutex fragmentMonitoringMutex_;
 
       struct RequestMonitoring
       {
-        uint64_t logicalCount;
-        uint64_t payload;
-        uint64_t i2oCount;
+        uint64_t bandwidth;
+        uint32_t requestRate;
+        uint32_t i2oRate;
+        PerformanceMonitor perf;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
 

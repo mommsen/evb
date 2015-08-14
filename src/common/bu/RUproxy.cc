@@ -69,8 +69,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
       const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
         (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
-      const uint32_t payload = (stdMsg->MessageSize << 2) -
-        dataBlockMsg->headerSize;
+      const uint32_t payload = stdMsg->MessageSize << 2;
 
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
@@ -92,8 +91,9 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
             fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
         }
-        fragmentMonitoring_.i2oCount++;
-        fragmentMonitoring_.payload += payload;
+        ++fragmentMonitoring_.perf.i2oCount;
+        fragmentMonitoring_.perf.sumOfSizes += payload;
+        fragmentMonitoring_.perf.sumOfSquares += payload*payload;
 
         CountsPerRU::iterator countsPerRuPos = fragmentMonitoring_.countsPerRU.lower_bound(index.ruTid);
         if ( countsPerRuPos == fragmentMonitoring_.countsPerRU.end() ||
@@ -104,7 +104,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         countsPerRuPos->second.payload += payload;
         if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
         {
-          fragmentMonitoring_.logicalCount += nbSuperFragments;
+          fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
           countsPerRuPos->second.logicalCount += nbSuperFragments;
 
           if ( configuration_->timeSamplePreScale > 0U &&
@@ -284,6 +284,7 @@ void evb::bu::RUproxy::sendRequests()
       (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+    const uint32_t nbRequests = buResourceId>0 ? configuration_->eventsPerRequest.value_ : 0;
 
     stdMsg->VersionOffset    = 0;
     stdMsg->MsgFlags         = 0;
@@ -296,10 +297,7 @@ void evb::bu::RUproxy::sendRequests()
     readoutMsg->headerSize   = msgSize;
     readoutMsg->buTid        = tid_;
     readoutMsg->buResourceId = buResourceId;
-    if ( buResourceId > 0 )
-      readoutMsg->nbRequests = configuration_->eventsPerRequest;
-    else
-      readoutMsg->nbRequests = 0;
+    readoutMsg->nbRequests   = nbRequests;
     readoutMsg->nbDiscards   = eventsToDiscard;
     readoutMsg->nbRUtids     = 0; // will be filled by EVM
 
@@ -325,9 +323,10 @@ void evb::bu::RUproxy::sendRequests()
 
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
-    requestMonitoring_.payload += msgSize;
-    requestMonitoring_.logicalCount += configuration_->eventsPerRequest;
-    ++requestMonitoring_.i2oCount;
+    requestMonitoring_.perf.sumOfSizes += msgSize;
+    requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
+    requestMonitoring_.perf.logicalCount += nbRequests;
+    ++requestMonitoring_.perf.i2oCount;
   }
 }
 
@@ -350,12 +349,19 @@ void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    requestCount_ = requestMonitoring_.logicalCount;
+    requestCount_.value_ += requestMonitoring_.perf.logicalCount;
+    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth();
+    requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate();
+    requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate();
+    requestMonitoring_.perf.reset();
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
-    fragmentCount_ = fragmentMonitoring_.logicalCount;
+    fragmentCount_.value_ += fragmentMonitoring_.perf.logicalCount;
+    fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth();
+    fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate();
+    fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate();
 
     fragmentCountPerRU_.clear();
     fragmentCountPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
@@ -375,6 +381,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
         it->second.timeSamples = 0;
       }
     }
+    fragmentMonitoring_.perf.reset();
   }
 }
 
@@ -383,18 +390,14 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    requestMonitoring_.payload = 0;
-    requestMonitoring_.logicalCount = 0;
-    requestMonitoring_.i2oCount = 0;
+    requestMonitoring_.perf.reset();
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     fragmentMonitoring_.lastEventNumberFromEVM = 0;
     fragmentMonitoring_.lastEventNumberFromRUs = 0;
     fragmentMonitoring_.incompleteSuperFragments = 0;
-    fragmentMonitoring_.payload = 0;
-    fragmentMonitoring_.logicalCount = 0;
-    fragmentMonitoring_.i2oCount = 0;
+    fragmentMonitoring_.perf.reset();
     fragmentMonitoring_.countsPerRU.clear();
   }
 }
@@ -574,15 +577,42 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.incompleteSuperFragments))));
     table.add(tr()
               .add(th("Event data").set("colspan","2")));
-    table.add(tr()
-              .add(td("payload (MB)"))
-              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.payload / 1000000))));
-    table.add(tr()
-              .add(td("logical count"))
-              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.logicalCount))));
-    table.add(tr()
-              .add(td("I2O count"))
-              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oCount))));
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << fragmentMonitoring_.bandwidth / 1e6;
+      table.add(tr()
+                .add(td("throughput (MB/s)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << fragmentMonitoring_.fragmentRate;
+      table.add(tr()
+                .add(td("fragment rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << fragmentMonitoring_.i2oRate;
+      table.add(tr()
+                .add(td("I2O rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << (fragmentMonitoring_.i2oRate>0 ? (float)fragmentMonitoring_.fragmentRate / fragmentMonitoring_.i2oRate : 0);
+      table.add(tr()
+                .add(td("Fragments/I2O"))
+                .add(td(str.str())));
+    }
     div.add(table);
   }
   {
@@ -593,15 +623,42 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
 
     table.add(tr()
               .add(th("Event requests").set("colspan","2")));
-    table.add(tr()
-              .add(td("payload (kB)"))
-              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.payload / 1000))));
-    table.add(tr()
-              .add(td("logical count"))
-              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCount))));
-    table.add(tr()
-              .add(td("I2O count"))
-              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oCount))));
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << requestMonitoring_.bandwidth / 1e3;
+      table.add(tr()
+                .add(td("throughput (kB/s)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << requestMonitoring_.requestRate;
+      table.add(tr()
+                .add(td("request rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << requestMonitoring_.i2oRate;
+      table.add(tr()
+                .add(td("I2O rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << (requestMonitoring_.i2oRate>0 ? (float)requestMonitoring_.requestRate / requestMonitoring_.i2oRate : 0);
+      table.add(tr()
+                .add(td("Events requested/I2O"))
+                .add(td(str.str())));
+    }
     div.add(table);
   }
 
