@@ -22,21 +22,14 @@ namespace evb {
     {
     public:
 
-      FragmentChain();
-      FragmentChain(const uint32_t resourceCount);
+      FragmentChain(uint32_t blockCount);
 
       ~FragmentChain();
 
       /**
       * Append the toolbox::mem::Reference to the fragment.
-      * Return false if the resource id is not expected.
       */
-      bool append(uint16_t resourceId, toolbox::mem::Reference*);
-
-      /**
-      * Append the toolbox::mem::Reference to the fragment.
-      */
-      void append(toolbox::mem::Reference*);
+      bool append(toolbox::mem::Reference*);
 
       /**
       * Return the head of the toolbox::mem::Reference chain
@@ -50,36 +43,17 @@ namespace evb {
       size_t getSize() const
       { return size_; }
 
-      /**
-      * Return true if there's a valid super fragment
-      */
-      bool isValid() const
-      { return ( size_ > 0 && head_ ); }
-
-      /**
-      * Return true if the super fragment is complete
-      */
-      bool isComplete() const
-      { return resourceList_.empty(); }
-
-
     private:
 
-      bool checkResourceId(const uint16_t resourceId);
       void chainFragment(toolbox::mem::Reference*);
 
-      typedef std::vector<uint32_t> ResourceList;
-      ResourceList resourceList_;
+      uint32_t blockCount_;
       toolbox::mem::Reference* head_;
       toolbox::mem::Reference* tail_;
       size_t size_;
 
-      typedef std::vector<toolbox::mem::Reference*> BufRefs;
-      BufRefs bufRefs_;
-
     }; // FragmentChain
 
-    //    typedef FragmentChain<msg::I2O_DATA_BLOCK_MESSAGE_FRAME> FragmentChain;
     typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
 
   } // namespace bu

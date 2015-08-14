@@ -150,18 +150,9 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           dataBlockPos = dataBlockMap_.insert(dataBlockPos, DataBlockMap::value_type(index,dataBlock));
         }
 
-        if ( ! dataBlockPos->second->append(dataBlockMsg->blockNb,bufRef) )
-        {
-          std::ostringstream msg;
-          msg << "Received a super-fragment block from RU tid " << index.ruTid;
-          msg << " for BU resource id " << index.buResourceId;
-          msg << " with a duplicated block number " <<  dataBlockMsg->blockNb;
-          XCEPT_RAISE(exception::SuperFragment, msg.str());
-        }
-
         const uint16_t builderId = resourceManager_->underConstruction(dataBlockMsg);
 
-        if ( dataBlockPos->second->isComplete() )
+        if ( dataBlockPos->second->append(bufRef) )
         {
           eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
