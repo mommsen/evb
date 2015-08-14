@@ -310,8 +310,6 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 
 bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& eventsToDiscard)
 {
-  bool haveResource = false;
-
   BuilderResources::iterator pos;
   if ( resourceFIFO_.deq(pos) )
   {
@@ -331,21 +329,21 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
       eventsToDiscard = eventsToDiscard_;
       eventsToDiscard_ = 0;
       ++eventMonitoring_.outstandingRequests;
-      haveResource = true;
+      return true;
     }
   }
 
-  if ( !haveResource && eventsToDiscard_ > 0 )
+  if ( blockedResources_ == nbResources_ && eventsToDiscard_ > 0 )
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     buResourceId = 0;
     eventsToDiscard = eventsToDiscard_;
     eventsToDiscard_ = 0;
-    haveResource = true;
+    return true;
   }
 
-  return haveResource;
+  return false;
 }
 
 
