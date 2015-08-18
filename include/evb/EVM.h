@@ -43,6 +43,9 @@ namespace evb {
 
   private:
 
+    virtual void do_updateMonitoringInfo();
+    virtual void do_handleItemChangedEvent(const std::string& item);
+
     boost::shared_ptr<evm::RUproxy> ruProxy_;
 
 

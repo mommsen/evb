@@ -67,6 +67,13 @@ namespace evb {
 
     protected:
 
+      virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
+      virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
+      virtual void do_updateMonitoringInfo();
+
+      virtual void do_handleItemChangedEvent(const std::string& item);
+      virtual void do_handleItemRetrieveEvent(const std::string& item);
+
       InputPtr input_;
       FerolConnectionManagerPtr ferolConnectionManager_;
       BUproxyPtr buProxy_;
@@ -76,14 +83,6 @@ namespace evb {
       virtual void do_bindI2oCallbacks();
       inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*) throw (pt::frl::exception::Exception);
       inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
-
-      virtual void do_appendApplicationInfoSpaceItems(InfoSpaceItems&);
-      virtual void do_appendMonitoringInfoSpaceItems(InfoSpaceItems&);
-      virtual void do_updateMonitoringInfo();
-
-      virtual void do_handleItemChangedEvent(const std::string& item);
-      void localItemChangedEvent(const std::string& item) {};
-      virtual void do_handleItemRetrieveEvent(const std::string& item);
 
       virtual void bindNonDefaultXgiCallbacks();
       virtual cgicc::table getMainWebPage() const;
@@ -164,20 +163,9 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_updateMo
   input_->updateMonitoringItems();
   buProxy_->updateMonitoringItems();
 
-  try
-  {
-    xdata::UnsignedInteger64 eventCount;
-    eventCount.setValue( *this->monitoringInfoSpace_->find("eventCount") );
-
-    xdata::UnsignedInteger64 fragmentCount;
-    fragmentCount.setValue( *this->monitoringInfoSpace_->find("fragmentCount") );
-
-    eventsInRU_ = eventCount>fragmentCount ? eventCount-fragmentCount : 0;
-  }
-  catch(xdata::exception::Exception)
-  {
-    eventsInRU_ = 0;
-  }
+  const uint64_t eventCount = input_->getEventCount();
+  const uint64_t fragmentCount = buProxy_->getFragmentCount();
+  eventsInRU_ = eventCount>fragmentCount ? eventCount-fragmentCount : 0;
 
   this->stateMachine_->updateMonitoringItems();
 }
@@ -193,10 +181,6 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
   else if (item == "stopLocalInputAtEvent")
   {
     input_->stopLocalInputAtEvent(stopLocalInputAtEvent_);
-  }
-  else
-  {
-    localItemChangedEvent(item);
   }
 }
 

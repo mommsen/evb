@@ -28,6 +28,30 @@ evb::EVM::EVM(xdaq::ApplicationStub* app) :
 }
 
 
+void evb::EVM::do_updateMonitoringInfo()
+{
+  evm::ReadoutUnit::do_updateMonitoringInfo();
+  ruProxy_->updateMonitoringItems();
+}
+
+
+void evb::EVM::do_handleItemChangedEvent(const std::string& item)
+{
+  if (item == "maxTriggerRate")
+  {
+    const uint32_t triggerRate = this->configuration_->maxTriggerRate;
+    std::ostringstream msg;
+    msg << "Setting maxTriggerRate to " << triggerRate << " Hz";
+    LOG4CPLUS_INFO(this->getApplicationLogger(),msg.str());
+    input_->setMaxTriggerRate(triggerRate);
+  }
+  else
+  {
+    evm::ReadoutUnit::do_handleItemChangedEvent(item);
+  }
+}
+
+
 namespace evb {
   namespace readoutunit {
 
@@ -297,20 +321,6 @@ namespace evb {
       table.add(tr()
                 .add(td(img().set("src","/evb/images/arrow_e.gif").set("alt","")))
                 .add(td(buProxy_->getHtmlSnipped()).set("class","xdaq-evb-component")));
-    }
-
-
-    template<>
-    void evm::ReadoutUnit::localItemChangedEvent(const std::string& item)
-    {
-      if (item == "maxTriggerRate")
-      {
-        const uint32_t triggerRate = this->configuration_->maxTriggerRate;
-        std::ostringstream msg;
-        msg << "Setting maxTriggerRate to " << triggerRate << " Hz";
-        LOG4CPLUS_INFO(this->getApplicationLogger(),msg.str());
-        input_->setMaxTriggerRate(triggerRate);
-      }
     }
   }
 }
