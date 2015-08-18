@@ -124,10 +124,10 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
       {
         const uint16_t requestsCount = fragmentRequest->nbRequests;
         const uint16_t ruCount = fragmentRequest->ruTids.size();
-        const size_t msgSize = sizeof(msg::ReadoutMsg) +
+        const size_t readoutMsgSize = sizeof(msg::ReadoutMsg) +
           requestsCount * sizeof(EvBid) +
           ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
-        //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << msgSize << std::endl;
+        //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << readoutMsgSize << std::endl;
 
         for (ApplicationDescriptorsAndTids::const_iterator it = first; it != last; ++it)
         {
@@ -137,7 +137,7 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
             try
             {
               rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
-                getFrame(fastCtrlMsgPool_, msgSize);
+                getFrame(fastCtrlMsgPool_, readoutMsgSize);
             }
             catch(toolbox::mem::exception::Exception)
             {
@@ -150,7 +150,7 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
               }
             }
           }
-          rqstBufRef->setDataSize(msgSize);
+          rqstBufRef->setDataSize(readoutMsgSize);
 
           I2O_MESSAGE_FRAME* stdMsg =
             (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
@@ -159,13 +159,13 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
 
           stdMsg->VersionOffset    = 0;
           stdMsg->MsgFlags         = 0;
-          stdMsg->MessageSize      = msgSize >> 2;
+          stdMsg->MessageSize      = readoutMsgSize >> 2;
           stdMsg->InitiatorAddress = tid_;
           stdMsg->TargetAddress    = it->tid;
           stdMsg->Function         = I2O_PRIVATE_MESSAGE;
           pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
           pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-          readoutMsg->headerSize   = msgSize;
+          readoutMsg->headerSize   = readoutMsgSize;
           readoutMsg->buTid        = fragmentRequest->buTid;
           readoutMsg->buResourceId = fragmentRequest->buResourceId;
           readoutMsg->nbRequests   = requestsCount;
@@ -207,10 +207,13 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
         {
           boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
+          const uint32_t myRuCount = participatingRUs_.size();
+          const uint32_t msgSize = readoutMsgSize*myRuCount;
           allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[requestsCount-1].eventNumber();
-          allocateMonitoring_.payload += msgSize*participatingRUs_.size();
-          allocateMonitoring_.logicalCount += requestsCount;
-          allocateMonitoring_.i2oCount += participatingRUs_.size();
+          allocateMonitoring_.perf.sumOfSizes += msgSize;
+          allocateMonitoring_.perf.sumOfSquares += msgSize*msgSize;
+          allocateMonitoring_.perf.logicalCount += requestsCount*myRuCount;
+          allocateMonitoring_.perf.i2oCount += myRuCount;
         }
       }
 
@@ -254,25 +257,22 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
 }
 
 
-void evb::evm::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
-{
-}
-
-
 void evb::evm::RUproxy::updateMonitoringItems()
 {
+  boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+
+  allocateMonitoring_.bandwidth = allocateMonitoring_.perf.bandwidth();
+  allocateMonitoring_.assignmentRate = allocateMonitoring_.perf.logicalRate();
+  allocateMonitoring_.i2oRate = allocateMonitoring_.perf.i2oRate();
+  allocateMonitoring_.perf.reset();
 }
 
 
 void evb::evm::RUproxy::resetMonitoringCounters()
 {
-  {
-    boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
-    allocateMonitoring_.lastEventNumberToRUs = 0;
-    allocateMonitoring_.payload = 0;
-    allocateMonitoring_.logicalCount = 0;
-    allocateMonitoring_.i2oCount = 0;
-  }
+  boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+  allocateMonitoring_.lastEventNumberToRUs = 0;
+  allocateMonitoring_.perf.reset();
 }
 
 
@@ -415,15 +415,42 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("last event number to RUs"))
               .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.lastEventNumberToRUs))));
-    table.add(tr()
-              .add(td("payload (kB)"))
-              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.payload / 1000))));
-    table.add(tr()
-              .add(td("logical count"))
-              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.logicalCount))));
-    table.add(tr()
-              .add(td("I2O count"))
-              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oCount))));
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(2);
+      str << allocateMonitoring_.bandwidth / 1e3;
+      table.add(tr()
+                .add(td("throughput (kB/s)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << allocateMonitoring_.assignmentRate;
+      table.add(tr()
+                .add(td("assignment rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(0);
+      str << allocateMonitoring_.i2oRate;
+      table.add(tr()
+                .add(td("I2O rate (Hz)"))
+                .add(td(str.str())));
+    }
+    {
+      std::ostringstream str;
+      str.setf(std::ios::fixed);
+      str.precision(1);
+      str << (allocateMonitoring_.i2oRate>0 ? (float)allocateMonitoring_.assignmentRate / allocateMonitoring_.i2oRate: 0);
+      table.add(tr()
+                .add(td("Events assigned/I2O"))
+                .add(td(str.str())));
+    }
 
     const uint32_t activeRUs = ruTids_.empty() ? 0 : ruTids_.size()-1; //exclude the EVM TID
     table.add(tr()

@@ -14,6 +14,7 @@
 #include "evb/I2OMessages.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/FragmentRequest.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "toolbox/lang/Class.h"
@@ -56,12 +57,6 @@ namespace evb {
        * Send the request for event fragments to all RUs
        */
       void sendRequest(const readoutunit::FragmentRequestPtr&);
-
-      /**
-       * Append the info space items to be published in the
-       * monitoring info space to the InfoSpaceItems
-       */
-      void appendMonitoringItems(InfoSpaceItems&);
 
       /**
        * Update all values of the items put into the monitoring
@@ -144,10 +139,11 @@ namespace evb {
       struct AllocateMonitoring
       {
         uint32_t lastEventNumberToRUs;
-        uint64_t logicalCount;
-        uint64_t payload;
-        uint64_t i2oCount;
-      } allocateMonitoring_;
+        uint64_t bandwidth;
+        uint32_t assignmentRate;
+        uint32_t i2oRate;
+        PerformanceMonitor perf;
+     } allocateMonitoring_;
       mutable boost::mutex allocateMonitoringMutex_;
 
     };
