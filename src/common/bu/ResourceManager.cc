@@ -37,7 +37,8 @@ evb::bu::ResourceManager::ResourceManager
   initiallyQueuedLS_(0),
   queuedLS_(0),
   queuedLSonFUs_(-1),
-  doProcessing_(false)
+  doProcessing_(false),
+  availableResources_(0)
 {
   startResourceMonitorWorkLoop();
   resetMonitoringCounters();
@@ -58,6 +59,12 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
 
     if ( ! resourceMonitorWL_->isActive() )
       resourceMonitorWL_->activate();
+
+    toolbox::task::ActionSignature* resourceSummaryAction =
+      toolbox::task::bind(this, &evb::bu::ResourceManager::resourceSummary,
+                          bu_->getIdentifier("resourceSummary") );
+
+    resourceMonitorWL_->submit(resourceSummaryAction);
   }
   catch(xcept::Exception& e)
   {
@@ -368,6 +375,36 @@ void evb::bu::ResourceManager::stopProcessing()
 }
 
 
+bool evb::bu::ResourceManager::resourceSummary(toolbox::task::WorkLoop*)
+{
+  const std::string msg = "Failed to update resources from FFF resource summary";
+
+  try
+  {
+    availableResources_ = getAvailableResources();
+  }
+  catch(xcept::Exception &e)
+  {
+    XCEPT_DECLARE_NESTED(exception::FFF, sentinelException, msg, e);
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(std::exception& e)
+  {
+    XCEPT_DECLARE(exception::FFF,
+                  sentinelException, msg+": "+e.what());
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    XCEPT_DECLARE(exception::FFF,
+                  sentinelException, msg+": "+"unkown exception");
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+
+  return true;
+}
+
+
 float evb::bu::ResourceManager::getAvailableResources()
 {
   if ( resourceSummary_.empty() ) return nbResources_;
@@ -544,6 +581,38 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
   if ( ! doProcessing_ ) return false;
 
+  std::string msg = "Failed to update available resources";
+
+  try
+  {
+    updateResources();
+  }
+  catch(xcept::Exception &e)
+  {
+    XCEPT_DECLARE_NESTED(exception::FFF, sentinelException, msg, e);
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(std::exception& e)
+  {
+    XCEPT_DECLARE(exception::FFF,
+                  sentinelException, msg+": "+e.what());
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    XCEPT_DECLARE(exception::FFF,
+                  sentinelException, msg+": "+"unkown exception");
+    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+  }
+
+  ::sleep(1);
+
+  return doProcessing_;
+}
+
+
+void evb::bu::ResourceManager::updateResources()
+{
   uint32_t resourcesToBlock;
   const float overThreshold = getOverThreshold();
 
@@ -553,7 +622,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
   }
   else
   {
-    const uint32_t usableResources = round( (1-overThreshold) * getAvailableResources() );
+    const uint32_t usableResources = round( (1-overThreshold) * availableResources_ );
     resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
 
@@ -631,10 +700,6 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     else
       bu_->getStateMachine()->processFSMEvent( Throttle() );
   }
-
-  ::sleep(1);
-
-  return doProcessing_;
 }
 
 
