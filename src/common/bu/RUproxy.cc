@@ -349,19 +349,21 @@ void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    requestCount_.value_ += requestMonitoring_.perf.logicalCount;
+    requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
     requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth();
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate();
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate();
     requestMonitoring_.perf.reset();
+    requestCount_ = requestMonitoring_.requestCount;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
     fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
-    fragmentCount_.value_ += fragmentMonitoring_.perf.logicalCount;
+    fragmentMonitoring_.fragmentCount += fragmentMonitoring_.perf.logicalCount;
     fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth();
     fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate();
     fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate();
+    fragmentCount_ = fragmentMonitoring_.fragmentCount;
 
     fragmentCountPerRU_.clear();
     fragmentCountPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
@@ -390,6 +392,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    requestMonitoring_.requestCount = 0;
     requestMonitoring_.perf.reset();
   }
   {
@@ -397,6 +400,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     fragmentMonitoring_.lastEventNumberFromEVM = 0;
     fragmentMonitoring_.lastEventNumberFromRUs = 0;
     fragmentMonitoring_.incompleteSuperFragments = 0;
+    fragmentMonitoring_.fragmentCount = 0;
     fragmentMonitoring_.perf.reset();
     fragmentMonitoring_.countsPerRU.clear();
   }

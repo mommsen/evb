@@ -177,6 +177,7 @@ namespace evb {
       typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
       {
+        uint64_t requestCount;
         uint64_t bandwidth;
         uint32_t requestRate;
         uint32_t i2oRate;
@@ -190,6 +191,8 @@ namespace evb {
         uint32_t lastEventNumberToBUs;
         uint32_t lastLumiSectionToBUs;
         int32_t outstandingEvents;
+        uint64_t fragmentCount;
+        uint64_t nbEventsBuilt;
         uint64_t bandwidth;
         uint32_t fragmentRate;
         uint32_t i2oRate;
@@ -708,10 +711,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    requestCount_.value_ += requestMonitoring_.perf.logicalCount;
+    requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
     requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth();
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate();
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate();
+    requestCount_ = requestMonitoring_.requestCount;
 
     requestCountPerBU_.clear();
     requestCountPerBU_.reserve(requestMonitoring_.logicalCountPerBU.size());
@@ -726,11 +730,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-    fragmentCount_.value_ += dataMonitoring_.perf.logicalCount;
-    nbEventsBuilt_.value_ = fragmentCount_ - dataMonitoring_.outstandingEvents;
+    dataMonitoring_.fragmentCount += dataMonitoring_.perf.logicalCount;
+    dataMonitoring_.nbEventsBuilt += dataMonitoring_.fragmentCount - dataMonitoring_.outstandingEvents;
     dataMonitoring_.bandwidth = dataMonitoring_.perf.bandwidth();
     dataMonitoring_.fragmentRate = dataMonitoring_.perf.logicalRate();
     dataMonitoring_.i2oRate = dataMonitoring_.perf.i2oRate();
+    fragmentCount_ = dataMonitoring_.fragmentCount;
+    nbEventsBuilt_ = dataMonitoring_.nbEventsBuilt;
 
     payloadPerBU_.clear();
     payloadPerBU_.reserve(dataMonitoring_.payloadPerBU.size());
@@ -756,6 +762,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 
   {
     boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    requestMonitoring_.requestCount = 0;
     requestMonitoring_.perf.reset();
     requestMonitoring_.logicalCountPerBU.clear();
   }
@@ -764,6 +771,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
     dataMonitoring_.lastEventNumberToBUs = 0;
     dataMonitoring_.lastLumiSectionToBUs = 0;
     dataMonitoring_.outstandingEvents = 0;
+    dataMonitoring_.fragmentCount = 0;
+    dataMonitoring_.nbEventsBuilt = 0;
     dataMonitoring_.perf.reset();
     dataMonitoring_.payloadPerBU.clear();
   }
@@ -774,7 +783,7 @@ template<class ReadoutUnit>
 uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getNbEventsBuilt() const
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-  return fragmentCount_.value_ + dataMonitoring_.perf.logicalCount - dataMonitoring_.outstandingEvents;
+  return dataMonitoring_.fragmentCount + dataMonitoring_.perf.logicalCount - dataMonitoring_.outstandingEvents;
 }
 
 
@@ -782,7 +791,7 @@ template<class ReadoutUnit>
 uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getFragmentCount() const
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-  return fragmentCount_.value_ + dataMonitoring_.perf.logicalCount;
+  return dataMonitoring_.fragmentCount + dataMonitoring_.perf.logicalCount;
 }
 
 
@@ -816,7 +825,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(dataMonitoring_.lastLumiSectionToBUs))));
     table.add(tr()
               .add(td("# of events built"))
-              .add(td(boost::lexical_cast<std::string>(fragmentCount_.value_ + dataMonitoring_.perf.logicalCount - dataMonitoring_.outstandingEvents))));
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.fragmentCount + dataMonitoring_.perf.logicalCount - dataMonitoring_.outstandingEvents))));
     table.add(tr()
               .add(td("# of active responders"))
               .add(td(boost::lexical_cast<std::string>(nbActiveProcesses_))));

@@ -587,7 +587,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       }
     }
     incompleteSuperFragmentCount_ = maxElements;
-    dataReadyCount_.value_ += dataReadyCount;
+    dataReadyCount_.value_ = dataReadyCount;
   }
 
   {

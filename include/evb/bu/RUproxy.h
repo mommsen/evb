@@ -187,6 +187,7 @@ namespace evb {
         uint32_t lastEventNumberFromEVM;
         uint32_t lastEventNumberFromRUs;
         uint32_t incompleteSuperFragments;
+        uint64_t fragmentCount;
         uint64_t bandwidth;
         uint32_t fragmentRate;
         uint32_t i2oRate;
@@ -197,6 +198,7 @@ namespace evb {
 
       struct RequestMonitoring
       {
+        uint64_t requestCount;
         uint64_t bandwidth;
         uint32_t requestRate;
         uint32_t i2oRate;

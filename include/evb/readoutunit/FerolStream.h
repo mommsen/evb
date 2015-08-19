@@ -326,8 +326,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   {
     boost::mutex::scoped_lock sl(inputMonitorMutex_);
 
-    dataReadyCount += inputMonitor_.perf.logicalCount;
-
+    inputMonitor_.eventCount += inputMonitor_.perf.logicalCount;
     inputMonitor_.rate = inputMonitor_.perf.logicalRate();
     inputMonitor_.bandwidth = inputMonitor_.perf.bandwidth();
     const uint32_t eventSize = inputMonitor_.perf.size();
@@ -341,6 +340,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
   queueElements = fragmentFIFO_.elements();
 
+  dataReadyCount += inputMonitor_.eventCount;
   corruptedEvents = fedFragmentFactory_.getCorruptedEvents();
   crcErrors = fedFragmentFactory_.getCRCerrors();
   bxErrors = bxErrors_;
