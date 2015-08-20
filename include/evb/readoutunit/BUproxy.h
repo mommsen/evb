@@ -463,8 +463,8 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
           // get a new block
           toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-          payload = (unsigned char*)nextBlock->getDataLocation() + blockHeaderSize;
-          remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - blockHeaderSize;
+          payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+          remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
           fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
           tail->setNextReference(nextBlock);
           tail = nextBlock;
@@ -507,23 +507,31 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     stdMsg->Function               = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
-    dataBlockMsg->headerSize       = blockHeaderSize;
     dataBlockMsg->buResourceId     = fragmentRequest->buResourceId;
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = nbSuperFragments;
     dataBlockMsg->nbRUtids         = nbRUtids;
 
-    unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
-    size_t size = nbSuperFragments*sizeof(EvBid);
-    memcpy(payload,&fragmentRequest->evbIds[0],size);
-    payload += size;
-    lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments-1].eventNumber();
-    lastLumiSectionToBUs = fragmentRequest->evbIds[nbSuperFragments-1].lumiSection();
+    if ( dataBlockMsg->blockNb == 1 )
+    {
+      dataBlockMsg->headerSize     = blockHeaderSize;
 
-    size = nbRUtids*sizeof(I2O_TID);
-    memcpy(payload,&fragmentRequest->ruTids[0],size);
+      unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
+      size_t size = nbSuperFragments*sizeof(EvBid);
+      memcpy(payload,&fragmentRequest->evbIds[0],size);
+      payload += size;
+      lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments-1].eventNumber();
+      lastLumiSectionToBUs = fragmentRequest->evbIds[nbSuperFragments-1].lumiSection();
 
-    payloadSize += (stdMsg->MessageSize << 2) - blockHeaderSize;
+      size = nbRUtids*sizeof(I2O_TID);
+      memcpy(payload,&fragmentRequest->ruTids[0],size);
+    }
+    else
+    {
+      dataBlockMsg->headerSize     = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+    }
+
+    payloadSize += bufRef->getDataSize();
     ++i2oCount;
 
     buPoster_.sendFrame(fragmentRequest->buTid,bufRef);

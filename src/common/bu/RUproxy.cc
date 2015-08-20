@@ -74,23 +74,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
       index.buResourceId = dataBlockMsg->buResourceId;
-      const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
-      const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
       ArrivalTimes::iterator arrivalTimePos = arrivalTimes_.end();
 
       {
         boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
-        if ( index.ruTid == evm_.tid )
-        {
-          if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
-            fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
-        }
-        else
-        {
-          if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
-            fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
-        }
         ++fragmentMonitoring_.perf.i2oCount;
         fragmentMonitoring_.perf.sumOfSizes += payload;
         fragmentMonitoring_.perf.sumOfSquares += payload*payload;
@@ -102,8 +90,23 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           countsPerRuPos = fragmentMonitoring_.countsPerRU.insert(countsPerRuPos, CountsPerRU::value_type(index.ruTid,StatsPerRU()));
         }
         countsPerRuPos->second.payload += payload;
-        if ( dataBlockMsg->blockNb == dataBlockMsg->nbBlocks )
+
+        if ( dataBlockMsg->blockNb == 1 ) //only the first block contains the EvBid
         {
+          const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+          const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
+
+          if ( index.ruTid == evm_.tid )
+          {
+            if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
+              fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+          }
+          else
+          {
+            if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
+              fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+          }
+
           fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
           countsPerRuPos->second.logicalCount += nbSuperFragments;
 

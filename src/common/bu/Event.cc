@@ -13,21 +13,21 @@
 evb::bu::Event::Event
 (
   const EvBid& evbId,
+  const msg::RUtids& ruTids,
+  const uint16_t buResourceId,
   const bool checkCRC,
-  const bool calculateCRC32,
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg
+  const bool calculateCRC32
 ) :
   evbId_(evbId),
   checkCRC_(checkCRC),
   calculateCRC32_(calculateCRC32),
-  buResourceId_(dataBlockMsg->buResourceId)
+  buResourceId_(buResourceId)
 {
   eventInfo_ = EventInfoPtr( new EventInfo(evbId.runNumber(), evbId.lumiSection(), evbId.eventNumber()) );
-  msg::RUtids ruTids;
-  dataBlockMsg->getRUtids(ruTids);
-  for (uint32_t i = 0; i < dataBlockMsg->nbRUtids; ++i)
+  for ( msg::RUtids::const_iterator it = ruTids.begin(), itEnd = ruTids.end();
+        it != itEnd; ++it)
   {
-    ruSizes_.insert( RUsizes::value_type(ruTids[i],std::numeric_limits<uint32_t>::max()) );
+    ruSizes_.insert( RUsizes::value_type(*it,std::numeric_limits<uint32_t>::max()) );
   }
 }
 
