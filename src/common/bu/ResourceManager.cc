@@ -494,7 +494,7 @@ float evb::bu::ResourceManager::getAvailableResources()
       resourceLimitiationAlreadyNotified_ = true;
     }
 
-    resourcesFromFUs *= 1 - ( (lsLatency - configuration_->lumiSectionLatencyLow) /
+    resourcesFromFUs *= 1 - ( static_cast<float>(lsLatency - configuration_->lumiSectionLatencyLow) /
                               (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
   }
 
