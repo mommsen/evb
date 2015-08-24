@@ -58,13 +58,15 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
                           bu_->getIdentifier("resourceMonitor") );
 
     if ( ! resourceMonitorWL_->isActive() )
+    {
       resourceMonitorWL_->activate();
 
-    toolbox::task::ActionSignature* resourceSummaryAction =
-      toolbox::task::bind(this, &evb::bu::ResourceManager::resourceSummary,
-                          bu_->getIdentifier("resourceSummary") );
+      toolbox::task::ActionSignature* resourceSummaryAction =
+        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceSummary,
+                            bu_->getIdentifier("resourceSummary") );
 
-    resourceMonitorWL_->submit(resourceSummaryAction);
+      resourceMonitorWL_->submit(resourceSummaryAction);
+    }
   }
   catch(xcept::Exception& e)
   {
@@ -400,6 +402,8 @@ bool evb::bu::ResourceManager::resourceSummary(toolbox::task::WorkLoop*)
                   sentinelException, msg+": "+"unkown exception");
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
+
+  ::sleep(1);
 
   return true;
 }
