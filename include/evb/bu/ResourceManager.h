@@ -167,6 +167,8 @@ namespace evb {
       void resetMonitoringCounters();
       void incrementEventsInLumiSection(const uint32_t lumiSection);
       void eventCompletedForLumiSection(const uint32_t lumiSection);
+      void configureResources();
+      void configureResourceSummary();
       void configureDiskUsageMonitors();
       float getAvailableResources();
       float getOverThreshold();
@@ -176,6 +178,7 @@ namespace evb {
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
       void updateResources();
+      void changeStatesBasedOnResources();
 
       BU* bu_;
       const ConfigurationPtr configuration_;
@@ -211,6 +214,7 @@ namespace evb {
       mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
+      mutable boost::mutex resourceSummaryMutex_;
       bool resourceSummaryFailureAlreadyNotified_;
       bool resourceLimitiationAlreadyNotified_;
 

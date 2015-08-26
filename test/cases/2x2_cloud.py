@@ -18,7 +18,7 @@ class case_2x2_cloud(TestCase):
         self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,cloud=32)
         self.configureEvB()
         try:
-            self.enableEvB(sleepTime=0,runNumber=runNumber)
+            self.enableEvB(sleepTime=2,runNumber=runNumber)
         except StateException:
             self.checkAppState("Mist",BU,0)
             self.checkAppState("Cloud",BU,1)

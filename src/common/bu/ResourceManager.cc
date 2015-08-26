@@ -361,6 +361,7 @@ void evb::bu::ResourceManager::startProcessing()
   resetMonitoringCounters();
   doProcessing_ = true;
   runNumber_ = bu_->getStateMachine()->getRunNumber();
+  updateResources();
   resourceMonitorWL_->submit(resourceMonitorAction_);
 }
 
@@ -383,6 +384,7 @@ bool evb::bu::ResourceManager::resourceSummary(toolbox::task::WorkLoop*)
 
   try
   {
+    boost::mutex::scoped_lock sl(resourceSummaryMutex_);
     availableResources_ = getAvailableResources();
   }
   catch(xcept::Exception &e)
@@ -585,11 +587,14 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
   if ( ! doProcessing_ ) return false;
 
+  ::sleep(1);
+
   std::string msg = "Failed to update available resources";
 
   try
   {
     updateResources();
+    changeStatesBasedOnResources();
   }
   catch(xcept::Exception &e)
   {
@@ -609,8 +614,6 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  ::sleep(1);
-
   return doProcessing_;
 }
 
@@ -626,6 +629,7 @@ void evb::bu::ResourceManager::updateResources()
   }
   else
   {
+    boost::mutex::scoped_lock sl(resourceSummaryMutex_);
     const uint32_t usableResources = round( (1-overThreshold) * availableResources_ );
     resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
@@ -657,7 +661,11 @@ void evb::bu::ResourceManager::updateResources()
       ++it;
     }
   }
+}
 
+
+void evb::bu::ResourceManager::changeStatesBasedOnResources()
+{
   bool allFUsQuarantined;
   bool allFUsStale;
   bool fusInCloud;
@@ -686,18 +694,18 @@ void evb::bu::ResourceManager::updateResources()
                   "All FUs in the appliance are reporting a stale file handle");
     bu_->getStateMachine()->processFSMEvent( Fail(e) );
   }
-  else if ( resourcesToBlock == 0U || outstandingRequests > configuration_->numberOfBuilders )
+  else if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
   {
     bu_->getStateMachine()->processFSMEvent( Release() );
   }
-  else if ( resourcesToBlock == nbResources_ )
+  else if ( blockedResources_ == nbResources_ )
   {
     if ( fusInCloud )
       bu_->getStateMachine()->processFSMEvent( Clouded() );
     else
       bu_->getStateMachine()->processFSMEvent( Block() );
   }
-  else if ( resourcesToBlock > 0U && outstandingRequests == 0 )
+  else if ( blockedResources_ > 0U && outstandingRequests == 0 )
   {
     if ( fusInCloud )
       bu_->getStateMachine()->processFSMEvent( Misted() );
@@ -838,12 +846,9 @@ void evb::bu::ResourceManager::configure()
 {
   resourceFIFO_.clear();
   lumiSectionAccounts_.clear();
-  resourceSummary_.clear();
 
   eventsToDiscard_ = 0;
   eventMonitoring_.outstandingRequests = 0;
-  resourceSummaryFailureAlreadyNotified_ = false;
-  resourceLimitiationAlreadyNotified_ = false;
 
   lumiSectionTimeout_ = configuration_->lumiSectionTimeout;
 
@@ -852,40 +857,46 @@ void evb::bu::ResourceManager::configure()
                           configuration_->eventsPerRequest.value_);
   resourceFIFO_.resize(nbResources_);
 
-  {
-    boost::mutex::scoped_lock sl(builderResourcesMutex_);
-    if (configuration_->dropEventData)
-      blockedResources_ = 0;
-    else
-      blockedResources_ = nbResources_;
-
-    builderResources_.clear();
-    for (uint32_t resourceId = 1; resourceId <= nbResources_; ++resourceId)
-    {
-      ResourceInfo resourceInfo;
-      resourceInfo.builderId = -1;
-      resourceInfo.blocked = !configuration_->dropEventData;
-      std::pair<BuilderResources::iterator,bool> result =
-        builderResources_.insert(BuilderResources::value_type(resourceId,resourceInfo));
-      if ( ! result.second )
-      {
-        std::ostringstream msg;
-        msg << "Failed to insert resource " << resourceId << " into builder resource map";
-        XCEPT_RAISE(exception::DiskWriting, msg.str());
-      }
-      assert( resourceFIFO_.enq(result.first) );
-    }
-  }
-
+  configureResources();
+  configureResourceSummary();
   configureDiskUsageMonitors();
 }
 
 
-void evb::bu::ResourceManager::configureDiskUsageMonitors()
+void evb::bu::ResourceManager::configureResources()
 {
-  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+  boost::mutex::scoped_lock sl(builderResourcesMutex_);
+  if (configuration_->dropEventData)
+    blockedResources_ = 0;
+  else
+    blockedResources_ = nbResources_;
 
-  diskUsageMonitors_.clear();
+  builderResources_.clear();
+  for (uint32_t resourceId = 1; resourceId <= nbResources_; ++resourceId)
+  {
+    ResourceInfo resourceInfo;
+    resourceInfo.builderId = -1;
+    resourceInfo.blocked = !configuration_->dropEventData;
+    std::pair<BuilderResources::iterator,bool> result =
+      builderResources_.insert(BuilderResources::value_type(resourceId,resourceInfo));
+    if ( ! result.second )
+    {
+      std::ostringstream msg;
+      msg << "Failed to insert resource " << resourceId << " into builder resource map";
+      XCEPT_RAISE(exception::DiskWriting, msg.str());
+    }
+    assert( resourceFIFO_.enq(result.first) );
+  }
+}
+
+
+void evb::bu::ResourceManager::configureResourceSummary()
+{
+  boost::mutex::scoped_lock sl(resourceSummaryMutex_);
+
+  resourceSummary_.clear();
+  resourceSummaryFailureAlreadyNotified_ = false;
+  resourceLimitiationAlreadyNotified_ = false;
 
   if ( configuration_->dropEventData ) return;
 
@@ -900,6 +911,18 @@ void evb::bu::ResourceManager::configureDiskUsageMonitors()
       XCEPT_RAISE(exception::DiskWriting, msg.str());
     }
   }
+
+  availableResources_ = getAvailableResources();
+}
+
+
+void evb::bu::ResourceManager::configureDiskUsageMonitors()
+{
+  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+
+  diskUsageMonitors_.clear();
+
+  if ( configuration_->dropEventData ) return;
 
   DiskUsagePtr rawDiskUsage(
     new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)

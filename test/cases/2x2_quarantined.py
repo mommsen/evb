@@ -18,7 +18,7 @@ class case_2x2_quarantined(TestCase):
         self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,quarantinedResources=32)
         self.configureEvB()
         try:
-            self.enableEvB(sleepTime=0,runNumber=runNumber)
+            self.enableEvB(sleepTime=2,runNumber=runNumber)
         except StateException:
             self.checkAppState("Throttled",BU,0)
             self.checkAppState("Failed",BU,1)
