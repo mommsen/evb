@@ -265,6 +265,7 @@ void evb::evm::RUproxy::updateMonitoringItems()
   allocateMonitoring_.bandwidth = allocateMonitoring_.perf.bandwidth(deltaT);
   allocateMonitoring_.assignmentRate = allocateMonitoring_.perf.logicalRate(deltaT);
   allocateMonitoring_.i2oRate = allocateMonitoring_.perf.i2oRate(deltaT);
+  allocateMonitoring_.packingFactor = allocateMonitoring_.perf.packingFactor();
   allocateMonitoring_.perf.reset();
 }
 
@@ -447,7 +448,7 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << (allocateMonitoring_.i2oRate>0 ? (float)allocateMonitoring_.assignmentRate / allocateMonitoring_.i2oRate: 0);
+      str << allocateMonitoring_.packingFactor;
       table.add(tr()
                 .add(td("Events assigned/I2O"))
                 .add(td(str.str())));

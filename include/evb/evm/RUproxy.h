@@ -142,6 +142,7 @@ namespace evb {
         uint64_t bandwidth;
         uint32_t assignmentRate;
         uint32_t i2oRate;
+        double packingFactor;
         PerformanceMonitor perf;
      } allocateMonitoring_;
       mutable boost::mutex allocateMonitoringMutex_;

@@ -39,6 +39,11 @@ namespace evb {
       return ( deltaT>0 ? i2oCount/deltaT : 0 );
     }
 
+    double packingFactor() const
+    {
+      return ( i2oCount>0 ? static_cast<double>(logicalCount)/i2oCount : 0 );
+    }
+
     double bandwidth(const double& deltaT) const
     {
       return ( deltaT>0 ? sumOfSizes/deltaT : 0 );

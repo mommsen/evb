@@ -181,6 +181,7 @@ namespace evb {
         uint64_t bandwidth;
         uint32_t requestRate;
         uint32_t i2oRate;
+        double packingFactor;
         PerformanceMonitor perf;
         CountsPerBU logicalCountPerBU;
       } requestMonitoring_;
@@ -196,6 +197,7 @@ namespace evb {
         uint64_t bandwidth;
         uint32_t fragmentRate;
         uint32_t i2oRate;
+        double packingFactor;
         PerformanceMonitor perf;
         CountsPerBU payloadPerBU;
       } dataMonitoring_;
@@ -717,6 +719,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
+    requestMonitoring_.packingFactor = requestMonitoring_.perf.packingFactor();
     requestCount_ = requestMonitoring_.requestCount;
 
     requestCountPerBU_.clear();
@@ -739,6 +742,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     dataMonitoring_.bandwidth = dataMonitoring_.perf.bandwidth(deltaT);
     dataMonitoring_.fragmentRate = dataMonitoring_.perf.logicalRate(deltaT);
     dataMonitoring_.i2oRate = dataMonitoring_.perf.i2oRate(deltaT);
+    dataMonitoring_.packingFactor = dataMonitoring_.perf.packingFactor();
     fragmentCount_ = dataMonitoring_.fragmentCount;
     nbEventsBuilt_ = dataMonitoring_.nbEventsBuilt;
 
@@ -875,7 +879,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << (dataMonitoring_.i2oRate>0 ? (float)dataMonitoring_.fragmentRate / dataMonitoring_.i2oRate : 0);
+      str << dataMonitoring_.packingFactor;
       table.add(tr()
                 .add(td("Fragments/I2O"))
                 .add(td(str.str())));
@@ -922,7 +926,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << (requestMonitoring_.i2oRate>0 ? (float)requestMonitoring_.requestRate / requestMonitoring_.i2oRate : 0);
+      str << requestMonitoring_.packingFactor;
       table.add(tr()
                 .add(td("Events requested/I2O"))
                 .add(td(str.str())));

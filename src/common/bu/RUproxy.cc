@@ -355,6 +355,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
     requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
+    requestMonitoring_.packingFactor = requestMonitoring_.perf.packingFactor();
     requestMonitoring_.perf.reset();
     requestCount_ = requestMonitoring_.requestCount;
   }
@@ -367,6 +368,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
     fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth(deltaT);
     fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate(deltaT);
     fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate(deltaT);
+    fragmentMonitoring_.packingFactor = fragmentMonitoring_.perf.packingFactor();
     fragmentCount_ = fragmentMonitoring_.fragmentCount;
 
     fragmentCountPerRU_.clear();
@@ -616,7 +618,7 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << (fragmentMonitoring_.i2oRate>0 ? (float)fragmentMonitoring_.fragmentRate / fragmentMonitoring_.i2oRate : 0);
+      str << fragmentMonitoring_.packingFactor;
       table.add(tr()
                 .add(td("Fragments/I2O"))
                 .add(td(str.str())));
@@ -662,7 +664,7 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << (requestMonitoring_.i2oRate>0 ? (float)requestMonitoring_.requestRate / requestMonitoring_.i2oRate : 0);
+      str << requestMonitoring_.packingFactor;
       table.add(tr()
                 .add(td("Events requested/I2O"))
                 .add(td(str.str())));

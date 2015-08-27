@@ -191,6 +191,7 @@ namespace evb {
         uint64_t bandwidth;
         uint32_t fragmentRate;
         uint32_t i2oRate;
+        double packingFactor;
         PerformanceMonitor perf;
         CountsPerRU countsPerRU;
       } fragmentMonitoring_;
@@ -202,6 +203,7 @@ namespace evb {
         uint64_t bandwidth;
         uint32_t requestRate;
         uint32_t i2oRate;
+        double packingFactor;
         PerformanceMonitor perf;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
