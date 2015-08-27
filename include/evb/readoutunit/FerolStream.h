@@ -326,9 +326,10 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   {
     boost::mutex::scoped_lock sl(inputMonitorMutex_);
 
+    const double deltaT = inputMonitor_.perf.deltaT();
     inputMonitor_.eventCount += inputMonitor_.perf.logicalCount;
-    inputMonitor_.rate = inputMonitor_.perf.logicalRate();
-    inputMonitor_.bandwidth = inputMonitor_.perf.bandwidth();
+    inputMonitor_.rate = inputMonitor_.perf.logicalRate(deltaT);
+    inputMonitor_.bandwidth = inputMonitor_.perf.bandwidth(deltaT);
     const uint32_t eventSize = inputMonitor_.perf.size();
     if ( eventSize > 0 )
     {

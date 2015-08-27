@@ -261,9 +261,10 @@ void evb::evm::RUproxy::updateMonitoringItems()
 {
   boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
-  allocateMonitoring_.bandwidth = allocateMonitoring_.perf.bandwidth();
-  allocateMonitoring_.assignmentRate = allocateMonitoring_.perf.logicalRate();
-  allocateMonitoring_.i2oRate = allocateMonitoring_.perf.i2oRate();
+  const double deltaT = allocateMonitoring_.perf.deltaT();
+  allocateMonitoring_.bandwidth = allocateMonitoring_.perf.bandwidth(deltaT);
+  allocateMonitoring_.assignmentRate = allocateMonitoring_.perf.logicalRate(deltaT);
+  allocateMonitoring_.i2oRate = allocateMonitoring_.perf.i2oRate(deltaT);
   allocateMonitoring_.perf.reset();
 }
 

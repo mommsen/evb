@@ -349,20 +349,24 @@ void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+
+    const double deltaT = requestMonitoring_.perf.deltaT();
     requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
-    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth();
-    requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate();
-    requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate();
+    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
+    requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
+    requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
     requestMonitoring_.perf.reset();
     requestCount_ = requestMonitoring_.requestCount;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+
+    const double deltaT = fragmentMonitoring_.perf.deltaT();
     fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
     fragmentMonitoring_.fragmentCount += fragmentMonitoring_.perf.logicalCount;
-    fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth();
-    fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate();
-    fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate();
+    fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth(deltaT);
+    fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate(deltaT);
+    fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate(deltaT);
     fragmentCount_ = fragmentMonitoring_.fragmentCount;
 
     fragmentCountPerRU_.clear();

@@ -29,31 +29,27 @@ namespace evb {
       return ( time.tv_sec + static_cast<double>(time.tv_usec) / 1000000 - startTime );
     }
 
-    double logicalRate() const
+    double logicalRate(const double& deltaT) const
     {
-      const double delta = deltaT();
-      return ( delta>0 ? logicalCount/delta : 0 );
+      return ( deltaT>0 ? logicalCount/deltaT : 0 );
     }
 
-    double i2oRate() const
+    double i2oRate(const double& deltaT) const
     {
-      const double delta = deltaT();
-      return ( delta>0 ? i2oCount/delta : 0 );
+      return ( deltaT>0 ? i2oCount/deltaT : 0 );
     }
 
-    double bandwidth() const
+    double bandwidth(const double& deltaT) const
     {
-      const double delta = deltaT();
-      return ( delta>0 ? sumOfSizes/delta : 0 );
+      return ( deltaT>0 ? sumOfSizes/deltaT : 0 );
     }
 
-    double bandwidthStdDev() const
+    double bandwidthStdDev(const double& deltaT) const
     {
-      const double delta = deltaT();
-      if ( delta <= 0 ) return 0;
+      if ( deltaT <= 0 ) return 0;
 
-      const double meanOfSquares = sumOfSquares/delta;
-      const double mean = sumOfSizes/delta;
+      const double meanOfSquares = sumOfSquares/deltaT;
+      const double mean = sumOfSizes/deltaT;
       const double variance = meanOfSquares - (mean*mean);
 
       return ( variance>0 ? sqrt(variance) : 0 );

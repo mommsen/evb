@@ -775,10 +775,11 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
+    const double deltaT = eventMonitoring_.perf.deltaT();
     nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
     nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
-    eventRate_ = eventMonitoring_.perf.logicalRate();
-    bandwidth_ = eventMonitoring_.perf.bandwidth();
+    eventRate_ = eventMonitoring_.perf.logicalRate(deltaT);
+    bandwidth_ = eventMonitoring_.perf.bandwidth(deltaT);
     eventSize_ = eventMonitoring_.perf.size();
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
     outstandingRequests_ = std::max(0,eventMonitoring_.outstandingRequests);
@@ -817,14 +818,16 @@ uint32_t evb::bu::ResourceManager::getEventSize() const
 uint32_t evb::bu::ResourceManager::getEventRate() const
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-  return eventMonitoring_.perf.logicalRate();
+  const double deltaT = eventMonitoring_.perf.deltaT();
+  return eventMonitoring_.perf.logicalRate(deltaT);
 }
 
 
 uint32_t evb::bu::ResourceManager::getBandwidth() const
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-  return eventMonitoring_.perf.bandwidth();
+  const double deltaT = eventMonitoring_.perf.deltaT();
+  return eventMonitoring_.perf.bandwidth(deltaT);
 }
 
 

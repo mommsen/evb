@@ -711,10 +711,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+
+    const double deltaT = requestMonitoring_.perf.deltaT();
     requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
-    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth();
-    requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate();
-    requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate();
+    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
+    requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
+    requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
     requestCount_ = requestMonitoring_.requestCount;
 
     requestCountPerBU_.clear();
@@ -730,11 +732,13 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+
+    const double deltaT = dataMonitoring_.perf.deltaT();
     dataMonitoring_.fragmentCount += dataMonitoring_.perf.logicalCount;
     dataMonitoring_.nbEventsBuilt += dataMonitoring_.fragmentCount - dataMonitoring_.outstandingEvents;
-    dataMonitoring_.bandwidth = dataMonitoring_.perf.bandwidth();
-    dataMonitoring_.fragmentRate = dataMonitoring_.perf.logicalRate();
-    dataMonitoring_.i2oRate = dataMonitoring_.perf.i2oRate();
+    dataMonitoring_.bandwidth = dataMonitoring_.perf.bandwidth(deltaT);
+    dataMonitoring_.fragmentRate = dataMonitoring_.perf.logicalRate(deltaT);
+    dataMonitoring_.i2oRate = dataMonitoring_.perf.i2oRate(deltaT);
     fragmentCount_ = dataMonitoring_.fragmentCount;
     nbEventsBuilt_ = dataMonitoring_.nbEventsBuilt;
 

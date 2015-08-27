@@ -593,8 +593,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
   {
     boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
 
-    superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate();
-    superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth();
+    const double deltaT = superFragmentMonitor_.perf.deltaT();
+    superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
+    superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth(deltaT);
     const uint32_t eventSize = superFragmentMonitor_.perf.size();
     superFragmentMonitor_.eventSize = eventSize;
     superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();

@@ -92,9 +92,11 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
 void evb::test::DummyFEROL::do_updateMonitoringInfo()
 {
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-  bandwidth_ = dataMonitoring_.bandwidth();
-  frameRate_ = dataMonitoring_.i2oRate();
-  fragmentRate_ = dataMonitoring_.logicalRate();
+
+  const double deltaT = dataMonitoring_.deltaT();
+  bandwidth_ = dataMonitoring_.bandwidth(deltaT);
+  frameRate_ = dataMonitoring_.i2oRate(deltaT);
+  fragmentRate_ = dataMonitoring_.logicalRate(deltaT);
   fragmentSize_ = dataMonitoring_.size();
   fragmentSizeStdDev_ = dataMonitoring_.sizeStdDev();
   dataMonitoring_.reset();
