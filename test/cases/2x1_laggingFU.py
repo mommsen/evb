@@ -23,7 +23,7 @@ class case_2x1_laggingFU(TestCase):
         try:
             self.enableEvB(runNumber=runNumber)
         except StateException:
-            self.checkAppState("Blocked",BU,0)
+            self.checkAppState("Blocked","BU",0)
         else:
             raise StateException("EvB should not be Enabled")
         self.haltEvB()

@@ -20,8 +20,8 @@ class case_2x2_cloud(TestCase):
         try:
             self.enableEvB(sleepTime=2,runNumber=runNumber)
         except StateException:
-            self.checkAppState("Mist",BU,0)
-            self.checkAppState("Cloud",BU,1)
+            self.checkAppState("Mist","BU",0)
+            self.checkAppState("Cloud","BU",1)
         else:
             raise StateException("EvB should not be Enabled")
         time.sleep(5)
