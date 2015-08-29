@@ -35,6 +35,8 @@ namespace evb {
 
       BUposter(ReadoutUnit*);
 
+      ~BUposter();
+
       /**
        * Send the bufRef to the BU
        */
@@ -100,6 +102,14 @@ readoutUnit_(readoutUnit),
 doProcessing_(false)
 {
   startPosterWorkLoop();
+}
+
+
+template<class ReadoutUnit>
+evb::readoutunit::BUposter<ReadoutUnit>::~BUposter()
+{
+  if ( posterWL_ )
+    posterWL_->cancel();
 }
 
 

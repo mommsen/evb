@@ -38,6 +38,16 @@ evb::evm::RUproxy::RUproxy
 }
 
 
+evb::evm::RUproxy::~RUproxy()
+{
+  for ( WorkLoops::iterator it = workLoops_.begin(), itEnd = workLoops_.end();
+        it != itEnd; ++it)
+  {
+    (*it)->cancel();
+  }
+}
+
+
 void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr& fragmentRequest)
 {
   if ( participatingRUs_.empty() ) return;

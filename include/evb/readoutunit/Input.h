@@ -66,7 +66,7 @@ namespace evb {
 
       Input(ReadoutUnit*);
 
-      virtual ~Input() {};
+      ~Input();
 
       /**
        * Callback for individual FED fragments received from pt::frl
@@ -241,6 +241,14 @@ runNumber_(0),
 buildDummySuperFragmentActive_(false),
 incompleteEvents_(0)
 {}
+
+
+template<class ReadoutUnit,class Configuration>
+evb::readoutunit::Input<ReadoutUnit,Configuration>::~Input()
+{
+  if ( dummySuperFragmentWL_ )
+    dummySuperFragmentWL_->cancel();
+}
 
 
 template<class ReadoutUnit,class Configuration>

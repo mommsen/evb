@@ -53,6 +53,8 @@ evb::bu::RUproxy::RUproxy
 evb::bu::RUproxy::~RUproxy()
 {
   curl_easy_cleanup(curl_);
+  if ( requestFragmentsWL_ )
+    requestFragmentsWL_->cancel();
 }
 
 

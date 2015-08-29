@@ -41,6 +41,8 @@ namespace evb {
 
       ScalerStream(ReadoutUnit*, const uint16_t fedId);
 
+      ~ScalerStream();
+
       /**
        * Append the next FED fragment to the super fragment
        */
@@ -96,6 +98,14 @@ evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
 {
   createScalerPool();
   startRequestWorkLoop();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::~ScalerStream()
+{
+  if ( scalerRequestWorkLoop_ )
+    scalerRequestWorkLoop_->cancel();
 }
 
 

@@ -38,6 +38,8 @@ namespace evb {
 
       LocalStream(ReadoutUnit*, const uint16_t fedId);
 
+      ~LocalStream();
+
       /**
        * Start processing events
        */
@@ -102,6 +104,14 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
   const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
   createFragmentPool(fedIdStr);
   startGeneratorWorkLoop(fedIdStr);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::~LocalStream()
+{
+  if ( generatingWorkLoop_ )
+    generatingWorkLoop_->cancel();
 }
 
 

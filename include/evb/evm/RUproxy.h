@@ -51,7 +51,7 @@ namespace evb {
         toolbox::mem::Pool*
       );
 
-      virtual ~RUproxy() {};
+      ~RUproxy();
 
       /**
        * Send the request for event fragments to all RUs

@@ -63,6 +63,8 @@ namespace evb {
 
       BUproxy(ReadoutUnit*);
 
+      ~BUproxy();
+
       /**
        * Callback for fragment request I2O message from BU/EVM
        */
@@ -259,6 +261,17 @@ fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 
   resetMonitoringCounters();
   startProcessingWorkLoop();
+}
+
+
+template<class ReadoutUnit>
+evb::readoutunit::BUproxy<ReadoutUnit>::~BUproxy()
+{
+  for ( WorkLoops::iterator it = workLoops_.begin(), itEnd = workLoops_.end();
+        it != itEnd; ++it)
+  {
+    (*it)->cancel();
+  }
 }
 
 

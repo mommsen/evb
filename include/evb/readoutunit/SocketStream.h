@@ -36,6 +36,8 @@ namespace evb {
 
       SocketStream(ReadoutUnit*, const typename Configuration::FerolSource*);
 
+      ~SocketStream();
+
       /**
        * Handle the next buffer from pt::blit
        */
@@ -111,6 +113,14 @@ evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
   parseSocketBuffersActive_(false)
 {
   startParseSocketBuffersWorkLoop();
+}
+
+
+template<class ReadoutUnit,class Configuration>
+evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::~SocketStream()
+{
+  if ( parseSocketBuffersWL_ )
+    parseSocketBuffersWL_->cancel();
 }
 
 

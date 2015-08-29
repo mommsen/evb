@@ -55,6 +55,8 @@ namespace evb {
         boost::shared_ptr<ResourceManager>
       );
 
+      ~EventBuilder();
+
       /**
        * Add the super fragment received for the BU resource id
        */

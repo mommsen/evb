@@ -35,6 +35,16 @@ evb::bu::EventBuilder::EventBuilder
 }
 
 
+evb::bu::EventBuilder::~EventBuilder()
+{
+  for ( WorkLoops::iterator it = builderWorkLoops_.begin(), itEnd = builderWorkLoops_.end();
+        it != itEnd; ++it)
+  {
+    (*it)->cancel();
+  }
+}
+
+
 void evb::bu::EventBuilder::addSuperFragment
 (
   const uint16_t builderId,

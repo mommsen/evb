@@ -43,6 +43,11 @@ evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
 evb::test::DummyFEROL::~DummyFEROL()
 {
   closeConnection();
+
+  if ( generatingWL_ )
+    generatingWL_->cancel();
+  if ( sendingWL_ )
+    sendingWL_->cancel();
 }
 
 

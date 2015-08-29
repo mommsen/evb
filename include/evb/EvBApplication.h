@@ -69,6 +69,8 @@ namespace evb {
       const std::string& appIcon
     );
 
+    ~EvBApplication();
+
     toolbox::net::URN getURN() const { return urn_; }
     std::string getIdentifier(const std::string& suffix = "") const;
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
@@ -141,6 +143,8 @@ namespace evb {
     typedef std::map<std::string,QueueContentFunction> QueueContents;
     QueueContents queueContents_;
 
+    toolbox::task::WorkLoop* monitoringWorkLoop_;
+
   }; // template class EvBApplication
 
 } // namespace evb
@@ -166,6 +170,14 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
 {
   getApplicationDescriptor()->setAttribute("icon", appIcon);
   getApplicationDescriptor()->setAttribute("icon16x16", appIcon);
+}
+
+
+template<class Configuration,class StateMachine>
+evb::EvBApplication<Configuration,StateMachine>::~EvBApplication()
+{
+  if ( monitoringWorkLoop_ )
+    monitoringWorkLoop_->cancel();
 }
 
 
@@ -451,43 +463,28 @@ void evb::EvBApplication<Configuration,StateMachine>::startMonitoring()
 template<class Configuration,class StateMachine>
 void evb::EvBApplication<Configuration,StateMachine>::startMonitoringWorkloop()
 {
-  const std::string monitoringWorkLoopName( getIdentifier("monitoring") );
-
-  toolbox::task::WorkLoop* monitoringWorkLoop = toolbox::task::getWorkLoopFactory()->getWorkLoop
-    (
-      monitoringWorkLoopName,
-      "waiting"
-    );
-
-  const std::string monitoringActionName( getIdentifier("monitoringAction") );
-
-  toolbox::task::ActionSignature* monitoringActionSignature =
-    toolbox::task::bind
-    (
-      this,
-      &evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo,
-      monitoringActionName
-    );
-
   try
   {
-    monitoringWorkLoop->submit(monitoringActionSignature);
+    monitoringWorkLoop_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop(getIdentifier("monitoring"),"waiting");
+
+    toolbox::task::ActionSignature* monitoringActionSignature =
+      toolbox::task::bind(this,
+                          &evb::EvBApplication<Configuration,StateMachine>::updateMonitoringInfo,
+                          getIdentifier("monitoringAction")
+      );
+
+    if ( ! monitoringWorkLoop_->isActive() )
+    {
+      monitoringWorkLoop_->activate();
+
+      monitoringWorkLoop_->submit(monitoringActionSignature);
+    }
   }
   catch(xcept::Exception& e)
   {
     XCEPT_RETHROW(exception::WorkLoop,
-                  "Failed to submit action to work loop: " + monitoringWorkLoopName,
-                  e);
-  }
-
-  try
-  {
-    monitoringWorkLoop->activate();
-  }
-  catch(xcept::Exception& e)
-  {
-    XCEPT_RETHROW(exception::WorkLoop,
-                  "Failed to activate work loop: " + monitoringWorkLoopName, e);
+                  "Failed to start monitoring workloop", e);
   }
 }
 

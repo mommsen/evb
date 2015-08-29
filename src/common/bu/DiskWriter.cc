@@ -39,6 +39,15 @@ evb::bu::DiskWriter::DiskWriter
 }
 
 
+evb::bu::DiskWriter::~DiskWriter()
+{
+  if ( lumiAccountingWorkLoop_ )
+    lumiAccountingWorkLoop_->cancel();
+  if ( fileMoverWorkLoop_ )
+    fileMoverWorkLoop_->cancel();
+}
+
+
 evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t builderId) const
 {
   return streamHandlers_.at(builderId);

@@ -44,6 +44,8 @@ namespace evb {
         boost::shared_ptr<ResourceManager>
       );
 
+      ~DiskWriter();
+
       /**
        * Get a stream handler for the given builder id
        */
