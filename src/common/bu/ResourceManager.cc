@@ -37,12 +37,19 @@ evb::bu::ResourceManager::ResourceManager
   initiallyQueuedLS_(0),
   queuedLS_(0),
   queuedLSonFUs_(-1),
-  doProcessing_(false),
-  availableResources_(0)
+  oldestIncompleteLumiSection_(0),
+  doProcessing_(false)
 {
   startResourceMonitorWorkLoop();
   resetMonitoringCounters();
   eventMonitoring_.outstandingRequests = 0;
+}
+
+
+evb::bu::ResourceManager::~ResourceManager()
+{
+  if ( resourceMonitorWL_ )
+    resourceMonitorWL_->cancel();
 }
 
 
@@ -53,19 +60,15 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
     resourceMonitorWL_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( bu_->getIdentifier("resourceMonitor"), "waiting" );
 
-    resourceMonitorAction_ =
-      toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
-                          bu_->getIdentifier("resourceMonitor") );
-
     if ( ! resourceMonitorWL_->isActive() )
     {
       resourceMonitorWL_->activate();
 
-      toolbox::task::ActionSignature* resourceSummaryAction =
-        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceSummary,
-                            bu_->getIdentifier("resourceSummary") );
+      toolbox::task::ActionSignature* resourceMonitorAction =
+        toolbox::task::bind(this, &evb::bu::ResourceManager::resourceMonitor,
+                            bu_->getIdentifier("resourceMonitor") );
 
-      resourceMonitorWL_->submit(resourceSummaryAction);
+      resourceMonitorWL_->submit(resourceMonitorAction);
     }
   }
   catch(xcept::Exception& e)
@@ -148,6 +151,7 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 
 uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 {
+  boost::mutex::scoped_lock sl(lsLatencyMutex_);
   return oldestIncompleteLumiSection_;
 }
 
@@ -268,8 +272,10 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
     }
   }
 
-  oldestIncompleteLumiSection_ = lumiSectionAccounts_.begin()->first;
-
+  {
+    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    oldestIncompleteLumiSection_ = lumiSectionAccounts_.begin()->first;
+  }
   return foundCompleteLS;
 }
 
@@ -361,8 +367,6 @@ void evb::bu::ResourceManager::startProcessing()
   resetMonitoringCounters();
   doProcessing_ = true;
   runNumber_ = bu_->getStateMachine()->getRunNumber();
-  updateResources();
-  resourceMonitorWL_->submit(resourceMonitorAction_);
 }
 
 
@@ -378,41 +382,10 @@ void evb::bu::ResourceManager::stopProcessing()
 }
 
 
-bool evb::bu::ResourceManager::resourceSummary(toolbox::task::WorkLoop*)
-{
-  const std::string msg = "Failed to update resources from FFF resource summary";
-
-  try
-  {
-    boost::mutex::scoped_lock sl(resourceSummaryMutex_);
-    availableResources_ = getAvailableResources();
-  }
-  catch(xcept::Exception &e)
-  {
-    XCEPT_DECLARE_NESTED(exception::FFF, sentinelException, msg, e);
-    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-  catch(std::exception& e)
-  {
-    XCEPT_DECLARE(exception::FFF,
-                  sentinelException, msg+": "+e.what());
-    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    XCEPT_DECLARE(exception::FFF,
-                  sentinelException, msg+": "+"unkown exception");
-    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
-  }
-
-  ::sleep(1);
-
-  return true;
-}
-
-
 float evb::bu::ResourceManager::getAvailableResources()
 {
+  boost::mutex::scoped_lock sl(resourceSummaryMutex_);
+
   if ( resourceSummary_.empty() ) return nbResources_;
 
   const std::time_t lastWriteTime = boost::filesystem::last_write_time(resourceSummary_);
@@ -442,12 +415,15 @@ float evb::bu::ResourceManager::getAvailableResources()
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
 
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
-    const int activeFURun = pt.get<int>("activeFURun");
-    const int activeRunCMSSWMaxLS = pt.get<int>("activeRunCMSSWMaxLS");
+    const uint32_t activeFURun = pt.get<int>("activeFURun");
+    const uint32_t activeRunCMSSWMaxLS = std::max(0,pt.get<int>("activeRunCMSSWMaxLS"));
     queuedLS_ = oldestIncompleteLumiSection_;
-    if ( activeFURun == static_cast<int>(runNumber_) && activeRunCMSSWMaxLS > 0 )
+    if ( activeFURun == runNumber_ && activeRunCMSSWMaxLS > 0 )
     {
-      queuedLS_ -= activeRunCMSSWMaxLS;
+      if ( queuedLS_ > activeRunCMSSWMaxLS )
+        queuedLS_ -= activeRunCMSSWMaxLS;
+      else
+        queuedLS_ = 0; //this can only be true for the test cases
       if ( initiallyQueuedLS_ == 0 )
         initiallyQueuedLS_ = queuedLS_;
     }
@@ -500,8 +476,9 @@ float evb::bu::ResourceManager::getAvailableResources()
       resourceLimitiationAlreadyNotified_ = true;
     }
 
-    resourcesFromFUs *= 1 - ( static_cast<float>(lsLatency - configuration_->lumiSectionLatencyLow) /
-                              (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
+    const float throttle = 1 - ( static_cast<float>(lsLatency - configuration_->lumiSectionLatencyLow) /
+                                 (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
+    return std::min(resourcesFromFUs,static_cast<float>(nbResources_)) * throttle;
   }
 
   if ( resourcesFromFUs >= static_cast<float>(nbResources_) )
@@ -585,16 +562,17 @@ float evb::bu::ResourceManager::getOverThreshold()
 
 bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
-  if ( ! doProcessing_ ) return false;
-
-  ::sleep(1);
-
   std::string msg = "Failed to update available resources";
 
   try
   {
-    updateResources();
-    changeStatesBasedOnResources();
+    const float availableResources = getAvailableResources();
+
+    if ( doProcessing_ )
+    {
+      updateResources(availableResources);
+      changeStatesBasedOnResources();
+    }
   }
   catch(xcept::Exception &e)
   {
@@ -614,11 +592,13 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  return doProcessing_;
+  ::sleep(1);
+
+  return true;
 }
 
 
-void evb::bu::ResourceManager::updateResources()
+void evb::bu::ResourceManager::updateResources(const float availableResources)
 {
   uint32_t resourcesToBlock;
   const float overThreshold = getOverThreshold();
@@ -629,8 +609,7 @@ void evb::bu::ResourceManager::updateResources()
   }
   else
   {
-    boost::mutex::scoped_lock sl(resourceSummaryMutex_);
-    const uint32_t usableResources = round( (1-overThreshold) * availableResources_ );
+    const uint32_t usableResources = round( (1-overThreshold) * availableResources );
     resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
   }
 
@@ -914,8 +893,6 @@ void evb::bu::ResourceManager::configureResourceSummary()
       XCEPT_RAISE(exception::DiskWriting, msg.str());
     }
   }
-
-  availableResources_ = getAvailableResources();
 }
 
 

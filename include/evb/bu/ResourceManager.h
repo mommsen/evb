@@ -47,6 +47,8 @@ namespace evb {
 
       ResourceManager(BU*);
 
+      ~ResourceManager();
+
       /**
        * Mark the resource contained in the passed data block as under construction.
        * Returns the builder identifier to be used for building this resource.
@@ -173,11 +175,10 @@ namespace evb {
       float getAvailableResources();
       float getOverThreshold();
       void updateDiskUsages();
-      bool resourceSummary(toolbox::task::WorkLoop*);
       void handleResourceSummaryFailure(const std::string& msg);
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
-      void updateResources();
+      void updateResources(const float availableResources);
       void changeStatesBasedOnResources();
 
       BU* bu_;
@@ -227,9 +228,7 @@ namespace evb {
       mutable boost::mutex lumiSectionAccountsMutex_;
       uint32_t oldestIncompleteLumiSection_;
       volatile bool doProcessing_;
-      float availableResources_;
       toolbox::task::WorkLoop* resourceMonitorWL_;
-      toolbox::task::ActionSignature* resourceMonitorAction_;
 
       struct EventMonitoring
       {
