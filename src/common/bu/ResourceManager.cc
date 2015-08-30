@@ -417,18 +417,17 @@ float evb::bu::ResourceManager::getAvailableResources()
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
     const uint32_t activeFURun = pt.get<int>("activeFURun");
     const uint32_t activeRunCMSSWMaxLS = std::max(0,pt.get<int>("activeRunCMSSWMaxLS"));
-    queuedLS_ = oldestIncompleteLumiSection_;
     if ( activeFURun == runNumber_ && activeRunCMSSWMaxLS > 0 )
     {
-      if ( queuedLS_ > activeRunCMSSWMaxLS )
-        queuedLS_ -= activeRunCMSSWMaxLS;
-      else
-        queuedLS_ = 0; //this can only be true for the test cases
+      if ( oldestIncompleteLumiSection_ >= activeRunCMSSWMaxLS )
+        queuedLS_ = oldestIncompleteLumiSection_ - activeRunCMSSWMaxLS;
       if ( initiallyQueuedLS_ == 0 )
         initiallyQueuedLS_ = queuedLS_;
+      else if ( queuedLS_ > initiallyQueuedLS_ )
+        lsLatency = queuedLS_ - initiallyQueuedLS_;
+      else
+        lsLatency = 0;
     }
-    lsLatency = (initiallyQueuedLS_ > 0) && (queuedLS_ > initiallyQueuedLS_) ?
-      queuedLS_ - initiallyQueuedLS_ : 0;
   }
   catch(boost::property_tree::ptree_error& e)
   {
