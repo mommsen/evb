@@ -108,7 +108,7 @@ doProcessing_(false)
 template<class ReadoutUnit>
 evb::readoutunit::BUposter<ReadoutUnit>::~BUposter()
 {
-  if ( posterWL_ )
+  if ( posterWL_ && posterWL_->isActive() )
     posterWL_->cancel();
 }
 

@@ -48,7 +48,7 @@ evb::bu::ResourceManager::ResourceManager
 
 evb::bu::ResourceManager::~ResourceManager()
 {
-  if ( resourceMonitorWL_ )
+  if ( resourceMonitorWL_ && resourceMonitorWL_->isActive() )
     resourceMonitorWL_->cancel();
 }
 

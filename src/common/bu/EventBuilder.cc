@@ -40,7 +40,8 @@ evb::bu::EventBuilder::~EventBuilder()
   for ( WorkLoops::iterator it = builderWorkLoops_.begin(), itEnd = builderWorkLoops_.end();
         it != itEnd; ++it)
   {
-    (*it)->cancel();
+    if ( (*it)->isActive() )
+      (*it)->cancel();
   }
 }
 

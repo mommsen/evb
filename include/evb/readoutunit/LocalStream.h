@@ -110,7 +110,7 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::~LocalStream()
 {
-  if ( generatingWorkLoop_ )
+  if ( generatingWorkLoop_ && generatingWorkLoop_->isActive() )
     generatingWorkLoop_->cancel();
 }
 

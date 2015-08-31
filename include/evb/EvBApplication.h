@@ -176,7 +176,7 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
 template<class Configuration,class StateMachine>
 evb::EvBApplication<Configuration,StateMachine>::~EvBApplication()
 {
-  if ( monitoringWorkLoop_ )
+  if ( monitoringWorkLoop_ &&  monitoringWorkLoop_->isActive() )
     monitoringWorkLoop_->cancel();
 }
 

@@ -270,7 +270,8 @@ evb::readoutunit::BUproxy<ReadoutUnit>::~BUproxy()
   for ( WorkLoops::iterator it = workLoops_.begin(), itEnd = workLoops_.end();
         it != itEnd; ++it)
   {
-    (*it)->cancel();
+    if ( (*it)->isActive() )
+      (*it)->cancel();
   }
 }
 

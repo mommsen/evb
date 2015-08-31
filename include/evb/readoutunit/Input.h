@@ -246,7 +246,7 @@ incompleteEvents_(0)
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::Input<ReadoutUnit,Configuration>::~Input()
 {
-  if ( dummySuperFragmentWL_ )
+  if ( dummySuperFragmentWL_ && dummySuperFragmentWL_->isActive() )
     dummySuperFragmentWL_->cancel();
 }
 

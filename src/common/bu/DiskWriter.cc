@@ -41,9 +41,9 @@ evb::bu::DiskWriter::DiskWriter
 
 evb::bu::DiskWriter::~DiskWriter()
 {
-  if ( lumiAccountingWorkLoop_ )
+  if ( lumiAccountingWorkLoop_ && lumiAccountingWorkLoop_->isActive() )
     lumiAccountingWorkLoop_->cancel();
-  if ( fileMoverWorkLoop_ )
+  if ( fileMoverWorkLoop_ && fileMoverWorkLoop_->isActive() )
     fileMoverWorkLoop_->cancel();
 }
 

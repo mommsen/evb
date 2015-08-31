@@ -104,7 +104,7 @@ evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::~ScalerStream()
 {
-  if ( scalerRequestWorkLoop_ )
+  if ( scalerRequestWorkLoop_ && scalerRequestWorkLoop_->isActive() )
     scalerRequestWorkLoop_->cancel();
 }
 

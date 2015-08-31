@@ -119,7 +119,7 @@ evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
 template<class ReadoutUnit,class Configuration>
 evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::~SocketStream()
 {
-  if ( parseSocketBuffersWL_ )
+  if ( parseSocketBuffersWL_ && parseSocketBuffersWL_->isActive() )
     parseSocketBuffersWL_->cancel();
 }
 

@@ -44,9 +44,9 @@ evb::test::DummyFEROL::~DummyFEROL()
 {
   closeConnection();
 
-  if ( generatingWL_ )
+  if ( generatingWL_ && generatingWL_->isActive() )
     generatingWL_->cancel();
-  if ( sendingWL_ )
+  if ( sendingWL_ && sendingWL_->isActive() )
     sendingWL_->cancel();
 }
 
