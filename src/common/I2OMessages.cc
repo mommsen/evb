@@ -165,17 +165,20 @@ std::ostream& evb::msg::operator<<
   str << "nbSuperFragments=" << dataBlockMsg.nbSuperFragments << std::endl;
   str << "nbRUtids=" << dataBlockMsg.nbRUtids << std::endl;
 
-  evb::msg::EvBids evbIds;
-  dataBlockMsg.getEvBids(evbIds);
-  str << "evbIds:" << std::endl;
-  for (uint32_t i=0; i < dataBlockMsg.nbSuperFragments; ++i)
-    str << "   [" << i << "]: " << evbIds[i] << std::endl;
+  if ( dataBlockMsg.blockNb == 1 )
+  {
+    evb::msg::EvBids evbIds;
+    dataBlockMsg.getEvBids(evbIds);
+    str << "evbIds:" << std::endl;
+    for (uint32_t i=0; i < dataBlockMsg.nbSuperFragments; ++i)
+      str << "   [" << i << "]: " << evbIds[i] << std::endl;
 
-  evb::msg::RUtids ruTids;
-  dataBlockMsg.getRUtids(ruTids);
-  str << "ruTids:" << std::endl;
-  for (uint32_t i=0; i < dataBlockMsg.nbRUtids; ++i)
-    str << "   [" << i << "]: " << ruTids[i] << std::endl;
+    evb::msg::RUtids ruTids;
+    dataBlockMsg.getRUtids(ruTids);
+    str << "ruTids:" << std::endl;
+    for (uint32_t i=0; i < dataBlockMsg.nbRUtids; ++i)
+      str << "   [" << i << "]: " << ruTids[i] << std::endl;
+  }
 
   return str;
 }

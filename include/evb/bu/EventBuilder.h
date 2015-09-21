@@ -144,7 +144,7 @@ namespace evb {
       void createProcessingWorkLoops();
       bool process(toolbox::task::WorkLoop*);
       void buildEvent(FragmentChainPtr&, PartialEvents&, CompleteEvents&) const;
-      PartialEvents::iterator getEventPos(PartialEvents&, const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&, const uint16_t& superFragmentCount) const;
+      PartialEvents::iterator getEventPos(PartialEvents&, const EvBid&, const msg::RUtids&, const uint16_t& buResourceId) const;
       void handleCompleteEvents(CompleteEvents&, StreamHandlerPtr&) const;
 
       BU* bu_;

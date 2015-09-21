@@ -287,22 +287,28 @@ inline void evb::bu::EventBuilder::buildEvent
   toolbox::mem::Reference* bufRef = superFragments->head()->duplicate();
   const I2O_MESSAGE_FRAME* stdMsg =
     (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* firstDataBlockMsg =
     (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)stdMsg;
   const I2O_TID ruTid = stdMsg->InitiatorAddress;
-  const uint16_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+  const uint16_t nbSuperFragments = firstDataBlockMsg->nbSuperFragments;
   uint16_t superFragmentCount = 0;
-  const uint32_t blockHeaderSize = dataBlockMsg->headerSize;
+  msg::EvBids evbIds;
+  firstDataBlockMsg->getEvBids(evbIds);
+  msg::RUtids ruTids;
+  firstDataBlockMsg->getRUtids(ruTids);
 
-  PartialEvents::iterator eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
+  PartialEvents::iterator eventPos = getEventPos(partialEvents,evbIds[superFragmentCount],ruTids,firstDataBlockMsg->buResourceId);
 
   do
   {
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
     bufRef->setNextReference(0);
 
-    unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + blockHeaderSize;
-    uint32_t remainingBufferSize = bufRef->getDataSize() - blockHeaderSize;
+    const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg =
+      (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
+
+    unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + dataBlockMsg->headerSize;
+    uint32_t remainingBufferSize = bufRef->getDataSize() - dataBlockMsg->headerSize;
 
     while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
     {
@@ -322,7 +328,7 @@ inline void evb::bu::EventBuilder::buildEvent
         }
 
         ++superFragmentCount;
-        eventPos = getEventPos(partialEvents,dataBlockMsg,superFragmentCount);
+        eventPos = getEventPos(partialEvents,evbIds[superFragmentCount],ruTids,dataBlockMsg->buResourceId);
       }
 
       const uint32_t size = superFragmentMsg->headerSize + superFragmentMsg->partSize;
@@ -350,21 +356,17 @@ inline void evb::bu::EventBuilder::buildEvent
 inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::getEventPos
 (
   PartialEvents& partialEvents,
-  const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg,
-  const uint16_t& superFragmentCount
+  const EvBid& evbId,
+  const msg::RUtids& ruTids,
+  const uint16_t& buResourceId
 ) const
 {
-  if ( superFragmentCount >= dataBlockMsg->nbSuperFragments )
-    return partialEvents.end();
-
-  const EvBid evbId = dataBlockMsg->evbIds[superFragmentCount];
-
   PartialEvents::iterator eventPos = partialEvents.lower_bound(evbId);
   if ( eventPos == partialEvents.end() || (partialEvents.key_comp()(evbId,eventPos->first)) )
   {
     // new event
     const bool checkCRC = ( configuration_->checkCRC > 0U && evbId.eventNumber() % configuration_->checkCRC == 0 );
-    EventPtr event( new Event(evbId, checkCRC, configuration_->calculateCRC32c||configuration_->calculateAdler32, dataBlockMsg) );
+    EventPtr event( new Event(evbId, ruTids, buResourceId, checkCRC, configuration_->calculateCRC32c||configuration_->calculateAdler32) );
     eventPos = partialEvents.insert(eventPos, PartialEvents::value_type(evbId,event));
   }
   return eventPos;

@@ -35,9 +35,10 @@ namespace evb {
       Event
       (
         const EvBid&,
+        const msg::RUtids&,
+        const uint16_t buResourceId,
         const bool checkCRC,
-        const bool calculateCRC32,
-        const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*
+        const bool calculateCRC32
       );
 
       ~Event();
