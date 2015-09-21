@@ -295,16 +295,6 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
-  if ( fedId_ != ferolHeader->fed_id() )
-  {
-    isCorrupted_ = true;
-    std::ostringstream msg;
-    msg << "Mismatch of FED id in FEROL header:";
-    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
-    msg << " for event " << eventNumber_;
-    XCEPT_RAISE(exception::DataCorruption, msg.str());
-  }
-
   if ( ferolHeader->is_first_packet() )
   {
     eventNumber_ = ferolHeader->event_number();
@@ -316,6 +306,16 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     msg << "Mismatch of event number in FEROL header:";
     msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
     msg << " for FED " << fedId_;
+    XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+
+  if ( fedId_ != ferolHeader->fed_id() )
+  {
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    msg << "Mismatch of FED id in FEROL header:";
+    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    msg << " for event " << eventNumber_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 }
