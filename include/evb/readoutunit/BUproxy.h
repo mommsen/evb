@@ -497,6 +497,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
     }
   }
+  tail->setDataSize( readoutUnit_->getConfiguration()->blockSize - remainingPayloadSize );
 
   toolbox::mem::Reference* bufRef = head;
   uint32_t payloadSize = 0;
