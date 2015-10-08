@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <sstream>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <vector>
@@ -57,7 +58,8 @@ namespace evb {
       void checkFedHeader(const fedh_t*);
       void checkFedTrailer(fedt_t*);
       void checkCRC(fedt_t*);
-      std::string trailerBitToString(const uint32_t conscheck) const;
+      void checkTrailerBits(const uint32_t conscheck);
+      void reportErrors() const;
 
       enum FedComponent
       {
@@ -77,7 +79,10 @@ namespace evb {
       uint32_t eventNumber_;
       EvBid evbId_;
       uint32_t fedSize_;
+      std::ostringstream errorMsg_;
       bool isCorrupted_;
+      bool hasCRCerror_;
+      bool hasFEDerror_;
       bool isComplete_;
       toolbox::mem::Reference* bufRef_;
       tcpla::MemoryCache* cache_;
