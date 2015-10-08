@@ -243,8 +243,8 @@ class RU(Context):
         id += 1
 
         config += self.fillProperties([
-            ('maxClients','unsignedInt','16'),
-            ('maxReceiveBuffers','unsignedInt','32'),
+            ('maxClients','unsignedInt','32'),
+            ('maxReceiveBuffers','unsignedInt','128'),
             ('maxBlockSize','unsignedInt','131072')
             ])
         config += "        </properties>\n      </xc:Application>\n"

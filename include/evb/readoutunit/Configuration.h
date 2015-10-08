@@ -79,9 +79,9 @@ namespace evb {
           numberOfResponders(4),
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
-          socketBufferFIFOCapacity(32),
-          grantFIFOCapacity(256),
-          fragmentFIFOCapacity(128),
+          socketBufferFIFOCapacity(128),
+          grantFIFOCapacity(4096),
+          fragmentFIFOCapacity(512),
           fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
           checkCRC(1),
           writeNextFragmentsToFile(0),

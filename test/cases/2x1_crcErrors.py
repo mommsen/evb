@@ -22,7 +22,7 @@ class case_2x1_crcErrors(TestCase):
         self.setAppParam('metaDataDir','string',testDir,'BU')
         self.configureEvB()
         self.setAppParam('hltParameterSetURL','string','file://'+testDir,'BU')
-        self.enableEvB(sleepTime=1,runNumber=1)
+        self.enableEvB(runNumber=1)
         self.checkIt()
 
         print("1 CRC error on FED 1")
