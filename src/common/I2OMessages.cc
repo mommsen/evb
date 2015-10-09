@@ -114,6 +114,7 @@ std::ostream& evb::msg::operator<<
   str << readoutMsg.PvtMessageFrame;
 
   str << "buTid=" << readoutMsg.buTid << std::endl;
+  str << "priority=" << readoutMsg.priority << std::endl;
   str << "buResourceId=" << readoutMsg.buResourceId << std::endl;
   str << "nbRequests=" << readoutMsg.nbRequests << std::endl;
   str << "nbRUtids=" << readoutMsg.nbRUtids << std::endl;

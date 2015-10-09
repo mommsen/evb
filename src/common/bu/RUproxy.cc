@@ -301,6 +301,7 @@ void evb::bu::RUproxy::sendRequests()
     pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
     readoutMsg->headerSize   = msgSize;
     readoutMsg->buTid        = tid_;
+    readoutMsg->priority     = 0;
     readoutMsg->buResourceId = buResourceId;
     readoutMsg->nbRequests   = nbRequests;
     readoutMsg->nbDiscards   = eventsToDiscard;

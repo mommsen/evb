@@ -15,6 +15,7 @@ namespace evb {
     struct FragmentRequest
     {
       I2O_TID  buTid;
+      uint16_t priority;
       uint16_t buResourceId;
       uint16_t nbRequests;
       uint16_t nbDiscards;
@@ -35,6 +36,7 @@ namespace evb {
         str << "Fragment request:" << std::endl;
 
         str << "buTid=" << request->buTid << std::endl;
+        str << "priority=" << request->priority << std::endl;
         str << "buResourceId=" << request->buResourceId << std::endl;
         str << "nbRequests=" << request->nbRequests << std::endl;
         str << "nbDiscards=" << request->nbDiscards << std::endl;

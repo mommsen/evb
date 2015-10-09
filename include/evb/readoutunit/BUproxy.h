@@ -330,6 +330,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
   {
     FragmentRequestPtr fragmentRequest( new FragmentRequest );
     fragmentRequest->buTid = readoutMsg->buTid;
+    fragmentRequest->priority = readoutMsg->priority;
     fragmentRequest->buResourceId = readoutMsg->buResourceId;
     fragmentRequest->nbRequests = readoutMsg->nbRequests;
     handleRequest(readoutMsg, fragmentRequest);
