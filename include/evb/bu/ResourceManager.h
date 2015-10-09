@@ -179,7 +179,7 @@ namespace evb {
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
       void updateResources(const float availableResources);
-      void updatePriority();
+      uint16_t getPriority();
       void changeStatesBasedOnResources();
 
       BU* bu_;

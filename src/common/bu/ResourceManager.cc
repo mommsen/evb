@@ -577,8 +577,11 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     if ( doProcessing_ )
     {
       updateResources(availableResources);
-      updatePriority();
       changeStatesBasedOnResources();
+      {
+        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        currentPriority_ = getPriority();
+      }
     }
   }
   catch(xcept::Exception &e)
@@ -650,19 +653,20 @@ void evb::bu::ResourceManager::updateResources(const float availableResources)
 }
 
 
-void evb::bu::ResourceManager::updatePriority()
+uint16_t evb::bu::ResourceManager::getPriority()
 {
   boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
   if ( ramDiskSizeInGB_.value_ > 0 )
   {
-    currentPriority_ = floor((1-pow(ramDiskUsed_/ramDiskSizeInGB_-1,2)) * evb::LOWEST_PRIORITY);
+    uint16_t priority = floor((1-pow(ramDiskUsed_/ramDiskSizeInGB_-1,2)) * evb::LOWEST_PRIORITY);
     if ( blockedResources_ > 0 )
-      ++currentPriority_;
+      ++priority;
+    return priority;
   }
   else
   {
-    currentPriority_ = LOWEST_PRIORITY;
+    return LOWEST_PRIORITY;
   }
 }
 
