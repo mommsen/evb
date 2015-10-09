@@ -29,6 +29,7 @@ evb::bu::ResourceManager::ResourceManager
   eventsToDiscard_(0),
   nbResources_(1),
   blockedResources_(1),
+  currentPriority_(0),
   builderId_(0),
   fusHLT_(0),
   fusCloud_(0),
@@ -327,7 +328,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 }
 
 
-bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& eventsToDiscard)
+bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& priority, uint16_t& eventsToDiscard)
 {
   BuilderResources::iterator pos;
   if ( resourceFIFO_.deq(pos) )
@@ -345,6 +346,7 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
 
       pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
       buResourceId = pos->first;
+      priority = currentPriority_;
       eventsToDiscard = eventsToDiscard_;
       eventsToDiscard_ = 0;
       ++eventMonitoring_.outstandingRequests;
@@ -357,6 +359,7 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& e
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
     buResourceId = 0;
+    priority = 0;
     eventsToDiscard = eventsToDiscard_;
     eventsToDiscard_ = 0;
     return true;
@@ -574,6 +577,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     if ( doProcessing_ )
     {
       updateResources(availableResources);
+      updatePriority();
       changeStatesBasedOnResources();
     }
   }
@@ -642,6 +646,23 @@ void evb::bu::ResourceManager::updateResources(const float availableResources)
       }
       ++it;
     }
+  }
+}
+
+
+void evb::bu::ResourceManager::updatePriority()
+{
+  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+
+  if ( ramDiskSizeInGB_.value_ > 0 )
+  {
+    currentPriority_ = floor((1-pow(ramDiskUsed_/ramDiskSizeInGB_-1,2)) * evb::LOWEST_PRIORITY);
+    if ( blockedResources_ > 0 )
+      ++currentPriority_;
+  }
+  else
+  {
+    currentPriority_ = LOWEST_PRIORITY;
   }
 }
 

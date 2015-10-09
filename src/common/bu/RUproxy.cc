@@ -275,10 +275,11 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 void evb::bu::RUproxy::sendRequests()
 {
   uint16_t buResourceId;
+  uint16_t priority;
   uint16_t eventsToDiscard;
   const uint32_t msgSize = sizeof(msg::ReadoutMsg);
 
-  while ( resourceManager_->getResourceId(buResourceId,eventsToDiscard) )
+  while ( resourceManager_->getResourceId(buResourceId,priority,eventsToDiscard) )
   {
     toolbox::mem::Reference* rqstBufRef =
       toolbox::mem::getMemoryPoolFactory()->
@@ -301,7 +302,7 @@ void evb::bu::RUproxy::sendRequests()
     pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
     readoutMsg->headerSize   = msgSize;
     readoutMsg->buTid        = tid_;
-    readoutMsg->priority     = 0;
+    readoutMsg->priority     = priority;
     readoutMsg->buResourceId = buResourceId;
     readoutMsg->nbRequests   = nbRequests;
     readoutMsg->nbDiscards   = eventsToDiscard;
