@@ -171,15 +171,22 @@ namespace evb {
       {
         // new TID
         boost::upgrade_to_unique_lock< boost::shared_mutex > ul(sl);
-        std::ostringstream name;
-        name << "fragmentRequestFIFO_BU" << readoutMsg->buTid;
-        const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
-        requestFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
-        pos = fragmentRequestFIFOs_.insert(pos, FragmentRequestFIFOs::value_type(readoutMsg->buTid,requestFIFO));
+        PrioritizedFragmentRequestFIFOs prioritizedFragmentRequestFIFOs;
+        prioritizedFragmentRequestFIFOs.reserve(evb::LOWEST_PRIORITY+1);
+        for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
+        {
+          std::ostringstream name;
+          name << "fragmentRequestFIFO_BU" << readoutMsg->buTid << "_" << priority;
+          const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
+          requestFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
+          prioritizedFragmentRequestFIFOs.push_back(requestFIFO);
+        }
+        pos = fragmentRequestFIFOs_.insert(pos, FragmentRequestFIFOs::value_type(
+                                             readoutMsg->buTid,prioritizedFragmentRequestFIFOs));
         nextBU_ = pos; //make sure the nextBU points to a valid location
       }
 
-      pos->second->enqWait(fragmentRequest);
+      pos->second[readoutMsg->priority]->enqWait(fragmentRequest);
     }
 
 
@@ -197,20 +204,25 @@ namespace evb {
 
           if ( fragmentRequestFIFOs_.empty() ) return false;
 
-          // search the next request FIFO which is non-empty
+          // search the next request FIFO with highest priority (lowest number) which is non-empty
           const FragmentRequestFIFOs::iterator lastBU = nextBU_;
-          while ( nextBU_->second->empty() )
+          uint16_t priority = 0;
+          while ( priority <= evb::LOWEST_PRIORITY )
           {
+            if ( ! nextBU_->second[priority]->empty() ) break;
+
             if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
               nextBU_ = fragmentRequestFIFOs_.begin();
 
-            if ( lastBU == nextBU_ ) return false;
+            if ( lastBU == nextBU_ ) ++priority;
           }
+
+          if ( priority > evb::LOWEST_PRIORITY ) return false;
 
           if ( !input_->getNextAvailableSuperFragment(superFragment) ) return false;
 
           // this must succeed as we checked that the queue is non-empty
-          assert( nextBU_->second->deq(fragmentRequest) );
+          assert( nextBU_->second[priority]->deq(fragmentRequest) );
           if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
             nextBU_ = fragmentRequestFIFOs_.begin();
         }
