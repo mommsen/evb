@@ -659,10 +659,11 @@ uint16_t evb::bu::ResourceManager::getPriority()
 
   if ( ramDiskSizeInGB_.value_ > 0 )
   {
-    uint16_t priority = floor((1-pow(ramDiskUsed_/ramDiskSizeInGB_-1,2)) * evb::LOWEST_PRIORITY);
+    const float weight = (1-pow(ramDiskUsed_/ramDiskSizeInGB_-1,2)) * evb::LOWEST_PRIORITY;
     if ( blockedResources_ > 0 )
-      ++priority;
-    return priority;
+      return round(weight);
+    else
+      return floor(weight);
   }
   else
   {
