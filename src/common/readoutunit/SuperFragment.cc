@@ -9,7 +9,7 @@ evb::readoutunit::SuperFragment::SuperFragment(const EvBid& evbId)
 {}
 
 
-bool evb::readoutunit::SuperFragment::append(FedFragmentPtr& fedFragment)
+bool evb::readoutunit::SuperFragment::append(const FedFragmentPtr& fedFragment)
 {
   if ( fedFragment->getEvBid() != evbId_ )
   {
