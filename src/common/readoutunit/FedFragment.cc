@@ -26,6 +26,24 @@ evb::readoutunit::FedFragment::FedFragment
 {}
 
 
+evb::readoutunit::FedFragment::~FedFragment()
+{
+  toolbox::mem::Reference* nextBufRef;
+  while ( bufRef_ )
+  {
+    nextBufRef = bufRef_->getNextReference();
+    bufRef_->setNextReference(0);
+
+    if ( cache_ )
+      cache_->grantFrame(bufRef_);
+    else if ( socketBuffers_.empty() )
+      bufRef_->release();
+
+    bufRef_ = nextBufRef;
+  };
+}
+
+
 bool evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
 {
   bufRef_ = bufRef;
@@ -50,24 +68,6 @@ bool evb::readoutunit::FedFragment::append(SocketBufferPtr& socketBuffer, uint32
 {
   socketBuffers_.push_back(socketBuffer);
   return parse(socketBuffer->getBufRef(), usedSize);
-}
-
-
-evb::readoutunit::FedFragment::~FedFragment()
-{
-  toolbox::mem::Reference* nextBufRef;
-  while ( bufRef_ )
-  {
-    nextBufRef = bufRef_->getNextReference();
-    bufRef_->setNextReference(0);
-
-    if ( cache_ )
-      cache_->grantFrame(bufRef_);
-    else if ( socketBuffers_.empty() )
-      bufRef_->release();
-
-    bufRef_ = nextBufRef;
-  };
 }
 
 
@@ -264,11 +264,12 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
         isComplete_ = true;
         dataLocations_.push_back(dataLocation);
-        if ( !evbId_.isValid() )
-          evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
 
         checkFedTrailer(fedTrailer);
         reportErrors();
+
+        if ( !evbId_.isValid() )
+          evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
 
         return true;
       }
@@ -530,10 +531,11 @@ void evb::readoutunit::FedFragment::dump
   s << "Reason for dump: " << reasonForDump << std::endl;
   s << "FED completely received   : " << (isComplete_?"true":"false") << std::endl;
   s << "Buffer size          (dec): " << copiedSize << std::endl;
-  s << "FED size             (dec): " << getFedSize() << std::endl;
-  s << "FED id               (dec): " << getFedId() << std::endl;
-  s << "Trigger no           (dec): " << getEventNumber() << std::endl;
-  s << "EvB id                    : " << getEvBid() << std::endl;
+  s << "FED size             (dec): " << fedSize_ << std::endl;
+  s << "FED id               (dec): " << fedId_ << std::endl;
+  s << "Trigger no           (dec): " << eventNumber_ << std::endl;
+  if ( evbId_.isValid() )
+    s << "EvB id                    : " << evbId_ << std::endl;
 
   if ( bufRef_ )
     DumpUtility::dumpBlockData(s, (unsigned char*)bufRef_->getDataLocation(), bufRef_->getDataSize());
