@@ -49,7 +49,7 @@
     padding:4px;
     width:100%;
     white-space:nowrap;
-    table-layout:fixed;
+    table-layout:auto;
 }
 .xdaq-evb-component th {
     font-weight:bold;

@@ -287,7 +287,7 @@ cgicc::table evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::get
   table layoutTable;
   layoutTable.set("class","xdaq-evb-layout");
   layoutTable.add(colgroup()
-                  .add(col())
+                  .add(col().set("width","55%"))
                   .add(col().set("class","xdaq-evb-arrow"))
                   .add(col()));
   layoutTable.add(tr()
