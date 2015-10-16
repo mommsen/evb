@@ -178,6 +178,7 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
           pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
           readoutMsg->headerSize   = readoutMsgSize;
           readoutMsg->buTid        = fragmentRequest->buTid;
+          readoutMsg->priority     = 0; //not used on RU
           readoutMsg->buResourceId = fragmentRequest->buResourceId;
           readoutMsg->nbRequests   = requestsCount;
           readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;

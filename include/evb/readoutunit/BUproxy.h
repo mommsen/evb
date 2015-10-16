@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "cgicc/HTMLClasses.h"
+#include "evb/Constants.h"
 #include "evb/DataLocations.h"
 #include "evb/EvBid.h"
 #include "evb/Exception.h"
@@ -171,7 +172,8 @@ namespace evb {
 
       //used on the EVM
       typedef boost::shared_ptr<FragmentRequestFIFO> FragmentRequestFIFOPtr;
-      typedef std::map<I2O_TID,FragmentRequestFIFOPtr> FragmentRequestFIFOs;
+      typedef std::vector<FragmentRequestFIFOPtr> PrioritizedFragmentRequestFIFOs;
+      typedef std::map<I2O_TID,PrioritizedFragmentRequestFIFOs> FragmentRequestFIFOs;
       FragmentRequestFIFOs::iterator nextBU_;
       FragmentRequestFIFOs fragmentRequestFIFOs_;
       mutable boost::shared_mutex fragmentRequestFIFOsMutex_;
@@ -727,7 +729,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
          it != fragmentRequestFIFOs_.end(); ++it)
     {
-      activeRequests_.value_ += it->second->elements();
+      for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
+      {
+        activeRequests_.value_ += it->second[priority]->elements();
+      }
     }
   }
   {
@@ -968,7 +973,16 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
         for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
              it != fragmentRequestFIFOs_.end(); ++it)
         {
-          div.add(it->second->getHtmlSnipped());
+          uint16_t priority = 0;
+          while ( priority <= evb::LOWEST_PRIORITY &&
+                  it->second[priority]->empty() )
+          {
+            ++priority;
+          }
+          if ( priority > evb::LOWEST_PRIORITY )
+            div.add(it->second[0]->getHtmlSnipped());
+          else
+            div.add(it->second[priority]->getHtmlSnipped());
         }
       }
     }

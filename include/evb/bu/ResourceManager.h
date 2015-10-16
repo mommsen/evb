@@ -69,7 +69,7 @@ namespace evb {
        * Get the next resource id for which to request trigger data.
        * Return false if no free resource id is available.
        */
-      bool getResourceId(uint16_t& resourceId, uint16_t& eventsToDiscard);
+      bool getResourceId(uint16_t& resourceId, uint16_t& priority, uint16_t& eventsToDiscard);
 
       /**
        * Return the next lumi-section account.
@@ -179,6 +179,7 @@ namespace evb {
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
       void updateResources(const float availableResources);
+      uint16_t getPriority();
       void changeStatesBasedOnResources();
 
       BU* bu_;
@@ -204,6 +205,7 @@ namespace evb {
       uint32_t eventsToDiscard_;
       uint32_t nbResources_;
       uint32_t blockedResources_;
+      uint16_t currentPriority_;
       uint16_t builderId_;
       uint32_t fusHLT_;
       uint32_t fusCloud_;

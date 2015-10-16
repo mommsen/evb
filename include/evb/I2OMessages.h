@@ -25,9 +25,10 @@ namespace evb {
     struct ReadoutMsg
     {
       I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
-      uint32_t headerSize;                       // Size of the message header
-      uint32_t padding;
       I2O_TID buTid;                             // BU TID to send the data
+      uint32_t headerSize;                       // Size of the message header
+      uint16_t padding;
+      uint16_t priority;                         // Priority of the request (0 is highest)
       uint16_t buResourceId;                     // Index of BU resource used to built the event
       uint16_t nbRequests;                       // Number of requested EvBids
       uint16_t nbDiscards;                       // Number of previously sent EvBids to discard
