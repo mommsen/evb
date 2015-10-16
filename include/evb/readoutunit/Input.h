@@ -870,7 +870,8 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
                .add(td("B/w (MB/s)"))
                .add(td("#CRC"))
                .add(td("#corrupt"))
-               .add(td("#BX errors")));
+               .add(td("#OOS"))
+               .add(td("#BX")));
 
   for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
        it != itEnd; ++it)

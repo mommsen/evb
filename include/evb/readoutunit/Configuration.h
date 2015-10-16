@@ -70,6 +70,7 @@ namespace evb {
       FerolSources ferolSources;                             // Vector of FEROL sources
       xdata::Boolean checkBxId;                              // Check if the BX ids match when building super fragments
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
+      xdata::Boolean tolerateOutOfSequenceEvents;            // Tolerate events out of sequence
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
       xdata::UnsignedInteger32 ferolConnectTimeOut;          // Timeout in seconds when waiting for FEROL connections
 
@@ -100,6 +101,7 @@ namespace evb {
           fragmentPoolSize(200000000),
           checkBxId(true),
           tolerateCorruptedEvents(false),
+          tolerateOutOfSequenceEvents(false),
           maxDumpsPerFED(10),
           ferolConnectTimeOut(5)
       {};
@@ -138,6 +140,7 @@ namespace evb {
         params.add("ferolSources", &ferolSources);
         params.add("checkBxId", &checkBxId);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
+        params.add("tolerateOutOfSequenceEvents", &tolerateOutOfSequenceEvents);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
         params.add("ferolConnectTimeOut", &ferolConnectTimeOut);
       }

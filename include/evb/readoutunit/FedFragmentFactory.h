@@ -42,6 +42,7 @@ namespace evb {
       void writeFragmentToFile(const FedFragmentPtr&,const std::string& reasonFordump) const;
 
       uint32_t getCorruptedEvents() const { return fedErrors_.corruptedEvents; }
+      uint32_t getEventsOutOfSequence() const { return fedErrors_.eventsOutOfSequence; }
       uint32_t getCRCerrors() const { return fedErrors_.crcErrors; }
 
 
@@ -59,13 +60,14 @@ namespace evb {
       struct FedErrors
       {
         uint32_t corruptedEvents;
+        uint32_t eventsOutOfSequence;
         uint32_t crcErrors;
         uint32_t fedErrors;
         uint32_t nbDumps;
 
         FedErrors() { reset(); }
         void reset()
-        { corruptedEvents=0;crcErrors=0;fedErrors=0;nbDumps=0; }
+        { corruptedEvents=0;eventsOutOfSequence=0;crcErrors=0;fedErrors=0;nbDumps=0; }
       } fedErrors_;
 
     };
@@ -217,17 +219,32 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
   }
   catch(exception::EventOutOfSequence& e)
   {
+    ++fedErrors_.eventsOutOfSequence;
+
     std::ostringstream msg;
     msg << "Received an event out of sequence from FED " << fedFragment->getFedId();
 
     XCEPT_DECLARE_NESTED(exception::EventOutOfSequence, sentinelException,
                          msg.str(),e);
     msg << ": " << e.message();
-    writeFragmentToFile(fedFragment,msg.str());
 
-    readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
+    if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents )
+    {
+      if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
+        writeFragmentToFile(fedFragment,msg.str());
 
-    return true;
+      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
+                      xcept::stdformat_exception_history(e));
+      readoutUnit_->notifyQualified("error",e);
+
+      return true;
+    }
+    else
+    {
+      writeFragmentToFile(fedFragment,msg.str());
+      readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(e) );
+      throw sentinelException;
+    }
   }
   catch(exception::TCDS& e)
   {
