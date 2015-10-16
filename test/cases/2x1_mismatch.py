@@ -25,7 +25,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0002.txt$")
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
@@ -35,14 +35,14 @@ class case_2x1_mismatch(TestCase):
         self.enableEvB(runNumber=2)
         self.checkIt()
 
-        print("Duplicate an event on FED 0")
-        self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',0)
+        print("Duplicate an event on FED 1")
+        self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',1)
         time.sleep(5)
         self.checkAppState("SyncLoss","EVM")
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
-        dumps = self.getFiles("dump_run000002_event[0-9]+_fed0000.txt$")
+        dumps = self.getFiles("dump_run000002_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
@@ -59,7 +59,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
-        dumps = self.getFiles("dump_run000003_event[0-9]+_fed0005.txt$")
+        dumps = self.getFiles("dump_run000003_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
@@ -76,7 +76,41 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
-        dumps = self.getFiles("dump_run000004_event[0-9]+_fed0004.txt$")
+        dumps = self.getFiles("dump_run000004_event[0-9]+_fed[0-9]+.txt$")
+        if len(dumps) != 1:
+            raise ValueException("Expected one FED dump file, but found: "+str(dumps))
+        self.haltEvB()
+        time.sleep(1)
+
+        self.configureEvB()
+        self.enableEvB(runNumber=5)
+        self.checkIt()
+
+        print("Skipping an event on FED 0")
+        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',0)
+        time.sleep(5)
+        self.checkAppState("SyncLoss","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        dumps = self.getFiles("dump_run000005_event[0-9]+_fed[0-9]+.txt$")
+        if len(dumps) != 1:
+            raise ValueException("Expected one FED dump file, but found: "+str(dumps))
+        self.haltEvB()
+        time.sleep(1)
+
+        self.configureEvB()
+        self.enableEvB(runNumber=6)
+        self.checkIt()
+
+        print("Duplicate an event on FED 0")
+        self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',0)
+        time.sleep(5)
+        self.checkAppState("SyncLoss","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        dumps = self.getFiles("dump_run000006_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
