@@ -377,8 +377,8 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
   }
 
   row.add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCRCerrors())))
-    .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getEventsOutOfSequence())))
     .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCorruptedEvents())))
+    .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getEventsOutOfSequence())))
     .add(td(boost::lexical_cast<std::string>(bxErrors_)));
 
   return row;
