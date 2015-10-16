@@ -176,7 +176,7 @@ namespace evb {
         for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
         {
           std::ostringstream name;
-          name << "fragmentRequestFIFO_BU" << readoutMsg->buTid << "_" << priority;
+          name << "fragmentRequestFIFO_BU" << readoutMsg->buTid << "_priority" << priority;
           const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
           requestFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
           prioritizedFragmentRequestFIFOs.push_back(requestFIFO);

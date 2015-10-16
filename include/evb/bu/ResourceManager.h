@@ -250,6 +250,7 @@ namespace evb {
       xdata::UnsignedInteger32 outstandingRequests_;
       xdata::UnsignedInteger32 nbTotalResources_;
       xdata::UnsignedInteger32 nbBlockedResources_;
+      xdata::UnsignedInteger32 priority_;
       xdata::UnsignedInteger32 fuSlotsHLT_;
       xdata::UnsignedInteger32 fuSlotsCloud_;
       xdata::UnsignedInteger32 fuSlotsQuarantined_;

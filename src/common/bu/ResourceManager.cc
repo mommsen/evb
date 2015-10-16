@@ -733,6 +733,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   outstandingRequests_ = 0;
   nbTotalResources_ = 1;
   nbBlockedResources_ = 1;
+  priority_ = 0;
   fuSlotsHLT_ = 0;
   fuSlotsCloud_ = 0;
   fuSlotsQuarantined_ = 0;
@@ -751,6 +752,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("outstandingRequests", &outstandingRequests_);
   items.add("nbTotalResources", &nbTotalResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
+  items.add("priority", &priority_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
   items.add("fuSlotsCloud", &fuSlotsCloud_);
   items.add("fuSlotsQuarantined", &fuSlotsQuarantined_);
@@ -790,6 +792,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventSize_ = eventMonitoring_.perf.size();
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
     outstandingRequests_ = std::max(0,eventMonitoring_.outstandingRequests);
+    priority_ = currentPriority_;
 
     eventMonitoring_.perf.reset();
   }
@@ -969,6 +972,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table.add(tr()
               .add(td("# outstanding requests"))
               .add(td(boost::lexical_cast<std::string>(eventMonitoring_.outstandingRequests))));
+    table.add(tr()
+              .add(td("priority of requests"))
+              .add(td(boost::lexical_cast<std::string>(currentPriority_))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
