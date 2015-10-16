@@ -207,10 +207,9 @@ namespace evb {
           // search the next request FIFO with highest priority (lowest number) which is non-empty
           const FragmentRequestFIFOs::iterator lastBU = nextBU_;
           uint16_t priority = 0;
-          while ( priority <= evb::LOWEST_PRIORITY )
+          while ( priority <= evb::LOWEST_PRIORITY &&
+                  nextBU_->second[priority]->empty() )
           {
-            if ( ! nextBU_->second[priority]->empty() ) break;
-
             if ( ++nextBU_ == fragmentRequestFIFOs_.end() )
               nextBU_ = fragmentRequestFIFOs_.begin();
 
