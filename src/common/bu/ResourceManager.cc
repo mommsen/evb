@@ -578,6 +578,8 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
     {
       updateResources(availableResources);
       changeStatesBasedOnResources();
+
+      if ( configuration_->usePriorities )
       {
         boost::mutex::scoped_lock sl(eventMonitoringMutex_);
         currentPriority_ = getPriority();

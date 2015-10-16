@@ -53,6 +53,7 @@ namespace evb {
       xdata::Boolean calculateCRC32c;                      // If set to true, a CRC32c checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::Boolean ignoreResourceSummary;                // If true, ignore the resource_summary file from hltd
+      xdata::Boolean usePriorities;                        // If true, prioritize the event requests to the EVM
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
       xdata::UnsignedInteger32 fileStatisticsFIFOCapacity; // Capacity of the FIFO used for file accounting
       xdata::UnsignedInteger32 lumiSectionFIFOCapacity;    // Capacity of the FIFO used for lumi-section accounting
@@ -92,6 +93,7 @@ namespace evb {
           calculateCRC32c(true),
           deleteRawDataFiles(false),
           ignoreResourceSummary(false),
+          usePriorities(true),
           maxEventsPerFile(400),
           fileStatisticsFIFOCapacity(128),
           lumiSectionFIFOCapacity(128),
@@ -139,6 +141,7 @@ namespace evb {
         params.add("calculateCRC32c", &calculateCRC32c);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("ignoreResourceSummary", &ignoreResourceSummary);
+        params.add("usePriorities", &usePriorities);
         params.add("maxEventsPerFile", &maxEventsPerFile);
         params.add("fileStatisticsFIFOCapacity", &fileStatisticsFIFOCapacity);
         params.add("lumiSectionFIFOCapacity", &lumiSectionFIFOCapacity);
