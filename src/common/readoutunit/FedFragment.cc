@@ -266,10 +266,11 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         dataLocations_.push_back(dataLocation);
 
         checkFedTrailer(fedTrailer);
-        reportErrors();
 
         if ( !evbId_.isValid() )
           evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
+
+        reportErrors();
 
         return true;
       }
