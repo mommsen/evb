@@ -366,7 +366,7 @@ inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::get
   {
     // new event
     const bool checkCRC = ( configuration_->checkCRC > 0U && evbId.eventNumber() % configuration_->checkCRC == 0 );
-    EventPtr event( new Event(evbId, ruTids, buResourceId, checkCRC, configuration_->calculateCRC32c||configuration_->calculateAdler32) );
+    EventPtr event( new Event(evbId, ruTids, buResourceId, checkCRC, configuration_->calculateCRC32c) );
     eventPos = partialEvents.insert(eventPos, PartialEvents::value_type(evbId,event));
   }
   return eventPos;
