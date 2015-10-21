@@ -148,6 +148,7 @@ namespace evb {
         const uint32_t currentFragmentSize
       ) const;
       bool isEmpty();
+      void doLumiSectionTransition() {};
       cgicc::table getStatisticsPerBU() const;
       std::string getHelpTextForBuRequests() const;
 
@@ -557,11 +558,17 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     bufRef = nextRef;
   }
 
+  bool lumiTransition = false;
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
+    if ( lastLumiSectionToBUs > dataMonitoring_.lastLumiSectionToBUs )
+    {
+      dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
+      lumiTransition = true;
+    }
+
     dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
-    dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
     dataMonitoring_.outstandingEvents += nbSuperFragments;
     dataMonitoring_.perf.i2oCount += i2oCount;
     dataMonitoring_.perf.sumOfSizes += payloadSize;
@@ -569,6 +576,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     dataMonitoring_.perf.logicalCount += nbSuperFragments;
     dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
   }
+
+  if ( lumiTransition )
+    doLumiSectionTransition();
 }
 
 

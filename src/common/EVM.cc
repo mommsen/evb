@@ -191,6 +191,31 @@ namespace evb {
 
 
     template<>
+    void BUproxy<EVM>::doLumiSectionTransition()
+    {
+      // Assure that each BU gets a request served when the lumi section changes.
+      // Start with the lowest priority queue to eventually
+      // unblock any old requests sent with lower priortity.
+
+      boost::unique_lock<boost::shared_mutex> ul(fragmentRequestFIFOsMutex_);
+
+      for ( FragmentRequestFIFOs::iterator it = fragmentRequestFIFOs_.begin(), itEnd = fragmentRequestFIFOs_.end();
+            it != itEnd; ++it )
+      {
+        FragmentRequestPtr fragmentRequest;
+        for ( uint16_t p = evb::LOWEST_PRIORITY; p > 0; --p )
+        {
+          if ( it->second[p]->deq(fragmentRequest) )
+          {
+            it->second[0]->enqWait(fragmentRequest);
+            break;
+          }
+        }
+      }
+    }
+
+
+    template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
       boost::mutex::scoped_lock prm(processingRequestMutex_);
