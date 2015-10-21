@@ -182,7 +182,6 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
       if ( superFragmentFIFO->deq(superFragments) )
       {
         buildEvent(superFragments,partialEvents,completeEvents);
-        eventMapMonitor.partialEvents = partialEvents.size();
         workDone = true;
       }
 
@@ -225,8 +224,10 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
             LOG4CPLUS_ERROR(bu_->getApplicationLogger(),msg.str());
           }
         }
-        eventMapMonitor.completeEvents = completeEvents.size();
       }
+
+      eventMapMonitor.partialEvents = partialEvents.size();
+      eventMapMonitor.completeEvents = completeEvents.size();
 
       if ( ! workDone )
       {
