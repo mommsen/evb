@@ -240,7 +240,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::maybeDumpFragment
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragment(FedFragmentPtr& fedFragment)
 {
-  if ( ! doProcessing_ || syncLoss_ )
+  if ( ! doProcessing_ )
     throw exception::HaltRequested();
 
   return fragmentFIFO_.deq(fedFragment);
@@ -252,6 +252,29 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
 {
   FedFragmentPtr fedFragment;
   while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+
+  if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
+  {
+    // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
+    syncLoss_ = true;
+    superFragment->discard(fedFragment);
+    return;
+  }
+
+  if ( syncLoss_ )
+  {
+    // keep discarding the events until we receive the first one after a resync
+    if ( fedFragment->getEvBid().resynced() )
+    {
+      syncLoss_ = false;
+      readoutUnit_->getStateMachine()->processFSMEvent( Recovered() );
+    }
+    else
+    {
+      superFragment->discard(fedFragment);
+      return;
+    }
+  }
 
   try
   {
@@ -274,7 +297,16 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   {
     fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
     syncLoss_ = true;
-    readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
+
+    if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents )
+    {
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
+    }
+    else
+    {
+      readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
+      throw exception::HaltRequested();
+    }
   }
 }
 

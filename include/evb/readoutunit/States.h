@@ -43,6 +43,7 @@ namespace evb {
     template<class> class Enabled;
     template<class> class Draining;
     template<class> class SyncLoss;
+    template<class> class MissingData;
 
     template<class> class StateMachine;
 
@@ -272,7 +273,10 @@ namespace evb {
                                        &StateMachine<Owner>::mismatchDetected>,
         boost::statechart::transition< EventOutOfSequence,SyncLoss<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::eventOutOfSequence>
+                                       &StateMachine<Owner>::eventOutOfSequence>,
+        boost::statechart::transition< DataLoss,MissingData<Owner>,
+                                       StateMachine<Owner>,
+                                       &StateMachine<Owner>::dataLoss>
         > reactions;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
@@ -335,8 +339,33 @@ namespace evb {
       virtual ~SyncLoss()
       { this->safeExitAction(); }
 
-      virtual void exitAction()
-      { this->outermost_context().clearError(); }
+      virtual void entryAction();
+      virtual void exitAction();
+
+    };
+
+
+    /**
+     * The MissingData state of the outer-state Running.
+     */
+    template<class Owner>
+    class MissingData: public EvBState< MissingData<Owner>,Running<Owner> >
+    {
+
+    public:
+
+      typedef EvBState< MissingData<Owner>,Running<Owner> > my_state;
+      typedef boost::mpl::list<
+        boost::statechart::in_state_reaction< DataLoss >,
+        boost::statechart::transition< Recovered,Running<Owner> >
+        > reactions;
+
+      MissingData(typename my_state::boost_state::my_context c) : my_state("MissingData", c)
+      { this->safeEntryAction(); }
+      virtual ~MissingData()
+      { this->safeExitAction(); }
+
+      virtual void exitAction();
 
     };
 
@@ -496,6 +525,31 @@ template<class Owner>
 void evb::readoutunit::Draining<Owner>::exitAction()
 {
   doDraining_ = false;
+}
+
+
+template<class Owner>
+void evb::readoutunit::SyncLoss<Owner>::entryAction()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const Owner* owner = stateMachine.getOwner();
+
+  owner->getBUproxy()->stopProcessing();
+}
+
+
+template<class Owner>
+void evb::readoutunit::SyncLoss<Owner>::exitAction()
+{
+  this->outermost_context().clearError();
+}
+
+
+template<class Owner>
+void evb::readoutunit::MissingData<Owner>::exitAction()
+{
+  this->outermost_context().clearError();
+  this->outermost_context().notifyRCMS("Recovered");
 }
 
 

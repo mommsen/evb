@@ -20,8 +20,8 @@ evb::readoutunit::FedFragment::FedFragment
     fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
     fedId_(fedId),bxId_(FED_BXID_WIDTH+1),
     eventNumber_(0),fedSize_(0),
-    isCorrupted_(false),hasCRCerror_(false),
-    hasFEDerror_(false),isComplete_(false),
+    isCorrupted_(false),isOutOfSequence_(false),
+    hasCRCerror_(false),hasFEDerror_(false),isComplete_(false),
     bufRef_(0),cache_(0),tmpBufferSize_(0)
 {}
 
@@ -267,8 +267,18 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
         checkFedTrailer(fedTrailer);
 
-        if ( !evbId_.isValid() )
-          evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
+        try
+        {
+          if ( !evbId_.isValid() )
+            evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
+        }
+        catch(exception::EventOutOfSequence& e)
+        {
+          isOutOfSequence_ = true;
+          if ( isCorrupted_ || hasCRCerror_ || hasFEDerror_ )
+            errorMsg_ << ". ";
+          errorMsg_ << e.message();
+        }
 
         reportErrors();
 
@@ -480,6 +490,13 @@ void evb::readoutunit::FedFragment::reportErrors() const
     msg << "Received a corrupted event " << eventNumber_ << " from FED " << fedId_ << ": ";
     msg << errorMsg_.str();
     XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+  else if ( isOutOfSequence_ )
+  {
+    std::ostringstream msg;
+    msg << "Received an event out of sequence from FED " << fedId_ << ": ";
+    msg << errorMsg_.str();
+    XCEPT_RAISE(exception::EventOutOfSequence, msg.str());
   }
   else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
   {

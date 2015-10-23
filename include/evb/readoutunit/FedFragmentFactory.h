@@ -205,10 +205,7 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
       if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
         writeFragmentToFile(fedFragment,e.message());
 
-      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
-                      xcept::stdformat_exception_history(e));
-      readoutUnit_->notifyQualified("error",e);
-
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
       return true;
     }
     else
@@ -221,29 +218,18 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
   {
     ++fedErrors_.eventsOutOfSequence;
 
-    std::ostringstream msg;
-    msg << "Received an event out of sequence from FED " << fedFragment->getFedId();
-
-    XCEPT_DECLARE_NESTED(exception::EventOutOfSequence, sentinelException,
-                         msg.str(),e);
-    msg << ": " << e.message();
-
     if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents )
     {
       if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
-        writeFragmentToFile(fedFragment,msg.str());
+        writeFragmentToFile(fedFragment,e.message());
 
-      LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
-                      xcept::stdformat_exception_history(sentinelException));
-      readoutUnit_->notifyQualified("error",sentinelException);
-
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
       return true;
     }
     else
     {
-      writeFragmentToFile(fedFragment,msg.str());
-      readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
-      throw sentinelException;
+      writeFragmentToFile(fedFragment,e.message());
+      readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(e) );
     }
   }
   catch(exception::TCDS& e)

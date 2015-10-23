@@ -43,6 +43,7 @@ namespace evb {
       uint16_t getFedId() const { return fedId_; }
       uint32_t getEventNumber() const { return eventNumber_; }
       bool isCorrupted() const { return isCorrupted_; }
+      bool isOutOfSequence() const { return isOutOfSequence_; }
       bool isComplete() const { return isComplete_; }
       toolbox::mem::Reference* getBufRef() const { return bufRef_; }
       uint32_t getFedSize() const { return fedSize_; }
@@ -81,6 +82,7 @@ namespace evb {
       uint32_t fedSize_;
       std::ostringstream errorMsg_;
       bool isCorrupted_;
+      bool isOutOfSequence_;
       bool hasCRCerror_;
       bool hasFEDerror_;
       bool isComplete_;

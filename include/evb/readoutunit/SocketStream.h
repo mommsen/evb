@@ -182,12 +182,6 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
       }
     }
   }
-  catch(exception::EventOutOfSequence& e)
-  {
-    currentFragment_.reset();
-    parseSocketBuffersActive_ = false;
-    return false;
-  }
   catch(xcept::Exception& e)
   {
     parseSocketBuffersActive_ = false;
