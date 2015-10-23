@@ -157,11 +157,11 @@ template<class Owner>
 void evb::readoutunit::StateMachine<Owner>::dataLoss(const DataLoss& evt)
 {
   this->reasonForError_ = evt.getTraceback();
-  LOG4CPLUS_ERROR(this->getLogger(), "DataLoss: " << this->reasonForError_);
+  LOG4CPLUS_ERROR(this->getLogger(), "MissingData: " << this->reasonForError_);
 
   try
   {
-    this->rcmsStateNotifier_.stateChanged("DataLoss", evt.getReason());
+    this->rcmsStateNotifier_.stateChanged("MissingData", evt.getReason());
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {
