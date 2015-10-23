@@ -116,17 +116,6 @@ void evb::bu::Event::checkEvent() const
     XCEPT_RAISE(exception::EventOrder, "Cannot check an incomplete event for data integrity");
   }
 
-  if ( ! missingFedIds_.empty() )
-  {
-    std::cout << "Event " << evbId_ << " is missing data from FEDs: ";
-    for ( msg::FedIds::const_iterator it = missingFedIds_.begin(), itEnd = missingFedIds_.end();
-          it != itEnd; ++it )
-    {
-      std::cout << *it << " ";
-    }
-    std::cout << std::endl;
-  }
-
   DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
   const DataLocations::const_reverse_iterator ritEnd = dataLocations_.rend();
   uint32_t chunk = dataLocations_.size() - 1;
