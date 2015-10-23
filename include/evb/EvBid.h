@@ -21,8 +21,16 @@ namespace evb {
     EvBid()
       : runNumber_(0),resyncCount_(0),dataWord1_(0),dataWord2_(0) {};
 
-    EvBid(uint32_t resyncCount, uint32_t eventNumber, uint16_t bxId, uint32_t lumiSection, uint32_t runNumber)
-      : runNumber_(runNumber),resyncCount_(resyncCount),
+    EvBid
+    (
+      const bool resynced,
+      const uint32_t resyncCount,
+      const uint32_t eventNumber,
+      const uint16_t bxId,
+      const uint32_t lumiSection,
+      const uint32_t runNumber
+    )
+      : runNumber_(runNumber),resyncCount_((resynced<<31)|(resyncCount&0x7fffffff)),
         dataWord1_(((bxId&0x0ff)<<24)|(eventNumber&0xffffff)),
         dataWord2_(((bxId&0xf00)<<20)|(lumiSection&0xfffffff)) {}
 
@@ -30,7 +38,7 @@ namespace evb {
      * Return the resync count
      */
     uint32_t resyncCount() const
-    { return resyncCount_; }
+    { return (resyncCount_&0x7fffffff); }
 
     /**
      * Return the event number
@@ -55,6 +63,12 @@ namespace evb {
      */
     uint32_t runNumber() const
     { return runNumber_; }
+
+    /**
+     * Return true if this event is the first after a resync
+     */
+    bool resynced() const
+    { return ((resyncCount_&0x80000000) != 0); }
 
     /**
      * Return true if the EvB id is valid
@@ -106,6 +120,7 @@ namespace evb {
     s << "runNumber=" << evbId.runNumber() << " ";
     if ( evbId.lumiSection() > 0 )
       s << "lumiSection=" << evbId.lumiSection() << " ";
+    if ( evbId.resynced() ) s << "*";
     s << "resyncCount=" << evbId.resyncCount() << " ";
     s << "eventNumber=" << evbId.eventNumber() << " ";
     s << "bxId=" << evbId.bxId();

@@ -93,11 +93,19 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_
 
 evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_t bxId, const uint32_t lumiSection)
 {
+  bool resynced = false;
+
   if ( eventNumber != previousEventNumber_ + 1 )
   {
-    if ( (eventNumber == 1 && previousEventNumber_ > 0) ||
-         (eventNumber == 0 && previousEventNumber_ == 16777215 ) ) // (2^24)-1
+    if (eventNumber == 1 && previousEventNumber_ > 0)
     {
+      // A proper TTS resync
+      ++resyncCount_;
+      resynced = true;
+    }
+    else if (eventNumber == 0 && previousEventNumber_ == 16777215 ) // (2^24)-1
+    {
+      // Trigger counter rolled over. Increase our resyncCount nevertheless to assure a unique EvBid.
       ++resyncCount_;
     }
     else
@@ -124,7 +132,7 @@ evb::EvBid evb::EvBidFactory::getEvBid(const uint32_t eventNumber, const uint16_
 
   previousEventNumber_ = eventNumber;
 
-  return EvBid(resyncCount_,eventNumber,bxId,lumiSection,runNumber_);
+  return EvBid(resynced,resyncCount_,eventNumber,bxId,lumiSection,runNumber_);
 }
 
 
