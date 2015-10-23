@@ -234,15 +234,15 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
         writeFragmentToFile(fedFragment,msg.str());
 
       LOG4CPLUS_ERROR(readoutUnit_->getApplicationLogger(),
-                      xcept::stdformat_exception_history(e));
-      readoutUnit_->notifyQualified("error",e);
+                      xcept::stdformat_exception_history(sentinelException));
+      readoutUnit_->notifyQualified("error",sentinelException);
 
       return true;
     }
     else
     {
       writeFragmentToFile(fedFragment,msg.str());
-      readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(e) );
+      readoutUnit_->getStateMachine()->processFSMEvent( EventOutOfSequence(sentinelException) );
       throw sentinelException;
     }
   }
