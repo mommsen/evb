@@ -141,6 +141,8 @@ namespace evb {
       if ( masterStream_ == ferolStreams_.end() )
         masterStream_ = ferolStreams_.begin();
 
+      masterStream_->second->useAsMaster();
+
       const EvBidFactoryPtr evbIdFactory = masterStream_->second->getEvBidFactory();
       if ( lumiSectionFunction )
       {

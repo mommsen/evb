@@ -10,6 +10,7 @@ evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
 evb::readoutunit::FedFragment::FedFragment
 (
   const uint16_t fedId,
+  const bool isMasterFed,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
   uint32_t& fedErrorCount,
@@ -18,7 +19,8 @@ evb::readoutunit::FedFragment::FedFragment
   : typeOfNextComponent_(FEROL_HEADER),
     evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
     fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
-    fedId_(fedId),bxId_(FED_BXID_WIDTH+1),
+    fedId_(fedId),isMasterFed_(isMasterFed),
+    bxId_(FED_BXID_WIDTH+1),
     eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isOutOfSequence_(false),
     hasCRCerror_(false),hasFEDerror_(false),isComplete_(false),

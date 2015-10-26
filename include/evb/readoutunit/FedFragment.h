@@ -32,7 +32,15 @@ namespace evb {
     {
     public:
 
-      FedFragment(const uint16_t fedId, const EvBidFactoryPtr&, const uint32_t checkCRC, uint32_t& fedErrorCount, uint32_t& crcErrors);
+      FedFragment
+      (
+        const uint16_t fedId,
+        const bool isMasterFed,
+        const EvBidFactoryPtr&,
+        const uint32_t checkCRC,
+        uint32_t& fedErrorCount,
+        uint32_t& crcErrors
+      );
       ~FedFragment();
 
       bool append(toolbox::mem::Reference*, tcpla::MemoryCache*);
@@ -42,6 +50,7 @@ namespace evb {
       EvBid getEvBid() const { return evbId_; }
       uint16_t getFedId() const { return fedId_; }
       uint32_t getEventNumber() const { return eventNumber_; }
+      bool isMasterFed() const  { return isMasterFed_; }
       bool isCorrupted() const { return isCorrupted_; }
       bool isOutOfSequence() const { return isOutOfSequence_; }
       bool isComplete() const { return isComplete_; }
@@ -76,6 +85,7 @@ namespace evb {
       uint32_t& fedErrorCount_;
       uint32_t& crcErrors_;
       const uint16_t fedId_;
+      const bool isMasterFed_;
       uint16_t bxId_;
       uint32_t eventNumber_;
       EvBid evbId_;

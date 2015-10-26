@@ -76,6 +76,12 @@ namespace evb {
       virtual void stopProcessing();
 
       /**
+       * Declare this stream as the master stream
+       */
+      void useAsMaster()
+      { isMasterStream_ = true; }
+
+      /**
        * Set the trigger rate for generating events
        */
       virtual void setMaxTriggerRate(const uint32_t maxTriggerRate) {};
@@ -110,7 +116,7 @@ namespace evb {
       /**
        * Return a CGI table row with statistics for this FED
        */
-      cgicc::tr getFedTableRow(const bool isMasterStream) const;
+      cgicc::tr getFedTableRow() const;
 
       /**
        * Return the content of the fragment FIFO as HTML snipped
@@ -127,6 +133,7 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
+      bool isMasterStream_;
       volatile bool doProcessing_;
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
@@ -166,6 +173,7 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
 ) :
   readoutUnit_(readoutUnit),
   fedId_(fedId),
+  isMasterStream_(false),
   doProcessing_(false),
   syncLoss_(false),
   eventNumberToStop_(0),
@@ -186,7 +194,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   tcpla::MemoryCache* cache
 )
 {
-  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,bufRef,cache);
+  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,isMasterStream_,bufRef,cache);
   addFedFragment(fedFragment);
 }
 
@@ -298,7 +306,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
     fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
     syncLoss_ = true;
 
-    if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents )
+    if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents
+         && !isMasterStream_ )
     {
       readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
     }
@@ -381,13 +390,13 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
 
 template<class ReadoutUnit,class Configuration>
-cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow(const bool isMasterStream) const
+cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow() const
 {
   using namespace cgicc;
   const std::string fedId = boost::lexical_cast<std::string>(fedId_);
 
   tr row;
-  if (isMasterStream)
+  if ( isMasterStream_ )
     row.add(td(fedId+"*"));
   else
     row.add(td(fedId));
