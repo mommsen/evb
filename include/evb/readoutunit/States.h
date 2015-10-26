@@ -549,7 +549,7 @@ template<class Owner>
 void evb::readoutunit::MissingData<Owner>::exitAction()
 {
   this->outermost_context().clearError();
-  this->outermost_context().notifyRCMS("Recovered");
+  this->outermost_context().notifyRCMS("Enabled");
 }
 
 
