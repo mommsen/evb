@@ -42,8 +42,8 @@ class case_2x1_tolerateMismatch(TestCase):
         if missingFeds:
             self.checkAppParam('nbEventsMissingData','unsignedLong',1000,operator.ge,"BU")
             dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$")
-            if len(dumps) != 1:
-                raise ValueException("Expected one FED dump file, but found: "+str(dumps))
+            if len(dumps) != len(missingFeds):
+                raise ValueException("Expected "+str(len(missingFeds))+" FED dump files, but found: "+str(dumps))
         else:
             self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
 
@@ -78,14 +78,26 @@ class case_2x1_tolerateMismatch(TestCase):
         self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',4)
         time.sleep(7)
         self.checkIt([4])
+        print("Skipping an event on FED 6")
+        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',6)
+        time.sleep(7)
+        self.checkIt([4,6])
         self.haltEvB()
         time.sleep(1)
 
+        # Errors on the master FED should not be tolerated
         self.startEvB()
         print("Skipping an event on FED 0")
         self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',0)
         time.sleep(7)
-        self.checkIt([0])
+        self.checkAppState("SyncLoss","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
+        dumps = self.getFiles("dump_run000005_event[0-9]+_fed[0-9]+.txt$")
+        if len(dumps) != 1:
+            raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
         time.sleep(1)
 
@@ -93,7 +105,14 @@ class case_2x1_tolerateMismatch(TestCase):
         print("Duplicate an event on FED 0")
         self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',0)
         time.sleep(7)
-        self.checkIt([0])
+        self.checkAppState("SyncLoss","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
+        dumps = self.getFiles("dump_run000006_event[0-9]+_fed[0-9]+.txt$")
+        if len(dumps) != 1:
+            raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
 
 
