@@ -284,6 +284,8 @@ namespace evb {
       virtual ~Enabled()
       { this->safeExitAction(); }
 
+      virtual void entryAction();
+
     };
 
 
@@ -356,7 +358,9 @@ namespace evb {
 
       typedef EvBState< MissingData<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
-        boost::statechart::in_state_reaction< DataLoss >,
+        boost::statechart::transition< DataLoss,MissingData<Owner>,
+                                       StateMachine<Owner>,
+                                       &StateMachine<Owner>::dataLoss>,
         boost::statechart::transition< Recovered,Running<Owner> >
         > reactions;
 
@@ -471,6 +475,13 @@ void evb::readoutunit::Running<Owner>::exitAction()
 
 
 template<class Owner>
+void evb::readoutunit::Enabled<Owner>::entryAction()
+{
+  this->outermost_context().notifyRCMS("Enabled");
+}
+
+
+template<class Owner>
 void evb::readoutunit::Draining<Owner>::entryAction()
 {
   doDraining_ = true;
@@ -549,7 +560,6 @@ template<class Owner>
 void evb::readoutunit::MissingData<Owner>::exitAction()
 {
   this->outermost_context().clearError();
-  this->outermost_context().notifyRCMS("Enabled");
 }
 
 
