@@ -182,8 +182,6 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
 
     if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
-
-    return true;
   }
   catch(exception::CRCerror& e)
   {
@@ -193,8 +191,6 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
 
     if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
       writeFragmentToFile(fedFragment,e.message());
-
-    return true;
   }
   catch(exception::DataCorruption& e)
   {
@@ -206,7 +202,6 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
         writeFragmentToFile(fedFragment,e.message());
 
       readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
-      return true;
     }
     else
     {
@@ -224,7 +219,6 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
         writeFragmentToFile(fedFragment,e.message());
 
       readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
-      return true;
     }
     else
     {
@@ -245,7 +239,7 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  return false;
+  return true;
 }
 
 
