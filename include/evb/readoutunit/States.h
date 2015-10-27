@@ -361,7 +361,7 @@ namespace evb {
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::dataLoss>,
-        boost::statechart::transition< Recovered,Running<Owner> >
+        boost::statechart::transition< Recovered,Enabled<Owner> >
         > reactions;
 
       MissingData(typename my_state::boost_state::my_context c) : my_state("MissingData", c)
