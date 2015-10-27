@@ -42,9 +42,7 @@ class case_2x1_diskFull(TestCase):
         except StateException:
             self.checkAppState("Throttled","BU")
         self.checkAppParam('eventRate','unsignedInt',500,operator.gt,"BU")
-        for rawFile in glob.glob(runDir+"/*.raw"):
-            os.remove(rawFile)
-        self.stopEvB()
+        self.stopEvB(runDir)
         self.checkBuDir(testDir,runNumber)
 
 

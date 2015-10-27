@@ -278,7 +278,7 @@ class TestCase:
             self.checkState('Enabled')
 
 
-    def stopEvB(self):
+    def stopEvB(self,runDir=None):
         eventToStop = self.getEventInFuture()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
         self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
@@ -287,8 +287,15 @@ class TestCase:
         sys.stdout.flush()
 
         self.stop('FEROL')
-        self.waitForAppState('Ready','FEROL',maxTries=60)
+        if runDir:
+            for rawFile in glob.glob(runDir+"/*.raw"):
+                os.remove(rawFile)
+            self.waitForAppState('Ready','FEROL',maxTries=60)
+
         self.stop('EVM')
+        if runDir:
+            for rawFile in glob.glob(runDir+"/*.raw"):
+                os.remove(rawFile)
         self.waitForAppState('Ready','EVM',maxTries=60)
         self.stop('RU')
         self.stop('BU')
