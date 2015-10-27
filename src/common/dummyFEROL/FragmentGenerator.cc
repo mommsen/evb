@@ -137,6 +137,12 @@ void evb::test::dummyFEROL::FragmentGenerator::reset()
 }
 
 
+void evb::test::dummyFEROL::FragmentGenerator::resyncAtEvent(const uint32_t eventNumber)
+{
+  evbIdFactory_.resyncAtEvent(eventNumber);
+}
+
+
 bool evb::test::dummyFEROL::FragmentGenerator::getData
 (
   toolbox::mem::Reference*& bufRef,

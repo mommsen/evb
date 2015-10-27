@@ -35,6 +35,11 @@ namespace evb {
     void setFakeLumiSectionDuration(const uint32_t duration);
 
     /**
+     * Create a resync at the given event number
+     */
+    void resyncAtEvent(const uint32_t eventNumber);
+
+    /**
      * Return EvBid with a fake eventNumber, bunch crossing id, and lumi section
      */
     EvBid getEvBid();
@@ -67,6 +72,7 @@ namespace evb {
     uint32_t runNumber_;
     uint32_t previousEventNumber_;
     uint32_t resyncCount_;
+    uint32_t resyncAtEventNumber_;
     LumiSectionFunction lumiSectionFunction_;
     boost::posix_time::seconds fakeLumiSectionDuration_;
     uint32_t fakeLumiSection_;

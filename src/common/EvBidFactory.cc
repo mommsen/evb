@@ -9,6 +9,7 @@ evb::EvBidFactory::EvBidFactory() :
   runNumber_(0),
   previousEventNumber_(0),
   resyncCount_(0),
+  resyncAtEventNumber_(1<<25),
   fakeLumiSectionDuration_(0),
   fakeLumiSection_(0),
   doFakeLumiSections_(false)
@@ -78,10 +79,24 @@ void evb::EvBidFactory::fakeLumiActivity()
 }
 
 
+void evb::EvBidFactory::resyncAtEvent(const uint32_t eventNumber)
+{
+  resyncAtEventNumber_ = eventNumber;
+}
+
+
 evb::EvBid evb::EvBidFactory::getEvBid()
 {
-  const uint32_t fakeEventNumber = (previousEventNumber_+1) % (1 << 24);
-  return getEvBid(fakeEventNumber,fakeEventNumber%0xfff);
+  if ( previousEventNumber_ == resyncAtEventNumber_ )
+  {
+    resyncAtEventNumber_ = 1 << 25;
+    return getEvBid(1,1);
+  }
+  else
+  {
+    const uint32_t fakeEventNumber = (previousEventNumber_+1) % (1 << 24);
+    return getEvBid(fakeEventNumber,fakeEventNumber%0xfff);
+  }
 }
 
 

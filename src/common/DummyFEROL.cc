@@ -58,6 +58,7 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
 {
   stopAtEvent_ = 0;
   skipNbEvents_ = 0;
+  resyncAtEvent_ = 1<<25;
   duplicateNbEvents_ = 0;
   corruptNbEvents_ = 0;
   nbCRCerrors_ = 0;
@@ -65,6 +66,7 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
+  appInfoSpaceParams.add("resyncAtEvent", &resyncAtEvent_);
   appInfoSpaceParams.add("skipNbEvents", &skipNbEvents_);
   appInfoSpaceParams.add("duplicateNbEvents", &duplicateNbEvents_);
   appInfoSpaceParams.add("corruptNbEvents", &corruptNbEvents_);
@@ -417,6 +419,12 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
     while ( doProcessing_ &&
             (stopAtEvent_.value_ == 0 || lastEventNumber_.value_ < stopAtEvent_.value_) )
     {
+      if ( resyncAtEvent_.value_ < 1<<25 )
+      {
+        fragmentGenerator_.resyncAtEvent(resyncAtEvent_);
+        resyncAtEvent_ = 1<<25;
+      }
+
       toolbox::mem::Reference* bufRef = 0;
 
       if ( fragmentGenerator_.getData(bufRef,stopAtEvent_.value_,lastEventNumber_.value_,
