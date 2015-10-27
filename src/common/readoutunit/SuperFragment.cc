@@ -9,9 +9,9 @@ evb::readoutunit::SuperFragment::SuperFragment(const EvBid& evbId)
 {}
 
 
-void evb::readoutunit::SuperFragment::discard(const FedFragmentPtr& fedFragment)
+void evb::readoutunit::SuperFragment::discardFedId(const uint16_t fedId)
 {
-  missingFedIds_.push_back(fedFragment->getFedId());
+  missingFedIds_.push_back(fedId);
 }
 
 
@@ -21,7 +21,7 @@ bool evb::readoutunit::SuperFragment::append(const FedFragmentPtr& fedFragment)
 
   if ( incomingEvBid != evbId_ )
   {
-    discard(fedFragment);
+    discardFedId( fedFragment->getFedId() );
 
     std::ostringstream msg;
     msg << "Mismatch detected: expected evb id "
