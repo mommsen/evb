@@ -229,6 +229,8 @@ namespace evb {
         {
           boost::shared_lock<boost::shared_mutex> frm(fragmentRequestFIFOsMutex_);
 
+          if ( ! doProcessing_ ) return false;
+
           if ( fragmentRequestFIFOs_.empty() ) return false;
 
           // search the next request FIFO with highest priority (lowest number) which is non-empty
