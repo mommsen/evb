@@ -50,6 +50,10 @@ class TestCase:
                 print(messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
             except socket.error:
                 pass
+        try:
+            shutil.rmtree("/tmp/evb_test")
+        except OSError:
+            pass
         for file in glob.glob("/tmp/dump_*txt"):
             os.remove(file)
         sys.stdout.flush()
