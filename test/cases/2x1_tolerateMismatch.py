@@ -14,12 +14,26 @@ class case_2x1_tolerateMismatch(TestCase):
 
     def startEvB(self):
         self.runNumber += 1
-        self.configureEvB()
+        try:
+            self.configureEvB()
+        except StateException:
+            print(" skipped")
         self.enableEvB(runNumber=self.runNumber)
         self.checkIt()
 
 
-    def checkIt(self,missingFeds=[]):
+    def checkIt(self):
+        self.checkAppState("Enabled","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        evmSize = sum(self.fedSizes[:4])
+        ruSize  = sum(self.fedSizes[4:])
+        self.checkEVM(evmSize)
+        self.checkRU(ruSize)
+        self.checkBU(evmSize+ruSize)
+
+
+    def checkMissing(self,missingFeds,nbDumps=None):
         evmFEDs = [fed for fed in range(0,4) if fed not in missingFeds]
         if len(evmFEDs) < 4:
             self.checkAppState("MissingData","EVM")
@@ -39,13 +53,12 @@ class case_2x1_tolerateMismatch(TestCase):
         self.checkRU(ruSize)
         self.checkBU(evmSize+ruSize)
 
-        if missingFeds:
-            self.checkAppParam('nbEventsMissingData','unsignedLong',1000,operator.ge,"BU")
-            dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$")
-            if len(dumps) != len(missingFeds):
-                raise ValueException("Expected "+str(len(missingFeds))+" FED dump files, but found: "+str(dumps))
-        else:
-            self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
+        self.checkAppParam('nbEventsMissingData','unsignedLong',1000,operator.ge,"BU")
+        dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$")
+        if nbDumps is None:
+            nbDumps = len(missingFeds)
+        if len(dumps) != nbDumps:
+            raise ValueException("Expected "+str(nbDumps)+" FED dump files, but found: "+str(dumps))
 
 
     def runTest(self):
@@ -53,7 +66,9 @@ class case_2x1_tolerateMismatch(TestCase):
         print("Skipping an event on FED 2")
         self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',2)
         time.sleep(7)
-        self.checkIt([2])
+        self.checkMissing([2])
+        self.sendResync()
+        self.checkIt()
         self.haltEvB()
         time.sleep(1)
 
@@ -61,15 +76,17 @@ class case_2x1_tolerateMismatch(TestCase):
         print("Duplicate an event on FED 1")
         self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',1)
         time.sleep(7)
-        self.checkIt([1])
-        self.haltEvB()
+        self.checkMissing([1])
+        self.sendResync()
+        self.checkIt()
+        self.stopEvB()
         time.sleep(1)
 
         self.startEvB()
         print("Skipping an event on FED 5")
         self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',5)
         time.sleep(7)
-        self.checkIt([5])
+        self.checkMissing([5])
         self.haltEvB()
         time.sleep(1)
 
@@ -77,11 +94,31 @@ class case_2x1_tolerateMismatch(TestCase):
         print("Duplicate an event on FED 4")
         self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',4)
         time.sleep(7)
-        self.checkIt([4])
+        self.checkMissing([4])
         print("Skipping an event on FED 6")
         self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',6)
         time.sleep(7)
-        self.checkIt([4,6])
+        self.checkMissing([4,6])
+        self.sendResync()
+        self.checkIt()
+        self.stopEvB()
+        time.sleep(1)
+
+        self.startEvB()
+        print("Skipping events on FED 2 and 7")
+        self.setAppParam('skipNbEvents','unsignedInt','7','FEROL',7)
+        self.setAppParam('skipNbEvents','unsignedInt','3','FEROL',2)
+        time.sleep(7)
+        self.checkMissing([2,7])
+        self.sendResync()
+        self.checkIt()
+        print("Skipping an event on FED 5 and 6")
+        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',5)
+        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',6)
+        time.sleep(7)
+        self.checkMissing([5,6],4)
+        self.sendResync()
+        self.checkIt()
         self.haltEvB()
         time.sleep(1)
 
@@ -95,7 +132,7 @@ class case_2x1_tolerateMismatch(TestCase):
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
         self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
-        dumps = self.getFiles("dump_run000005_event[0-9]+_fed[0-9]+.txt$")
+        dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
@@ -110,7 +147,7 @@ class case_2x1_tolerateMismatch(TestCase):
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
         self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
-        dumps = self.getFiles("dump_run000006_event[0-9]+_fed[0-9]+.txt$")
+        dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
         self.haltEvB()
