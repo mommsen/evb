@@ -328,7 +328,7 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     else
       isCorrupted_ = true;
     errorMsg_ << "mismatch of FED id in FEROL header:";
-    errorMsg_ << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    errorMsg_ << " expected FED " << fedId_ << ", but got " << ferolHeader->fed_id();
   }
 }
 
@@ -366,7 +366,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     else
       isCorrupted_ = true;
     errorMsg_ << "FED header \"sourceId\" " << sourceId;
-    errorMsg_ << " does not match the FED id found in FEROL header";
+    errorMsg_ << " does not match the FED " << fedId_ << " found in FEROL header";
   }
 }
 

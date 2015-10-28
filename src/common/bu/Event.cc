@@ -153,7 +153,7 @@ void evb::bu::Event::checkEvent() const
       if ( ! fedIdsSeen.insert( fedInfo.fedId() ).second )
       {
         std::ostringstream msg;
-        msg << "Found a duplicated FED id " << fedInfo.fedId();
+        msg << "Found a duplicated FED " << fedInfo.fedId();
         XCEPT_RAISE(exception::DataCorruption, msg.str());
       }
 

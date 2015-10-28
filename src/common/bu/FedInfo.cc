@@ -67,7 +67,7 @@ void evb::bu::FedInfo::checkData(const uint32_t eventNumber, const bool computeC
   if ( fedId() >= FED_COUNT )
   {
     std::ostringstream msg;
-    msg << "The FED id " << fedId() << " is larger than the maximum " << FED_COUNT;
+    msg << "The FED " << fedId() << " is larger than the maximum " << FED_COUNT;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
