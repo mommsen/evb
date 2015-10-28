@@ -3,8 +3,8 @@
 
 #include "config/PackageInfo.h"
 
-#define EVB_VERSION_MAJOR 4
-#define EVB_VERSION_MINOR 0
+#define EVB_VERSION_MAJOR 3
+#define EVB_VERSION_MINOR 7
 #define EVB_VERSION_PATCH 0
 #undef EVB_PREVIOUS_VERSIONS
 
