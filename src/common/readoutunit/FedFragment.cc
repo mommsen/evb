@@ -277,9 +277,9 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         catch(exception::EventOutOfSequence& e)
         {
           isOutOfSequence_ = true;
-          if ( isCorrupted_ || hasCRCerror_ || hasFEDerror_ )
-            errorMsg_ << ". ";
-          errorMsg_ << e.message();
+          if ( ! errorMsg_.empty() )
+            errorMsg_ += ". ";
+          errorMsg_ += e.message();
         }
 
         reportErrors();
@@ -505,7 +505,7 @@ void evb::readoutunit::FedFragment::reportErrors() const
   {
     std::ostringstream msg;
     msg << "Received an event out of sequence from FED " << fedId_ << ": ";
-    msg << errorMsg_.str();
+    msg << errorMsg_;
     XCEPT_RAISE(exception::EventOutOfSequence, msg.str());
   }
   else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
