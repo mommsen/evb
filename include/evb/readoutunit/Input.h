@@ -266,7 +266,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
   if ( pos == ferolStreams_.end() )
   {
     std::ostringstream msg;
-    msg << "The received FED id " << frame->fedid;
+    msg << "The received FED " << frame->fedid;
     msg << " is not in the excepted FED list: ";
 
     typename Configuration::FerolSources::const_iterator it, itEnd;
@@ -689,7 +689,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
         if (fedId > FED_COUNT)
         {
           std::ostringstream msg;
-          msg << "The fedSourceId " << fedId;
+          msg << "The FED " << fedId;
           msg << " is larger than maximal value FED_COUNT=" << FED_COUNT;
           XCEPT_RAISE(exception::Configuration, msg.str());
         }

@@ -318,7 +318,7 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     if ( ! errorMsg_.empty() )
       msg << ", and ";
     msg << "mismatch of FED id in FEROL header:";
-    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    msg << " expected FED " << fedId_ << ", but got " << ferolHeader->fed_id();
     errorMsg_ += msg.str();
   }
 }
@@ -358,7 +358,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     if ( ! errorMsg_.empty() )
       msg << ", and ";
     msg << "FED header \"sourceId\" " << sourceId;
-    msg << " does not match the FED id found in FEROL header";
+    msg << " does not match the FED " << fedId_ << " found in FEROL header";
     errorMsg_ += msg.str();
   }
 }

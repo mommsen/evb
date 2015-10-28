@@ -45,7 +45,7 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   if (fedId > FED_COUNT)
   {
     std::ostringstream msg;
-    msg << "The fedSourceId " << fedId;
+    msg << "The FED " << fedId;
     msg << " is larger than maximal value FED_COUNT=" << FED_COUNT;
     XCEPT_RAISE(exception::Configuration, msg.str());
   }

@@ -51,7 +51,7 @@ uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
   {
     std::ostringstream msg;
     msg << "Request to start a new dummy FED fragment for evb id " << evbId;
-    msg << " with FED id " << fedId_;
+    msg << " with FED " << fedId_;
     msg << ", while the previous fragment for evb id " << evbId_;
     msg << " is not yet complete";
     XCEPT_RAISE(exception::EventOrder, msg.str());

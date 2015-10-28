@@ -224,7 +224,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
         if (fedId > FED_COUNT)
         {
           std::ostringstream msg;
-          msg << "The fedSourceId " << fedId;
+          msg << "The FED " << fedId;
           msg << " is larger than maximal value FED_COUNT=" << FED_COUNT;
           XCEPT_RAISE(exception::Configuration,msg.str());
         }
@@ -235,7 +235,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
         msg << "Accepted connection from " << peer << ":" << pca.getPort();
         msg << " with SID " << pca.getSID();
         msg << " and pipe index " << pca.getPipeIndex();
-        msg << " corresponding to FED id " << fedId;
+        msg << " corresponding to FED " << fedId;
         LOG4CPLUS_INFO(readoutUnit_->getApplicationLogger(), msg.str());
       }
       else
@@ -365,7 +365,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
     if ( ++tries > maxTries )
     {
       std::ostringstream msg;
-      msg << "Missing connections from FEROLs for FED ids: ";
+      msg << "Missing connections from FEROLs for FEDs: ";
       std::copy(fedIds.begin(), fedIds.end(), std::ostream_iterator<uint32_t>(msg, " "));
       XCEPT_RAISE(exception::TCP, msg.str());
     }
