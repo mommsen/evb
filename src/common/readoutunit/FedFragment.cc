@@ -305,18 +305,21 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
   else if ( eventNumber_ != ferolHeader->event_number() )
   {
     isCorrupted_ = true;
-    errorMsg_ << "mismatch of event number in FEROL header:";
-    errorMsg_ << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
+    std::ostringstream msg;
+    msg << "mismatch of event number in FEROL header:";
+    msg << " expected " << eventNumber_ << ", but got " << ferolHeader->event_number();
+    errorMsg_ += msg.str();
   }
 
   if ( fedId_ != ferolHeader->fed_id() )
   {
-    if ( isCorrupted_ )
-      errorMsg_ << ", and ";
-    else
-      isCorrupted_ = true;
-    errorMsg_ << "mismatch of FED id in FEROL header:";
-    errorMsg_ << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    if ( ! errorMsg_.empty() )
+      msg << ", and ";
+    msg << "mismatch of FED id in FEROL header:";
+    msg << " expected " << fedId_ << ", but got " << ferolHeader->fed_id();
+    errorMsg_ += msg.str();
   }
 }
 
@@ -338,23 +341,25 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
   const uint32_t eventId = FED_LVL1_EXTRACT(fedHeader->eventid);
   if ( eventId != eventNumber_ )
   {
-    if ( isCorrupted_ )
-      errorMsg_ << ", and ";
-    else
-      isCorrupted_ = true;
-    errorMsg_ << "FED header \"eventid\" " << eventId;
-    errorMsg_ << " does not match the eventNumber found in FEROL header";
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    if ( ! errorMsg_.empty() )
+      msg << ", and ";
+    msg << "FED header \"eventid\" " << eventId;
+    msg << " does not match the eventNumber found in FEROL header";
+    errorMsg_ += msg.str();
   }
 
   const uint32_t sourceId = FED_SOID_EXTRACT(fedHeader->sourceid);
   if ( sourceId != fedId_ )
   {
-    if ( isCorrupted_ )
-      errorMsg_ << ", and ";
-    else
-      isCorrupted_ = true;
-    errorMsg_ << "FED header \"sourceId\" " << sourceId;
-    errorMsg_ << " does not match the FED id found in FEROL header";
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    if ( ! errorMsg_.empty() )
+      msg << ", and ";
+    msg << "FED header \"sourceId\" " << sourceId;
+    msg << " does not match the FED id found in FEROL header";
+    errorMsg_ += msg.str();
   }
 }
 
@@ -377,13 +382,14 @@ void evb::readoutunit::FedFragment::checkFedTrailer(fedt_t* fedTrailer)
   const uint32_t evsz = FED_EVSZ_EXTRACT(fedTrailer->eventsize)<<3;
   if ( evsz != fedSize_ )
   {
-    if ( isCorrupted_ )
-      errorMsg_ << ", and ";
-    else
-      isCorrupted_ = true;
-    errorMsg_ << "inconsistent event size:";
-    errorMsg_ << " FED trailer claims " << evsz << " Bytes,";
-    errorMsg_ << " while sum of FEROL headers yield " << fedSize_;
+    isCorrupted_ = true;
+    std::ostringstream msg;
+    if ( ! errorMsg_.empty() )
+      msg << ", and ";
+    msg << "inconsistent event size:";
+    msg << " FED trailer claims " << evsz << " Bytes,";
+    msg << " while sum of FEROL headers yield " << fedSize_;
+    errorMsg_ += msg.str();
   }
 
   checkCRC(fedTrailer);
@@ -429,11 +435,13 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
   const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
   if ( trailerCRC != crc )
   {
-    if ( isCorrupted_ )
-      errorMsg_ << ". ";
-    errorMsg_ << "The CRC in the FED trailer claims 0x" << std::hex << trailerCRC;
-    errorMsg_ << ", but recalculation gives 0x" << crc;
     hasCRCerror_ = true;
+    std::ostringstream msg;
+    if ( ! errorMsg_.empty() )
+      msg << ". ";
+    msg << "The CRC in the FED trailer claims 0x" << std::hex << trailerCRC;
+    msg << ", but recalculation gives 0x" << crc;
+    errorMsg_ += msg.str();
   }
 }
 
@@ -442,33 +450,33 @@ void evb::readoutunit::FedFragment::checkTrailerBits(const uint32_t conscheck)
 {
   if ( (conscheck & 0xC004) == 0) return;
 
-  hasFEDerror_ = true;
-
-  if ( isCorrupted_ || hasCRCerror_ )
-    errorMsg_ << ". In addition, the";
+  std::ostringstream msg;
+  if ( ! errorMsg_.empty() )
+    msg << ".  In addition, the";
   else
-    errorMsg_ << "The";
-  errorMsg_ << " FED trailer indicates that ";
+    msg << "The";
+  msg << " FED trailer indicates that ";
 
-  bool foundError = false;
   if ( conscheck & 0x4 ) // FED CRC error (R bit)
   {
-    errorMsg_ << "a wrong FED CRC checksum was found by the FEROL (FED trailer R bit is set)";
-    foundError = true;
+    msg << "a wrong FED CRC checksum was found by the FEROL (FED trailer R bit is set)";
+    hasFEDerror_ = true;
   }
   if ( conscheck & 0x4000 ) // wrong FED id (F bit)
   {
-    if ( foundError )
-      errorMsg_ << ", and ";
-    errorMsg_ << "the FED id is not expected by the FEROL (FED trailer F bit is set)";
-    foundError = true;
+    if ( hasFEDerror_ )
+      msg << ", and ";
+    msg << "the FED id is not expected by the FEROL (FED trailer F bit is set)";
+    hasFEDerror_ = true;
   }
   if ( conscheck & 0x8000 ) // slink CRC error (C bit)
   {
-    if ( foundError )
-      errorMsg_ << ", and ";
-    errorMsg_ << "wrong slink CRC checksum was found by the FEROL (FED trailer C bit is set)";
+    if ( hasFEDerror_ )
+      msg << ", and ";
+    msg << "wrong slink CRC checksum was found by the FEROL (FED trailer C bit is set)";
+    hasFEDerror_ = true;
   }
+  errorMsg_ += msg.str();
 }
 
 
@@ -478,21 +486,21 @@ void evb::readoutunit::FedFragment::reportErrors() const
   {
     std::ostringstream msg;
     msg << "Received a corrupted event " << eventNumber_ << " from FED " << fedId_ << ": ";
-    msg << errorMsg_.str();
+    msg << errorMsg_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
   else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
   {
     std::ostringstream msg;
     msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << ": ";
-    msg << errorMsg_.str();
+    msg << errorMsg_;
     XCEPT_RAISE(exception::CRCerror, msg.str());
   }
   else if ( hasFEDerror_ && evb::isFibonacci( ++fedErrorCount_ ) )
   {
     std::ostringstream msg;
     msg << "Received " << fedErrorCount_ << " bad events from FED " << fedId_ << ": ";
-    msg << errorMsg_.str();
+    msg << errorMsg_;
     XCEPT_RAISE(exception::FEDerror, msg.str());
   }
 }

@@ -3,8 +3,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <sstream>
 #include <stdint.h>
+#include <string>
 #include <sys/uio.h>
 #include <vector>
 
@@ -79,7 +79,7 @@ namespace evb {
       uint32_t eventNumber_;
       EvBid evbId_;
       uint32_t fedSize_;
-      std::ostringstream errorMsg_;
+      std::string errorMsg_;
       bool isCorrupted_;
       bool hasCRCerror_;
       bool hasFEDerror_;
