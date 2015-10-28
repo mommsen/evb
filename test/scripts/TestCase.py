@@ -44,16 +44,16 @@ class TestCase:
 
 
     def __del__(self):
+        try:
+            shutil.rmtree("/tmp/evb_test")
+        except OSError:
+            pass
         for context in self._config.contexts:
             try:
                 print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
                 print(messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
             except socket.error:
                 pass
-        try:
-            shutil.rmtree("/tmp/evb_test")
-        except OSError:
-            pass
         for file in glob.glob("/tmp/dump_*txt"):
             os.remove(file)
         sys.stdout.flush()
