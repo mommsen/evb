@@ -16,7 +16,6 @@
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
-#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -43,7 +42,6 @@ namespace evb {
       );
       ~FedFragment();
 
-      bool append(toolbox::mem::Reference*, tcpla::MemoryCache*);
       bool append(const EvBid&, toolbox::mem::Reference*);
       bool append(SocketBufferPtr&, uint32_t& usedSize);
 
@@ -97,7 +95,6 @@ namespace evb {
       bool hasFEDerror_;
       bool isComplete_;
       toolbox::mem::Reference* bufRef_;
-      tcpla::MemoryCache* cache_;
       typedef std::vector<SocketBufferPtr> SocketBuffers;
       SocketBuffers socketBuffers_;
       DataLocations dataLocations_;

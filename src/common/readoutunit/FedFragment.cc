@@ -24,7 +24,7 @@ evb::readoutunit::FedFragment::FedFragment
     eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isOutOfSequence_(false),
     hasCRCerror_(false),hasFEDerror_(false),isComplete_(false),
-    bufRef_(0),cache_(0),tmpBufferSize_(0)
+    bufRef_(0),tmpBufferSize_(0)
 {}
 
 
@@ -36,24 +36,11 @@ evb::readoutunit::FedFragment::~FedFragment()
     nextBufRef = bufRef_->getNextReference();
     bufRef_->setNextReference(0);
 
-    if ( cache_ )
-      cache_->grantFrame(bufRef_);
-    else if ( socketBuffers_.empty() )
+    if ( socketBuffers_.empty() )
       bufRef_->release();
 
     bufRef_ = nextBufRef;
   };
-}
-
-
-bool evb::readoutunit::FedFragment::append(toolbox::mem::Reference* bufRef, tcpla::MemoryCache* cache)
-{
-  bufRef_ = bufRef;
-  cache_ = cache;
-  const I2O_DATA_READY_MESSAGE_FRAME* msg = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-  assert( msg->partLength == msg->totalLength );
-  uint32_t usedSize = sizeof(I2O_DATA_READY_MESSAGE_FRAME);
-  return parse(bufRef,usedSize);
 }
 
 
