@@ -19,6 +19,7 @@
   <xmas:item name="nbEventsBuilt"           infospace="urn:evb::BU" type="unsigned int 64"/>
   <xmas:item name="nbCorruptedEvents"       infospace="urn:evb::BU" type="unsigned int 64"/>
   <xmas:item name="nbEventsWithCRCerrors"   infospace="urn:evb::BU" type="unsigned int 64"/>
+  <xmas:item name="nbEventsMissingData"     infospace="urn:evb::BU" type="unsigned int 64"/>
   <xmas:item name="nbEventsInBU"            infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbFilesWritten"          infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbLumiSections"          infospace="urn:evb::BU" type="unsigned int 32"/>
