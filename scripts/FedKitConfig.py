@@ -264,7 +264,7 @@ class FedKitConfig:
 
     def getDataSource(self):
         dataSource = None
-        possibleDataSources = ('L6G_SOURCE','L6G_CORE_GENERATOR_SOURCE','L6G_LOOPBACK_GENERATOR_SOURCE','SLINK_SOURCE')
+        possibleDataSources = ('L6G_SOURCE','L6G_CORE_GENERATOR_SOURCE','L6G_LOOPBACK_GENERATOR_SOURCE','L10G_SOURCE','L10G_CORE_GENERATOR_SOURCE','SLINK_SOURCE')
 
         try:
             dataSource = self._config.get('Input','dataSource')
@@ -274,10 +274,12 @@ class FedKitConfig:
             pass
 
         print("""Please select the data source to be used:
-  1 - Real AMC13 data source        (L6G_SOURCE)
-  2 - Generator core of the AMC13   (L6G_CORE_GENERATOR_SOURCE)
-  3 - Loopback at the FEROL         (L6G_LOOPBACK_GENERATOR_SOURCE)
-  4 - SLINK data source             (SLINK_SOURCE)""")
+  1 - AMC13 data source over 6Gb        (L6G_SOURCE)
+  2 - Generator core of AMC13 over 6Gb  (L6G_CORE_GENERATOR_SOURCE)
+  3 - Loopback at the FEROL             (L6G_LOOPBACK_GENERATOR_SOURCE)
+  4 - AMC13 data source over 10Gb       (L10G_SOURCE)
+  5 - Generator core of AMC13 over 10Gb (L10G_CORE_GENERATOR_SOURCE)
+  6 - SLINK data source                 (SLINK_SOURCE)""")
 
         prompt = "=> "
         try:
