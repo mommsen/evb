@@ -26,6 +26,7 @@ evb::bu::EventBuilder::EventBuilder
   configuration_(bu->getConfiguration()),
   corruptedEvents_(0),
   eventsWithCRCerrors_(0),
+  eventsMissingData_(0),
   doProcessing_(false),
   writeNextEventsToFile_(0)
 {
@@ -121,6 +122,7 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
     boost::mutex::scoped_lock sl(errorCountMutex_);
     corruptedEvents_ = 0;
     eventsWithCRCerrors_ = 0;
+    eventsMissingData_ = 0;
   }
   doProcessing_ = true;
   for (uint32_t i=0; i < configuration_->numberOfBuilders; ++i)
@@ -191,7 +193,12 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         try
         {
           eventMapMonitor.lowestLumiSection = completeEvents.begin()->first;
-          handleCompleteEvents(completeEvents,streamHandler);
+          const uint32_t eventsMissingData = handleCompleteEvents(completeEvents,streamHandler);
+          if ( eventsMissingData > 0 )
+          {
+            boost::mutex::scoped_lock sl(errorCountMutex_);
+            eventsMissingData_ += eventsMissingData;
+          }
         }
         catch(exception::DataCorruption& e)
         {
@@ -374,7 +381,7 @@ inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::get
 }
 
 
-void evb::bu::EventBuilder::handleCompleteEvents
+uint32_t evb::bu::EventBuilder::handleCompleteEvents
 (
   CompleteEvents& completeEvents,
   StreamHandlerPtr& streamHandler
@@ -383,6 +390,7 @@ void evb::bu::EventBuilder::handleCompleteEvents
   const uint32_t oldestIncompleteLumiSection = resourceManager_->getOldestIncompleteLumiSection();
 
   CompleteEvents::iterator pos = completeEvents.begin();
+  uint32_t nbEventsMissingData = 0;
 
   while ( pos != completeEvents.end() && pos->first == oldestIncompleteLumiSection )
   {
@@ -407,6 +415,9 @@ void evb::bu::EventBuilder::handleCompleteEvents
       throw; // rethrow the exception such that it can be handled outside of critical section
     }
 
+    if ( event->isMissingData() )
+      ++nbEventsMissingData;
+
     if ( writeNextEventsToFile_ > 0 )
     {
       boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
@@ -422,6 +433,8 @@ void evb::bu::EventBuilder::handleCompleteEvents
     resourceManager_->discardEvent(event);
     completeEvents.erase(pos++);
   }
+
+  return nbEventsMissingData;
 }
 
 
@@ -429,9 +442,11 @@ void evb::bu::EventBuilder::appendMonitoringItems(InfoSpaceItems& items)
 {
   nbCorruptedEvents_ = 0;
   nbEventsWithCRCerrors_ = 0;
+  nbEventsMissingData_ = 0;
 
   items.add("nbCorruptedEvents", &nbCorruptedEvents_);
   items.add("nbEventsWithCRCerrors", &nbEventsWithCRCerrors_);
+  items.add("nbEventsMissingData", &nbEventsMissingData_);
 }
 
 
@@ -441,6 +456,7 @@ void evb::bu::EventBuilder::updateMonitoringItems()
 
   nbCorruptedEvents_ = corruptedEvents_;
   nbEventsWithCRCerrors_ = eventsWithCRCerrors_;
+  nbEventsMissingData_ = eventsMissingData_;
 }
 
 
@@ -455,6 +471,13 @@ uint64_t evb::bu::EventBuilder::getNbEventsWithCRCerrors() const
 {
   boost::mutex::scoped_lock sl(errorCountMutex_);
   return eventsWithCRCerrors_;
+}
+
+
+uint64_t evb::bu::EventBuilder::getNbEventsMissingData() const
+{
+  boost::mutex::scoped_lock sl(errorCountMutex_);
+  return eventsMissingData_;
 }
 
 
@@ -484,6 +507,9 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     table.add(tr()
               .add(td("# events w/ CRC errors"))
               .add(td(boost::lexical_cast<std::string>(eventsWithCRCerrors_))));
+    table.add(tr()
+              .add(td("# events w/ missing FED data"))
+              .add(td(boost::lexical_cast<std::string>(eventsMissingData_))));
 
     div.add(table);
   }

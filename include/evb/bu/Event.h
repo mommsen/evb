@@ -74,6 +74,8 @@ namespace evb {
       uint16_t buResourceId() const { return buResourceId_; }
       EventInfoPtr getEventInfo() const { return eventInfo_; }
       DataLocations getDataLocations() const { return dataLocations_; }
+      bool isMissingData() const { return ( ! missingFedIds_.empty() ); }
+      msg::FedIds getMissingFedIds() const { return missingFedIds_; }
 
     private:
 

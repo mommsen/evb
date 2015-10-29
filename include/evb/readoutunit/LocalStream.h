@@ -181,7 +181,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
     {
       if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
       {
-        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,evbId,bufRef);
+        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_,evbId,bufRef);
         this->addFedFragment(fedFragment);
         evbId = this->evbIdFactory_->getEvBid();
       }

@@ -172,7 +172,7 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
       while ( this->doProcessing_ && usedSize < bufSize )
       {
         if ( ! currentFragment_ )
-          currentFragment_ = this->fedFragmentFactory_.getFedFragment(this->fedId_);
+          currentFragment_ = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_);
 
         if ( this->fedFragmentFactory_.append(currentFragment_,socketBuffer,usedSize) )
         {
@@ -181,12 +181,6 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
         }
       }
     }
-  }
-  catch(exception::EventOutOfSequence& e)
-  {
-    currentFragment_.reset();
-    parseSocketBuffersActive_ = false;
-    return false;
   }
   catch(xcept::Exception& e)
   {

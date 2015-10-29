@@ -100,6 +100,11 @@ namespace evb {
          */
         void setMaxTriggerRate(const uint32_t rate);
 
+        /**
+         * Create a resync at the given event number
+         */
+        void resyncAtEvent(const uint32_t rate);
+
 
       private:
 

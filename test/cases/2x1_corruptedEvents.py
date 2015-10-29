@@ -27,9 +27,13 @@ class case_2x1_corruptedEvents(TestCase):
 
         print("Corrupt an event on FED 2 - tolerating")
         self.setAppParam('corruptNbEvents','unsignedInt','1','FEROL',2)
-        time.sleep(3)
-        self.checkState("Enabled")
-        self.checkEVM(8192)
+        time.sleep(5)
+        self.checkAppState("MissingData","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkEVM(6144)
+        self.checkRU(8192)
+        self.checkBU(14336)
         self.checkIt()
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed0002.txt$")
         if len(dumps) != 1:
@@ -38,7 +42,7 @@ class case_2x1_corruptedEvents(TestCase):
         print("Corrupt 2 events on FED 7 - not tolerating")
         self.setAppParam('corruptNbEvents','unsignedInt','2','FEROL',7)
         time.sleep(3)
-        self.checkAppState("Enabled","EVM")
+        self.checkAppState("MissingData","EVM")
         self.checkAppState("Failed","RU")
         self.checkAppState("Enabled","BU")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed0007.txt$")
@@ -54,6 +58,27 @@ class case_2x1_corruptedEvents(TestCase):
         self.checkRU(8192)
         self.checkBU(16384)
         self.checkIt()
+        print("Corrupt an event on FED 1 - tolerating")
+        self.setAppParam('corruptNbEvents','unsignedInt','1','FEROL',1)
+        time.sleep(5)
+        self.checkAppState("MissingData","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkEVM(6144)
+        self.checkRU(8192)
+        self.checkBU(14336)
+        self.checkIt()
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0002.txt$")
+        if len(dumps) != 1:
+            raise ValueException("Expected one dump file from FED 2, but found: "+str(dumps))
+        self.sendResync()
+        self.checkAppState("Enabled","EVM")
+        self.checkAppState("Enabled","RU")
+        self.checkAppState("Enabled","BU")
+        self.checkEVM(8192)
+        self.checkRU(8192)
+        self.checkBU(16384)
+        self.checkIt()
         self.haltEvB()
         self.checkBuDir(testDir,"000002",eventSize=16384)
 
@@ -61,7 +86,7 @@ class case_2x1_corruptedEvents(TestCase):
     def fillConfiguration(self,symbolMap):
         evm = RU(symbolMap,[
              ('inputSource','string','Socket'),
-             ('checkCRC','unsignedInt','1'),
+             ('checkCRC','unsignedInt','0'),
              ('tolerateCorruptedEvents','boolean','true'),
              ('fakeLumiSectionDuration','unsignedInt','5')
             ])
@@ -70,7 +95,7 @@ class case_2x1_corruptedEvents(TestCase):
 
         ru = RU(symbolMap,[
              ('inputSource','string','Socket'),
-             ('checkCRC','unsignedInt','1'),
+             ('checkCRC','unsignedInt','0'),
              ('tolerateCorruptedEvents','boolean','false')
             ])
         for id in range(4,8):

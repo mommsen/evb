@@ -24,6 +24,8 @@ namespace evb {
 
       SuperFragment(const EvBid&);
 
+      void discardFedId(const uint16_t fedId);
+
       bool append(const FedFragmentPtr&);
 
       bool hasMissingFEDs() const

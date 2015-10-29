@@ -44,6 +44,10 @@ class TestCase:
 
 
     def __del__(self):
+        try:
+            shutil.rmtree("/tmp/evb_test")
+        except OSError:
+            pass
         for context in self._config.contexts:
             try:
                 print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
@@ -186,12 +190,16 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or instance == application['instance']:
-                    value = messengers.getParam(paramName,paramType,**application)
-                    if comp(value,expectedValue):
-                        print(app+str(application['instance'])+" "+paramName+": "+str(value))
-                    else:
-                        raise(ValueException(paramName+" on "+app+str(application['instance'])+
-                                             " is "+str(value)+" instead of "+str(expectedValue)))
+                    tries = 0
+                    while tries < 3:
+                        tries += 1
+                        value = messengers.getParam(paramName,paramType,**application)
+                        if comp(value,expectedValue):
+                            print(app+str(application['instance'])+" "+paramName+": "+str(value))
+                            return
+
+                    raise(ValueException(paramName+" on "+app+str(application['instance'])+
+                                         " is "+str(value)+" instead of "+str(expectedValue)))
         except KeyError:
             pass
 
@@ -274,20 +282,25 @@ class TestCase:
             self.checkState('Enabled')
 
 
-    def stopEvB(self):
-        eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
-        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        eventToStop = lastEvent + max(2*eventRate,10000)
-        sys.stdout.write("Stopping EvB at event "+str(eventToStop))
-        sys.stdout.flush()
+    def stopEvB(self,runDir=None):
+        eventToStop = self.getEventInFuture()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
         self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
         self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'RU')
+        sys.stdout.write("Stopping EvB at event "+str(eventToStop))
+        sys.stdout.flush()
 
         self.stop('FEROL')
-        self.waitForAppState('Ready','FEROL',maxTries=15)
+        if runDir:
+            for rawFile in glob.glob(runDir+"/*.raw"):
+                os.remove(rawFile)
+            self.waitForAppState('Ready','FEROL',maxTries=60)
+
         self.stop('EVM')
-        self.waitForAppState('Ready','EVM',maxTries=50)
+        if runDir:
+            for rawFile in glob.glob(runDir+"/*.raw"):
+                os.remove(rawFile)
+        self.waitForAppState('Ready','EVM',maxTries=60)
         self.stop('RU')
         self.stop('BU')
         self.waitForState('Ready')
@@ -313,6 +326,38 @@ class TestCase:
         self.halt('BU')
         self.checkState('Halted')
         self.resetPtFrl();
+
+
+    def sendResync(self):
+        resyncAtEvent = self.getEventInFuture()
+        self.setAppParam('resyncAtEvent','unsignedInt',resyncAtEvent,'FEROL')
+        sys.stdout.write("Resync at event "+str(resyncAtEvent))
+        sys.stdout.flush()
+        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
+        tries = 0
+        while self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'] >= lastEvent and tries < 30:
+            # a resync will reset the event number to 1
+            sleep(1)
+            tries += 1
+            sys.stdout.write(".")
+            sys.stdout.flush()
+        if tries == 30:
+            print(" FAILED")
+            raise(StateException("No resync seen"))
+        else:
+            sleep(2)
+            print(" done")
+
+
+    def getEventInFuture(self):
+        eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
+        sleep(2)
+        eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
+        sleep(2)
+        eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
+        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
+        return lastEvent + max(2*eventRate,10000)
+
 
 
     def checkEVM(self,superFragmentSize,eventRate=1000):

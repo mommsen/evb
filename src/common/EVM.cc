@@ -141,6 +141,8 @@ namespace evb {
       if ( masterStream_ == ferolStreams_.end() )
         masterStream_ = ferolStreams_.begin();
 
+      masterStream_->second->useAsMaster();
+
       const EvBidFactoryPtr evbIdFactory = masterStream_->second->getEvBidFactory();
       if ( lumiSectionFunction )
       {
@@ -226,6 +228,8 @@ namespace evb {
       {
         {
           boost::shared_lock<boost::shared_mutex> frm(fragmentRequestFIFOsMutex_);
+
+          if ( ! doProcessing_ ) return false;
 
           if ( fragmentRequestFIFOs_.empty() ) return false;
 

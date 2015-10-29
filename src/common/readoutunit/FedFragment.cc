@@ -10,6 +10,7 @@ evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
 evb::readoutunit::FedFragment::FedFragment
 (
   const uint16_t fedId,
+  const bool isMasterFed,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
   uint32_t& fedErrorCount,
@@ -18,10 +19,11 @@ evb::readoutunit::FedFragment::FedFragment
   : typeOfNextComponent_(FEROL_HEADER),
     evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
     fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
-    fedId_(fedId),bxId_(FED_BXID_WIDTH+1),
+    fedId_(fedId),isMasterFed_(isMasterFed),
+    bxId_(FED_BXID_WIDTH+1),
     eventNumber_(0),fedSize_(0),
-    isCorrupted_(false),hasCRCerror_(false),
-    hasFEDerror_(false),isComplete_(false),
+    isCorrupted_(false),isOutOfSequence_(false),
+    hasCRCerror_(false),hasFEDerror_(false),isComplete_(false),
     bufRef_(0),cache_(0),tmpBufferSize_(0)
 {}
 
@@ -267,8 +269,18 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
         checkFedTrailer(fedTrailer);
 
-        if ( !evbId_.isValid() )
-          evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
+        try
+        {
+          if ( !evbId_.isValid() )
+            evbId_ = evbIdFactory_->getEvBid(eventNumber_, bxId_, dataLocations_);
+        }
+        catch(exception::EventOutOfSequence& e)
+        {
+          isOutOfSequence_ = true;
+          if ( ! errorMsg_.empty() )
+            errorMsg_ += ". ";
+          errorMsg_ += e.message();
+        }
 
         reportErrors();
 
@@ -488,6 +500,13 @@ void evb::readoutunit::FedFragment::reportErrors() const
     msg << "Received a corrupted event " << eventNumber_ << " from FED " << fedId_ << ": ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
+  }
+  else if ( isOutOfSequence_ )
+  {
+    std::ostringstream msg;
+    msg << "Received an event out of sequence from FED " << fedId_ << ": ";
+    msg << errorMsg_;
+    XCEPT_RAISE(exception::EventOutOfSequence, msg.str());
   }
   else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
   {

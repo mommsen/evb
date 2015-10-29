@@ -45,6 +45,20 @@ namespace evb {
       mutable exception::EventOutOfSequence exception_;
     };
 
+    class DataLoss : public boost::statechart::event<DataLoss>
+    {
+    public:
+      DataLoss(xcept::Exception& exception) : exception_(exception) {};
+      std::string getReason() const { return exception_.message(); }
+      std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
+      xcept::Exception& getException() const { return exception_; }
+
+    private:
+      mutable xcept::Exception exception_;
+    };
+
+    class Recovered: public boost::statechart::event<Recovered> {};
+
 
     ///////////////////////
     // The state machine //
@@ -62,6 +76,7 @@ namespace evb {
       // derived-to-base conversion (4.10) are not applied in function template evaluation
       void mismatchDetected(const MismatchDetected& evt);
       void eventOutOfSequence(const EventOutOfSequence& evt);
+      void dataLoss(const DataLoss& evt);
 
       Owner* getOwner() const
       { return owner_; }
@@ -121,6 +136,32 @@ void evb::readoutunit::StateMachine<Owner>::eventOutOfSequence(const EventOutOfS
   try
   {
     this->rcmsStateNotifier_.stateChanged("SyncLoss", evt.getReason());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify RCMS about SyncLoss!");
+  }
+
+  try
+  {
+    this->app_->notifyQualified("error", evt.getException());
+  }
+  catch(...) // Catch anything to make sure that we end in a well defined state
+  {
+    LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SyncLoss!");
+  }
+}
+
+
+template<class Owner>
+void evb::readoutunit::StateMachine<Owner>::dataLoss(const DataLoss& evt)
+{
+  this->reasonForError_ = evt.getTraceback();
+  LOG4CPLUS_ERROR(this->getLogger(), "MissingData: " << this->reasonForError_);
+
+  try
+  {
+    this->rcmsStateNotifier_.stateChanged("MissingData", evt.getReason());
   }
   catch(...) // Catch anything to make sure that we end in a well defined state
   {

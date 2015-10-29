@@ -62,5 +62,6 @@ class case_4x1_write(TestCase):
             ]) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','6'),
-             ('staleResourceTime','unsignedInt','0')
+             ('staleResourceTime','unsignedInt','0'),
+             ('numberOfBuilders','unsignedInt','2')
             ]) )

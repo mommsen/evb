@@ -79,6 +79,7 @@ namespace evb {
     xdata::UnsignedInteger64 nbEventsBuilt_;
     xdata::UnsignedInteger64 nbCorruptedEvents_;
     xdata::UnsignedInteger64 nbEventsWithCRCerrors_;
+    xdata::UnsignedInteger64 nbEventsMissingData_;
     xdata::UnsignedInteger32 nbLumiSections_;
   };
 

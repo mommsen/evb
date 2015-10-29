@@ -76,6 +76,12 @@ namespace evb {
       virtual void stopProcessing();
 
       /**
+       * Declare this stream as the master stream
+       */
+      void useAsMaster()
+      { isMasterStream_ = true; }
+
+      /**
        * Set the trigger rate for generating events
        */
       virtual void setMaxTriggerRate(const uint32_t maxTriggerRate) {};
@@ -110,7 +116,7 @@ namespace evb {
       /**
        * Return a CGI table row with statistics for this FED
        */
-      cgicc::tr getFedTableRow(const bool isMasterStream) const;
+      cgicc::tr getFedTableRow() const;
 
       /**
        * Return the content of the fragment FIFO as HTML snipped
@@ -127,6 +133,7 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
       const uint16_t fedId_;
+      bool isMasterStream_;
       volatile bool doProcessing_;
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
@@ -143,6 +150,7 @@ namespace evb {
 
       void resetMonitoringCounters();
 
+      FedFragmentPtr firstFragmentAfterResync_;
       uint16_t writeNextFragments_;
 
       InputMonitor inputMonitor_;
@@ -166,6 +174,7 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
 ) :
   readoutUnit_(readoutUnit),
   fedId_(fedId),
+  isMasterStream_(false),
   doProcessing_(false),
   syncLoss_(false),
   eventNumberToStop_(0),
@@ -186,7 +195,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
   tcpla::MemoryCache* cache
 )
 {
-  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,bufRef,cache);
+  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,isMasterStream_,bufRef,cache);
   addFedFragment(fedFragment);
 }
 
@@ -240,7 +249,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::maybeDumpFragment
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragment(FedFragmentPtr& fedFragment)
 {
-  if ( ! doProcessing_ || syncLoss_ )
+  if ( ! doProcessing_ )
     throw exception::HaltRequested();
 
   return fragmentFIFO_.deq(fedFragment);
@@ -251,7 +260,55 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
   FedFragmentPtr fedFragment;
-  while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+  if ( syncLoss_ && firstFragmentAfterResync_ )
+  {
+    // keep discarding data until the master has resync'd
+    if ( ! superFragment->getEvBid().resynced() )
+    {
+      superFragment->discardFedId(fedId_);
+      return;
+    }
+    else
+    {
+      // the master has resync'd after the FED
+      fedFragment.swap(firstFragmentAfterResync_);
+      syncLoss_ = false;
+      readoutUnit_->getStateMachine()->processFSMEvent( Recovered() );
+    }
+  }
+  else
+  {
+    while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+
+    if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
+    {
+      // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
+      syncLoss_ = true;
+      superFragment->discardFedId(fedId_);
+      return;
+    }
+
+    if ( syncLoss_ )
+    {
+      if ( superFragment->getEvBid().resynced() )
+      {
+        // the master has resync'd. Pull FED data until the FED resync'd, too.
+        while ( ! fedFragment->getEvBid().resynced() &&
+                ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+        syncLoss_ = false;
+        readoutUnit_->getStateMachine()->processFSMEvent( Recovered() );
+      }
+      else
+      {
+        // keep discarding the events until we see a resync
+        if ( fedFragment->getEvBid().resynced() )
+          firstFragmentAfterResync_.swap(fedFragment);
+        else
+          superFragment->discardFedId(fedId_);
+        return;
+      }
+    }
+  }
 
   try
   {
@@ -274,7 +331,17 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
   {
     fedFragmentFactory_.writeFragmentToFile(fedFragment,e.message());
     syncLoss_ = true;
-    readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
+
+    if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents
+         && !isMasterStream_ )
+    {
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
+    }
+    else
+    {
+      readoutUnit_->getStateMachine()->processFSMEvent( MismatchDetected(e) );
+      throw exception::HaltRequested();
+    }
   }
 }
 
@@ -349,13 +416,13 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
 
 template<class ReadoutUnit,class Configuration>
-cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow(const bool isMasterStream) const
+cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableRow() const
 {
   using namespace cgicc;
   const std::string fedId = boost::lexical_cast<std::string>(fedId_);
 
   tr row;
-  if (isMasterStream)
+  if ( isMasterStream_ )
     row.add(td(fedId+"*"));
   else
     row.add(td(fedId));

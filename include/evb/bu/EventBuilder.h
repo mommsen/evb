@@ -122,6 +122,11 @@ namespace evb {
        */
       uint64_t getNbEventsWithCRCerrors() const;
 
+      /**
+       * Return the number of events with missing FED data since the start of the run
+       */
+      uint64_t getNbEventsMissingData() const;
+
 
     private:
 
@@ -145,7 +150,7 @@ namespace evb {
       bool process(toolbox::task::WorkLoop*);
       void buildEvent(FragmentChainPtr&, PartialEvents&, CompleteEvents&) const;
       PartialEvents::iterator getEventPos(PartialEvents&, const EvBid&, const msg::RUtids&, const uint16_t& buResourceId) const;
-      void handleCompleteEvents(CompleteEvents&, StreamHandlerPtr&) const;
+      uint32_t handleCompleteEvents(CompleteEvents&, StreamHandlerPtr&) const;
 
       BU* bu_;
       boost::shared_ptr<DiskWriter> diskWriter_;
@@ -169,6 +174,7 @@ namespace evb {
 
       uint64_t corruptedEvents_;
       uint64_t eventsWithCRCerrors_;
+      uint64_t eventsMissingData_;
       mutable boost::mutex errorCountMutex_;
 
       volatile bool doProcessing_;
@@ -180,6 +186,7 @@ namespace evb {
 
       xdata::UnsignedInteger64 nbCorruptedEvents_;
       xdata::UnsignedInteger64 nbEventsWithCRCerrors_;
+      xdata::UnsignedInteger64 nbEventsMissingData_;
 
     }; // EventBuilder
 

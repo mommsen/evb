@@ -876,7 +876,7 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
        it != itEnd; ++it)
   {
-    fedTable.add( it->second->getFedTableRow( it == masterStream_ ) );
+    fedTable.add( it->second->getFedTableRow() );
   }
 
   return fedTable;

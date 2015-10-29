@@ -49,6 +49,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   nbLumiSections_ = 0;
   nbCorruptedEvents_ = 0;
   nbEventsWithCRCerrors_ = 0;
+  nbEventsMissingData_ = 0;
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
@@ -58,6 +59,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
   appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbCorruptedEvents", &nbCorruptedEvents_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsWithCRCerrors", &nbEventsWithCRCerrors_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("nbEventsMissingData", &nbEventsMissingData_, InfoSpaceItems::retrieve);
 }
 
 
@@ -102,6 +104,8 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
     nbCorruptedEvents_ = eventBuilder_->getNbCorruptedEvents();
   else if (item == "nbEventsWithCRCerrors")
     nbEventsWithCRCerrors_ = eventBuilder_->getNbEventsWithCRCerrors();
+  else if (item == "nbEventsMissingData")
+    nbEventsMissingData_ = eventBuilder_->getNbEventsMissingData();
 }
 
 
