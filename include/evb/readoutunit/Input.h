@@ -648,7 +648,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     {
       readoutUnit_->getFerolConnectionManager()->getActiveFerolStreams(ferolStreams_);
     }
-    else
+    else if ( configuration->inputSource == "Local" )
     {
       typename Configuration::FerolSources::const_iterator it, itEnd;
       for (it = configuration->ferolSources.begin(),
@@ -663,17 +663,13 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
           XCEPT_RAISE(exception::Configuration, msg.str());
         }
 
-        FerolStreamPtr ferolStream;
-
-        if ( configuration->inputSource == "FEROL" )
-          ferolStream.reset( new FerolStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-        else if ( configuration->inputSource == "Local" )
-          ferolStream.reset( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
-        else
-          XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
-
+        FerolStreamPtr ferolStream( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
         ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
       }
+    }
+    else
+    {
+      XCEPT_RAISE(exception::Configuration, "Unknown inputSource '"+configuration->inputSource.toString()+"'");
     }
 
     setMasterStream();
