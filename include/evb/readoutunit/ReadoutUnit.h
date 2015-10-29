@@ -14,8 +14,6 @@
 #include "i2o/Method.h"
 #include "interface/shared/i2oXFunctionCodes.h"
 #include "interface/shared/i2ogevb2g.h"
-#include "pt/frl/Method.h"
-#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/WorkLoop.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -81,7 +79,6 @@ namespace evb {
     private:
 
       virtual void do_bindI2oCallbacks();
-      inline void rawDataAvailable(toolbox::mem::Reference*, int originator, tcpla::MemoryCache*) throw (pt::frl::exception::Exception);
       inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
 
       virtual void bindNonDefaultXgiCallbacks();
@@ -204,37 +201,12 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_handleIt
 template<class Unit,class Configuration,class StateMachine>
 void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_bindI2oCallbacks()
 {
-  pt::frl::bind(
-    this,
-    &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvailable
-  );
-
   i2o::bind(
     this,
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FRAGMENTS_Callback,
     I2O_SHIP_FRAGMENTS,
     XDAQ_ORGANIZATION_ID
   );
-}
-
-
-template<class Unit,class Configuration,class StateMachine>
-void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::rawDataAvailable
-(
-  toolbox::mem::Reference* bufRef,
-  int originator,
-  tcpla::MemoryCache* cache
-)
-throw (pt::frl::exception::Exception)
-{
-  try
-  {
-    input_->rawDataAvailable(bufRef,cache);
-  }
-  catch(xcept::Exception& e)
-  {
-    this->stateMachine_->processFSMEvent( Fail(e) );
-  }
 }
 
 

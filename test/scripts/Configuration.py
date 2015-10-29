@@ -15,7 +15,6 @@ class Context:
             'app':None,
             'instance':None,
             'ptUtcp':None,
-            'ptFrl':None,
             'ptInstance':Context.ptInstance,
             'tid':None
             }
@@ -33,7 +32,6 @@ class Context:
 
         config += """
       <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-      <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
       <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
       <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
@@ -156,8 +154,6 @@ class RU(Context):
         self.apps['ptUtcp'] = "pt::utcp::Application"
         self.apps['ferolSources'] = []
         self.apps['inputSource'] = self.getInputSource()
-        if self.apps['inputSource'] == 'FEROL':
-            self.apps['ptFrl'] = "pt::frl::Application"
         RU.instance += 1
 
 
@@ -222,9 +218,7 @@ class RU(Context):
 
     def getConfigForPeerTransport(self):
         routing = self.fillFerolSources()
-        if self.apps['inputSource'] == 'FEROL':
-            return self.getConfigForPtFrl(routing)
-        elif self.apps['inputSource'] == 'Socket':
+        if self.apps['inputSource'] == 'Socket':
             return self.getConfigForPtBlit()
         else:
             return ""
@@ -246,42 +240,6 @@ class RU(Context):
             ('maxClients','unsignedInt','32'),
             ('maxReceiveBuffers','unsignedInt','128'),
             ('maxBlockSize','unsignedInt','131072')
-            ])
-        config += "        </properties>\n      </xc:Application>\n"
-
-        config += "\n"
-        return config
-
-
-    def getConfigForPtFrl(self,routing):
-        global id
-        config = """
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferola" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort2)s" network="ferolb" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-
-      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
-        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-"""  % dict(self.apps.items() + [('id',id)])
-        id += 1
-
-        config += self.fillProperties([
-            ('frlRouting','Struct',routing),
-            ('frlDispatcher','string','copy'),
-            ('useUdaplPool','boolean','true'),
-            ('autoConnect','boolean','false'),
-            ('i2oFragmentBlockSize','unsignedInt','32768'),
-            ('i2oFragmentsNo','unsignedInt','128'),
-            ('i2oFragmentPoolSize','unsignedInt','10000000'),
-            ('copyWorkerQueueSize','unsignedInt','16'),
-            ('copyWorkersNo','unsignedInt','1'),
-            ('inputStreamPoolSize','double','1400000'),
-            ('maxClients','unsignedInt','10'),
-            ('ioQueueSize','unsignedInt','64'),
-            ('eventQueueSize','unsignedInt','64'),
-            ('maxInputReceiveBuffers','unsignedInt','8'),
-            ('maxInputBlockSize','unsignedInt','131072'),
-            ('doSuperFragment','boolean','false')
             ])
         config += "        </properties>\n      </xc:Application>\n"
 
@@ -325,7 +283,6 @@ class Configuration():
     def __init__(self):
         self.contexts = []
         self.ptUtcp = []
-        self.ptFrl = []
         self.applications = {}
 
 
@@ -345,10 +302,6 @@ class Configuration():
             appInfo['app'] = context.apps['ptUtcp']
             appInfo['instance'] = context.apps['ptInstance']
             self.ptUtcp.append(copy.deepcopy(appInfo))
-        if context.apps['ptFrl'] is not None:
-            appInfo['app'] = context.apps['ptFrl']
-            appInfo['instance'] = context.apps['ptInstance']
-            self.ptFrl.append(appInfo)
 
 
     def getPartition(self):

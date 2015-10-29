@@ -248,12 +248,6 @@ class TestCase:
             messengers.sendCmdToApp(command='Enable',**application)
 
 
-    def resetPtFrl(self):
-        print("Resetting pt::frl")
-        for application in self._config.ptFrl:
-            messengers.sendCmdToApp(command='Reset',**application)
-
-
     def configureEvB(self):
         sys.stdout.write("Configuring EvB")
         sys.stdout.flush()
@@ -325,7 +319,6 @@ class TestCase:
         self.halt('RU')
         self.halt('BU')
         self.checkState('Halted')
-        self.resetPtFrl();
 
 
     def sendResync(self):

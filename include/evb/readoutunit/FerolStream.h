@@ -46,11 +46,6 @@ namespace evb {
       FerolStream(ReadoutUnit*, const uint16_t fedId);
 
       /**
-       * Add a FED fragment received from the input stream
-       */
-      void addFedFragment(toolbox::mem::Reference*, tcpla::MemoryCache*);
-
-      /**
        * Return the next FED fragement. Return false if none is available
        */
       bool getNextFedFragment(FedFragmentPtr&);
@@ -200,18 +195,6 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   writeNextFragments_(0)
 {
   fragmentFIFO_.resize(readoutUnit->getConfiguration()->fragmentFIFOCapacity);
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::addFedFragment
-(
-  toolbox::mem::Reference* bufRef,
-  tcpla::MemoryCache* cache
-)
-{
-  FedFragmentPtr fedFragment = fedFragmentFactory_.getFedFragment(fedId_,isMasterStream_,bufRef,cache);
-  addFedFragment(fedFragment);
 }
 
 
