@@ -43,7 +43,7 @@ namespace evb {
       typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
 
       xdata::String sendPoolName;                            // The pool name used for evb messages
-      xdata::String inputSource;                             // Input mode selection: FEROL or Local
+      xdata::String inputSource;                             // Input mode selection: Socket or Local
       xdata::UnsignedInteger32 numberOfResponders;           // Number of threads handling responses to BUs
       xdata::UnsignedInteger32 blockSize;                    // I2O block size used for sending events to BUs
       xdata::UnsignedInteger32 numberOfPreallocatedBlocks;   // Number of blocks pre-allocated during configure
@@ -76,7 +76,7 @@ namespace evb {
 
       Configuration()
         : sendPoolName("sudapl"),
-          inputSource("FEROL"),
+          inputSource("Socket"),
           numberOfResponders(4),
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
