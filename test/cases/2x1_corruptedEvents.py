@@ -107,5 +107,6 @@ class case_2x1_corruptedEvents(TestCase):
         self._config.add( BU(symbolMap,[
              ('checkCRC','unsignedInt','1'),
              ('staleResourceTime','unsignedInt','0'),
-             ('lumiSectionTimeout','unsignedInt','6')
+             ('lumiSectionTimeout','unsignedInt','6'),
+             ('numberOfBuilders','unsignedInt','2')
             ]) )
