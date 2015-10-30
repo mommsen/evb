@@ -536,7 +536,7 @@ void evb::bu::ResourceManager::updateDiskUsages()
     boost::filesystem::path::const_iterator pathIter = path.begin();
     while ( pathIter != path.end() )
     {
-      if ( boost::algorithm::icontains(*pathIter,"ramdisk") )
+      if ( boost::algorithm::icontains(pathIter->c_str(),"ramdisk") )
       {
         ramDiskSizeInGB_ = (*it)->diskSizeGB();
         ramDiskUsed_ = (*it)->relDiskUsage();
