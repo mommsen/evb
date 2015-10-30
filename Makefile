@@ -84,6 +84,7 @@ IncludeDirs = \
 	$(XDATA_INCLUDE_PREFIX) \
 	$(TOOLBOX_INCLUDE_PREFIX) \
 	$(PT_INCLUDE_PREFIX) \
+	$(PTBLIT_INCLUDE_PREFIX) \
 	$(XDAQ_INCLUDE_PREFIX) \
 	$(I2O_INCLUDE_PREFIX) \
 	$(XI2O_UTILS_INCLUDE_PREFIX) \
@@ -136,6 +137,7 @@ TestLibraryDirs = \
         $(MIMETIC_LIB_PREFIX) \
         $(PEER_LIB_PREFIX) \
         $(PT_LIB_PREFIX) \
+        $(PTBLIT_LIB_PREFIX) \
         $(TOOLBOX_LIB_PREFIX) \
         $(UUID_LIB_PREFIX) \
         $(XCEPT_LIB_PREFIX) \
@@ -154,7 +156,7 @@ UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
 # These libraries can be platform specific and
 # potentially need conditional processing
 DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl
-DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX)
+DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX) $(PTBLIT_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library
