@@ -24,6 +24,7 @@
   <xmas:item name="fedIdsWithoutFragments"        infospace="urn:evb::RU" type="vector unsigned int 32"/>
   <xmas:item name="fedIdsWithErrors"              infospace="urn:evb::RU" type="vector unsigned int 32"/>
   <xmas:item name="fedDataCorruption"             infospace="urn:evb::RU" type="vector unsigned int 32"/>
+  <xmas:item name="fedOutOfSync"                  infospace="urn:evb::RU" type="vector unsigned int 32"/>
   <xmas:item name="fedCRCerrors"                  infospace="urn:evb::RU" type="vector unsigned int 32"/>
   <xmas:item name="fedBXerrors"                   infospace="urn:evb::RU" type="vector unsigned int 32"/>
 </xmas:flash>

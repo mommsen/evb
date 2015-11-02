@@ -166,10 +166,17 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
     SocketBufferPtr socketBuffer;
     while ( this->doProcessing_ && socketBufferFIFO_.deq(socketBuffer) )
     {
-      const uint32_t bufSize = socketBuffer->getBufRef()->getDataSize();
+      const uint32_t usedBufferSize = socketBuffer->getBufRef()->getDataSize();
+      {
+        boost::mutex::scoped_lock sl(this->socketMonitorMutex_);
+
+        ++(this->socketMonitor_.perf.logicalCount);
+        this->socketMonitor_.perf.sumOfSizes += usedBufferSize;
+        this->socketMonitor_.perf.sumOfSquares += usedBufferSize*usedBufferSize;
+      }
       uint32_t usedSize = 0;
 
-      while ( this->doProcessing_ && usedSize < bufSize )
+      while ( this->doProcessing_ && usedSize < usedBufferSize )
       {
         if ( ! currentFragment_ )
           currentFragment_ = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_);

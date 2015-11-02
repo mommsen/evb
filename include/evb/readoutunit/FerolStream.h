@@ -110,6 +110,7 @@ namespace evb {
       void retrieveMonitoringQuantities(uint32_t& dataReadyCount,
                                         uint32_t& queueElements,
                                         uint32_t& corruptedEvents,
+                                        uint32_t& eventsOutOfSequence,
                                         uint32_t& crcErrors,
                                         uint32_t& bxErrors);
 
@@ -138,6 +139,20 @@ namespace evb {
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
       uint32_t bxErrors_;
+
+      struct SocketMonitor
+      {
+        uint16_t rate;
+        uint32_t usedBufferSize;
+        uint32_t usedBufferSizeStdDev;
+        PerformanceMonitor perf;
+
+        SocketMonitor() { reset(); }
+
+        void reset() { rate=0;usedBufferSize=0;usedBufferSizeStdDev=0; }
+      };
+      SocketMonitor socketMonitor_;
+      mutable boost::mutex socketMonitorMutex_;
 
       EvBidFactoryPtr evbIdFactory_;
       FedFragmentFactory<ReadoutUnit> fedFragmentFactory_;
@@ -375,7 +390,14 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::stopProcessing()
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::resetMonitoringCounters()
 {
-  inputMonitor_.reset();
+  {
+    boost::mutex::scoped_lock sl(inputMonitorMutex_);
+    inputMonitor_.reset();
+  }
+  {
+    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+    socketMonitor_.reset();
+  }
   bxErrors_ = 0;
 }
 
@@ -386,6 +408,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   uint32_t& dataReadyCount,
   uint32_t& queueElements,
   uint32_t& corruptedEvents,
+  uint32_t& eventsOutOfSequence,
   uint32_t& crcErrors,
   uint32_t& bxErrors
 )
@@ -406,10 +429,25 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
     inputMonitor_.perf.reset();
   }
 
+  {
+    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+
+    const double deltaT = socketMonitor_.perf.deltaT();
+    socketMonitor_.rate = socketMonitor_.perf.logicalRate(deltaT);
+    const uint32_t usedBufferSize = socketMonitor_.perf.size();
+    if ( usedBufferSize > 0 )
+    {
+      socketMonitor_.usedBufferSize = usedBufferSize;
+      socketMonitor_.usedBufferSizeStdDev = socketMonitor_.perf.sizeStdDev();
+    }
+    socketMonitor_.perf.reset();
+  }
+
   queueElements = fragmentFIFO_.elements();
 
   dataReadyCount += inputMonitor_.eventCount;
   corruptedEvents = fedFragmentFactory_.getCorruptedEvents();
+  eventsOutOfSequence = fedFragmentFactory_.getEventsOutOfSequence();
   crcErrors = fedFragmentFactory_.getCRCerrors();
   bxErrors = bxErrors_;
 }
@@ -447,6 +485,14 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
     .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCorruptedEvents())))
     .add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getEventsOutOfSequence())))
     .add(td(boost::lexical_cast<std::string>(bxErrors_)));
+
+  {
+    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+
+    row.add(td(boost::lexical_cast<std::string>(socketMonitor_.usedBufferSize)
+               +" +/- "+boost::lexical_cast<std::string>(socketMonitor_.usedBufferSizeStdDev)));
+    row.add(td(boost::lexical_cast<std::string>(socketMonitor_.rate)));
+  }
 
   return row;
 }
