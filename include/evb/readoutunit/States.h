@@ -253,6 +253,7 @@ namespace evb {
       virtual void exitAction();
 
     private:
+
       void doStartProcessing(const Owner*, const uint32_t runNumber) {};
       void doStopProcessing(const Owner*) {};
 
@@ -279,8 +280,7 @@ namespace evb {
                                        &StateMachine<Owner>::eventOutOfSequence>,
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::dataLoss>,
-        boost::statechart::in_state_reaction< Recovered >
+                                       &StateMachine<Owner>::dataLoss>
         > reactions;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
@@ -365,18 +365,21 @@ namespace evb {
         boost::statechart::transition< Recovered,Enabled<Owner> >
         > reactions;
 
-      IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c)
+      IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c), nbMissingFeds_(0)
       { this->safeEntryAction(); }
       virtual ~IncompleteEvents()
       { this->safeExitAction(); }
 
       virtual void entryAction();
       virtual void exitAction();
+      void addMissingFed() { ++nbMissingFeds_; }
+      bool removeMissingFed() { return ( --nbMissingFeds_ == 0); }
 
     private:
 
       void timeoutActivity();
       boost::scoped_ptr<boost::thread> timeoutThread_;
+      uint32_t nbMissingFeds_;
 
     };
 
@@ -394,13 +397,17 @@ namespace evb {
       typedef boost::mpl::list<
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::dataLoss>
+                                       &StateMachine<Owner>::dataLoss>,
+        boost::statechart::custom_reaction< Recovered >
         > reactions;
 
       MissingData(typename my_state::boost_state::my_context c) : my_state("MissingData", c)
       { this->safeEntryAction(); }
       virtual ~MissingData()
       { this->safeExitAction(); }
+
+      virtual void entryAction();
+      virtual boost::statechart::result react(const Recovered&);
 
     };
 
@@ -629,6 +636,23 @@ void evb::readoutunit::IncompleteEvents<Owner>::timeoutActivity()
   XCEPT_DECLARE(exception::FSM,
                 sentinelException, msg.str() );
   stateMachine.processFSMEvent( Fail(sentinelException) );
+}
+
+
+template<class Owner>
+void evb::readoutunit::MissingData<Owner>::entryAction()
+{
+  this->template context< IncompleteEvents<Owner> >().addMissingFed();
+}
+
+
+template<class Owner>
+boost::statechart::result evb::readoutunit::MissingData<Owner>::react(const Recovered& event)
+{
+  if ( this->template context< IncompleteEvents<Owner> >().removeMissingFed() )
+    return this->template transit< Enabled<Owner> >();
+  else
+    return this->template discard_event();
 }
 
 
