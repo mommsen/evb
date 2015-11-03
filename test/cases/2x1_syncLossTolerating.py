@@ -13,11 +13,11 @@ class case_2x1_syncLossTolerating(TestCase):
         self.checkBU(16384)
 
 
-    def causeSyncLoss(self,app):
-        if app == "EVM":
-            fed=2
+    def causeSyncLoss(self,fed):
+        if fed in range(0,4):
+            app = "EVM"
         else:
-            fed=7
+            app = "RU"
         resyncAtEvent = self.getEventInFuture()
         self.setAppParam('resyncAtEvent','unsignedInt',resyncAtEvent,'FEROL',fed)
         sys.stdout.write("Resync on FED "+str(fed)+" at event "+str(resyncAtEvent))
@@ -50,6 +50,8 @@ class case_2x1_syncLossTolerating(TestCase):
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
+        time.sleep(10)
+        self.checkAppState("Failed",app)
 
 
     def runTest(self):
@@ -62,14 +64,14 @@ class case_2x1_syncLossTolerating(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
 
-        self.causeSyncLoss("EVM")
+        self.causeSyncLoss(2)
         self.haltEvB()
         time.sleep(1)
 
         self.configureEvB()
         self.enableEvB(runNumber=2)
         self.checkIt()
-        self.causeSyncLoss("RU")
+        self.causeSyncLoss(7)
         self.haltEvB()
 
 
@@ -77,7 +79,8 @@ class case_2x1_syncLossTolerating(TestCase):
         evm = RU(symbolMap,[
              ('inputSource','string','Socket'),
              ('tolerateOutOfSequenceEvents','boolean','true'),
-             ('checkCRC','unsignedInt','0')
+             ('checkCRC','unsignedInt','0'),
+             ('maxTimeWithIncompleteEvents','unsignedInt','5')
             ])
         for id in range(0,4):
             self._config.add( FEROL(symbolMap,evm,id) )
@@ -85,7 +88,8 @@ class case_2x1_syncLossTolerating(TestCase):
         ru = RU(symbolMap,[
              ('inputSource','string','Socket'),
              ('tolerateOutOfSequenceEvents','boolean','true'),
-             ('checkCRC','unsignedInt','0')
+             ('checkCRC','unsignedInt','0'),
+             ('maxTimeWithIncompleteEvents','unsignedInt','5')
             ])
         for id in range(4,8):
             self._config.add( FEROL(symbolMap,ru,id) )

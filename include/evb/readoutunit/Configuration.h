@@ -73,6 +73,7 @@ namespace evb {
       xdata::Boolean tolerateOutOfSequenceEvents;            // Tolerate events out of sequence
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
       xdata::UnsignedInteger32 ferolConnectTimeOut;          // Timeout in seconds when waiting for FEROL connections
+      xdata::UnsignedInteger32 maxTimeWithIncompleteEvents;  // Build incomplete events for at most this time in seconds
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -103,7 +104,8 @@ namespace evb {
           tolerateCorruptedEvents(false),
           tolerateOutOfSequenceEvents(false),
           maxDumpsPerFED(10),
-          ferolConnectTimeOut(5)
+          ferolConnectTimeOut(5),
+          maxTimeWithIncompleteEvents(60)
       {};
 
       void addToInfoSpace
@@ -143,6 +145,7 @@ namespace evb {
         params.add("tolerateOutOfSequenceEvents", &tolerateOutOfSequenceEvents);
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
         params.add("ferolConnectTimeOut", &ferolConnectTimeOut);
+        params.add("maxTimeWithIncompleteEvents", &maxTimeWithIncompleteEvents);
       }
 
     };

@@ -8,6 +8,7 @@
 #include <boost/statechart/transition.hpp>
 
 #include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
@@ -43,6 +44,8 @@ namespace evb {
     template<class> class Enabled;
     template<class> class Draining;
     template<class> class SyncLoss;
+    template<class> class IncompleteEvents;
+    // Inner statees of IncompleteEvents
     template<class> class MissingData;
 
     template<class> class StateMachine;
@@ -276,7 +279,8 @@ namespace evb {
                                        &StateMachine<Owner>::eventOutOfSequence>,
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::dataLoss>
+                                       &StateMachine<Owner>::dataLoss>,
+        boost::statechart::in_state_reaction< Recovered >
         > reactions;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
@@ -348,28 +352,55 @@ namespace evb {
 
 
     /**
-     * The MissingData state of the outer-state Running.
+     * The IncompleteEvents state of the outer-state Running.
      */
     template<class Owner>
-    class MissingData: public EvBState< MissingData<Owner>,Running<Owner> >
+    class IncompleteEvents: public EvBState< IncompleteEvents<Owner>,Running<Owner>,boost::mpl::list< MissingData<Owner> > >
     {
 
     public:
 
-      typedef EvBState< MissingData<Owner>,Running<Owner> > my_state;
+      typedef EvBState< IncompleteEvents<Owner>,Running<Owner>,boost::mpl::list< MissingData<Owner> > > my_state;
+      typedef boost::mpl::list<
+        boost::statechart::transition< Recovered,Enabled<Owner> >
+        > reactions;
+
+      IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c)
+      { this->safeEntryAction(); }
+      virtual ~IncompleteEvents()
+      { this->safeExitAction(); }
+
+      virtual void entryAction();
+      virtual void exitAction();
+
+    private:
+
+      void timeoutActivity();
+      boost::scoped_ptr<boost::thread> timeoutThread_;
+
+    };
+
+
+    /**
+     * The MissingData state of the outer-state IncompleteEvents.
+     */
+    template<class Owner>
+    class MissingData: public EvBState< MissingData<Owner>,IncompleteEvents<Owner> >
+    {
+
+    public:
+
+      typedef EvBState< MissingData<Owner>,IncompleteEvents<Owner> > my_state;
       typedef boost::mpl::list<
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
-                                       &StateMachine<Owner>::dataLoss>,
-        boost::statechart::transition< Recovered,Enabled<Owner> >
+                                       &StateMachine<Owner>::dataLoss>
         > reactions;
 
       MissingData(typename my_state::boost_state::my_context c) : my_state("MissingData", c)
       { this->safeEntryAction(); }
       virtual ~MissingData()
       { this->safeExitAction(); }
-
-      virtual void exitAction();
 
     };
 
@@ -557,9 +588,47 @@ void evb::readoutunit::SyncLoss<Owner>::exitAction()
 
 
 template<class Owner>
-void evb::readoutunit::MissingData<Owner>::exitAction()
+void evb::readoutunit::IncompleteEvents<Owner>::entryAction()
 {
+  timeoutThread_.reset(
+    new boost::thread( boost::bind( &evb::readoutunit::IncompleteEvents<Owner>::timeoutActivity, this) )
+  );
+}
+
+
+template<class Owner>
+void evb::readoutunit::IncompleteEvents<Owner>::exitAction()
+{
+  timeoutThread_->interrupt();
+  timeoutThread_->detach();
   this->outermost_context().clearError();
+}
+
+
+template<class Owner>
+void evb::readoutunit::IncompleteEvents<Owner>::timeoutActivity()
+{
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  const boost::posix_time::time_duration maxTimeWithIncompleteEvents =
+    boost::posix_time::seconds(stateMachine.getOwner()->getConfiguration()->maxTimeWithIncompleteEvents);
+
+  if ( maxTimeWithIncompleteEvents.total_seconds() == 0 ) return;
+
+  try
+  {
+    boost::this_thread::sleep(maxTimeWithIncompleteEvents);
+  }
+  catch(boost::thread_interrupted)
+  {
+    // State was exited before timeout kicked in
+    return;
+  }
+
+  std::ostringstream msg;
+  msg << "Built incomplete events for more than " << maxTimeWithIncompleteEvents.total_seconds() << " seconds";
+  XCEPT_DECLARE(exception::FSM,
+                sentinelException, msg.str() );
+  stateMachine.processFSMEvent( Fail(sentinelException) );
 }
 
 
