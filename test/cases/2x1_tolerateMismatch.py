@@ -63,8 +63,8 @@ class case_2x1_tolerateMismatch(TestCase):
 
     def runTest(self):
         self.startEvB()
-        print("Skipping an event on FED 2")
-        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',2)
+        print("Skipping 6 events on FED 2")
+        self.setAppParam('skipNbEvents','unsignedInt','6','FEROL',2)
         time.sleep(7)
         self.checkMissing([2])
         self.sendResync()
@@ -73,8 +73,8 @@ class case_2x1_tolerateMismatch(TestCase):
         time.sleep(1)
 
         self.startEvB()
-        print("Duplicate an event on FED 1")
-        self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',1)
+        print("Duplicate 9 events on FED 1")
+        self.setAppParam('duplicateNbEvents','unsignedInt','9','FEROL',1)
         time.sleep(7)
         self.checkMissing([1])
         self.sendResync()
@@ -83,11 +83,35 @@ class case_2x1_tolerateMismatch(TestCase):
         time.sleep(1)
 
         self.startEvB()
-        print("Skipping an event on FED 5")
-        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',5)
+        print("Skipping 3 events on FED 5")
+        self.setAppParam('skipNbEvents','unsignedInt','3','FEROL',5)
         time.sleep(7)
         self.checkMissing([5])
         self.haltEvB()
+        time.sleep(1)
+
+        self.startEvB()
+        print("Duplicate 4 events on FED 6")
+        self.setAppParam('duplicateNbEvents','unsignedInt','4','FEROL',6)
+        time.sleep(7)
+        self.checkMissing([6])
+        self.stopEvB()
+        time.sleep(1)
+
+        self.startEvB()
+        print("Skipping 5 events on FED 7")
+        self.setAppParam('skipNbEvents','unsignedInt','5','FEROL',7)
+        time.sleep(7)
+        self.checkMissing([7])
+        self.stopEvB()
+        time.sleep(1)
+
+        self.startEvB()
+        print("Skipping an event on FED 3")
+        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',3)
+        time.sleep(7)
+        self.checkMissing([3])
+        self.stopEvB()
         time.sleep(1)
 
         self.startEvB()
@@ -95,8 +119,8 @@ class case_2x1_tolerateMismatch(TestCase):
         self.setAppParam('duplicateNbEvents','unsignedInt','1','FEROL',4)
         time.sleep(7)
         self.checkMissing([4])
-        print("Skipping an event on FED 6")
-        self.setAppParam('skipNbEvents','unsignedInt','1','FEROL',6)
+        print("Skipping 7 events on FED 6")
+        self.setAppParam('skipNbEvents','unsignedInt','7','FEROL',6)
         time.sleep(7)
         self.checkMissing([4,6])
         self.sendResync()
@@ -157,7 +181,8 @@ class case_2x1_tolerateMismatch(TestCase):
         evm = RU(symbolMap,[
              ('inputSource','string','Socket'),
              ('tolerateOutOfSequenceEvents','boolean','true'),
-             ('checkCRC','unsignedInt','0')
+             ('checkCRC','unsignedInt','0'),
+             ('maxTimeWithIncompleteEvents','unsignedInt','0')
             ])
         for id in range(0,4):
             self._config.add( FEROL(symbolMap,evm,id,[
@@ -167,7 +192,8 @@ class case_2x1_tolerateMismatch(TestCase):
         ru = RU(symbolMap,[
              ('inputSource','string','Socket'),
              ('tolerateOutOfSequenceEvents','boolean','true'),
-             ('checkCRC','unsignedInt','0')
+             ('checkCRC','unsignedInt','0'),
+             ('maxTimeWithIncompleteEvents','unsignedInt','0')
             ])
         for id in range(4,8):
             self._config.add( FEROL(symbolMap,ru,id,[
