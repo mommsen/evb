@@ -87,7 +87,7 @@ void evb::EvBidFactory::resyncAtEvent(const uint32_t eventNumber)
 
 evb::EvBid evb::EvBidFactory::getEvBid()
 {
-  if ( previousEventNumber_ == resyncAtEventNumber_ )
+  if ( previousEventNumber_ >= resyncAtEventNumber_ )
   {
     resyncAtEventNumber_ = 1 << 25;
     return getEvBid(1,1);
