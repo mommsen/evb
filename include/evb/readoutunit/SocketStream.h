@@ -69,11 +69,6 @@ namespace evb {
       const typename Configuration::FerolSource* getFerolSource() const
       { return ferolSource_; }
 
-      /**
-       * Return the content of the socket and fragment FIFO as HTML snipped
-       */
-      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const;
-
 
     private:
 
@@ -247,16 +242,6 @@ void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
   socketBufferFIFO_.clear();
   currentFragment_.reset();
   this->fragmentFIFO_.clear();
-}
-
-
-template<class ReadoutUnit,class Configuration>
-cgicc::div evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::getHtmlSnippedForFragmentFIFO() const
-{
-  cgicc::div div;
-  div.add( socketBufferFIFO_.getHtmlSnipped() );
-  div.add( this->fragmentFIFO_.getHtmlSnipped() );
-  return div;
 }
 
 #endif // _evb_readoutunit_SocketStream_h_
