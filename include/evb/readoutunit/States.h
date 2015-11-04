@@ -617,12 +617,15 @@ void evb::readoutunit::IncompleteEvents<Owner>::timeoutActivity()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const boost::posix_time::time_duration maxTimeWithIncompleteEvents =
     boost::posix_time::seconds(stateMachine.getOwner()->getConfiguration()->maxTimeWithIncompleteEvents);
+  const Owner* owner = stateMachine.getOwner();
 
   if ( maxTimeWithIncompleteEvents.total_seconds() == 0 ) return;
 
   try
   {
-    boost::this_thread::sleep(maxTimeWithIncompleteEvents);
+    do
+      boost::this_thread::sleep(maxTimeWithIncompleteEvents);
+    while ( owner->getInput()->getEventRate() == 0 );
   }
   catch(boost::thread_interrupted)
   {
