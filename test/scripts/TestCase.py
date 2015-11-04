@@ -350,13 +350,12 @@ class TestCase:
 
 
     def getEventInFuture(self):
+        sleep(2)
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         sleep(2)
         eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
-        sleep(2)
-        eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        return lastEvent + max(2*eventRate,10000)
+        return lastEvent + max(3*eventRate,10000)
 
 
 
