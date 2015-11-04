@@ -189,8 +189,8 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
   for ( uint32_t i = 0; i < skipNbEvents; ++i )
   {
     evbId_ = evbIdFactory_.getEvBid();
-    skipNbEvents = 0;
   }
+  skipNbEvents = 0;
 
   try
   {
