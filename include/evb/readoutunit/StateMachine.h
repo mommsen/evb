@@ -1,6 +1,8 @@
 #ifndef _evb_readoutunit_StateMachine_h_
 #define _evb_readoutunit_StateMachine_h_
 
+#include <set>
+
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
@@ -48,16 +50,27 @@ namespace evb {
     class DataLoss : public boost::statechart::event<DataLoss>
     {
     public:
-      DataLoss(xcept::Exception& exception) : exception_(exception) {};
+      DataLoss(xcept::Exception& exception, const uint16_t fedId)
+        : exception_(exception), fedId_(fedId) {};
       std::string getReason() const { return exception_.message(); }
       std::string getTraceback() const { return xcept::stdformat_exception_history(exception_); }
       xcept::Exception& getException() const { return exception_; }
+      uint16_t getFedId() const { return fedId_; }
 
     private:
       mutable xcept::Exception exception_;
+      const uint16_t fedId_;
     };
 
-    class Recovered: public boost::statechart::event<Recovered> {};
+    class Recovered: public boost::statechart::event<Recovered>
+    {
+    public:
+      Recovered(const uint16_t fedId) : fedId_(fedId) {};
+      uint16_t getFedId() const { return fedId_; }
+
+    private:
+      const uint16_t fedId_;
+    };
 
 
     ///////////////////////
@@ -78,12 +91,16 @@ namespace evb {
       void eventOutOfSequence(const EventOutOfSequence& evt);
       void dataLoss(const DataLoss& evt);
 
-      Owner* getOwner() const
-      { return owner_; }
+      Owner* getOwner() const { return owner_; }
+      bool hasMissingFeds() const { return !missingFeds_.empty(); }
+      bool removeMissingFed(const uint16_t fedId);
+      void resetMissingFeds() { missingFeds_.clear(); }
 
     private:
 
       Owner* owner_;
+      typedef std::set<uint16_t> MissingFeds;
+      MissingFeds missingFeds_;
 
     };
 
@@ -158,6 +175,7 @@ void evb::readoutunit::StateMachine<Owner>::dataLoss(const DataLoss& evt)
 {
   this->reasonForError_ = evt.getTraceback();
   LOG4CPLUS_ERROR(this->getLogger(), "MissingData: " << this->reasonForError_);
+  missingFeds_.insert( evt.getFedId() );
 
   try
   {
@@ -176,6 +194,14 @@ void evb::readoutunit::StateMachine<Owner>::dataLoss(const DataLoss& evt)
   {
     LOG4CPLUS_FATAL(this->getLogger(),"Failed to notify the sentinel about SyncLoss!");
   }
+}
+
+
+template<class Owner>
+bool evb::readoutunit::StateMachine<Owner>::removeMissingFed(const uint16_t fedId)
+{
+  missingFeds_.erase(fedId);
+  return missingFeds_.empty();
 }
 
 

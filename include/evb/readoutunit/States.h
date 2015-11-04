@@ -336,6 +336,7 @@ namespace evb {
 
       typedef EvBState< SyncLoss<Owner>,Running<Owner> > my_state;
       typedef boost::mpl::list<
+        boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::in_state_reaction< MismatchDetected >,
         boost::statechart::in_state_reaction< EventOutOfSequence >
         > reactions;
@@ -362,24 +363,22 @@ namespace evb {
 
       typedef EvBState< IncompleteEvents<Owner>,Running<Owner>,boost::mpl::list< MissingData<Owner> > > my_state;
       typedef boost::mpl::list<
+        boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::transition< Recovered,Enabled<Owner> >
         > reactions;
 
-      IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c), nbMissingFeds_(0)
+      IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c)
       { this->safeEntryAction(); }
       virtual ~IncompleteEvents()
       { this->safeExitAction(); }
 
       virtual void entryAction();
       virtual void exitAction();
-      void addMissingFed() { ++nbMissingFeds_; }
-      bool removeMissingFed() { return ( --nbMissingFeds_ == 0); }
 
     private:
 
       void timeoutActivity();
       boost::scoped_ptr<boost::thread> timeoutThread_;
-      uint32_t nbMissingFeds_;
 
     };
 
@@ -406,7 +405,6 @@ namespace evb {
       virtual ~MissingData()
       { this->safeExitAction(); }
 
-      virtual void entryAction();
       virtual boost::statechart::result react(const Recovered&);
 
     };
@@ -491,6 +489,7 @@ void evb::readoutunit::Running<Owner>::entryAction()
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   const Owner* owner = stateMachine.getOwner();
   const uint32_t runNumber = stateMachine.getRunNumber();
+  stateMachine.resetMissingFeds();
 
   owner->getFerolConnectionManager()->startProcessing();
   owner->getInput()->startProcessing(runNumber);
@@ -539,8 +538,8 @@ void evb::readoutunit::Draining<Owner>::activity()
   std::string msg = "Failed to drain the components";
   try
   {
-    if (doDraining_) owner->getFerolConnectionManager()->drain();
     if (doDraining_) owner->getInput()->drain();
+    if (doDraining_) owner->getFerolConnectionManager()->drain();
     if (doDraining_) owner->getBUproxy()->drain();
     if (doDraining_) doDraining(owner);
 
@@ -640,16 +639,11 @@ void evb::readoutunit::IncompleteEvents<Owner>::timeoutActivity()
 
 
 template<class Owner>
-void evb::readoutunit::MissingData<Owner>::entryAction()
-{
-  this->template context< IncompleteEvents<Owner> >().addMissingFed();
-}
-
-
-template<class Owner>
 boost::statechart::result evb::readoutunit::MissingData<Owner>::react(const Recovered& event)
 {
-  if ( this->template context< IncompleteEvents<Owner> >().removeMissingFed() )
+  typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+
+  if ( stateMachine.removeMissingFed( event.getFedId() ) )
     return this->template transit< Enabled<Owner> >();
   else
     return this->template discard_event();

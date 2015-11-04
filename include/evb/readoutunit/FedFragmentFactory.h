@@ -233,7 +233,7 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
       if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
         writeFragmentToFile(fedFragment,e.message());
 
-      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e,fedFragment->getFedId()) );
     }
     else
     {
@@ -251,7 +251,7 @@ bool evb::readoutunit::FedFragmentFactory<ReadoutUnit>::errorHandler(const FedFr
       if ( ++fedErrors_.nbDumps <= readoutUnit_->getConfiguration()->maxDumpsPerFED )
         writeFragmentToFile(fedFragment,e.message());
 
-      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e,fedFragment->getFedId()) );
     }
     else
     {

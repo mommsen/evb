@@ -122,7 +122,7 @@ namespace evb {
       /**
        * Return the content of the fragment FIFO as HTML snipped
        */
-      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const
+      cgicc::div getHtmlSnippedForFragmentFIFO() const
       { return fragmentFIFO_.getHtmlSnipped(); }
 
 
@@ -288,38 +288,48 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
       // the master has resync'd after the FED
       fedFragment.swap(firstFragmentAfterResync_);
       syncLoss_ = false;
-      readoutUnit_->getStateMachine()->processFSMEvent( Recovered() );
+      readoutUnit_->getStateMachine()->processFSMEvent( Recovered(fedId_) );
     }
   }
   else
   {
-    while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
-
-    if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
-    {
-      // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
-      syncLoss_ = true;
-      superFragment->discardFedId(fedId_);
-      return;
-    }
-
     if ( syncLoss_ )
     {
       if ( superFragment->getEvBid().resynced() )
       {
         // the master has resync'd. Pull FED data until the FED resync'd, too.
-        while ( ! fedFragment->getEvBid().resynced() &&
-                ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+        do
+        {
+          while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+        }
+        while ( ! fedFragment->getEvBid().resynced() );
         syncLoss_ = false;
-        readoutUnit_->getStateMachine()->processFSMEvent( Recovered() );
+        readoutUnit_->getStateMachine()->processFSMEvent( Recovered(fedId_) );
       }
       else
       {
         // keep discarding the events until we see a resync
-        if ( fedFragment->getEvBid().resynced() )
-          firstFragmentAfterResync_.swap(fedFragment);
-        else
-          superFragment->discardFedId(fedId_);
+        while ( getNextFedFragment(fedFragment) )
+        {
+          if ( fedFragment->getEvBid().resynced() )
+          {
+            firstFragmentAfterResync_.swap(fedFragment);
+            return;
+          }
+        }
+        superFragment->discardFedId(fedId_);
+        return;
+      }
+    }
+    else
+    {
+      while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+
+      if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
+      {
+        // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
+        syncLoss_ = true;
+        superFragment->discardFedId(fedId_);
         return;
       }
     }
@@ -350,7 +360,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
     if ( readoutUnit_->getConfiguration()->tolerateOutOfSequenceEvents
          && !isMasterStream_ )
     {
-      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e) );
+      readoutUnit_->getStateMachine()->processFSMEvent( DataLoss(e,fedId_) );
     }
     else
     {
