@@ -476,6 +476,7 @@ evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
     {
       updateCounters(bufRef);
       sendData(bufRef);
+      ::usleep(1000);
     }
   }
   catch(xcept::Exception &e)
@@ -486,7 +487,7 @@ evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
 
   sendingActive_ = false;
 
-  ::usleep(10);
+  ::usleep(1000);
 
   return doProcessing_;
 }
