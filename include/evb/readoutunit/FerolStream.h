@@ -275,25 +275,39 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
   FedFragmentPtr fedFragment;
-  if ( syncLoss_ && firstFragmentAfterResync_ )
+
+  if ( ! syncLoss_ )
   {
-    // keep discarding data until the master has resync'd
-    if ( ! superFragment->getEvBid().resynced() )
+    while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
+
+    if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
     {
+      // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
+      syncLoss_ = true;
       superFragment->discardFedId(fedId_);
       return;
-    }
-    else
-    {
-      // the master has resync'd after the FED
-      fedFragment.swap(firstFragmentAfterResync_);
-      syncLoss_ = false;
-      readoutUnit_->getStateMachine()->processFSMEvent( Recovered(fedId_) );
     }
   }
   else
   {
-    if ( syncLoss_ )
+    if ( firstFragmentAfterResync_ )
+    {
+      // the FED has already resync'd
+      if ( superFragment->getEvBid().resynced() )
+      {
+        // the master has resync'd, too
+        fedFragment.swap(firstFragmentAfterResync_);
+        syncLoss_ = false;
+        readoutUnit_->getStateMachine()->processFSMEvent( Recovered(fedId_) );
+      }
+      else
+      {
+        // keep discarding data until the master has resync'd
+        superFragment->discardFedId(fedId_);
+        return;
+      }
+    }
+    else
     {
       if ( superFragment->getEvBid().resynced() )
       {
@@ -317,18 +331,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
             return;
           }
         }
-        superFragment->discardFedId(fedId_);
-        return;
-      }
-    }
-    else
-    {
-      while ( ! getNextFedFragment(fedFragment) ) { sched_yield(); }
-
-      if ( fedFragment->isOutOfSequence() || fedFragment->isCorrupted() )
-      {
-        // if we get these here, we tolerated them. Thus just mark them as discarded in the super fragment
-        syncLoss_ = true;
         superFragment->discardFedId(fedId_);
         return;
       }
