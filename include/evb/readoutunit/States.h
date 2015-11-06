@@ -645,11 +645,20 @@ template<class Owner>
 boost::statechart::result evb::readoutunit::MissingData<Owner>::react(const Recovered& event)
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
+  std::ostringstream msg;
+  msg << "FED " << event.getFedId() << " resynced";
 
   if ( stateMachine.removeMissingFed( event.getFedId() ) )
+  {
+    msg << ", going back to Enabled";
+    LOG4CPLUS_INFO(stateMachine.getLogger(),msg.str());
     return this->template transit< Enabled<Owner> >();
+  }
   else
+  {
+    LOG4CPLUS_INFO(stateMachine.getLogger(),msg.str());
     return this->template discard_event();
+  }
 }
 
 
