@@ -189,6 +189,7 @@ evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUni
   return FedFragmentPtr(
     new FedFragment(fedId,
                     isMasterFed,
+                    readoutUnit_->getSubSystem(),
                     evbIdFactory_,
                     readoutUnit_->getConfiguration()->checkCRC,
                     fedErrors_.fedErrors,

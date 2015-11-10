@@ -646,7 +646,7 @@ boost::statechart::result evb::readoutunit::MissingData<Owner>::react(const Reco
 {
   typename my_state::outermost_context_type& stateMachine = this->outermost_context();
   std::ostringstream msg;
-  msg << "FED " << event.getFedId() << " resynced";
+  msg << "FED " << event.getFedId() << " (" << stateMachine.getOwner()->getSubSystem() << ") resynced";
 
   if ( stateMachine.removeMissingFed( event.getFedId() ) )
   {

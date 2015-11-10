@@ -75,6 +75,7 @@ namespace evb {
 
     toolbox::net::URN getURN() const { return urn_; }
     std::string getIdentifier(const std::string& suffix = "") const;
+    std::string getSubSystem() const { return subSystem_; }
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
 

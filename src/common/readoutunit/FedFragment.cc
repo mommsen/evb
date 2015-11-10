@@ -11,6 +11,7 @@ evb::readoutunit::FedFragment::FedFragment
 (
   const uint16_t fedId,
   const bool isMasterFed,
+  const std::string subSystem,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
   uint32_t& fedErrorCount,
@@ -20,6 +21,7 @@ evb::readoutunit::FedFragment::FedFragment
     evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
     fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
     fedId_(fedId),isMasterFed_(isMasterFed),
+    subSystem_(subSystem),
     bxId_(FED_BXID_WIDTH+1),
     eventNumber_(0),fedSize_(0),
     isCorrupted_(false),isOutOfSequence_(false),
@@ -307,6 +309,7 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     msg << "Expected FEROL header signature " << std::hex << FEROL_SIGNATURE;
     msg << ", but found " << std::hex << ferolHeader->signature();
     msg << " in FED " << std::dec << fedId_;
+    msg << " (" << subSystem_ << ")";
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
@@ -330,7 +333,7 @@ void evb::readoutunit::FedFragment::checkFerolHeader(const ferolh_t* ferolHeader
     if ( ! errorMsg_.empty() )
       msg << ", and ";
     msg << "mismatch of FED id in FEROL header:";
-    msg << " expected FED " << fedId_ << ", but got " << ferolHeader->fed_id();
+    msg << " expected FED " << fedId_ << " (" << subSystem_ << "), but got " << ferolHeader->fed_id();
     errorMsg_ += msg.str();
   }
 }
@@ -347,6 +350,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     msg << " and source id 0x" << fedHeader->sourceid;
     msg << " for event " << std::dec << eventNumber_;
     msg << " from FED " << fedId_;
+    msg << " (" << subSystem_ << ")";
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
 
@@ -370,7 +374,7 @@ void evb::readoutunit::FedFragment::checkFedHeader(const fedh_t* fedHeader)
     if ( ! errorMsg_.empty() )
       msg << ", and ";
     msg << "FED header \"sourceId\" " << sourceId;
-    msg << " does not match the FED " << fedId_ << " found in FEROL header";
+    msg << " does not match the FED " << fedId_ << " (" << subSystem_ << ") found in FEROL header";
     errorMsg_ += msg.str();
   }
 }
@@ -387,6 +391,7 @@ void evb::readoutunit::FedFragment::checkFedTrailer(fedt_t* fedTrailer)
     msg << " and conscheck 0x" << fedTrailer->conscheck;
     msg << " for event " << std::dec << eventNumber_;
     msg << " from FED " << fedId_;
+    msg << " (" << subSystem_ << ")";
     msg << " with expected size " << fedSize_ << " Bytes";
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
@@ -497,28 +502,28 @@ void evb::readoutunit::FedFragment::reportErrors() const
   if ( isCorrupted_ )
   {
     std::ostringstream msg;
-    msg << "Received a corrupted event " << eventNumber_ << " from FED " << fedId_ << ": ";
+    msg << "Received a corrupted event " << eventNumber_ << " from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::DataCorruption, msg.str());
   }
   else if ( isOutOfSequence_ )
   {
     std::ostringstream msg;
-    msg << "Received an event out of sequence from FED " << fedId_ << ": ";
+    msg << "Received an event out of sequence from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::EventOutOfSequence, msg.str());
   }
   else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
   {
     std::ostringstream msg;
-    msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << ": ";
+    msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::CRCerror, msg.str());
   }
   else if ( hasFEDerror_ && evb::isFibonacci( ++fedErrorCount_ ) )
   {
     std::ostringstream msg;
-    msg << "Received " << fedErrorCount_ << " bad events from FED " << fedId_ << ": ";
+    msg << "Received " << fedErrorCount_ << " bad events from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::FEDerror, msg.str());
   }
@@ -561,6 +566,7 @@ void evb::readoutunit::FedFragment::dump
   s << "Buffer size          (dec): " << copiedSize << std::endl;
   s << "FED size             (dec): " << fedSize_ << std::endl;
   s << "FED id               (dec): " << fedId_ << std::endl;
+  s << "SubSystem                 : " << subSystem_ << std::endl;
   s << "Trigger no           (dec): " << eventNumber_ << std::endl;
   if ( evbId_.isValid() )
     s << "EvB id                    : " << evbId_ << std::endl;
