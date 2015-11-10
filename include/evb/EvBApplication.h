@@ -3,6 +3,7 @@
 
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <map>
@@ -33,6 +34,7 @@
 #include "xdata/ActionListener.h"
 #include "xdata/InfoSpace.h"
 #include "xdata/InfoSpaceFactory.h"
+#include "xdata/Properties.h"
 #include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xgi/framework/Method.h"
@@ -110,6 +112,7 @@ namespace evb {
     boost::shared_ptr<StateMachine> stateMachine_;
     xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
 
+    std::string subSystem_;
     const toolbox::net::URN urn_;
     const std::string xmlClass_;
     xdata::UnsignedInteger32 instance_;
@@ -164,6 +167,7 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
   xgi::framework::UIManager(this),
   configuration_(new Configuration()),
   soapParameterExtractor_(this),
+  subSystem_("unknown subsystem"),
   urn_(getApplicationDescriptor()->getURN()),
   xmlClass_(getApplicationDescriptor()->getClassName()),
   instance_(getApplicationDescriptor()->getInstance())
@@ -219,6 +223,23 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
     appendApplicationInfoSpaceItems(appInfoSpaceParams);
 
     appInfoSpaceParams.putIntoInfoSpace(appInfoSpace, this);
+
+    try
+    {
+      xdata::Properties* properties = static_cast<xdata::Properties*>( appInfoSpace->find("descriptor") );
+      std::string group = properties->getProperty("group");
+      const boost::regex regex("subs_([a-zA-Z0-9]+)");
+      boost::regex_token_iterator<std::string::iterator> it(group.begin(), group.end(), regex, 1);
+      boost::regex_token_iterator<std::string::iterator> end;
+      std::string systems = "";
+      while ( it != end )
+      {
+        systems += *it++ + "/";
+      }
+      if ( ! systems.empty() )
+        subSystem_ = systems.substr(0,systems.size()-1);
+    }
+    catch(xdata::exception::Exception) {}
   }
   catch(xcept::Exception& e)
   {
