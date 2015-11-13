@@ -43,9 +43,7 @@ class XDAQprocess:
         self._applications.append((app,instance))
 
     def create(self,xmlConfig):
-        runArgs =[ "numactl",
-                   "--physcpubind=!11,27",
-                   "xdaq.exe",
+        runArgs =[ "xdaq.exe",
                    "-p "+str(self._port),
                    "-lDEBUG",
                    "-c "+xmlConfig]
