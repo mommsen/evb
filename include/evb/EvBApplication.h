@@ -229,7 +229,7 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
     {
       xdata::Properties* properties = static_cast<xdata::Properties*>( appInfoSpace->find("descriptor") );
       std::string group = properties->getProperty("group");
-      const boost::regex regex("subs_([a-zA-Z0-9]+)");
+      const boost::regex regex("subs_([a-zA-Z0-9_+-]+)");
       boost::regex_token_iterator<std::string::iterator> it(group.begin(), group.end(), regex, 1);
       boost::regex_token_iterator<std::string::iterator> end;
       std::string systems = "";
