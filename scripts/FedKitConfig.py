@@ -130,7 +130,7 @@ class FedKitConfig:
           <xc:Unicast class="evb::EVM" instance="0" network="ferol00" />
           <properties xmlns="urn:xdaq-application:evb::test::DummyFEROL" xsi:type="soapenc:Struct">
             <fedId xsi:type="xsd:unsignedInt">%(fedId)s</fedId>
-            <sourceHost xsi:type="xsd:string">localhost</sourceHost>
+            <sourceHost xsi:type="xsd:string">%(ferolSourceIP)s</sourceHost>
             <sourcePort xsi:type="xsd:unsignedInt">%(ferolSourcePort)s</sourcePort>
             <destinationHost xsi:type="xsd:string">%(ferolDestIP)s</destinationHost>
             <destinationPort xsi:type="xsd:unsignedInt">%(ferolDestPort)s</destinationPort>
@@ -164,7 +164,7 @@ class FedKitConfig:
         context = """
       <xc:Context url="http://%(xdaqHost)s:%(xdaqPort)s">
 
-         <xc:Endpoint affinity="RCV:P,SND:W,DSR:W,DSS:W" hostname="localhost" maxbulksize="131072" network="ferol" nonblock="true" pollingCycle="1" port="%(ferolDestPort)s" protocol="btcp" rcvTimeout="0" rmode="select" service="blit" singleThread="true" sndTimeout="2000" targetId="11" />
+         <xc:Endpoint affinity="RCV:P,SND:W,DSR:W,DSS:W" hostname="%(ferolDestIP)s" maxbulksize="131072" network="ferol" nonblock="true" pollingCycle="1" port="%(ferolDestPort)s" protocol="btcp" rcvTimeout="0" rmode="select" service="blit" singleThread="true" sndTimeout="2000" targetId="11" />
 
         <xc:Application class="pt::blit::Application" id="11" instance="0" network="local">
           <properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
