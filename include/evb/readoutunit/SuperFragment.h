@@ -22,7 +22,7 @@ namespace evb {
     {
     public:
 
-      SuperFragment(const EvBid&);
+      SuperFragment(const EvBid&, const std::string& subSystem);
 
       void discardFedId(const uint16_t fedId);
 
@@ -45,6 +45,7 @@ namespace evb {
     private:
 
       const EvBid evbId_;
+      const std::string subSystem_;
       uint32_t size_;
 
       MissingFedIds missingFedIds_;

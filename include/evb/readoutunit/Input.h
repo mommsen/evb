@@ -292,7 +292,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 
     if ( masterStream_ == ferolStreams_.end() || !masterStream_->second->getNextFedFragment(fedFragment) ) return false;
 
-    superFragment.reset( new SuperFragment(fedFragment->getEvBid()) );
+    superFragment.reset( new SuperFragment(fedFragment->getEvBid(),readoutUnit_->getSubSystem()) );
     superFragment->append(fedFragment);
 
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
@@ -314,7 +314,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::getNextAvailableSuperFr
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentWithEvBid(const EvBid& evbId, SuperFragmentPtr& superFragment)
 {
-  superFragment.reset( new SuperFragment(evbId) );
+  superFragment.reset( new SuperFragment(evbId,readoutUnit_->getSubSystem()) );
 
   {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);

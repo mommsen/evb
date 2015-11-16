@@ -4,8 +4,8 @@
 #include "evb/readoutunit/SuperFragment.h"
 
 
-evb::readoutunit::SuperFragment::SuperFragment(const EvBid& evbId)
-  : evbId_(evbId),size_(0)
+evb::readoutunit::SuperFragment::SuperFragment(const EvBid& evbId, const std::string& subSystem)
+  : evbId_(evbId),subSystem_(subSystem),size_(0)
 {}
 
 
@@ -27,7 +27,8 @@ bool evb::readoutunit::SuperFragment::append(const FedFragmentPtr& fedFragment)
     msg << "Mismatch detected: expected evb id "
       << evbId_ << ", but found evb id "
       << incomingEvBid << " in data block from FED "
-      << fedFragment->getFedId();
+      << fedFragment->getFedId()
+      << " (" << subSystem_ << ")";
     XCEPT_RAISE(exception::MismatchDetected, msg.str());
   }
 
