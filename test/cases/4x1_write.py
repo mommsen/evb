@@ -6,7 +6,7 @@ import sys
 import time
 
 from TestCase import TestCase
-from Configuration import RU,BU
+from Context import RU,BU
 
 
 class case_4x1_write(TestCase):

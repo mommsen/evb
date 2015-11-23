@@ -1,7 +1,7 @@
 import time
 
 from TestCase import *
-from Configuration import RU,BU
+from Context import RU,BU
 
 
 class case_2x2_failBU(TestCase):

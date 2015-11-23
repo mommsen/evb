@@ -36,11 +36,6 @@ class TestCase:
         sys.stdout = stdout
         self._config = Configuration.Configuration()
         self.fillConfiguration(symbolMap)
-        self._configCmd = self.createConfigureCmd()
-        print("**************************************")
-        print(self._configCmd)
-        print("**************************************")
-
 
 
     def __del__(self):
@@ -48,10 +43,10 @@ class TestCase:
             shutil.rmtree("/tmp/evb_test")
         except OSError:
             pass
-        for context in self._config.contexts:
+        for (soapHostname,soapPort,launcherPort) in self._config.contexts.keys():
             try:
-                print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                print(messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
+                print("Stopping XDAQ on "+soapHostname+":"+str(launcherPort))
+                print(messengers.sendCmdToLauncher("stopXDAQ",soapHostname,launcherPort,soapPort))
             except socket.error:
                 pass
         for file in glob.glob("/tmp/dump_*txt"):
@@ -62,16 +57,16 @@ class TestCase:
 
     def startXDAQs(self):
         try:
-            for context in self._config.contexts:
-                print("Starting XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                print(messengers.sendCmdToLauncher("startXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
+            for (soapHostname,soapPort,launcherPort) in self._config.contexts.keys():
+                print("Starting XDAQ on "+soapHostname+":"+str(launcherPort))
+                print(messengers.sendCmdToLauncher("startXDAQ",soapHostname,launcherPort,soapPort))
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 
-        for context in self._config.contexts:
-            sys.stdout.write("Checking "+context.apps['soapHostname']+":"+context.apps['soapPort']+" is listening")
+        for (soapHostname,soapPort,launcherPort) in self._config.contexts.keys():
+            sys.stdout.write("Checking "+soapHostname+":"+soapPort+" is listening")
             for x in xrange(10):
-                if messengers.webPing(context.apps['soapHostname'],context.apps['soapPort']):
+                if messengers.webPing(soapHostname,soapPort):
                     print(" okay")
                     break
                 else:
@@ -80,25 +75,18 @@ class TestCase:
                     sleep(1)
             else:
                 print(" NOPE")
-                raise LauncherException(context.apps['soapHostname']+":"+context.apps['soapPort']+" is not listening")
-
-
-    def createConfigureCmd(self):
-        cmd = """<xdaq:Configure xmlns:xdaq=\"urn:xdaq-soap:3.0\">"""
-        cmd += self._config.getPartition()
-        cmd += "</xdaq:Configure>"
-        return cmd
+                raise LauncherException(soapHostname+":"+soapPort+" is not listening")
 
 
     def sendCmdToExecutive(self):
         urn = "urn:xdaq-application:lid=0"
-        for context in self._config.contexts:
-            print("Configuring executive on "+context.apps['soapHostname']+":"+context.apps['soapPort'])
-            response = messengers.sendSoapMessage(context.apps['soapHostname'],context.apps['soapPort'],urn,self._configCmd);
+        for (soapHostname,soapPort,launcherPort) in self._config.contexts.keys():
+            print("Configuring executive on "+soapHostname+":"+soapPort)
+            response = messengers.sendSoapMessage(soapHostname,soapPort,urn,self._config.getConfigCmd((soapHostname,soapPort,launcherPort)));
             xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
             if len(xdaqResponse) != 1:
                 raise(messengers.SOAPexception("Did not get a proper configure response from "+
-                                                context.apps['soapHostname']+":"+context.apps['soapPort']+":\n"+
+                                                soapHostname+":"+soapPort+":\n"+
                                                 response.toprettyxml()))
 
     def sendStateCmd(self,cmd,newState,app,instance=None):

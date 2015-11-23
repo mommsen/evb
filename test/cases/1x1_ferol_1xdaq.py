@@ -1,7 +1,7 @@
 import time
 
 from TestCase import TestCase
-from Configuration import FEROL,RU,BU
+from Context import FEROL,RU,BU
 
 
 class case_1x1_ferol_1xdaq(TestCase):

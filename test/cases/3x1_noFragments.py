@@ -2,7 +2,7 @@ import operator
 import time
 
 from TestCase import *
-from Configuration import FEROL,RU,BU
+from Context import FEROL,RU,BU
 
 
 class case_3x1_noFragments(TestCase):

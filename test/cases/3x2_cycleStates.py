@@ -1,7 +1,7 @@
 import time
 
 from TestCase import TestCase
-from Configuration import RU,BU
+from Context import RU,BU
 
 
 class case_3x2_cycleStates(TestCase):

@@ -1,5 +1,5 @@
 from TestCase import *
-from Configuration import FEROL,RU
+from Context import FEROL,RU
 
 
 class case_2x1_dropInputData(TestCase):

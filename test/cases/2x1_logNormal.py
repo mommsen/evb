@@ -1,7 +1,7 @@
 import operator
 
 from TestCase import TestCase
-from Configuration import RU,BU
+from Context import RU,BU
 
 
 class case_2x1_logNormal(TestCase):
