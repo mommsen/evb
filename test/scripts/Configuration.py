@@ -5,10 +5,12 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import QName as QN
 
 import Context
+import SymbolMap
 
 class Configuration():
 
-    def __init__(self):
+    def __init__(self,symbolMap):
+        self.symbolMap = symbolMap
         self.contexts = {}
         self.configCmd = ""
         self.ptUtcp = []
@@ -17,9 +19,9 @@ class Configuration():
 
 
     def add(self,context):
-        contextKey = (context.apps['soapHostname'],context.apps['soapPort'],context.apps['launcherPort'])
-        self.contexts[contextKey] = context
         appInfo = dict((key,context.apps[key]) for key in ('app','instance','soapHostname','soapPort'))
+        contextKey = (appInfo['soapHostname'],appInfo['soapPort'])
+        self.contexts[contextKey] = context
         if context.role not in self.applications:
             self.applications[context.role] = []
         self.applications[context.role].append(copy.deepcopy(appInfo))
@@ -40,8 +42,6 @@ class Configuration():
 
 
     def getPartition(self):
-        print self.contexts
-        print self.applications
         partition = """
   <xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
@@ -64,6 +64,7 @@ class Configuration():
         partition += "  </xc:Partition>\n"
 
         return partition
+
 
     def getConfigCmd(self,key):
         if len(self.configCmd) == 0:
