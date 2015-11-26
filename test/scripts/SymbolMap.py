@@ -26,27 +26,30 @@ class SymbolMap:
             with open(self._symbolMapfile) as symbolMapFile:
                 for line in symbolMapFile:
                     if line.rstrip(): #skip empty lines
-                        (key,val) = line.split()
-                        if val == 'localhost':
-                            val = self._hostname
-                        self._map[key] = val
-                        if key == 'LAUNCHER_BASE_PORT':
-                            launcherPort = int(val)
                         try:
-                            hostType = hostTypeRegEx.findall(key)[0]
+                            (key,val) = line.split()
+                            if val == 'localhost':
+                                val = self._hostname
+                            self._map[key] = val
+                            if key == 'LAUNCHER_BASE_PORT':
+                                launcherPort = int(val)
+                            try:
+                                hostType = hostTypeRegEx.findall(key)[0]
 
-                            if val != previousVal:
-                                launcherPort += 1
-                                self.launchers.append((self._map[hostType + 'SOAP_HOST_NAME'],launcherPort))
-                                previousVal = val
+                                if val != previousVal:
+                                    launcherPort += 1
+                                    self.launchers.append((self._map[hostType + 'SOAP_HOST_NAME'],launcherPort))
+                                    previousVal = val
 
-                            self._map[hostType + 'LAUNCHER_PORT'] = str(launcherPort)
-                            self._map[hostType + 'SOAP_PORT']     = str(int(self._map['SOAP_BASE_PORT'])     + hostCount)
-                            self._map[hostType + 'I2O_PORT']      = str(int(self._map['I2O_BASE_PORT'])      + hostCount)
-                            self._map[hostType + 'FRL_PORT']      = str(int(self._map['FRL_BASE_PORT'])      + hostCount)
-                            self._map[hostType + 'FRL_PORT2']     = str(int(self._map['FRL_BASE_PORT']) + 50 + hostCount)
-                            hostCount += 1
-                        except IndexError:
+                                self._map[hostType + 'LAUNCHER_PORT'] = str(launcherPort)
+                                self._map[hostType + 'SOAP_PORT']     = str(int(self._map['SOAP_BASE_PORT'])     + hostCount)
+                                self._map[hostType + 'I2O_PORT']      = str(int(self._map['I2O_BASE_PORT'])      + hostCount)
+                                self._map[hostType + 'FRL_PORT']      = str(int(self._map['FRL_BASE_PORT'])      + hostCount)
+                                self._map[hostType + 'FRL_PORT2']     = str(int(self._map['FRL_BASE_PORT']) + 50 + hostCount)
+                                hostCount += 1
+                            except IndexError:
+                                pass
+                        except ValueError:
                             pass
 
         except EnvironmentError as e:
