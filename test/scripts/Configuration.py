@@ -6,6 +6,7 @@ from xml.etree.ElementTree import QName as QN
 
 import Context
 import SymbolMap
+import XMLtools
 
 class Configuration():
 
@@ -15,6 +16,7 @@ class Configuration():
         self.ptUtcp = []
         self.ptFrl = []
         self.applications = {}
+        self.xcns = 'http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30'
 
 
     def add(self,context):
@@ -59,61 +61,69 @@ class Configuration():
         return False
 
 
+    def getTargetElement(self,ns,apps):
+        target = ET.Element(QN(ns,'target'))
+        target.set('class',apps['app'])
+        target.set('instance',str(apps['instance']))
+        target.set('tid',str(apps['tid']))
+        return target
+
+
     def getTargets(self,key):
         myRole = self.contexts[key].role
-        target = ""
+        i2ons = "http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30"
+        protocol = ET.Element(QN(i2ons,'protocol'))
         for k,c in self.contexts.items():
             if self.isI2Otarget(key,k):
                 try:
-                    target += """      <i2o:target class="%(app)s" instance="%(instance)s" tid="%(tid)s"/>\n""" % c.apps
+                    protocol.append( self.getTargetElement(i2ons,c.apps) )
                 except KeyError: #No I2O tid assigned
                     pass
-        if len(target) == 0:
-            return ""
-        else:
-            return """    <i2o:protocol xmlns:i2o="http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30">\n""" + target +\
-                     "    </i2o:protocol>\n\n"
+                for nested in c.nestedContexts:
+                    protocol.append( self.getTargetElement(i2ons,nested.apps) )
+        return protocol
 
 
     def getPartition(self,key):
-        partition = """  <xc:Partition xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n"""
 
-        partition += self.getTargets(key)
+        partition = ET.Element(QN(self.xcns,'Partition'))
+
+        protocol = self.getTargets(key)
+        if len(protocol) > 0:
+            partition.append(protocol)
 
         for k,c in self.contexts.items():
-            context = ""
+            context = ET.Element(QN(self.xcns,'Context'))
+            context.set('url',"http://%(soapHostname)s:%(soapPort)s" % c.apps)
             if k == key:
-                context = c.getConfig()
+                c.addInContext(context,self.xcns)
                 for nested in c.nestedContexts:
-                    context += nested.getConfigForApplication()
+                    nested.addConfigForApplication(context,self.xcns)
             else:
                 if self.isI2Otarget(key,k):
                     try:
-                        context = """      <xc:Endpoint protocol="%(ptProtocol)s" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="%(network)s"/>
-      <xc:Application class="%(app)s" id="%(appId)s" instance="%(instance)s" network="%(network)s"/>
-""" % c.apps
+                        context.append( c.getEndpointContext(self.xcns) )
+                        context.append( c.getApplicationContext(self.xcns) )
                     except KeyError: #No I2O tid assigned
                         pass
             if len(context) > 0:
-                partition += """    <xc:Context url="http://%(soapHostname)s:%(soapPort)s">\n""" % c.apps
-                partition += context
-                partition += "    </xc:Context>\n\n"
-
-        partition += "  </xc:Partition>\n"
+                partition.append(context)
 
         return partition
 
 
     def getConfigCmd(self,key):
-        configCmd = """<xdaq:Configure xmlns:xdaq=\"urn:xdaq-soap:3.0\">\n"""
-        configCmd += self.getPartition(key)
-        configCmd += "</xdaq:Configure>"
+        configns = 'urn:xdaq-soap:3.0'
+        configCmd = ET.Element(QN(configns,'Configure'))
+        configCmd.append( self.getPartition(key) )
+        XMLtools.indent(configCmd)
+        configString = ET.tostring(configCmd)
 
         print("******** "+key[0]+":"+key[1]+" ********")
-        print(configCmd)
+        print(configString)
         print("******** "+key[0]+":"+key[1]+" ********")
 
-        return configCmd
+        return configString
 
 
 class ConfigFromFile(Configuration):
@@ -133,7 +143,7 @@ class ConfigFromFile(Configuration):
             context.role,count = self.urlToHostAndNumber(c.attrib['url'])
             context.apps = self.symbolMap.getHostInfo(context.role+str(count))
 
-            for application in c.findall(QN(self.xcns, 'Application').text): ## all 'Application's of this context
+            for application in c.findall(QN(self.xcns, 'Application')): ## all 'Application's of this context
                 app = application.attrib['class']
                 if app.startswith(('evb::','ferol::')):
                     if app == 'evb::EVM':

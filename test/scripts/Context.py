@@ -1,6 +1,9 @@
 import copy
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import QName as QN
 
 import SymbolMap
+import XMLtools
 
 id = 11
 
@@ -18,7 +21,6 @@ class Context:
             'appId':id,
             'ptInstance':Context.ptInstance
             }
-        self.config = ""
         Context.ptInstance += 1
         id += 1
 
@@ -27,79 +29,115 @@ class Context:
         Context.ptInstance = 0
 
 
-    def getConfig(self):
-        if len(self.config) == 0:
-            self.config = self.getConfigForPeerTransport()
-            self.config += self.getConfigForPtUtcp()
-            self.config += self.getConfigForApplication()
+    def addInContext(self,context,ns):
 
-            self.config += """
-      <xc:Module>$XDAQ_ROOT/lib/libtcpla.so</xc:Module>
-      <xc:Module>$XDAQ_ROOT/lib/libptfrl.so</xc:Module>
-      <xc:Module>$XDAQ_ROOT/lib/libptutcp.so</xc:Module>
-      <xc:Module>$XDAQ_ROOT/lib/libxdaq2rc.so</xc:Module>
-      <xc:Module>$XDAQ_LOCAL/lib/libevb.so</xc:Module>
-"""
-        return self.config
+        self.addConfigForPeerTransport(context,ns)
+        self.addConfigForPtUtcp(context,ns)
+        self.addConfigForApplication(context,ns)
 
 
-    def getConfigForApplication(self):
-        config = """
-      <xc:Application class="%(app)s" id="%(appId)s" instance="%(instance)s" network="local">
-        <properties xmlns="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">
-""" % self.apps
-        config += self.fillProperties(self._params)
-        config += "        </properties>\n      </xc:Application>\n"
-        return config
+    def addConfigForApplication(self,context,ns):
+        application = self.getApplicationContext(ns)
+        application.append( self.getProperties(self.apps['app'],self._params) )
+        context.append(application)
+        module = ET.Element(QN(ns,'Module'))
+        module.text = "$XDAQ_ROOT/lib/libtcpla.so"
+        context.append(module)
+        if self.apps['app'].startswith('evb::'):
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_LOCAL/lib/libevb.so"
+            context.append(module)
 
 
-    def getConfigForPeerTransport(self):
-        return ""
+    def addConfigForPeerTransport(self,context,ns):
+        pass
 
 
-    def getConfigForPtUtcp(self):
+    def addConfigForPtUtcp(self,context,ns):
         global id
-        config = ""
         try:
-            config += """
-      <xc:Endpoint protocol="%(ptProtocol)s" service="i2o" hostname="%(i2oHostname)s" port="%(i2oPort)s" network="%(network)s"/>
+            context.append( self.getEndpointContext(ns) )
 
-      <xc:Application class="pt::utcp::Application" id="%(id)s" instance="%(ptInstance)s" network="%(network)s">
-        <properties xmlns="urn:xdaq-application:pt::utcp::Application" xsi:type="soapenc:Struct">
-          <protocol xsi:type="xsd:string">atcp</protocol>
-          <maxClients xsi:type="xsd:unsignedInt">9</maxClients>
-          <autoConnect xsi:type="xsd:boolean">false</autoConnect>
-          <ioQueueSize xsi:type="xsd:unsignedInt">65536</ioQueueSize>
-          <eventQueueSize xsi:type="xsd:unsignedInt">65536</eventQueueSize>
-          <maxReceiveBuffers xsi:type="xsd:unsignedInt">12</maxReceiveBuffers>
-          <maxBlockSize xsi:type="xsd:unsignedInt">65537</maxBlockSize>
-        </properties>
-      </xc:Application>
-""" % dict(self.apps.items() + [('id',id)])
+            utcp = ET.Element(QN(ns,'Application'))
+            utcp.set('class','pt::utcp::Application')
+            utcp.set('id',str(id))
+            utcp.set('instance',str(self.apps['ptInstance']))
+            utcp.set('network',self.apps['network'])
+            utcp.append( self.getProperties('pt::utcp::Application',[
+                ('protocol','string','atcp'),
+                ('maxClients','unsignedInt','9'),
+                ('autoConnect','boolean','false'),
+                ('ioQueueSize','unsignedInt','65536'),
+                ('eventQueueSize','unsignedInt','65536'),
+                ('maxReceiveBuffers','unsignedInt','12'),
+                ('maxBlockSize','unsignedInt','65537')
+                ]) )
+            context.append(utcp)
             id += 1
+
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_ROOT/lib/libtcpla.so"
+            context.append(module)
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_ROOT/lib/libptutcp.so"
+            context.append(module)
+
         except KeyError:
             pass
-        return config
 
 
-    def fillProperties(self,params):
-        config = ""
+    def getApplicationContext(self,ns):
+        application = ET.Element(QN(ns,'Application'))
+        application.set('class',self.apps['app'])
+        application.set('id',str(self.apps['appId']))
+        application.set('instance',str(self.apps['instance']))
+        try:
+            application.set('network',self.apps['network'])
+        except KeyError:
+            application.set('network','local')
+        return application
+
+
+    def getEndpointContext(self,ns):
+        endpoint = ET.Element(QN(ns,'Endpoint'))
+        endpoint.set('protocol',self.apps['ptProtocol'])
+        endpoint.set('service','i2o')
+        endpoint.set('hostname',self.apps['i2oHostname'])
+        endpoint.set('port',self.apps['i2oPort'])
+        endpoint.set('network',self.apps['network'])
+        return endpoint
+
+
+    def getProperties(self,app,params):
+        appns = "urn:xdaq-application:"+app
+        soapencns = "http://schemas.xmlsoap.org/soap/encoding/"
+        xsins = "http://www.w3.org/2001/XMLSchema-instance"
+        properties = ET.Element(QN(appns,'properties'))
+        properties.set(QN(xsins,'type'),'soapenc:Struct')
         for param in params:
+            p = ET.Element(QN(appns,param[0]))
+            p.set(QN(xsins,'type'),'soapenc:Array')
             if isinstance(param[2],tuple) or isinstance(param[2],list):
-                config += "           <"+param[0]+" soapenc:arrayType=\"xsd:ur-type["+str(len(param[2]))+"]\" xsi:type=\"soapenc:Array\">\n"
+                p.set(QN(soapencns,'arrayType'),'xsd:ur-type['+str(len(param[2]))+']')
                 for index,value in enumerate(param[2]):
+                    item = ET.Element(QN(appns,'item'))
+                    item.set(QN(soapencns,'position'),'['+str(index)+']')
                     if param[1] == 'Struct':
-                        config += "             <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"soapenc:Struct\">"
+                        item.set(QN(xsins,'type'),'soapenc:Struct')
                         for val in value:
-                            config += "\n               <"+val[0]+" xsi:type=\"xsd:"+val[1]+"\">"+str(val[2])+"</"+val[0]+">"
-                        config += "\n             </item>\n"
+                            e = ET.Element(QN(appns,val[0]))
+                            e.set(QN(xsins,'type'),'xsd:'+val[1])
+                            e.text = str(val[2])
+                            item.append(e)
                     else:
-                        config += "             <item soapenc:position=\"["+str(index)+"]\" xsi:type=\"xsd:"+param[1]+"\">"+str(value)+"</item>\n"
-                config += "           </"+param[0]+">\n"
+                        item.set(QN(xsins,'type'),'xsd:'+param[1])
+                        item.text = str(value)
+                    p.append(item)
             else:
-                config += "           <"+param[0]+" xsi:type=\"xsd:"+param[1]+"\">"+str(param[2])+"</"+param[0]+">\n"
-        return config
-
+                p.set(QN(xsins,'type'),'xsd:'+param[1])
+                p.text = str(param[2])
+            properties.append(p)
+        return properties
 
 
 class FEROL(Context):
@@ -117,14 +155,14 @@ class FEROL(Context):
             frlPort = 'frlPort2'
         FEROL.instance += 1
 
-        self._params.append(('fedId','unsignedInt',fedId))
+        self._params.append(('fedId','unsignedInt',str(fedId)))
         self._params.append(('sourceHost','string',self.apps['frlHostname']))
         self._params.append(('sourcePort','unsignedInt',str(self.apps['frlPort'])))
         self._params.append(('destinationHost','string',destination.apps['frlHostname']))
         self._params.append(('destinationPort','unsignedInt',str(destination.apps[frlPort])))
 
         ferolSource = dict((key, self.apps[key]) for key in ('frlHostname','frlPort'))
-        ferolSource['fedId'] = fedId
+        ferolSource['fedId'] = str(fedId)
         destination.apps['ferolSources'].append(ferolSource)
 
 
@@ -146,7 +184,7 @@ class RU(Context):
             self.role = "RU"
         self.apps['instance'] = RU.instance
         self.apps.update( symbolMap.getHostInfo('RU'+str(RU.instance)) )
-        self.apps['tid'] = RU.instance+1
+        self.apps['tid'] = str(RU.instance+1)
         self.apps['ptProtocol'] = "atcp"
         self.apps['network'] = "tcp"
         self.apps['ferolSources'] = []
@@ -154,6 +192,7 @@ class RU(Context):
         if self.apps['inputSource'] == 'FEROL':
             self.apps['ptFrl'] = "pt::frl::Application"
         RU.instance += 1
+        self.routing = []
 
 
     def __del__(self):
@@ -161,37 +200,36 @@ class RU(Context):
 
 
     def fillFerolSources(self):
-        routing = []
-        ferolSources = []
-        if len(self.apps['ferolSources']) == 0:
-            for param in self._params:
-                try:
-                    if param[0] == 'fedSourceIds':
-                        for fedId in param[2]:
-                           ferolSources.append( (
-                                ('fedId','unsignedInt',fedId),
-                                ('hostname','string','localhost'),
-                                ('port','unsignedInt','9999')
-                                ) )
-                except KeyError:
-                    pass
-        else:
-            fedSourceIds = []
-            for source in self.apps['ferolSources']:
-                fedSourceIds.append(source['fedId'])
-                ferolSources.append( (
-                    ('fedId','unsignedInt',source['fedId']),
-                    ('hostname','string',source['frlHostname']),
-                    ('port','unsignedInt',source['frlPort'])
-                    ) )
-                routing.append( (
-                    ('fedid','string',source['fedId']),
-                    ('className','string',self.apps['app']),
-                    ('instance','string',str(self.apps['instance']))
-                    ) )
-            self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
-        self._params.append( ('ferolSources','Struct',ferolSources) )
-        return routing
+        if len(self.routing) == 0:
+            ferolSources = []
+            if len(self.apps['ferolSources']) == 0:
+                for param in self._params:
+                    try:
+                        if param[0] == 'fedSourceIds':
+                            for fedId in param[2]:
+                               ferolSources.append( (
+                                    ('fedId','unsignedInt',fedId),
+                                    ('hostname','string','localhost'),
+                                    ('port','unsignedInt','9999')
+                                    ) )
+                    except KeyError:
+                        pass
+            else:
+                fedSourceIds = []
+                for source in self.apps['ferolSources']:
+                    fedSourceIds.append(source['fedId'])
+                    ferolSources.append( (
+                        ('fedId','unsignedInt',source['fedId']),
+                        ('hostname','string',source['frlHostname']),
+                        ('port','unsignedInt',source['frlPort'])
+                        ) )
+                    self.routing.append( (
+                        ('fedid','string',source['fedId']),
+                        ('className','string',self.apps['app']),
+                        ('instance','string',str(self.apps['instance']))
+                        ) )
+                self._params.append( ('fedSourceIds','unsignedInt',fedSourceIds) );
+            self._params.append( ('ferolSources','Struct',ferolSources) )
 
 
     def getInputSource(self):
@@ -203,52 +241,150 @@ class RU(Context):
                 pass
 
 
-    def getConfigForPeerTransport(self):
-        routing = self.fillFerolSources()
+    def addConfigForPeerTransport(self,context,ns):
+        self.fillFerolSources()
         if self.apps['inputSource'] == 'FEROL':
-            return self.getConfigForPtFrl(routing)
+            self.addConfigForPtFrl(context,ns)
         elif self.apps['inputSource'] == 'Socket':
-            return self.getConfigForPtBlit()
-        else:
-            return ""
+            self.addConfigForPtBlit(context,ns)
 
 
-    def getConfigForPtBlit(self):
+    def addConfigForPtBlit(self,context,ns):
         global id
-        config = """
-      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferola" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" rmode="select" nonblock="true" maxbulksize="131072" />
+        endpoint = ET.Element(QN(ns,'Endpoint'))
+        endpoint.set('protocol','btcp')
+        endpoint.set('service','blit')
+        endpoint.set('sndTimeout','2000')
+        endpoint.set('rcvTimeout','0')
+        endpoint.set('targetId','11')
+        endpoint.set('singleThread','true')
+        endpoint.set('pollingCycle','1')
+        endpoint.set('rmode','select')
+        endpoint.set('nonblock','true')
+        endpoint.set('maxbulksize','131072')
+        endpoint.set('hostname',self.apps['frlHostname'])
+        endpoint.set('port',str(self.apps['frlPort']))
+        endpoint.set('network','ferola')
+        context.append(copy.deepcopy(endpoint))
+        endpoint.set('port',self.apps['frlPort2'])
+        endpoint.set('network','ferolb')
+        context.append(endpoint)
 
-      <xc:Endpoint protocol="btcp" service="blit" hostname="%(frlHostname)s" port="%(frlPort2)s" network="ferolb" sndTimeout="2000" rcvTimeout="0" targetId="11" affinity="RCV:S,SND:W,DSR:W,DSS:W" singleThread="true" pollingCycle="1" rmode="select" nonblock="true" maxbulksize="131072" />
-
-      <xc:Application class="pt::blit::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
-        <properties xmlns="urn:xdaq-application:pt::blit::Application" xsi:type="soapenc:Struct">
-"""  % dict(self.apps.items() + [('id',id)])
+        application = ET.Element(QN(ns,'Application'))
+        application.set('class','pt::blit::Application')
+        application.set('id',str(id))
+        application.set('instance',str(self.apps['ptInstance']))
+        application.set('network','local')
         id += 1
 
-        config += self.fillProperties([
+        application.append(self.getProperties('pt::blit::Application',[
+            ('maxClients','unsignedInt','32'),
+            ('maxReceiveBuffers','unsignedInt','128'),
+            ('maxBlockSize','unsignedInt','131072')
+            ]))
+        context.append(application)
+
+        module = ET.Element(QN(ns,'Module'))
+        module.text = "$XDAQ_ROOT/lib/libtcpla.so"
+        context.append(module)
+        module = ET.Element(QN(ns,'Module'))
+        module.text = "$XDAQ_ROOT/lib/libptblit.so"
+        context.append(module)
+
+
+    def addConfigForPtFrl(self,context,ns):
+        global id
+        endpoint = ET.Element(QN(ns,'Endpoint'))
+        endpoint.set('protocol','ftcp')
+        endpoint.set('service','frl')
+        endpoint.set('sndTimeout','2000')
+        endpoint.set('rcvTimeout','0')
+        endpoint.set('singleThread','true')
+        endpoint.set('pollingCycle','4')
+        endpoint.set('rmode','select')
+        endpoint.set('nonblock','true')
+        endpoint.set('datagramSize','131072')
+        endpoint.set('hostname',self.apps['frlHostname'])
+        endpoint.set('port',str(self.apps['frlPort']))
+        endpoint.set('network','ferola')
+        context.append(copy.deepcopy(endpoint))
+        endpoint.set('port',self.apps['frlPort2'])
+        endpoint.set('network','ferolb')
+        context.append(endpoint)
+
+        application = ET.Element(QN(ns,'Application'))
+        application.set('class','pt::frl::Application')
+        application.set('id',str(id))
+        application.set('instance',str(self.apps['ptInstance']))
+        application.set('network','local')
+        id += 1
+
+        application.append(self.getProperties('pt::frl::Application',[
+            ('frlRouting','Struct',self.routing),
+            ('frlDispatcher','string','copy'),
+            ('useUdaplPool','boolean','true'),
+            ('autoConnect','boolean','false'),
+            ('i2oFragmentBlockSize','unsignedInt','32768'),
+            ('i2oFragmentsNo','unsignedInt','128'),
+            ('i2oFragmentPoolSize','unsignedInt','10000000'),
+            ('copyWorkerQueueSize','unsignedInt','16'),
+            ('copyWorkersNo','unsignedInt','1'),
+            ('inputStreamPoolSize','double','1400000'),
+            ('maxClients','unsignedInt','10'),
+            ('ioQueueSize','unsignedInt','64'),
+            ('eventQueueSize','unsignedInt','64'),
+            ('maxInputReceiveBuffers','unsignedInt','8'),
+            ('maxInputBlockSize','unsignedInt','131072'),
+            ('doSuperFragment','boolean','false')
+            ]))
+        context.append(application)
+
+        module = ET.Element(QN(ns,'Module'))
+        module.text = "$XDAQ_ROOT/lib/libtcpla.so"
+        context.append(module)
+        module = ET.Element(QN(ns,'Module'))
+        module.text = "$XDAQ_ROOT/lib/libptfrl.so"
+        context.append(module)
+
+
+class BU(Context):
+    instance = 0
+
+    def __init__(self,symbolMap,params,nestedContexts=()):
+        Context.__init__(self,params,nestedContexts)
+        self.role = "BU"
+        self.apps['app'] = "evb::BU"
+        self.apps['instance'] = BU.instance
+        self.apps.update( symbolMap.getHostInfo('BU'+str(BU.instance)) )
+        self.apps['tid'] = str(BU.instance+30)
+        self.apps['ptProtocol'] = "atcp"
+        self.apps['network'] = "tcp"
+        BU.instance += 1
+
+
+    def __del__(self):
+        BU.instance = 0
+
+
+
+if __name__ == "__main__":
+    context = Context()
+    test1 = context.getProperties("foo",[
             ('maxClients','unsignedInt','32'),
             ('maxReceiveBuffers','unsignedInt','128'),
             ('maxBlockSize','unsignedInt','131072')
             ])
-        config += "        </properties>\n      </xc:Application>\n"
+    XMLtools.indent(test1)
+    print( ET.tostring(test1) )
 
-        config += "\n"
-        return config
-
-
-    def getConfigForPtFrl(self,routing):
-        global id
-        config = """
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort)s" network="ferola" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-
-      <xc:Endpoint protocol="ftcp" service="frl" hostname="%(frlHostname)s" port="%(frlPort2)s" network="ferolb" sndTimeout="2000" rcvTimeout="0" singleThread="true" pollingCycle="4" rmode="select" nonblock="true" datagramSize="131072" />
-
-      <xc:Application class="pt::frl::Application" id="%(id)s" instance="%(ptInstance)s" network="local">
-        <properties xmlns="urn:xdaq-application:pt::frl::Application" xsi:type="soapenc:Struct">
-"""  % dict(self.apps.items() + [('id',id)])
-        id += 1
-
-        config += self.fillProperties([
+    routing = []
+    for id in 1,2,3,4,5:
+        routing.append( (
+            ('fedid','string',str(id)),
+            ('className','string','foobar'),
+            ('instance','string',str(id))
+            ) )
+    test2 = context.getProperties("bar",[
             ('frlRouting','Struct',routing),
             ('frlDispatcher','string','copy'),
             ('useUdaplPool','boolean','true'),
@@ -266,27 +402,5 @@ class RU(Context):
             ('maxInputBlockSize','unsignedInt','131072'),
             ('doSuperFragment','boolean','false')
             ])
-        config += "        </properties>\n      </xc:Application>\n"
-
-        config += "\n"
-        return config
-
-
-
-class BU(Context):
-    instance = 0
-
-    def __init__(self,symbolMap,params,nestedContexts=()):
-        Context.__init__(self,params,nestedContexts)
-        self.role = "BU"
-        self.apps['app'] = "evb::BU"
-        self.apps['instance'] = BU.instance
-        self.apps.update( symbolMap.getHostInfo('BU'+str(BU.instance)) )
-        self.apps['tid'] = BU.instance+30
-        self.apps['ptProtocol'] = "atcp"
-        self.apps['network'] = "tcp"
-        BU.instance += 1
-
-
-    def __del__(self):
-        BU.instance = 0
+    XMLtools.indent(test2)
+    print( ET.tostring(test2) )
