@@ -10,7 +10,6 @@ class case_1x1_largeFragment(TestCase):
         self.enableEvB()
         self.checkEVM(22944)
         self.checkBU(22944)
-        self.stopEvB()
         self.haltEvB()
 
 

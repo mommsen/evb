@@ -79,7 +79,7 @@ class case_2x1_corruptedEvents(TestCase):
         self.checkRU(8192)
         self.checkBU(16384)
         self.checkIt()
-        self.haltEvB()
+        self.stopEvB()
         self.checkBuDir(testDir,"000002",eventSize=16384)
 
 

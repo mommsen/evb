@@ -53,13 +53,12 @@ class case_2x1_crcErrors(TestCase):
         self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
         self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',10,operator.gt,"BU")
 
-        self.haltEvB()
+        self.stopEvB()
         self.checkBuDir(testDir,"000001",eventSize=16384)
 
-        self.configureEvB()
         self.enableEvB(runNumber=2)
         self.checkIt()
-        self.haltEvB()
+        self.stopEvB()
         self.checkBuDir(testDir,"000002",eventSize=16384)
 
 

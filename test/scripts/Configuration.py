@@ -14,45 +14,39 @@ class Configuration():
         self.symbolMap = symbolMap
         self.contexts = {}
         self.ptUtcp = []
-        self.ptFrl = []
         self.applications = {}
         self.xcns = 'http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30'
 
 
     def add(self,context):
-        appInfo = dict((key,context.apps[key]) for key in ('app','instance','soapHostname','soapPort'))
+        appInfo = dict((key,context.hostinfo[key]) for key in ('soapHostname','soapPort'))
         contextKey = (appInfo['soapHostname'],appInfo['soapPort'])
         self.contexts[contextKey] = context
-        if context.role not in self.applications:
-            self.applications[context.role] = []
-        self.applications[context.role].append(copy.deepcopy(appInfo))
-        for nested in context.nestedContexts:
-            if nested.role not in self.applications:
-                self.applications[nested.role] = []
-            appInfo['app'] = nested.apps['app']
-            appInfo['instance'] = nested.apps['instance']
-            self.applications[nested.role].append(copy.deepcopy(appInfo))
-        try:
-            if context.apps['ptProtocol'] == 'atcp':
-                appInfo['app'] = 'pt::utcp::Application'
-            elif context.apps['ptProtocol'] == 'ibv':
-                appInfo['app'] = 'pt::ibv::Application'
-            appInfo['instance'] = context.apps['ptInstance']
-            self.ptUtcp.append(copy.deepcopy(appInfo))
-        except KeyError:
-            pass
-        try:
-            appInfo['app'] = context.apps['ptFrl']
-            appInfo['instance'] = context.apps['ptInstance']
-            self.ptFrl.append(appInfo)
-        except KeyError:
-            pass
+        for app in context.applications:
+            appInfo['app'] = app.params['class']
+            appInfo['instance'] = app.params['instance']
+            if app.params['class'].startswith(('evb::test::DummyFEROL','ferol::')):
+                self.addAppInfoToApplications('FEROL',appInfo)
+            elif app.params['class'] == 'evb::EVM':
+                self.addAppInfoToApplications('EVM',appInfo)
+            elif app.params['class'] == 'evb::RU':
+                self.addAppInfoToApplications('RU',appInfo)
+            elif app.params['class'] == 'evb::BU':
+                self.addAppInfoToApplications('BU',appInfo)
+            elif app.params['class'].startswith( ('pt::utcp','pt::ibv') ):
+                self.ptUtcp.append( copy.deepcopy(appInfo) )
+
+
+    def addAppInfoToApplications(self,role,appInfo):
+        if role not in self.applications:
+            self.applications[role] = []
+        self.applications[role].append( copy.deepcopy(appInfo) )
 
 
     def isI2Otarget(self,myKey,otherKey):
         if myKey == otherKey:
             return True
-        if self.contexts[myKey].role == 'EVM':
+        if self.contexts[myKey].role == 'EVM' and self.contexts[otherKey].role in ('RU','BU'):
             return True
         if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role == 'BU':
             return True
@@ -61,26 +55,14 @@ class Configuration():
         return False
 
 
-    def getTargetElement(self,ns,apps):
-        target = ET.Element(QN(ns,'target'))
-        target.set('class',apps['app'])
-        target.set('instance',str(apps['instance']))
-        target.set('tid',str(apps['tid']))
-        return target
-
-
     def getTargets(self,key):
         myRole = self.contexts[key].role
         i2ons = "http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30"
         protocol = ET.Element(QN(i2ons,'protocol'))
         for k,c in self.contexts.items():
             if self.isI2Otarget(key,k):
-                try:
-                    protocol.append( self.getTargetElement(i2ons,c.apps) )
-                except KeyError: #No I2O tid assigned
-                    pass
-                for nested in c.nestedContexts:
-                    protocol.append( self.getTargetElement(i2ons,nested.apps) )
+                for app in c.applications:
+                    app.addTargetElement(protocol,i2ons)
         return protocol
 
 
@@ -93,22 +75,11 @@ class Configuration():
             partition.append(protocol)
 
         for k,c in self.contexts.items():
-            context = ET.Element(QN(self.xcns,'Context'))
-            context.set('url',"http://%(soapHostname)s:%(soapPort)s" % c.apps)
             if k == key:
-                c.addInContext(context,self.xcns)
-                for nested in c.nestedContexts:
-                    nested.addConfigForApplication(context,self.xcns)
+                partition.append( c.getContext(self.xcns) )
             else:
                 if self.isI2Otarget(key,k):
-                    try:
-                        context.append( c.getEndpointContext(self.xcns) )
-                        context.append( c.getApplicationContext(self.xcns) )
-                    except KeyError: #No I2O tid assigned
-                        pass
-            if len(context) > 0:
-                partition.append(context)
-
+                    partition.append( c.getContext(self.xcns,False) )
         return partition
 
 
@@ -130,20 +101,19 @@ class ConfigFromFile(Configuration):
 
     def __init__(self,symbolMap,configFile):
         Configuration.__init__(self,symbolMap)
-        self.config   = ET.parse(configFile)
-        self.ETroot   = self.config.getroot()
+        ETroot = ET.parse(configFile).getroot()
 
-        self.xcns     = re.match(r'\{(.*?)\}Partition', self.ETroot.tag).group(1) ## Extract xdaq namespace
+        self.xcns = re.match(r'\{(.*?)\}Partition',ETroot.tag).group(1) ## Extract xdaq namespace
         tid = 0
 
-        for c in self.ETroot.getiterator(str(QN(self.xcns,'Context'))):
+        for c in ETroot.getiterator(str(QN(self.xcns,'Context'))):
             context = Context.Context()
-            for child in c.getchildren():
-                context.config += ET.tostring(child)
+            #for child in c.getchildren():
+            #    print ET.tostring(child)
             context.role,count = self.urlToHostAndNumber(c.attrib['url'])
             context.apps = self.symbolMap.getHostInfo(context.role+str(count))
 
-            for application in c.findall(QN(self.xcns, 'Application')): ## all 'Application's of this context
+            for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
                 app = application.attrib['class']
                 if app.startswith(('evb::','ferol::')):
                     if app == 'evb::EVM':
@@ -163,9 +133,6 @@ class ConfigFromFile(Configuration):
                     context.apps['ptInstance'] = application.attrib['instance']
                     context.apps['tid'] = tid
                     tid += 1
-                elif app == 'pt::frl::Application':
-                    context.apps['ptFrl'] = app
-                    context.apps['ptInstance'] = application.attrib['instance']
             self.add(context)
 
 
@@ -181,6 +148,7 @@ class ConfigFromFile(Configuration):
 
 
 if __name__ == "__main__":
+    os.environ["EVB_SYMBOL_MAP"] = 'daq2valSymbolMap.txt'
     symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/scans/")
     config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/scans/8s8fx1x2_evb_ibv_COL.xml")
     print(config.contexts)

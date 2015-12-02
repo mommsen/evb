@@ -27,6 +27,7 @@ class case_1x1_ferol_1xdaq(TestCase):
             ])
         evm = RU(symbolMap,[
              ('inputSource','string','Socket')
-            ],(bu,))
+            ])
+        evm.applications.append( bu.applications[-1] )
         self._config.add( FEROL(symbolMap,evm,512) )
         self._config.add( evm )

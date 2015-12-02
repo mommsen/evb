@@ -45,8 +45,8 @@ class TestCase:
             pass
         for context in self._config.contexts.values():
             try:
-                print("Stopping XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                print(messengers.sendCmdToLauncher("stopXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
+                print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
+                print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
             except socket.error:
                 pass
         for file in glob.glob("/tmp/dump_*txt"):
@@ -58,15 +58,15 @@ class TestCase:
     def startXDAQs(self):
         try:
             for context in self._config.contexts.values():
-                print("Starting XDAQ on "+context.apps['soapHostname']+":"+str(context.apps['launcherPort']))
-                print(messengers.sendCmdToLauncher("startXDAQ",context.apps['soapHostname'],context.apps['launcherPort'],context.apps['soapPort']))
+                print("Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
+                print(messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 
         for context in self._config.contexts.values():
-            sys.stdout.write("Checking "+context.apps['soapHostname']+":"+context.apps['soapPort']+" is listening")
+            sys.stdout.write("Checking "+context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+" is listening")
             for x in xrange(10):
-                if messengers.webPing(context.apps['soapHostname'],context.apps['soapPort']):
+                if messengers.webPing(context.hostinfo['soapHostname'],context.hostinfo['soapPort']):
                     print(" okay")
                     break
                 else:
@@ -75,31 +75,31 @@ class TestCase:
                     sleep(1)
             else:
                 print(" NOPE")
-                raise LauncherException(context.apps['soapHostname']+":"+context.apps['soapPort']+" is not listening")
+                raise LauncherException(context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+" is not listening")
 
 
     def sendCmdToExecutive(self):
         urn = "urn:xdaq-application:lid=0"
         for key,context in self._config.contexts.items():
-            print("Configuring executive on "+context.apps['soapHostname']+":"+context.apps['soapPort'])
-            response = messengers.sendSoapMessage(context.apps['soapHostname'],context.apps['soapPort'],urn,
+            print("Configuring executive on "+context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort'])
+            response = messengers.sendSoapMessage(context.hostinfo['soapHostname'],context.hostinfo['soapPort'],urn,
                                                   self._config.getConfigCmd(key));
             xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
             if len(xdaqResponse) != 1:
                 raise(messengers.SOAPexception("Did not get a proper configure response from "+
-                                                context.apps['soapHostname']+":"+context.apps['soapPort']+":\n"+
+                                                context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+":\n"+
                                                 response.toprettyxml()))
 
     def sendStateCmd(self,cmd,newState,app,instance=None):
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
+                if instance is None or str(instance) == application['instance']:
                     state = messengers.sendCmdToApp(command=cmd,**application)
                     if state != newState:
                         if state == 'Failed':
-                            raise(StateException(app+str(application['instance'])+" has failed"))
+                            raise(StateException(app+application['instance']+" has failed"))
                         else:
-                            raise(StateException(app+str(application['instance'])+" is in state "+state+
+                            raise(StateException(app+application['instance']+" is in state "+state+
                                                  " instead of target state "+newState))
 
 
@@ -110,10 +110,10 @@ class TestCase:
     def checkAppState(self,targetState,app,instance=None):
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
+                if instance is None or str(instance) == application['instance']:
                     state = messengers.getStateName(**application)
                     if state != targetState:
-                        raise(StateException(app+str(application['instance'])+" is not in expected state '"+targetState+"', but '"+state+"'"))
+                        raise(StateException(app+application['instance']+" is not in expected state '"+targetState+"', but '"+state+"'"))
         except KeyError:
             pass
 
@@ -147,7 +147,7 @@ class TestCase:
     def setAppParam(self,paramName,paramType,paramValue,app,instance=None):
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
+                if instance is None or str(instance) == application['instance']:
                     messengers.setParam(paramName,paramType,paramValue,**application)
         except KeyError:
             pass
@@ -162,8 +162,8 @@ class TestCase:
         params= {}
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
-                    params[app+str(application['instance'])] = messengers.getParam(paramName,paramType,**application)
+                if instance is None or str(instance) == application['instance']:
+                    params[app+application['instance']] = messengers.getParam(paramName,paramType,**application)
         except KeyError:
             pass
         return params
@@ -178,16 +178,16 @@ class TestCase:
     def checkAppParam(self,paramName,paramType,expectedValue,comp,app,instance=None):
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
+                if instance is None or str(instance) == application['instance']:
                     tries = 0
                     while tries < 3:
                         tries += 1
                         value = messengers.getParam(paramName,paramType,**application)
                         if comp(value,expectedValue):
-                            print(app+str(application['instance'])+" "+paramName+": "+str(value))
+                            print(app+application['instance']+" "+paramName+": "+str(value))
                             return
 
-                    raise(ValueException(paramName+" on "+app+str(application['instance'])+
+                    raise(ValueException(paramName+" on "+app+application['instance']+
                                          " is "+str(value)+" instead of "+str(expectedValue)))
         except KeyError:
             pass
@@ -196,7 +196,7 @@ class TestCase:
     def waitForAppParam(self,paramName,paramType,expectedValue,comp,app,instance=None):
         try:
             for application in self._config.applications[app]:
-                if instance is None or instance == application['instance']:
+                if instance is None or str(instance) == application['instance']:
                     value = None
                     while not comp(value,expectedValue) and not sleep(1):
                         value = messengers.getParam(paramName,paramType,**application)
@@ -235,12 +235,6 @@ class TestCase:
             messengers.sendCmdToApp(command='Configure',**application)
         for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Enable',**application)
-
-
-    def resetPtFrl(self):
-        print("Resetting pt::frl")
-        for application in self._config.ptFrl:
-            messengers.sendCmdToApp(command='Reset',**application)
 
 
     def configureEvB(self):
@@ -314,7 +308,6 @@ class TestCase:
         self.halt('RU')
         self.halt('BU')
         self.checkState('Halted')
-        self.resetPtFrl();
 
 
     def sendResync(self):
@@ -365,7 +358,7 @@ class TestCase:
 
 
     def checkEventCount(self,allBuilt=True):
-        sleep(1) # assure counters are up-to-date
+        sleep(2) # assure counters are up-to-date
         evmEventCount = self.getAppParam('eventCount','unsignedLong','EVM')['EVM0']
         evmEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','EVM')['EVM0']
         buEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','BU')
