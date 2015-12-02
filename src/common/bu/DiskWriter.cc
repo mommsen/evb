@@ -389,8 +389,7 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
 
     ++diskWriterMonitoring_.nbFiles;
     diskWriterMonitoring_.nbEventsWritten += fileStatistics->nbEventsWritten;
-    if ( diskWriterMonitoring_.lastEventNumberWritten < fileStatistics->lastEventNumberWritten )
-      diskWriterMonitoring_.lastEventNumberWritten = fileStatistics->lastEventNumberWritten;
+    diskWriterMonitoring_.lastEventNumberWritten = fileStatistics->lastEventNumberWritten;
     if ( diskWriterMonitoring_.currentLumiSection < fileStatistics->lumiSection )
       diskWriterMonitoring_.currentLumiSection = fileStatistics->lumiSection;
     if ( diskWriterMonitoring_.lastLumiSection < fileStatistics->lumiSection )

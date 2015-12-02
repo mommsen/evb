@@ -100,13 +100,11 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
           if ( index.ruTid == evm_.tid )
           {
-            if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromEVM )
-              fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+            fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
           }
           else
           {
-            if ( lastEventNumber > fragmentMonitoring_.lastEventNumberFromRUs )
-              fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+            fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
           }
 
           fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
