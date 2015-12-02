@@ -4,6 +4,7 @@ import re
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import QName as QN
 
+import Application
 import Context
 import SymbolMap
 import XMLtools
@@ -100,40 +101,122 @@ class Configuration():
 class ConfigFromFile(Configuration):
 
     def __init__(self,symbolMap,configFile):
+        self.frlPorts = ('60500','60600')
         Configuration.__init__(self,symbolMap)
         ETroot = ET.parse(configFile).getroot()
 
         self.xcns = re.match(r'\{(.*?)\}Partition',ETroot.tag).group(1) ## Extract xdaq namespace
-        tid = 0
+        tid = 1
 
         for c in ETroot.getiterator(str(QN(self.xcns,'Context'))):
             context = Context.Context()
-            #for child in c.getchildren():
-            #    print ET.tostring(child)
             context.role,count = self.urlToHostAndNumber(c.attrib['url'])
-            context.apps = self.symbolMap.getHostInfo(context.role+str(count))
+            context.hostinfo = self.symbolMap.getHostInfo(context.role+str(count))
+
+            polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
+            context.policy = c.find(QN(polns,'policy').text)
+            self.parsePolicy(context.policy)
 
             for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
-                app = application.attrib['class']
-                if app.startswith(('evb::','ferol::')):
-                    if app == 'evb::EVM':
+                properties = self.getProperties(application)
+                app = Application.Application(application.attrib['class'],application.attrib['instance'],properties)
+                app.params['network'] = application.attrib['network']
+                app.params['id'] = application.attrib['id']
+                if app.params['class'] == 'pt::blit::Application':
+                    app.params['frlHostname'] = context.hostinfo['frlHostname']
+                    app.params['frlPort'] = self.frlPorts[0]
+                    app.params['frlPort2'] = self.frlPorts[1]
+                elif app.params['class'] == 'pt::ibv::Application':
+                    app.params['protocol'] = 'ibv'
+                    app.params['i2oHostname'] = context.hostinfo['i2oHostname']
+                    app.params['i2oPort'] =  context.hostinfo['i2oPort']
+                elif app.params['class'] == 'pt::utcp::Application':
+                    app.params['protocol'] = 'atcp'
+                    app.params['i2oHostname'] = context.hostinfo['i2oHostname']
+                    app.params['i2oPort'] =  context.hostinfo['i2oPort']
+                elif app.params['class'] == 'ferol::FerolController':
+                    self.rewriteFerolProperties(app)
+                elif app.params['class'].startswith('evb::'):
+                    app.params['tid'] = str(tid)
+                    tid += 1
+                    if app.params['class'] == 'evb::EVM':
                         context.role = 'EVM'
-                    context.apps['app'] = app
-                    context.apps['instance'] = application.attrib['instance']
-                    context.apps['appId'] = application.attrib['id']
-                elif app == 'pt::ibv::Application':
-                    context.apps['ptProtocol'] = 'ibv'
-                    context.apps['network'] = 'infini'
-                    context.apps['ptInstance'] = application.attrib['instance']
-                    context.apps['tid'] = tid
-                    tid += 1
-                elif app == 'pt::utcp::Application':
-                    context.apps['ptProtocol'] = 'atcp'
-                    context.apps['network'] = 'tcp'
-                    context.apps['ptInstance'] = application.attrib['instance']
-                    context.apps['tid'] = tid
-                    tid += 1
+                context.applications.append(app)
             self.add(context)
+
+
+    def getProperties(self,app):
+        properties = []
+        for child in app:
+            if 'properties' in child.tag:
+                for prop in child:
+                    param = self.getValues(prop)
+                    if param[1] == 'Array':
+                        val = []
+                        for item in prop:
+                            param[1] = self.getValues(item)[1]
+                            if param[1] == 'Struct':
+                                struct = []
+                                for i in item:
+                                    struct.append( tuple(self.getValues(i)) )
+                                val.append(struct)
+                            else:
+                                val.append(item.text)
+                        param[2] = val
+                    properties.append( tuple(param) )
+        return properties
+
+
+    def getValues(self,element):
+        xsins = "http://www.w3.org/2001/XMLSchema-instance"
+        name = re.match(r'\{.*?\}(.*)',element.tag).group(1)
+        type = re.match(r'.*?:(.*)',element.get(QN(xsins,'type'))).group(1)
+        if element.text:
+            value = element.text
+        else:
+            value = ''
+        return [name,type,value]
+
+
+    def rewriteFerolProperties(self,app):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'enableStream0':
+                enableStream0 = (prop[2] == 'true')
+            elif prop[0] == 'enableStream1':
+                enableStream1 = (prop[2] == 'true')
+            elif prop[0] == 'slotNumber':
+                slotNumber = int(prop[2])
+            if prop[0] == 'DestinationIP':
+                destHostType = re.match(r'([A-Z0-9]*?)_FRL_HOST_NAME',prop[2]).group(1)
+                destHostInfo = self.symbolMap.getHostInfo(destHostType)
+            elif '_PORT_' not in prop[0]:
+                newProp.append(prop)
+        newProp.append(('DestinationIP','string',destHostInfo['frlHostname']))
+        if enableStream0 and enableStream1 or slotNumber%2:
+            newProp.append(('TCP_SOURCE_PORT_FED0','unsignedInt',self.frlPorts[0]))
+            newProp.append(('TCP_SOURCE_PORT_FED1','unsignedInt',self.frlPorts[1]))
+            newProp.append(('TCP_DESTINATION_PORT_FED0','unsignedInt',self.frlPorts[0]))
+            newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[1]))
+        else:
+            newProp.append(('TCP_SOURCE_PORT_FED0','unsignedInt',self.frlPorts[1]))
+            newProp.append(('TCP_SOURCE_PORT_FED1','unsignedInt',self.frlPorts[0]))
+            newProp.append(('TCP_DESTINATION_PORT_FED0','unsignedInt',self.frlPorts[1]))
+            newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[0]))
+        app.properties = newProp
+
+
+    def parsePolicy(self,policy):
+        if policy:
+            for element in policy:
+                pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME:([A-Z_0-9]*)(.*)',element.attrib['pattern'])
+                if pattern:
+                    hostInfo = self.symbolMap.getHostInfo( pattern.group(2) )
+                    if 'FRL_PORT' in pattern.group(3):
+                        port = 0
+                    else:
+                        port = 1
+                    element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+self.frlPorts[port]+pattern.group(4)
 
 
     def urlToHostAndNumber(self,url):
@@ -142,7 +225,7 @@ class ConfigFromFile(Configuration):
         'http://RU0_SOAP_HOST_NAME:RU0_SOAP_PORT'
         to a pair of strings of hosttype and index. I.e. 'RU' and '0' in this case.
         """
-        pattern = re.compile(r'http://([A-Z_0-9]*?)([0-9]+)_SOAP_HOST_NAME:.*')
+        pattern = re.compile(r'http://([A-Z0-9]*?)([0-9]+)_SOAP_HOST_NAME:.*')
         h,n = pattern.match(url).group(1), pattern.match(url).group(2) ## so h will be RU/BU/EVM/FEROLCONTROLLER/..., n will be 0,1,2,3,...
         return h,n
 
@@ -151,8 +234,8 @@ if __name__ == "__main__":
     os.environ["EVB_SYMBOL_MAP"] = 'daq2valSymbolMap.txt'
     symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/scans/")
     config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/scans/8s8fx1x2_evb_ibv_COL.xml")
-    print(config.contexts)
-    print(config.applications)
-    print(config.ptUtcp)
+    #print(config.contexts)
+    #print(config.applications)
+    #print(config.ptUtcp)
     for key in config.contexts.keys():
         config.getConfigCmd(key)

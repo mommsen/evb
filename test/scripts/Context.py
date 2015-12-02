@@ -20,6 +20,8 @@ class Context:
     def getContext(self,ns,fullConfig=True):
         context = ET.Element(QN(ns,'Context'))
         context.set('url',"http://%(soapHostname)s:%(soapPort)s" % self.hostinfo)
+        if fullConfig and self.policy:
+            context.append(self.policy)
         for app in self.applications:
             if fullConfig:
                 app.addInContext(context,ns)

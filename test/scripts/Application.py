@@ -156,6 +156,9 @@ class Application:
 
 
     def fillFerolSources(self):
+        for param in self.properties:
+            if param[0] == 'ferolSources':
+                return
         ferolSources = []
         try:
             fedSourceIds = []
