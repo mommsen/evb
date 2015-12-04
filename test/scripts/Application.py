@@ -1,4 +1,5 @@
 import copy
+import os
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import QName as QN
 
@@ -92,7 +93,10 @@ class Application:
             context.append(module)
         elif self.params['class'].startswith('evb::'):
             module = ET.Element(QN(ns,'Module'))
-            module.text = "$XDAQ_LOCAL/lib/libevb.so"
+            try:
+                module.text = os.environ["EVB_LOCAL"]+"/lib/libevb.so"
+            except KeyError:
+                module.text = "$XDAQ_ROOT/lib/libevb.so"
             context.append(module)
 
 

@@ -22,7 +22,11 @@ class RunTests(TestRunner):
             sys.exit(2)
 
         sys.path.append(self._testCaseDir)
-        self._symbolMap = SymbolMap(self._testCaseDir)
+
+        try:
+            self._symbolMapfile = self._testCaseDir + os.environ["EVB_SYMBOL_MAP"]
+        except KeyError:
+            pass
 
 
     def addOptions(self):
@@ -38,8 +42,7 @@ class RunTests(TestRunner):
             for test in self.args['tests']:
                 patterns.append(re.compile("("+test+")\.py$"))
         else:
-            self.parser.print_help()
-            sys.exit()
+            return False
 
         testNames = []
         for file in os.listdir(self._testCaseDir):
@@ -64,6 +67,7 @@ class RunTests(TestRunner):
             if not self.args['verbose']:
                 stopTime = time.strftime("%H:%M:%S", time.localtime())
                 print(stopTime+" "+success)
+        return True
 
 
     def runTest(self,test,stdout):

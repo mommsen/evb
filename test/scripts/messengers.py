@@ -21,15 +21,18 @@ class SOAPexception(Exception):
 
 
 def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((soapHostname,int(launcherPort)))
-    if soapPort is None:
-        s.send(cmd)
-    else:
-        s.send(cmd+':'+soapPort)
-    reply = s.recv(1024)
-    s.close()
-    return reply
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((soapHostname,int(launcherPort)))
+        if soapPort is None:
+            s.send(cmd)
+        else:
+            s.send(cmd+':'+soapPort)
+        reply = s.recv(1024)
+        s.close()
+        return reply
+    except socket.error:
+        pass
 
 
 def webPing(soapHostname,soapPort):

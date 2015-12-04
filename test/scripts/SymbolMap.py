@@ -5,14 +5,7 @@ import sys
 
 class SymbolMap:
 
-    def __init__(self,testCaseDir):
-
-        try:
-            self._symbolMapfile = testCaseDir + os.environ["EVB_SYMBOL_MAP"]
-        except KeyError:
-            print("Please specify the symbol map file to be used in the environment veriable EVB_SYMBOL_MAP")
-            sys.exit(2)
-
+    def __init__(self,symbolMapfile):
         self._hostname = socket.gethostbyaddr(socket.gethostname())[0]
         self._map = {}
         self.launchers = []
@@ -23,8 +16,8 @@ class SymbolMap:
         previousVal = ""
 
         try:
-            with open(self._symbolMapfile) as symbolMapFile:
-                for line in symbolMapFile:
+            with open(symbolMapfile) as symbolMap:
+                for line in symbolMap:
                     if line.rstrip(): #skip empty lines
                         try:
                             (key,val) = line.split()
@@ -53,7 +46,7 @@ class SymbolMap:
                             pass
 
         except EnvironmentError as e:
-            print("Could not open "+self._symbolMapfile+": "+str(e))
+            print("Could not open "+symbolMapfile+": "+str(e))
             sys.exit(2)
 
 

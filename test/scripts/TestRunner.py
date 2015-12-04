@@ -26,7 +26,7 @@ class Tee(object):
 class TestRunner:
 
     def __init__(self):
-        self._testNames = []
+        self._symbolMapfile = None
 
         try:
             self._evbTesterHome = os.environ["EVB_TESTER_HOME"]
@@ -44,23 +44,29 @@ class TestRunner:
     def run(self):
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("-v","--verbose",action='store_true',help="print log info to stdout")
-        self.parser.add_argument("-l","--launchers",action='store_true',help="start xdaqLaunchers")
-        self.parser.add_argument("-s","--stop",action='store_true',help="stop xdaqLaunchers")
+        self.parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
+        if self._symbolMapfile:
+            self.parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use")
+        else:
+            self.parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
         self.addOptions()
         self.args = vars( self.parser.parse_args() )
         print self.args
-        if self.args['launchers']:
+        self._symbolMap = SymbolMap(self.args['symbolMap'])
+        if self.args['launchers'] == 'start':
             self.startLaunchers()
-        if self.args['stop']:
+        elif self.args['launchers'] == 'stop':
             self.stopLaunchers()
-        self.doIt()
+        elif not self.doIt():
+            self.parser.print_help()
+            sys.exit()
 
 
     def startLaunchers(self):
-        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && source "+self._evbTesterHome+"/setenv.sh && xdaqLauncher.py ";
+        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py -l "+self._testLogDir;
         for launcher in self._symbolMap.launchers:
             print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
-            subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])
+            subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+launcher[0]+"_"+str(launcher[1])+".log "+str(launcher[1])])
 
 
     def stopLaunchers(self):
