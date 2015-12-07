@@ -31,7 +31,6 @@ class FileException(Exception):
 class TestCase:
 
     def __init__(self,symbolMap,stdout):
-
         self._origStdout = sys.stdout
         sys.stdout = stdout
         self._config = Configuration.Configuration(symbolMap)
