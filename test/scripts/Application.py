@@ -79,15 +79,23 @@ class Application:
         module = ET.Element(QN(ns,'Module'))
         module.text = "$XDAQ_ROOT/lib/libtcpla.so"
         context.append(module)
-        if self.params['class'].startswith('pt::utcp'):
+        if self.params['class'] == 'xmem::probe::Application':
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_ROOT/lib/libxmemprobe.so"
+            context.append(module)
+        elif self.params['class'] == 'pt::ibv::Application':
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_ROOT/lib/libptibv.so"
+            context.append(module)
+        elif self.params['class'] == 'pt::utcp::Application':
             module = ET.Element(QN(ns,'Module'))
             module.text = "$XDAQ_ROOT/lib/libptutcp.so"
             context.append(module)
-        elif self.params['class'].startswith('pt::blit'):
+        elif self.params['class'] == 'pt::blit::Application':
             module = ET.Element(QN(ns,'Module'))
             module.text = "$XDAQ_ROOT/lib/libptblit.so"
             context.append(module)
-        elif self.params['class'].startswith('ferol::'):
+        elif self.params['class'] == 'ferol::FerolController':
             module = ET.Element(QN(ns,'Module'))
             module.text = "$XDAQ_ROOT/lib/libFerolController.so"
             context.append(module)
