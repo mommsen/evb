@@ -141,6 +141,7 @@ class ConfigFromFile(Configuration):
                     tid += 1
                     if app.params['class'] == 'evb::EVM':
                         context.role = 'EVM'
+                    self.fixFerolPorts(app)
                 context.applications.append(app)
             self.add(context)
 
@@ -206,6 +207,28 @@ class ConfigFromFile(Configuration):
         app.properties = newProp
 
 
+    def fixFerolPorts(self,app):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'ferolSources':
+                sources = []
+                for source in prop[2]:
+                    items = []
+                    for item in source:
+                        if item[0] == 'port':
+                            if 'FRL_PORT' in item[2]:
+                                items.append((item[0],item[1],self.frlPorts[0]))
+                            else:
+                                items.append((item[0],item[1],self.frlPorts[1]))
+                        else:
+                            items.append(item)
+                    sources.append(items)
+                newProp.append(('ferolSources','Struct',sources))
+            else:
+                newProp.append(prop)
+        app.properties = newProp
+
+
     def parsePolicy(self,policy):
         if policy:
             for element in policy:
@@ -231,11 +254,10 @@ class ConfigFromFile(Configuration):
 
 
 if __name__ == "__main__":
-    os.environ["EVB_SYMBOL_MAP"] = 'daq2valSymbolMap.txt'
-    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/scans/")
+    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/scans/daq2valSymbolMap.txt")
     config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/scans/8s8fx1x2_evb_ibv_COL.xml")
     #print(config.contexts)
-    #print(config.applications)
-    #print(config.ptUtcp)
     for key in config.contexts.keys():
         config.getConfigCmd(key)
+    print(config.applications)
+    print(config.ptUtcp)
