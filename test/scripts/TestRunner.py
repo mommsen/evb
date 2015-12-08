@@ -51,7 +51,6 @@ class TestRunner:
             self.parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
         self.addOptions()
         self.args = vars( self.parser.parse_args() )
-        print self.args
         self._symbolMap = SymbolMap(self.args['symbolMap'])
         if self.args['launchers'] == 'start':
             self.startLaunchers()
@@ -75,15 +74,3 @@ class TestRunner:
         for launcher in self._symbolMap.launchers:
             print("Stopping launcher on "+launcher[0]+":"+str(launcher[1]))
             messengers.sendCmdToLauncher("stopLauncher",launcher[0],launcher[1])
-
-
-    def runConfig(self,config):
-        basename = os.path.basename(config)
-        logFile = open(self._testLogDir+basename+".txt",'w')
-        if self._verbose:
-            stdout = Tee(sys.stdout,logFile)
-        else:
-            startTime = time.strftime("%H:%M:%S", time.localtime())
-            sys.stdout.write("%-32s: %s " % (basename,startTime))
-            sys.stdout.flush()
-            stdout = logFile

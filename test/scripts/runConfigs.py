@@ -25,17 +25,17 @@ class RunConfigs(TestRunner):
         if len(self.args['configs']) == 0:
             return False
         for configFile in self.args['configs']:
-            config = os.path.splitext(os.path.basename(configFile))[0]
-            logFile = open(self._testLogDir+config+".txt",'w')
+            configName = os.path.splitext(os.path.basename(configFile))[0]
+            logFile = open(self._testLogDir+configName+".txt",'w')
             if self.args['verbose']:
                 stdout = Tee(sys.stdout,logFile)
             else:
                 startTime = time.strftime("%H:%M:%S", time.localtime())
-                sys.stdout.write("%-32s: %s " % (config,startTime))
+                sys.stdout.write("%-32s: %s " % (configName,startTime))
                 sys.stdout.flush()
                 stdout = logFile
 
-            success = self.runConfig(configFile,stdout)
+            success = self.runConfig(configName,configFile,stdout)
 
             if not self.args['verbose']:
                 stopTime = time.strftime("%H:%M:%S", time.localtime())
@@ -43,10 +43,10 @@ class RunConfigs(TestRunner):
         return True
 
 
-    def runConfig(self,configFile,stdout):
+    def runConfig(self,configName,configFile,stdout):
         try:
             config = Config(self._symbolMap,configFile,stdout)
-            config.run()
+            config.run(configName)
         except Exception as e:
             traceback.print_exc(file=stdout)
             return "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)

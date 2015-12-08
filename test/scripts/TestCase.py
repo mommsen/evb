@@ -43,11 +43,8 @@ class TestCase:
         except OSError:
             pass
         for context in self._config.contexts.values():
-            try:
-                print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-                print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
-            except socket.error:
-                pass
+            print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
+            print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
         for file in glob.glob("/tmp/dump_*txt"):
             os.remove(file)
         sys.stdout.flush()
@@ -94,12 +91,12 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
                     state = messengers.sendCmdToApp(command=cmd,**application)
-                    if state != newState:
+                    if state not in newState:
                         if state == 'Failed':
                             raise(StateException(app+application['instance']+" has failed"))
                         else:
                             raise(StateException(app+application['instance']+" is in state "+state+
-                                                 " instead of target state "+newState))
+                                                 " instead of target state "+str(newState)))
 
 
         except KeyError:
@@ -111,8 +108,8 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
                     state = messengers.getStateName(**application)
-                    if state != targetState:
-                        raise(StateException(app+application['instance']+" is not in expected state '"+targetState+"', but '"+state+"'"))
+                    if state not in targetState:
+                        raise(StateException(app+application['instance']+" is not in expected state '"+str(targetState)+"', but '"+state+"'"))
         except KeyError:
             pass
 
@@ -147,7 +144,13 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
-                    messengers.setParam(paramName,paramType,paramValue,**application)
+                    try:
+                        messengers.setParam(paramName,paramType,paramValue,**application)
+                    except messengers.SOAPexception as e:
+                        if application['app'] == 'ferol::FerolController':
+                            pass
+                        else:
+                            raise e
         except KeyError:
             pass
 
@@ -213,11 +216,11 @@ class TestCase:
 
 
     def enable(self,app,instance=None):
-        self.sendStateCmd('Enable','Enabled',app,instance)
+        self.sendStateCmd('Enable',('Enabled','Enabling'),app,instance)
 
 
     def stop(self,app,instance=None):
-        self.sendStateCmd('Stop','Draining',app,instance)
+        self.sendStateCmd('Stop',('Draining','Stopping'),app,instance)
 
 
     def clear(self,app,instance=None):
@@ -225,7 +228,7 @@ class TestCase:
 
 
     def halt(self,app,instance=None):
-        self.sendStateCmd('Halt','Halted',app,instance)
+        self.sendStateCmd('Halt',('Halted','Halting'),app,instance)
 
 
     def startPt(self):
@@ -240,11 +243,11 @@ class TestCase:
         sys.stdout.write("Configuring EvB")
         sys.stdout.flush()
         self.configure('FEROL')
-        self.waitForAppState('Ready','FEROL')
+        self.waitForAppState(('Ready','Configured'),'FEROL')
         self.configure('EVM')
         self.configure('RU')
         self.configure('BU')
-        self.waitForState('Ready')
+        self.waitForState(('Ready','Configured'))
         print(" done")
 
 
@@ -255,7 +258,7 @@ class TestCase:
         self.enable('RU')
         self.enable('BU')
         self.enable('FEROL')
-        self.checkState('Enabled')
+        self.waitForState('Enabled')
         if sleepTime > 0:
             sys.stdout.write("Building for "+str(sleepTime)+"s...")
             sys.stdout.flush()
@@ -306,7 +309,7 @@ class TestCase:
         self.halt('EVM')
         self.halt('RU')
         self.halt('BU')
-        self.checkState('Halted')
+        self.waitForState('Halted')
 
 
     def sendResync(self):
@@ -477,6 +480,6 @@ class TestCase:
     def run(self,testname):
         self.startXDAQs(testname)
         self.sendCmdToExecutive()
-        self.waitForState('Halted')
+        self.waitForState(('Halted','uninitialized'))
         self.startPt()
         self.runTest()

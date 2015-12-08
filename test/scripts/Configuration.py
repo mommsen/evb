@@ -34,7 +34,7 @@ class Configuration():
                 self.addAppInfoToApplications('RU',appInfo)
             elif app.params['class'] == 'evb::BU':
                 self.addAppInfoToApplications('BU',appInfo)
-            elif app.params['class'].startswith( ('pt::utcp','pt::ibv') ):
+            elif app.params['class'] == 'pt::utcp::Application':
                 self.ptUtcp.append( copy.deepcopy(appInfo) )
 
 
