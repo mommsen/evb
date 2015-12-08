@@ -76,7 +76,7 @@ class RunTests(TestRunner):
             testCase = getattr(testModule,'case_'+test)
             case = testCase(self._symbolMap,stdout)
             try:
-                case.run()
+                case.run(test)
             except Exception as e:
                 if self.args['verbose']:
                     traceback.print_exc(file=stdout)

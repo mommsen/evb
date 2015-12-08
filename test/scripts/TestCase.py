@@ -54,11 +54,11 @@ class TestCase:
         sys.stdout = self._origStdout
 
 
-    def startXDAQs(self):
+    def startXDAQs(self,testname):
         try:
             for context in self._config.contexts.values():
                 print("Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-                print(messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
+                print(messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname))
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 
@@ -474,8 +474,8 @@ class TestCase:
         shutil.rmtree(runDir)
 
 
-    def run(self):
-        self.startXDAQs()
+    def run(self,testname):
+        self.startXDAQs(testname)
         self.sendCmdToExecutive()
         self.waitForState('Halted')
         self.startPt()
