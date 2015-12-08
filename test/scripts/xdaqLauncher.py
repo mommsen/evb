@@ -22,12 +22,11 @@ class xdaqThread(threading.Thread):
 
     def run(self):
         if self.logFile:
-            with open(self.logFile,"w") as logfile:
-                self._process = subprocess.Popen(self._xdaqCommand,stdout=logfile,stderr=logfile)
-                self._process.wait()
+            with open(self.logFile,"w",0) as logfile:
+                self._process = subprocess.Popen(self._xdaqCommand,stdout=logfile,stderr=subprocess.STDOUT,close_fds=True)
         else:
             self._process = subprocess.Popen(self._xdaqCommand)
-            self._process.wait()
+        self._process.wait()
 
 
     def kill(self):
@@ -36,9 +35,10 @@ class xdaqThread(threading.Thread):
 
 
 class TCPServer(SocketServer.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, logDir=None):
+    def __init__(self, server_address, RequestHandlerClass, logDir=None):
+        SocketServer.TCPServer.allow_reuse_address = True
+        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
         self.logDir = logDir
-        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
 
 
 class xdaqLauncher(SocketServer.BaseRequestHandler):

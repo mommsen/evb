@@ -63,7 +63,9 @@ class TestRunner:
 
 
     def startLaunchers(self):
-        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py -l "+self._testLogDir+" ";
+        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
+        if not self.args['verbose']:
+            launcherCmd += "-l "+self._testLogDir+" "
         for launcher in self._symbolMap.launchers:
             print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
             subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])

@@ -102,7 +102,7 @@ class Application:
         elif self.params['class'].startswith('evb::'):
             module = ET.Element(QN(ns,'Module'))
             try:
-                module.text = os.environ["EVB_LOCAL"]+"/lib/libevb.so"
+                module.text = os.environ["XDAQ_EVB"]+"/lib/libevb.so"
             except KeyError:
                 module.text = "$XDAQ_ROOT/lib/libevb.so"
             context.append(module)
