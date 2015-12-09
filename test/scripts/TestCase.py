@@ -177,20 +177,24 @@ class TestCase:
             params.update( self.getAppParam(paramName,paramType,app) )
 
 
+    def checkParam(self,paramName,paramType,expectedValue,comp,app,application):
+        tries = 0
+        while tries < 3:
+            tries += 1
+            value = messengers.getParam(paramName,paramType,**application)
+            if comp(value,expectedValue):
+                print(app+application['instance']+" "+paramName+": "+str(value))
+                return
+
+        raise(ValueException(paramName+" on "+app+application['instance']+
+                             " is "+str(value)+" instead of "+str(expectedValue)))
+
+
     def checkAppParam(self,paramName,paramType,expectedValue,comp,app,instance=None):
         try:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
-                    tries = 0
-                    while tries < 3:
-                        tries += 1
-                        value = messengers.getParam(paramName,paramType,**application)
-                        if comp(value,expectedValue):
-                            print(app+application['instance']+" "+paramName+": "+str(value))
-                            return
-
-                    raise(ValueException(paramName+" on "+app+application['instance']+
-                                         " is "+str(value)+" instead of "+str(expectedValue)))
+                    self.checkParam(paramName,paramType,expectedValue,comp,app,application)
         except KeyError:
             pass
 
@@ -252,13 +256,15 @@ class TestCase:
 
 
     def enableEvB(self,sleepTime=5,runNumber=1):
-        print("Enable EvB with run number "+str(runNumber))
+        sys.stdout.write("Enabling EvB with run number "+str(runNumber)+"...")
+        sys.stdout.flush()
         self.setParam("runNumber","unsignedInt",runNumber)
         self.enable('EVM')
         self.enable('RU')
         self.enable('BU')
         self.enable('FEROL')
         self.waitForState('Enabled')
+        print("done")
         if sleepTime > 0:
             sys.stdout.write("Building for "+str(sleepTime)+"s...")
             sys.stdout.flush()
@@ -304,12 +310,15 @@ class TestCase:
 
 
     def haltEvB(self):
-        print("Halt EvB")
+        sys.stdout.write("Halting EvB")
+        sys.stdout.flush()
         self.halt('FEROL')
+        self.waitForAppState('Halted','FEROL')
         self.halt('EVM')
         self.halt('RU')
         self.halt('BU')
         self.waitForState('Halted')
+        print(" done")
 
 
     def sendResync(self):
@@ -477,9 +486,8 @@ class TestCase:
         shutil.rmtree(runDir)
 
 
-    def run(self,testname):
+    def prepare(self,testname):
         self.startXDAQs(testname)
         self.sendCmdToExecutive()
         self.waitForState(('Halted','uninitialized'))
         self.startPt()
-        self.runTest()

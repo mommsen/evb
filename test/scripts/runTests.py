@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import argparse
 import os
 import re
 import sys
@@ -29,9 +30,10 @@ class RunTests(TestRunner):
             pass
 
 
-    def addOptions(self):
-        self.parser.add_argument("-a","--all",action='store_true',help="run all test cases in "+self._testCaseDir)
-        self.parser.add_argument("tests",nargs='*',help="name of the test cases to run")
+    def addOptions(self,parser):
+        TestRunner.addOptions(self,parser)
+        parser.add_argument("-a","--all",action='store_true',help="run all test cases in "+self._testCaseDir)
+        parser.add_argument("tests",nargs='*',help="name of the test cases to run")
 
 
     def doIt(self):
@@ -53,7 +55,7 @@ class RunTests(TestRunner):
         testNames.sort()
 
         for test in testNames:
-            logFile = open(self._testLogDir+test+".txt",'w',0)
+            logFile = open(self.args['outputDir']+"/"+test+".txt",'w',0)
             if self.args['verbose']:
                 stdout = Tee(sys.stdout,logFile)
             else:
@@ -76,7 +78,8 @@ class RunTests(TestRunner):
             testCase = getattr(testModule,'case_'+test)
             case = testCase(self._symbolMap,stdout)
             try:
-                case.run(test)
+                case.prepare(test)
+                case.runTest()
             except Exception as e:
                 if self.args['verbose']:
                     traceback.print_exc(file=stdout)
@@ -90,5 +93,8 @@ class RunTests(TestRunner):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
     runTests = RunTests()
-    runTests.run()
+    runTests.addOptions(parser)
+    if not runTests.run( parser.parse_args() ):
+        parser.print_help()

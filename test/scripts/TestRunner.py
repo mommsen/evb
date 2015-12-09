@@ -34,37 +34,36 @@ class TestRunner:
             print("Please specify the test directory to be used in the environment veriable EVB_TESTER_HOME")
             sys.exit(2)
 
-        self._testLogDir = self._evbTesterHome + '/log/'
+
+    def addOptions(self,parser):
+        parser.add_argument("-v","--verbose",action='store_true',help="print log info also to stdout")
+        parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
+        parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory, default is "+self._evbTesterHome+'/log/')
+        if self._symbolMapfile:
+            parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use, default is "+self._symbolMapfile)
+        else:
+            parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
+
+
+    def run(self,args):
+        self.args = vars(args)
+        #print(self.args)
+        self._symbolMap = SymbolMap(self.args['symbolMap'])
         try:
-            os.mkdir(self._testLogDir)
+            os.mkdir(self.args['outputDir'])
         except OSError:
             pass
-
-
-    def run(self):
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("-v","--verbose",action='store_true',help="print log info to stdout")
-        self.parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
-        if self._symbolMapfile:
-            self.parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use")
-        else:
-            self.parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
-        self.addOptions()
-        self.args = vars( self.parser.parse_args() )
-        self._symbolMap = SymbolMap(self.args['symbolMap'])
         if self.args['launchers'] == 'start':
             self.startLaunchers()
         elif self.args['launchers'] == 'stop':
             self.stopLaunchers()
-        elif not self.doIt():
-            self.parser.print_help()
-            sys.exit()
+        return self.doIt()
 
 
     def startLaunchers(self):
         launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
         if not self.args['verbose']:
-            launcherCmd += "-l "+self._testLogDir+" "
+            launcherCmd += "-l "+self.args['outputDir']+" "
         for launcher in self._symbolMap.launchers:
             print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
             subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])

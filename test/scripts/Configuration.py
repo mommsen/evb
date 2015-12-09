@@ -141,6 +141,8 @@ class ConfigFromFile(Configuration):
                     tid += 1
                     if app.params['class'] == 'evb::EVM':
                         context.role = 'EVM'
+                        if count != 0:
+                            raise Exception("The EVM must map to RU0")
                     self.fixFerolPorts(app)
                 context.applications.append(app)
             self.add(context)
@@ -191,8 +193,13 @@ class ConfigFromFile(Configuration):
             if prop[0] == 'DestinationIP':
                 destHostType = re.match(r'([A-Z0-9]*?)_FRL_HOST_NAME',prop[2]).group(1)
                 destHostInfo = self.symbolMap.getHostInfo(destHostType)
-            elif '_PORT_' not in prop[0]:
+                if destHostType == 'RU0':
+                    app.params['sendsToEVM'] = True
+                else:
+                    app.params['sendsToEVM'] = False
+            elif '_PORT_' not in prop[0] and 'lightStop' not in prop[0]:
                 newProp.append(prop)
+        newProp.append(('lightStop','boolean','true'))
         newProp.append(('DestinationIP','string',destHostInfo['frlHostname']))
         if enableStream0 and enableStream1 or slotNumber%2:
             newProp.append(('TCP_SOURCE_PORT_FED0','unsignedInt',self.frlPorts[0]))
