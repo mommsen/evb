@@ -141,8 +141,8 @@ class ConfigFromFile(Configuration):
                     tid += 1
                     if app.params['class'] == 'evb::EVM':
                         context.role = 'EVM'
-                        if count != 0:
-                            raise Exception("The EVM must map to RU0")
+                        if count != '0':
+                            raise Exception("The EVM must map to RU0, but maps to RU"+count)
                     self.fixFerolPorts(app)
                 context.applications.append(app)
             self.add(context)

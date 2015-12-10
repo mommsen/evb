@@ -41,9 +41,16 @@ class ConfigCase(TestCase):
         return int(size*rate/1000000)
 
 
+    def sendsToEVM(self,application):
+        for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
+            if app.params['class'] == 'ferol::FerolController':
+                return app.params['sendsToEVM']
+        return False
+
+
     def setFragmentSize(self,fragSize,fragSizeRMS):
         for application in self._config.applications['FEROL']:
-            if application.params['sendsToEVM']:
+            if self.sendsToEVM(application):
                 messengers.setParam("Event_Length_bytes_FED0","unsignedInt","1024",**application)
                 messengers.setParam("Event_Length_bytes_FED1","unsignedInt","1024",**application)
                 messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt","0",**application)
