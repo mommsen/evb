@@ -57,7 +57,7 @@ class TestRunner:
             self.startLaunchers()
         elif self.args['launchers'] == 'stop':
             self.stopLaunchers()
-        return self.doIt()
+        return self.doIt() or self.args['launchers']
 
 
     def startLaunchers(self):

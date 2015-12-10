@@ -31,13 +31,15 @@ class ConfigCase(TestCase):
         sizes = self.getAppParam("superFragmentSize","unsignedInt","EVM")
         sizes.update( self.getAppParam("superFragmentSize","unsignedInt","RU") )
         sizes.update( self.getAppParam("eventSize","unsignedInt","BU") )
-        rate = self.getAppParam("eventRate","unsignedInt","EVM",0)["EVM0"]
-        return {'rate':rate,'sizes':sizes}
+        rates = self.getAppParam("eventRate","unsignedInt","EVM")
+        rates.update( self.getAppParam("eventRate","unsignedInt","RU") )
+        rates.update( self.getAppParam("eventRate","unsignedInt","BU") )
+        return {'rates':rates,'sizes':sizes}
 
 
     def getBandwidthMB(self,dataPoint):
         size = sum(list(x['sizes']['RU1'] for x in dataPoint))/float(len(dataPoint))
-        rate = sum(list(x['rate'] for x in dataPoint))/float(len(dataPoint))
+        rate = sum(list(x['rates']['RU1'] for x in dataPoint))/float(len(dataPoint))
         return int(size*rate/1000000)
 
 
@@ -72,9 +74,13 @@ class ConfigCase(TestCase):
         dataPoints = []
         self.setFragmentSize(fragSize,fragSizeRMS)
         self.start()
-        for n in range(nbMeasurements):
-            time.sleep(1)
+        if nbMeasurements == 0:
             dataPoints.append( self.getDataPoint() )
+            raw_input("Press Enter to stop...")
+        else:
+            for n in range(nbMeasurements):
+                time.sleep(1)
+                dataPoints.append( self.getDataPoint() )
         self.haltEvB()
         return dataPoints
 

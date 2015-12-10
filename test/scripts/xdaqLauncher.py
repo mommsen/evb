@@ -17,7 +17,7 @@ class xdaqThread(threading.Thread):
         self._process = None
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
-        self._xdaqCommand = [xdaqRoot+"/bin/xdaq.exe","-e "+xdaqRoot+"/etc/default.profile","-p "+str(xdaqPort)]
+        self._xdaqCommand = [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
 
 
     def run(self):
@@ -62,10 +62,10 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
         #print("Received '"+data+"' from "+self.client_address[0])
         sys.stdout.flush()
         try:
-            (command,port) = data.split(':',2)
+            (command,other) = data.split(':',2)
             if command == "startXDAQ":
                 try:
-                    (port,testname) = port.split(' ',2)
+                    (other,testname) = other.split(' ',2)
                 except ValueError:
                     if self.logDir:
                         self.request.sendall("Please specify a testname")
@@ -73,9 +73,9 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
                     else:
                         pass
             try:
-                xdaqPort = int(port)
+                port = int(other)
             except (TypeError,ValueError):
-                self.request.sendall("Received an invalid port number: '"+port+"'")
+                self.request.sendall("Received an invalid port number: '"+other+"'")
                 return
         except ValueError:
             command = data
