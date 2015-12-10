@@ -11,7 +11,7 @@ evb::readoutunit::FedFragment::FedFragment
 (
   const uint16_t fedId,
   const bool isMasterFed,
-  const std::string subSystem,
+  const std::string& subSystem,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
   uint32_t& fedErrorCount,

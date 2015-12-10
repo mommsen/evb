@@ -36,7 +36,7 @@ namespace evb {
       (
         const uint16_t fedId,
         const bool isMasterFed,
-        const std::string subSystem,
+        const std::string& subSystem,
         const EvBidFactoryPtr&,
         const uint32_t checkCRC,
         uint32_t& fedErrorCount,
@@ -87,7 +87,7 @@ namespace evb {
       uint32_t& crcErrors_;
       const uint16_t fedId_;
       const bool isMasterFed_;
-      const std::string subSystem_;
+      const std::string& subSystem_;
       uint16_t bxId_;
       uint32_t eventNumber_;
       EvBid evbId_;

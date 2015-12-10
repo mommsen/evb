@@ -45,7 +45,7 @@ namespace evb {
     private:
 
       const EvBid evbId_;
-      const std::string subSystem_;
+      const std::string& subSystem_;
       uint32_t size_;
 
       MissingFedIds missingFedIds_;
