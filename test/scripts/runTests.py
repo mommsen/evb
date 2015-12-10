@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-import argparse
 import os
 import re
 import sys
@@ -93,7 +92,8 @@ class RunTests(TestRunner):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
     runTests = RunTests()
     runTests.addOptions(parser)
     if not runTests.run( parser.parse_args() ):

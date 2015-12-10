@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-import argparse
 import os
 import re
 import sys
@@ -21,9 +20,9 @@ class RunScans(TestRunner):
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         parser.add_argument("configs",nargs='+',help="path to the config(s) to run")
-        parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size, default is 10")
-        parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan")
-        parser.add_argument("-r","--rms",default=0,type=float,help="relative rms of fragment size")
+        parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size [default: %(default)s]")
+        parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
+        parser.add_argument("-r","--rms",default=0,type=float,help="relative rms of fragment size [default: %(default)s]")
         parser.add_argument("--short",action='store_true',help="run a short scan")
         parser.add_argument("--full",action='store_true',help="run the full scan")
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
@@ -83,7 +82,8 @@ class RunScans(TestRunner):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
     runScans = RunScans()
     runScans.addOptions(parser)
     if not runScans.run( parser.parse_args() ):

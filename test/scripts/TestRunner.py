@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import argparse
 import os
@@ -38,9 +38,9 @@ class TestRunner:
     def addOptions(self,parser):
         parser.add_argument("-v","--verbose",action='store_true',help="print log info also to stdout")
         parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
-        parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory, default is "+self._evbTesterHome+'/log/')
+        parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
         if self._symbolMapfile:
-            parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use, default is "+self._symbolMapfile)
+            parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use, [default: %(default)s]")
         else:
             parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
 
