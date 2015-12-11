@@ -214,7 +214,7 @@ class PlotScans:
             self.latex.DrawLatex(0.145,legendPosY,self.args['subtag'])
             legendPosY -= 0.02
         nlegentries = len(self.args['cases'])
-        self.legend = ROOT.TLegend(0.12,legendPosY-nlegentries*0.04,0.38,legendPosY)
+        self.legend = ROOT.TLegend(0.12,legendPosY-nlegentries*0.04,width,legendPosY)
         self.legend.SetFillStyle(1001)
         self.legend.SetFillColor(0)
         self.legend.SetTextFont(42)
