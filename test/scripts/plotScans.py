@@ -7,9 +7,15 @@ import time
 
 import ROOT
 from ROOT import gROOT,gStyle
-#from ROOT import TGraphErrors,  TLegend, TH2D, TLatex, TPave
+
 
 class PlotScans:
+
+    def __init__(self):
+        self.colors  = [1,2,ROOT.kGreen+1,4,51,95,65,41,46,39,32]
+        self.markers = [20,21,22,23,34,33,29,24,25,26,27,28]
+        self.latex = ROOT.TLatex()
+        self.latex.SetNDC(1)
 
 
     def addOptions(self,parser):
@@ -19,14 +25,20 @@ class PlotScans:
         parser.add_argument("-tt","--title",help="Canvas title")
         parser.add_argument("-xt","--titleX",help="X axis title")
         parser.add_argument("-yt","--titleY",help="Y axis title")
+        parser.add_argument("-yr","--titleR",help="Y axis title for rate")
         parser.add_argument("--minx",type=float,help="X axis range, minimum")
         parser.add_argument("--maxx",type=float,help="X axis range, maximum")
         parser.add_argument("--miny",type=float,help="Y axis range, minimum")
         parser.add_argument("--maxy",type=float,help="Y axis range, maximum")
-        parser.add_argument("--logx",default=True,action="store_true",help="Use logarithmic scale on x axis [default: %(default)s]")
+        parser.add_argument("--ratemaxy",type=float,help="Y axis range for rate, maximum")
+        parser.add_argument("--rate",type=float,default="100",help="Rate in kHz to be displayed on the plot [default: %(default)s kHz]")
+        parser.add_argument("--nologx",default=False,action="store_true",help="Use logarithmic scale on x axis [default: %(default)s]")
         parser.add_argument("--logy",default=False,action="store_true",help="Use logarithmic scale on y axis [default: %(default)s]")
+        parser.add_argument("--hideDate",default=False,action="store_true",help="Hide the date")
+        parser.add_argument("--hideRate",default=False,action="store_true",help="Hide the rate curves")
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
         parser.add_argument("-a","--app",default="RU1",help="Take values from given application [default: %(default)s]")
+        parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
 
 
     def createCanvas(self):
@@ -42,15 +54,12 @@ class PlotScans:
         self.throughputPad = ROOT.TPad("throughputPad","",0,0,1,1)
         self.throughputPad.Draw()
         self.throughputPad.cd()
-        if self.args['logx']:
+        if not self.args['nologx']:
             self.throughputPad.SetLogx()
         if self.args['logy']:
             self.throughputPad.SetLogy()
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
-
-
-    def createAxes(self):
         if 'BU' in self.args['app']:
             range = [6,800,0,10000]
             title = "Throughput vs. Event Size"
@@ -74,18 +83,57 @@ class PlotScans:
             self.args['titleX'] = titleX
         if not self.args['titleY']:
             self.args['titleY'] = titleY
-        self.axes = ROOT.TH2D('axes','A',100,self.args['minx'],self.args['maxx'],100,self.args['miny'],self.args['maxy'])
-        self.axes.SetTitle(self.args['title'])
-        self.axes.GetXaxis().SetTitle(self.args['titleX'])
-        self.axes.GetYaxis().SetTitle(self.args['titleY'])
-        self.axes.GetXaxis().SetMoreLogLabels()
-        self.axes.GetXaxis().SetNoExponent()
-        self.axes.GetYaxis().SetTitleOffset(1.4)
-        self.axes.GetXaxis().SetTitleOffset(1.2)
-        self.axes.Draw()
+        self.throughputTH2D = ROOT.TH2D('throughputTH2D','A',100,self.args['minx'],self.args['maxx'],100,self.args['miny'],self.args['maxy'])
+        self.throughputTH2D.SetTitle(self.args['title'])
+        self.throughputTH2D.GetXaxis().SetTitle(self.args['titleX'])
+        self.throughputTH2D.GetYaxis().SetTitle(self.args['titleY'])
+        self.throughputTH2D.GetXaxis().SetMoreLogLabels()
+        self.throughputTH2D.GetXaxis().SetNoExponent()
+        self.throughputTH2D.GetYaxis().SetTitleOffset(1.4)
+        self.throughputTH2D.GetXaxis().SetTitleOffset(1.2)
+        self.throughputTH2D.Draw()
 
+
+    def createRatePad(self):
+        self.ratePad = ROOT.TPad("ratePad","",0,0,1,1)
+        self.ratePad.SetFillStyle(4000) ## transparent
+        self.ratePad.SetFillColor(0)
+        self.ratePad.SetFrameFillStyle(4000)
+        if not self.args['nologx']:
+            self.ratePad.SetLogx()
+        if self.args['logy']:
+            self.ratePad.SetLogy()
+        self.ratePad.Draw()
+        self.ratePad.cd()
+        if 'BU' in self.args['app']:
+            ratemaxy = 20
+            titleR = "Event Rate at BU (kHz)"
+            titleOffset = 1.1
+        else:
+            ratemaxy = 380
+            titleR = "Event Rate at EVM (kHz)"
+            titleOffset = 1.4
+        if not self.args['ratemaxy']:
+            self.args['ratemaxy'] = ratemaxy
+        if not self.args['titleR']:
+            self.args['titleR'] = titleR
+        self.rateTH2D = ROOT.TH2D('rateTH2D','A',100,self.args['minx'],self.args['maxx'],100,0,self.args['ratemaxy'])
+        self.rateTH2D.GetXaxis().SetTickLength(0);
+        self.rateTH2D.GetXaxis().SetLabelOffset(999);
+        self.rateTH2D.GetYaxis().SetTitle(self.args['titleR'])
+        self.rateTH2D.GetYaxis().SetTitleOffset(titleOffset)
+        self.rateTH2D.Draw('Y+')
+
+
+    def createAuxPad(self):
+        self.auxPad = ROOT.TPad("auxPad","",0,0,1,1)
+        self.auxPad.SetFillStyle(4000) ## transparent
+        self.auxPad.SetFillColor(0)
+        self.auxPad.SetFrameFillStyle(4000)
+        self.auxPad.Draw()
 
     def createLineSpeed(self):
+        self.throughputPad.cd()
         if 'BU' in self.args['app']:
             self.lineSpeed = ROOT.TLine(self.args['minx'],7000,self.args['maxx'],7000)
         else:
@@ -95,31 +143,65 @@ class PlotScans:
         self.lineSpeed.Draw()
 
 
+    def createRequirementLine(self):
+        self.ratePad.cd()
+        if 'BU' in self.args['app']:
+            rate = self.args['rate']/72
+        else:
+            rate = self.args['rate']
+        self.rateRequired = ROOT.TLine(self.args['minx'],rate,self.args['maxx'],rate)
+        self.rateRequired.SetLineColor(ROOT.kGray+2)
+        self.rateRequired.SetLineStyle(3)
+        self.rateRequired.Draw()
+
+
+    def createCMSpreliminary(self):
+        self.auxPad.cd()
+        self.CMSpave = ROOT.TPave(0.62,0.80,0.899,0.898,0,'NDC')
+        self.CMSpave.SetFillStyle(1001)
+        self.CMSpave.SetFillColor(0)
+        self.CMSpave.Draw()
+        self.latex.SetTextFont(62)
+        self.latex.SetTextSize(0.05)
+        self.latex.DrawLatex(0.625,0.83,"CMS")
+        self.latex.SetTextFont(52)
+        self.latex.DrawLatex(0.71,0.83,"Preliminary")
+
+
+    def createDate(self):
+        self.auxPad.cd()
+        self.datePave = ROOT.TPaveText(0.005,0.005,0.1,0.03,'NDC')
+        self.datePave.SetTextFont(42)
+        self.datePave.SetTextSize(0.03)
+        self.datePave.SetFillStyle(1001)
+        self.datePave.SetFillColor(0)
+        self.datePave.SetBorderSize(0)
+        self.datePave.SetTextAlign(12)
+        self.datePave.AddText( self.getFileDate() )
+        self.datePave.Draw()
+
+
     def createLegend(self):
+        self.throughputPad.cd()
+        self.latex.SetTextFont(42)
         legendPosY = 0.828
-        self.tl = ROOT.TLatex()
-        self.tl.SetTextFont(42)
-        self.tl.SetNDC(1)
+        width = 0.12+max(0.020*len(self.args['tag']),0.014*len(self.args['subtag']))
+        if width > 0.9: width=0.899
         if self.args['tag']:
-            width = 0.12+0.020*len(self.args['tag'])
-            if width > 0.9: width=0.899
-            self.pave = ROOT.TPave(0.12, legendPosY-0.03, width, legendPosY+0.069, 0, 'NDC')
+            self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
             self.pave.SetFillStyle(1001)
             self.pave.SetFillColor(0)
             self.pave.Draw()
-            self.tl.SetTextSize(0.05)
-            self.tl.DrawLatex(0.14, legendPosY, self.args['tag'])
+            self.latex.SetTextSize(0.05)
+            self.latex.DrawLatex(0.14,legendPosY,self.args['tag'])
             legendPosY -= 0.06
         if self.args['subtag']:
-            width2 = 0.12+0.015*len(self.args['subtag'])
-            if width2 > 0.9: width2=0.899
-            if width2 < width: width2 = width
-            self.pave2 = ROOT.TPave(0.12, legendPosY-0.02, width2, legendPosY+0.03, 0, 'NDC')
+            self.pave2 = ROOT.TPave(0.12,legendPosY-0.02,width,legendPosY+0.03,0,'NDC')
             self.pave2.SetFillStyle(1001)
             self.pave2.SetFillColor(0)
             self.pave2.Draw()
-            self.tl.SetTextSize(0.035)
-            self.tl.DrawLatex(0.145, legendPosY, self.args['subtag'])
+            self.latex.SetTextSize(0.035)
+            self.latex.DrawLatex(0.145,legendPosY,self.args['subtag'])
             legendPosY -= 0.02
         nlegentries = len(self.args['cases'])
         self.legend = ROOT.TLegend(0.12,legendPosY-nlegentries*0.04,0.38,legendPosY)
@@ -131,33 +213,79 @@ class PlotScans:
         self.legend.Draw()
 
 
+    def fillLegend(self):
+        useLegend = False
+        if self.args['legend']:
+            if len(self.args['legend']) != len(self.throughputGraphs):
+                print("Legends doesn't match with filelist, falling back to default")
+            else:
+                useLegend = True
+        for n,graph in enumerate(self.throughputGraphs):
+            if useLegend:
+                self.legend.AddEntry(graph,self.args['legend'][n],'P')
+            else:
+                self.legend.AddEntry(graph,graph.GetTitle(),'P')
+
+
     def getThroughputGraph(self,n,case):
         if len(case['sizes']) == 0:
             return None
         from numpy import array
-        colors  = [1,2,ROOT.kGreen+1,4,51,95,65,41,46,39,32]
-        markers = [20,21,22,23,34,33,29,24,25,26,27,28]
         graph = ROOT.TGraphErrors(len(case['sizes']),
                                   array(case['sizes'],'f'),
                                   array(case['throughputs'],'f'),
                                   array(case['rmsSizes'],'f'),
                                   array(case['rmsThroughputs'],'f'))
+        graph.SetTitle(case['name'])
         graph.SetLineWidth(2)
-        graph.SetLineColor(colors[n])
-        graph.SetMarkerColor(colors[n])
-        graph.SetMarkerStyle(markers[n])
+        graph.SetLineColor(self.colors[n])
+        graph.SetMarkerColor(self.colors[n])
+        graph.SetMarkerStyle(self.markers[n])
         graph.SetMarkerSize(1.7)
         graph.Draw("PL")
-        self.legend.AddEntry(graph,case['name'],'P')
+        return graph
+
+
+    def getRateGraph(self,n,case):
+        if len(case['sizes']) == 0:
+            return None
+        from numpy import array
+        graph = ROOT.TGraphErrors(len(case['sizes']),
+                                  array(case['sizes'],'f'),
+                                  array(case['rates'],'f'),
+                                  array(case['rmsSizes'],'f'),
+                                  array(case['rmsRates'],'f'))
+        graph.SetTitle(case['name'])
+        graph.SetLineWidth(1)
+        graph.SetLineStyle(2)
+        graph.SetLineColor(self.colors[n])
+        graph.Draw("C")
         return graph
 
 
     def createThroughputGraphs(self):
+        self.throughputPad.cd()
         self.throughputGraphs = []
         for n,case in enumerate(self.cases):
             graph = self.getThroughputGraph(n,case)
             if graph:
                 self.throughputGraphs.append(graph)
+
+
+    def createRateGraphs(self):
+        self.ratePad.cd()
+        self.rateGraphs = []
+        for n,case in enumerate(self.cases):
+            graph = self.getRateGraph(n,case)
+            if graph:
+                self.rateGraphs.append(graph)
+
+
+    def getFileDate(self):
+        maxTime = 0.
+        for case in self.args['cases']:
+            maxTime = max(maxTime,os.path.getctime(case))
+        return time.strftime("%d %b %Y",time.gmtime(maxTime))
 
 
     def readCaseData(self,case):
@@ -226,10 +354,18 @@ class PlotScans:
         self.printTable()
         self.createCanvas()
         self.createThroughputPad()
-        self.createAxes()
+        self.createAuxPad()
         self.createLineSpeed()
+        if not self.args['hideDate']:
+            self.createDate()
+        if not self.args['hideRate']:
+            self.createRatePad()
+            self.createRequirementLine()
+            self.createRateGraphs()
         self.createLegend()
         self.createThroughputGraphs()
+        self.fillLegend()
+        self.createCMSpreliminary()
         self.canvas.Print(self.canvas.GetName()+".pdf")
         self.canvas.Print(self.canvas.GetName()+".png")
 
