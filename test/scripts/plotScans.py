@@ -132,9 +132,11 @@ class PlotScans:
 
 
     def getThroughputGraph(self,n,case):
+        if len(case['sizes']) == 0:
+            return None
         from numpy import array
-        colors  = [1,2,ROOT.kGreen+1,4,51,95,65,39,32]
-        markers = [20,21,22,23,34,33,29,24,25,26]
+        colors  = [1,2,ROOT.kGreen+1,4,51,95,65,41,46,39,32]
+        markers = [20,21,22,23,34,33,29,24,25,26,27,28]
         graph = ROOT.TGraphErrors(len(case['sizes']),
                                   array(case['sizes'],'f'),
                                   array(case['throughputs'],'f'),
@@ -154,7 +156,8 @@ class PlotScans:
         self.throughputGraphs = []
         for n,case in enumerate(self.cases):
             graph = self.getThroughputGraph(n,case)
-            self.throughputGraphs.append(graph)
+            if graph:
+                self.throughputGraphs.append(graph)
 
 
     def readCaseData(self,case):
@@ -201,21 +204,23 @@ class PlotScans:
 
     def printTable(self):
         for case in self.cases:
-            print(86*"-")
+            print(47*"-")
             print("Case: "+case['name']+" - "+self.args['app'])
-            print(86*"-")
+            print(47*"-")
             if 'BU' in self.args['app']:
                 unit = '(kB)'
             else:
                 unit = '(B)'
             print("Size %4s : Throughput (MB/s) :      Rate (kHz)"%(unit))
-            print(86*"-")
+            print(47*"-")
             for entry in zip(case['sizes'],case['throughputs'],case['rmsThroughputs'],case['rates'],case['rmsRates']):
                 print("%9d :  %6.1f +- %6.1f :  %5.1f +- %5.1f"%entry)
+            print(47*"-")
+
 
     def doIt(self,args):
         self.args = vars(args)
-        print(self.args)
+        #print(self.args)
 
         self.readData()
         self.printTable()
