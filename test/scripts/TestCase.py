@@ -319,6 +319,7 @@ class TestCase:
         self.halt('BU')
         self.waitForState('Halted')
         print(" done")
+        sleep(1)
 
 
     def sendResync(self):
