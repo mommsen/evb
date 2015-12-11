@@ -185,7 +185,17 @@ class PlotScans:
         self.throughputPad.cd()
         self.latex.SetTextFont(42)
         legendPosY = 0.828
-        width = 0.12+max(0.020*len(self.args['tag']),0.014*len(self.args['subtag']))
+        tagLen = 0
+        subtagLen = 0
+        try:
+            tagLen = 0.020*len(self.args['tag'])
+        except TypeError:
+            pass
+        try:
+            subtagLen = 0.014*len(self.args['subtag'])
+        except TypeError:
+            pass
+        width = 0.12 + max(tagLen,subtagLen)
         if width > 0.9: width=0.899
         if self.args['tag']:
             self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
