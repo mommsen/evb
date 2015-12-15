@@ -22,9 +22,21 @@ class ConfigCase(TestCase):
 
 
     def checkRate(self):
-        self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
-        self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
-        self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
+        tries = 0
+        print("Checking if rate is >10 Hz:")
+        while True:
+            tries += 1
+            try:
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
+                return
+            except ValueException as e:
+                if tries < 10:
+                    time.sleep(1)
+                else:
+                    print("FAILED: "+str(e))
+                    raise e
 
 
     def getDataPoint(self):
@@ -65,8 +77,8 @@ class ConfigCase(TestCase):
 
 
     def start(self):
-        self.configureEvB()
-        self.enableEvB()
+        self.configureEvB(maxTries=30)
+        self.enableEvB(maxTries=30)
         self.checkRate()
 
 

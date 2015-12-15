@@ -243,7 +243,7 @@ class TestCase:
             messengers.sendCmdToApp(command='Enable',**application)
 
 
-    def configureEvB(self):
+    def configureEvB(self,maxTries=10):
         sys.stdout.write("Configuring EvB")
         sys.stdout.flush()
         self.configure('FEROL')
@@ -251,11 +251,11 @@ class TestCase:
         self.configure('EVM')
         self.configure('RU')
         self.configure('BU')
-        self.waitForState(('Ready','Configured'))
+        self.waitForState(('Ready','Configured'),maxTries)
         print(" done")
 
 
-    def enableEvB(self,sleepTime=5,runNumber=1):
+    def enableEvB(self,sleepTime=5,runNumber=1,maxTries=10):
         sys.stdout.write("Enabling EvB with run number "+str(runNumber)+"...")
         sys.stdout.flush()
         self.setParam("runNumber","unsignedInt",runNumber)
@@ -263,7 +263,7 @@ class TestCase:
         self.enable('RU')
         self.enable('BU')
         self.enable('FEROL')
-        self.waitForState('Enabled')
+        self.waitForState('Enabled',maxTries)
         print("done")
         if sleepTime > 0:
             sys.stdout.write("Building for "+str(sleepTime)+"s...")
@@ -273,7 +273,7 @@ class TestCase:
             self.checkState('Enabled')
 
 
-    def stopEvB(self,runDir=None):
+    def stopEvB(self,runDir=None,maxTries=10):
         eventToStop = self.getEventInFuture()
         self.setAppParam('stopAtEvent','unsignedInt',eventToStop,'FEROL')
         self.setAppParam('stopLocalInputAtEvent','unsignedInt',eventToStop,'EVM')
@@ -294,22 +294,22 @@ class TestCase:
         self.waitForAppState('Ready','EVM',maxTries=60)
         self.stop('RU')
         self.stop('BU')
-        self.waitForState('Ready')
+        self.waitForState('Ready',maxTries)
         print(" done")
         self.checkEventCount()
 
 
-    def clearEvB(self):
+    def clearEvB(self,maxTries=10):
         sys.stdout.write("Clearing EvB")
         sys.stdout.flush()
         self.clear('EVM')
         self.clear('RU')
         self.clear('BU')
-        self.waitForState('Ready')
+        self.waitForState('Ready',maxTries)
         print(" done")
 
 
-    def haltEvB(self):
+    def haltEvB(self,maxTries=10):
         sys.stdout.write("Halting EvB")
         sys.stdout.flush()
         self.halt('FEROL')
@@ -317,7 +317,7 @@ class TestCase:
         self.halt('EVM')
         self.halt('RU')
         self.halt('BU')
-        self.waitForState('Halted')
+        self.waitForState('Halted',maxTries)
         print(" done")
         sleep(1)
 
@@ -487,8 +487,8 @@ class TestCase:
         shutil.rmtree(runDir)
 
 
-    def prepare(self,testname):
+    def prepare(self,testname,maxTries=10):
         self.startXDAQs(testname)
         self.sendCmdToExecutive()
-        self.waitForState(('Halted','uninitialized'))
+        self.waitForState(('Halted','uninitialized'),maxTries)
         self.startPt()

@@ -102,6 +102,7 @@ class ConfigFromFile(Configuration):
 
     def __init__(self,symbolMap,configFile):
         self.frlPorts = ('60500','60600')
+        self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
         ETroot = ET.parse(configFile).getroot()
 
@@ -188,6 +189,10 @@ class ConfigFromFile(Configuration):
                 enableStream0 = (prop[2] == 'true')
             elif prop[0] == 'enableStream1':
                 enableStream1 = (prop[2] == 'true')
+            elif prop[0] == 'expectedFedId_0':
+                fedId0 = prop[2]
+            elif prop[0] == 'expectedFedId_1':
+                fedId1 = prop[2]
             elif prop[0] == 'slotNumber':
                 slotNumber = int(prop[2])
             if prop[0] == 'DestinationIP':
@@ -206,11 +211,15 @@ class ConfigFromFile(Configuration):
             newProp.append(('TCP_SOURCE_PORT_FED1','unsignedInt',self.frlPorts[1]))
             newProp.append(('TCP_DESTINATION_PORT_FED0','unsignedInt',self.frlPorts[0]))
             newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[1]))
+            self.fedId2Port[fedId0] = self.frlPorts[0]
+            self.fedId2Port[fedId1] = self.frlPorts[1]
         else:
             newProp.append(('TCP_SOURCE_PORT_FED0','unsignedInt',self.frlPorts[1]))
             newProp.append(('TCP_SOURCE_PORT_FED1','unsignedInt',self.frlPorts[0]))
             newProp.append(('TCP_DESTINATION_PORT_FED0','unsignedInt',self.frlPorts[1]))
             newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[0]))
+            self.fedId2Port[fedId0] = self.frlPorts[1]
+            self.fedId2Port[fedId1] = self.frlPorts[0]
         app.properties = newProp
 
 
@@ -222,13 +231,11 @@ class ConfigFromFile(Configuration):
                 for source in prop[2]:
                     items = []
                     for item in source:
-                        if item[0] == 'port':
-                            if 'FRL_PORT' in item[2]:
-                                items.append((item[0],item[1],self.frlPorts[0]))
-                            else:
-                                items.append((item[0],item[1],self.frlPorts[1]))
-                        else:
+                        if item[0] == 'fedId':
+                            fedId = item[2]
+                        if item[0] != 'port':
                             items.append(item)
+                    items.append(('port','unsignedInt',self.fedId2Port[fedId]))
                     sources.append(items)
                 newProp.append(('ferolSources','Struct',sources))
             else:

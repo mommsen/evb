@@ -61,7 +61,7 @@ class PlotScans:
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
         if 'BU' in self.args['app']:
-            range = [6,800,0,10000]
+            range = [1,5000,0,10000]
             title = "Throughput vs. Event Size"
             titleX = "Event Size (kB)"
         else:
@@ -107,7 +107,7 @@ class PlotScans:
         self.ratePad.cd()
         if 'BU' in self.args['app']:
             ratemaxy = 20
-            titleR = "Event Rate at BU (kHz)"
+            titleR = "Event Rate at %(app)s (kHz)"%(self.args)
             titleOffset = 1.1
         else:
             ratemaxy = 380
@@ -195,7 +195,7 @@ class PlotScans:
             subtagLen = 0.014*len(self.args['subtag'])
         except TypeError:
             pass
-        width = 0.12 + max(tagLen,subtagLen)
+        width = 0.12 + max(tagLen,subtagLen,0.2)
         if width > 0.9: width=0.899
         if self.args['tag']:
             self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
@@ -269,7 +269,7 @@ class PlotScans:
         graph.SetLineWidth(1)
         graph.SetLineStyle(2)
         graph.SetLineColor(self.colors[n])
-        graph.Draw("C")
+        graph.Draw("L")
         return graph
 
 
