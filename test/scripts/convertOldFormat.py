@@ -57,7 +57,7 @@ if __name__ == "__main__":
                 try:
                     sizes,rates = line.split(':')
                     superFragmentSize = int(sizes.split(',')[1])
-                    entry['fragSize'] = superFragmentSize / (nstreams-1)
+                    entry['fragSize'] = superFragmentSize / ((nstreams-1) / nrus)
                     entry['fragSizeRMS'] = 0
                     entry['measurement'] = []
                     for rate in rates.split(','):
