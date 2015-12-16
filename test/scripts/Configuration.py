@@ -15,6 +15,7 @@ class Configuration():
         self.symbolMap = symbolMap
         self.contexts = {}
         self.ptUtcp = []
+        self.ptIBV = []
         self.applications = {}
         self.xcns = 'http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30'
 
@@ -36,6 +37,8 @@ class Configuration():
                 self.addAppInfoToApplications('BU',appInfo)
             elif app.params['class'] == 'pt::utcp::Application':
                 self.ptUtcp.append( copy.deepcopy(appInfo) )
+            elif app.params['class'] == 'pt::ibv::Application':
+                self.ptIBV.append( copy.deepcopy(appInfo) )
 
 
     def addAppInfoToApplications(self,role,appInfo):

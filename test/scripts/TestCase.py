@@ -241,6 +241,8 @@ class TestCase:
             messengers.sendCmdToApp(command='Configure',**application)
         for application in self._config.ptUtcp:
             messengers.sendCmdToApp(command='Enable',**application)
+        for application in self._config.ptIBV:
+            messengers.sendCmdToApp(command='connect',**application)
 
 
     def configureEvB(self,maxTries=10):
