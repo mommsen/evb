@@ -36,7 +36,6 @@
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2ogevb2g.h"
 #include "log4cplus/loggingmacros.h"
-#include "tcpla/MemoryCache.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/CommittedHeapAllocator.h"
 #include "toolbox/mem/MemoryPoolFactory.h"
@@ -67,11 +66,6 @@ namespace evb {
       Input(ReadoutUnit*);
 
       ~Input();
-
-      /**
-       * Callback for individual FED fragments received from pt::frl
-       */
-      void rawDataAvailable(toolbox::mem::Reference*, tcpla::MemoryCache*);
 
       /**
        * Get the next complete super fragment.
@@ -249,37 +243,6 @@ evb::readoutunit::Input<ReadoutUnit,Configuration>::~Input()
 {
   if ( dummySuperFragmentWL_ && dummySuperFragmentWL_->isActive() )
     dummySuperFragmentWL_->cancel();
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::Input<ReadoutUnit,Configuration>::rawDataAvailable
-(
-  toolbox::mem::Reference* bufRef,
-  tcpla::MemoryCache* cache
-)
-{
-  const I2O_DATA_READY_MESSAGE_FRAME* frame = (I2O_DATA_READY_MESSAGE_FRAME*)bufRef->getDataLocation();
-
-  boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
-
-  const typename FerolStreams::iterator pos = ferolStreams_.find(frame->fedid);
-  if ( pos == ferolStreams_.end() )
-  {
-    std::ostringstream msg;
-    msg << "The received FED " << frame->fedid;
-    msg << " is not in the excepted FED list: ";
-
-    typename Configuration::FerolSources::const_iterator it, itEnd;
-    for (it = readoutUnit_->getConfiguration()->ferolSources.begin(),
-           itEnd = readoutUnit_->getConfiguration()->ferolSources.end(); it != itEnd; ++it)
-    {
-      msg << it->bag.fedId.value_ << " ";
-    }
-    XCEPT_RAISE(exception::Configuration, msg.str());
-  }
-
-  pos->second->addFedFragment(bufRef,cache);
 }
 
 
@@ -837,7 +800,7 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
 
   {
     cgicc::div ferolStreams;
-    ferolStreams.set("title","Any fragments received from the FEROL (pt::frl) are accounted here. If any fragment FIFO is empty, the EvB waits for data from the given FED.");
+    ferolStreams.set("title","Any fragments received from the FEROL are accounted here. If any fragment FIFO is empty, the EvB waits for data from the given FED.");
 
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
