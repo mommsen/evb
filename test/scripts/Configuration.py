@@ -21,7 +21,7 @@ class Configuration():
 
 
     def add(self,context):
-        appInfo = dict((key,context.hostinfo[key]) for key in ('soapHostname','soapPort'))
+        appInfo = dict((key,context.hostinfo[key]) for key in ('soapHostname','soapPort','launcherPort'))
         contextKey = (appInfo['soapHostname'],appInfo['soapPort'])
         self.contexts[contextKey] = context
         for app in context.applications:

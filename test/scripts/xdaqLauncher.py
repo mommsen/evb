@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import glob
 import os
 import socket
 import subprocess
@@ -53,35 +54,31 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
         commands = {
             "startXDAQ":self.startXDAQ,
             "stopXDAQ":self.stopXDAQ,
-            "stopLauncher":self.stopLauncher
+            "stopLauncher":self.stopLauncher,
+            "getFiles":self.getFiles
             }
-        testname = None
+        args = None
 
         # self.request is the TCP socket connected to the client
         data = self.request.recv(1024).strip()
         #print("Received '"+data+"' from "+self.client_address[0])
         sys.stdout.flush()
         try:
-            (command,other) = data.split(':',2)
-            if command == "startXDAQ":
-                try:
-                    (other,testname) = other.split(' ',2)
-                except ValueError:
-                    if self.logDir:
-                        self.request.sendall("Please specify a testname")
-                        return
-                    else:
-                        pass
+            (command,portStr) = data.split(':',2)
             try:
-                port = int(other)
+                (portStr,args) = portStr.split(' ',2)
+            except ValueError:
+                pass
+            try:
+                port = int(portStr)
             except (TypeError,ValueError):
-                self.request.sendall("Received an invalid port number: '"+other+"'")
+                self.request.sendall("Received an invalid port number: '"+portStr+"'")
                 return
         except ValueError:
             command = data
             port = None
         try:
-            commands[command](port,testname)
+            commands[command](port,args)
         except KeyError:
             self.request.sendall("Received unknown command '"+command+"'")
 
@@ -94,6 +91,9 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
 
 
     def startXDAQ(self,port,testname):
+        if self.server.logDir and testname is None:
+            self.request.sendall("Please specify a testname")
+            return
         if port is None:
             self.request.sendall("Please specify a port number")
             return
@@ -120,8 +120,10 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             return "XDAQ process on port "+str(port)+" has already died: "+str(thread._process.returncode)
 
 
-    def stopXDAQ(self,port,testname):
+    def stopXDAQ(self,port,args):
         response = ""
+        for file in glob.glob("/tmp/dump_*txt"):
+            os.remove(file)
         if port is None:
             for port in xdaqLauncher.threads.keys():
                 response += self.killProcess(port)+"\n"
@@ -137,13 +139,20 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             self.request.sendall(response)
 
 
-    def stopLauncher(self,port,testname):
+    def stopLauncher(self,port,args):
         response = ""
         for port in xdaqLauncher.threads.keys():
             response += self.killProcess(port)+"\n"
         response += "Terminating launcher"
         self.request.sendall(response)
         threading.Thread(target = self.server.shutdown).start()
+
+
+    def getFiles(self,port,dir):
+        if dir is None:
+            self.request.sendall("Please specify a directory")
+            return
+        self.request.sendall( str(os.listdir(dir)) )
 
 
 if __name__ == "__main__":

@@ -28,9 +28,13 @@ def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None,testname=""):
             s.send(cmd+" "+testname)
         else:
             s.send(cmd+':'+soapPort+" "+testname)
-        reply = s.recv(1024)
+        response = []
+        while True:
+            reply = s.recv(1024)
+            if not reply: break
+            response.append(reply)
         s.close()
-        return reply
+        return ''.join(response)
     except socket.error:
         pass
 
@@ -56,7 +60,7 @@ def sendSoapMessage(soapHostname,soapPort,urn,body):
     return minidom.parseString(response)
 
 
-def sendCmdToApp(command,soapHostname,soapPort,app,instance):
+def sendCmdToApp(command,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
     response = sendSoapMessage(soapHostname,soapPort,urn,"<xdaq:"+command+" xmlns:xdaq=\"urn:xdaq-soap:3.0\"/>")
     xdaqResponse = response.getElementsByTagName('xdaq:'+command+'Response')
@@ -70,7 +74,7 @@ def sendCmdToApp(command,soapHostname,soapPort,app,instance):
         return "unknown"
 
 
-def setParam(paramName,paramType,paramValue,soapHostname,soapPort,app,instance):
+def setParam(paramName,paramType,paramValue,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
     paramSet = """<xdaq:ParameterSet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct"><p:%(paramName)s xsi:type="xsd:%(paramType)s">%(paramValue)s</p:%(paramName)s></p:properties></xdaq:ParameterSet>""" % {'paramName':paramName,'paramType':paramType,'paramValue':str(paramValue),'app':app}
     response = sendSoapMessage(soapHostname,soapPort,urn,paramSet)
@@ -80,7 +84,7 @@ def setParam(paramName,paramType,paramValue,soapHostname,soapPort,app,instance):
                             +response.toprettyxml()))
 
 
-def getParam(paramName,paramType,soapHostname,soapPort,app,instance):
+def getParam(paramName,paramType,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
     paramGet = """<xdaq:ParameterGet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct"><p:%(paramName)s xsi:type="xsd:%(paramType)s"/></p:properties></xdaq:ParameterGet>""" % {'paramName':paramName,'paramType':paramType,'app':app}
     response = sendSoapMessage(soapHostname,soapPort,urn,paramGet)
@@ -95,5 +99,5 @@ def getParam(paramName,paramType,soapHostname,soapPort,app,instance):
         return value
 
 
-def getStateName(soapHostname,soapPort,app,instance):
-    return getParam("stateName","string",soapHostname,soapPort,app,instance)
+def getStateName(soapHostname,soapPort,launcherPort,app,instance):
+    return getParam("stateName","string",soapHostname,soapPort,launcherPort,app,instance)

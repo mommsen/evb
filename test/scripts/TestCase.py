@@ -45,8 +45,6 @@ class TestCase:
         for context in self._config.contexts.values():
             print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
             print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
-        for file in glob.glob("/tmp/dump_*txt"):
-            os.remove(file)
         sys.stdout.flush()
         sys.stdout = self._origStdout
 
@@ -211,8 +209,15 @@ class TestCase:
             pass
 
 
-    def getFiles(self,regex,dir="/tmp"):
-        return [f for f in os.listdir(dir) if re.search(regex,f)]
+    def getFiles(self,regex,dir="/tmp",app='EVM',instance=None):
+        files = []
+        try:
+            for application in self._config.applications[app]:
+                if instance is None or str(instance) == application['instance']:
+                    files.extend( eval(messengers.sendCmdToLauncher("getFiles",application['soapHostname'],application['launcherPort'],application['soapPort'],dir)) )
+        except KeyError:
+            pass
+        return [f for f in files if re.search(regex,f)]
 
 
     def configure(self,app,instance=None):
@@ -355,7 +360,7 @@ class TestCase:
 
 
 
-    def checkEVM(self,superFragmentSize,eventRate=1000):
+    def checkEVM(self,superFragmentSize,eventRate=100):
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"EVM")
         self.checkAppParam("eventCount","unsignedLong",500,operator.ge,"EVM")
         self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"EVM")
@@ -365,7 +370,7 @@ class TestCase:
         self.checkAppParam("superFragmentSize","unsignedInt",superFragmentSize,operator.eq,"RU",instance)
 
 
-    def checkBU(self,eventSize,eventRate=1000,instance=None):
+    def checkBU(self,eventSize,eventRate=100,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
         self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.ge,"BU",instance)
         self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"BU",instance)
@@ -410,6 +415,7 @@ class TestCase:
             param.write('    "TRANSFER_MODE": "TIER0_TRANSFER_OFF"')
             param.write('}')
         return ramDiskOccupancy
+
 
     def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):
         runDir=testDir+"/run"+runNumber
