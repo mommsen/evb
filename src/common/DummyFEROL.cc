@@ -27,7 +27,8 @@ evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   sockfd_(0),
   doProcessing_(false),
   generatingActive_(false),
-  fragmentFIFO_(this,"fragmentFIFO")
+  fragmentFIFO_(this,"fragmentFIFO"),
+  lastResync_(0)
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );
 
@@ -157,6 +158,9 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
     table.add(tr()
               .add(td("last event number"))
               .add(td(boost::lexical_cast<std::string>(lastEventNumber_.value_))));
+    table.add(tr()
+              .add(td("last resync"))
+              .add(td(boost::lexical_cast<std::string>(lastResync_))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
@@ -207,6 +211,7 @@ void evb::test::DummyFEROL::resetMonitoringCounters()
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
   dataMonitoring_.reset();
   lastEventNumber_ = 0;
+  lastResync_ = 0;
 }
 
 
@@ -422,6 +427,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
       if ( resyncAtEvent_.value_ < 1<<25 )
       {
         fragmentGenerator_.resyncAtEvent(resyncAtEvent_);
+        lastResync_ = resyncAtEvent_;
         resyncAtEvent_ = 1<<25;
       }
 

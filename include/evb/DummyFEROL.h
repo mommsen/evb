@@ -102,6 +102,7 @@ namespace evb {
       FragmentFIFO fragmentFIFO_;
 
       dummyFEROL::FragmentGenerator fragmentGenerator_;
+      uint32_t lastResync_;
 
       PerformanceMonitor dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
