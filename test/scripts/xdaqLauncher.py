@@ -3,6 +3,7 @@
 import argparse
 import glob
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -83,6 +84,15 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             self.request.sendall("Received unknown command '"+command+"'")
 
 
+    def cleanTempFiles(self):
+        try:
+            for file in glob.glob("/tmp/dump_*txt"):
+                os.remove(file)
+            shutil.rmtree("/tmp/evb_test")
+        except OSError:
+            pass
+
+
     def getLogFile(self,testname):
         if self.server.logDir:
             return self.server.logDir+"/"+testname+"-"+socket.gethostname()+".log"
@@ -100,6 +110,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
         if port in xdaqLauncher.threads and xdaqLauncher.threads[port].is_alive():
             self.request.sendall("There is already a XDAQ process running on port "+str(port))
             return
+        self.cleanTempFiles()
         try:
             thread = xdaqThread(port,self.getLogFile(testname))
             thread.start()
@@ -122,8 +133,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
 
     def stopXDAQ(self,port,args):
         response = ""
-        for file in glob.glob("/tmp/dump_*txt"):
-            os.remove(file)
+        self.cleanTempFiles()
         if port is None:
             for port in xdaqLauncher.threads.keys():
                 response += self.killProcess(port)+"\n"

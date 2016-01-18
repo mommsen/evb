@@ -112,7 +112,7 @@ class TestCase:
             pass
 
 
-    def waitForAppState(self,targetState,app,instance=None,maxTries=10):
+    def waitForAppState(self,targetState,app,instance=None,maxTries=10,runDir=None):
         tries = 0
         while True:
             try:
@@ -125,6 +125,9 @@ class TestCase:
                 if tries > maxTries:
                     print("")
                     raise(e)
+                if runDir:
+                    for rawFile in glob.glob(runDir+"/*.raw"):
+                        os.remove(rawFile)
                 sleep(1)
 
 
@@ -178,11 +181,12 @@ class TestCase:
     def checkParam(self,paramName,paramType,expectedValue,comp,app,application):
         tries = 0
         while tries < 3:
-            tries += 1
             value = messengers.getParam(paramName,paramType,**application)
             if comp(value,expectedValue):
                 print(app+application['instance']+" "+paramName+": "+str(value))
                 return
+            sleep(1)
+            tries += 1
 
         raise(ValueException(paramName+" on "+app+application['instance']+
                              " is "+str(value)+" instead of "+str(expectedValue)))
@@ -209,7 +213,7 @@ class TestCase:
             pass
 
 
-    def getFiles(self,regex,dir="/tmp",app='EVM',instance=None):
+    def getFiles(self,regex,app,instance=None,dir="/tmp"):
         files = []
         try:
             for application in self._config.applications[app]:
@@ -289,16 +293,10 @@ class TestCase:
         sys.stdout.flush()
 
         self.stop('FEROL')
-        if runDir:
-            for rawFile in glob.glob(runDir+"/*.raw"):
-                os.remove(rawFile)
-            self.waitForAppState('Ready','FEROL',maxTries=60)
+        self.waitForAppState('Ready','FEROL',maxTries=60,runDir=runDir)
 
         self.stop('EVM')
-        if runDir:
-            for rawFile in glob.glob(runDir+"/*.raw"):
-                os.remove(rawFile)
-        self.waitForAppState('Ready','EVM',maxTries=60)
+        self.waitForAppState('Ready','EVM',maxTries=60,runDir=runDir)
         self.stop('RU')
         self.stop('BU')
         self.waitForState('Ready',maxTries)
