@@ -9,8 +9,8 @@ class case_2x1_hugeEvents(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkAppParam("eventRate","unsignedInt",1000,operator.gt,"EVM")
-        self.checkAppParam("nbEventsBuilt","unsignedLong",1000,operator.gt,"BU")
+        self.checkAppParam("eventRate","unsignedInt",10,operator.gt,"EVM")
+        self.checkAppParam("nbEventsBuilt","unsignedLong",100,operator.gt,"BU")
         self.haltEvB()
 
 

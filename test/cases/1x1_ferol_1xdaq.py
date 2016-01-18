@@ -13,7 +13,7 @@ class case_1x1_ferol_1xdaq(TestCase):
         self.checkBU(2048)
         self.setAppParam('writeNextFragmentsToFile','unsignedInt','4','EVM')
         time.sleep(1)
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0512.txt$")
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0512.txt$",app='EVM')
         if len(dumps) != 4:
             raise ValueException("Expected 4 dump file from FED 512, but found: "+str(dumps))
         self.stopEvB()

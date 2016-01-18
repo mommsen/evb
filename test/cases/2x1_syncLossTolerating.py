@@ -36,7 +36,7 @@ class case_2x1_syncLossTolerating(TestCase):
                 pass
         if tries == 30:
             print(" FAILED")
-            raise(StateException("EVM not in expected stats 'MissingData'"))
+            raise(StateException(app+" not in expected stats 'MissingData'"))
         time.sleep(2)
         if app == "EVM":
             self.checkAppState("Enabled","RU")
@@ -47,9 +47,9 @@ class case_2x1_syncLossTolerating(TestCase):
             self.checkEVM(8192)
             self.checkRU(6144)
         self.checkAppState("Enabled","BU")
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$")
+        dumps = self.getFiles("dump_run[0-9]+_event[0-9]+_fed"+str(fed).zfill(4)+".txt$",app=app)
         if len(dumps) != 1:
-            raise ValueException("Expected one FED dump file, but found: "+str(dumps))
+            raise ValueException("Expected one FED dump file on "+app+", but found: "+str(dumps))
         time.sleep(10)
         self.checkAppState("Failed",app)
 

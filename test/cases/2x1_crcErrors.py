@@ -36,18 +36,21 @@ class case_2x1_crcErrors(TestCase):
         time.sleep(3)
         self.checkState("Enabled")
         self.checkIt(6)
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed000[157].txt$")
-        if len(dumps) != 6:
-            raise ValueException("Expected 6 FED dump files, but found: "+str(dumps))
-        dumps = self.getFiles("dump_run000001_event[0-9]+.txt$")
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0001.txt$",app='EVM')
+        if len(dumps) != 1:
+            raise ValueException("Expected 1 FED dump file on EVM, but found: "+str(dumps))
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed000[57].txt$",app='RU')
+        if len(dumps) != 5:
+            raise ValueException("Expected 5 FED dump files on RU, but found: "+str(dumps))
+        dumps = self.getFiles("dump_run000001_event[0-9]+.txt$",app='BU')
         if len(dumps) != 0:
-            raise ValueException("Expected no event dump files, but found: "+str(dumps))
+            raise ValueException("Expected no event dump files on BU, but found: "+str(dumps))
 
         print("100 CRC errors on FED 6")
         self.setAppParam('nbCRCerrors','unsignedInt','100','FEROL',6)
         time.sleep(5)
         self.checkState("Enabled")
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0006.txt$")
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed0006.txt$",app='RU')
         if len(dumps) != 10:
             raise ValueException("Expected 10 dump file from FED 6, but found: "+str(dumps))
         self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")

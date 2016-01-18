@@ -44,7 +44,7 @@ class case_2x1_syncLoss(TestCase):
             self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
-        dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$")
+        dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
 
