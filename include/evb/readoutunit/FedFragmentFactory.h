@@ -11,7 +11,6 @@
 #include "evb/readoutunit/SocketBuffer.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/StateMachine.h"
-#include "tcpla/MemoryCache.h"
 #include "toolbox/mem/Reference.h"
 
 
@@ -33,7 +32,6 @@ namespace evb {
       FedFragmentFactory(ReadoutUnit*, const EvBidFactoryPtr&);
 
       FedFragmentPtr getFedFragment(const uint16_t fedId, const bool isMasterFed);
-      FedFragmentPtr getFedFragment(const uint16_t fedId, const bool isMasterFed, toolbox::mem::Reference*, tcpla::MemoryCache*);
       FedFragmentPtr getFedFragment(const uint16_t fedId, const bool isMasterFed, const EvBid&, toolbox::mem::Reference*);
 
       bool append(FedFragmentPtr&, SocketBufferPtr&, uint32_t& usedSize);
@@ -108,30 +106,6 @@ evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment
 )
 {
   return makeFedFragment(fedId,isMasterFed);
-}
-
-
-template<class ReadoutUnit>
-evb::readoutunit::FedFragmentPtr
-evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getFedFragment
-(
-  const uint16_t fedId,
-  const bool isMasterFed,
-  toolbox::mem::Reference* bufRef,
-  tcpla::MemoryCache* cache
-)
-{
-  const FedFragmentPtr fedFragment = makeFedFragment(fedId,isMasterFed);
-  try
-  {
-    fedFragment->append(bufRef,cache);
-  }
-  catch(...)
-  {
-    errorHandler(fedFragment);
-  }
-
-  return fedFragment;
 }
 
 
