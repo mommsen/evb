@@ -43,9 +43,9 @@ class case_2x1_corruptedEvents(TestCase):
         sys.stdout.write("Corrupt 2 events on FED 7 - not tolerating")
         sys.stdout.flush()
         self.setAppParam('corruptNbEvents','unsignedInt','2','FEROL',7)
-        self.waitForAppState("MissingData","EVM")
+        self.waitForAppState("Failed","RU")
         print(" done")
-        self.checkAppState("Failed","RU")
+        self.checkAppState("MissingData","EVM")
         self.checkAppState("Enabled","BU")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed0007.txt$",app="EVM")
         if len(dumps) != 1:
