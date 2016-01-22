@@ -34,7 +34,7 @@ class CreateConfig:
         #configFile = "/Users/mommsen/cmsusr/daq2Test/daq2val/x86_64_slc6/daq2val/29083638/configuration.xml"
         configFile = "/tmp/"+time.strftime('%d%H%M%S')+".xml"
         javaCmd = ['java','-Doracle.net.tns_admin=/etc',
-                   '-jar','configurator_new_workflow_test_v2.jar',
+                   '-jar','configurator_new_workflow.jar',
                    '--properties',os.environ['HOME']+'/CONFIGURATOR.properties',
                    '--batch',
                    '--account','daqlocal','--site','daq2',
@@ -46,6 +46,10 @@ class CreateConfig:
                    '--makeConfig',
                    '--swt',self.args['swt'],
                    '--saveXML',configFile]
+        if self.args['useBlacklist']:
+            javaCmd.extend(['--blacklistSetup','.cms'])
+        if self.args['hostList']:
+            javaCmd.extend(['--hostList',self.args['hostList']])
         configCmd = " ".join(javaCmd)
         self.infoStr += "Java command used:\n%s\n\n" % configCmd
         print("Running "+configCmd+":")
@@ -169,5 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("swt",help="Software template to use")
     parser.add_argument("nBU",help="Number of BUs")
     parser.add_argument("output",help="Path to output directory")
+    parser.add_argument("-b","--useBlacklist",action='store_true',help="use latest blacklist")
+    parser.add_argument("-l","--hostList",help="only use RUs and BUs from the given file")
     createConfig = CreateConfig( parser.parse_args() )
     createConfig.doIt()
