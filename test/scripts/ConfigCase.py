@@ -7,16 +7,18 @@ from TestCase import *
 
 class ConfigCase(TestCase):
 
-    def __init__(self,symbolMap,configFile,stdout):
+    def __init__(self,symbolMap,configFile,fixPorts,stdout):
         self._origStdout = sys.stdout
         sys.stdout = stdout
-        self._config = Configuration.ConfigFromFile(symbolMap,configFile)
+        self._config = None #Initialize it in case ConfigFromFile throws an exception
+        self._config = Configuration.ConfigFromFile(symbolMap,configFile,fixPorts)
 
 
     def __del__(self):
-        for context in self._config.contexts.values():
-            print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-            print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
+        if self._config:
+            for context in self._config.contexts.values():
+                print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
+                print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
         sys.stdout.flush()
         sys.stdout = self._origStdout
 

@@ -10,6 +10,11 @@ import messengers
 from SymbolMap import SymbolMap
 from TestCase import TestCase
 
+
+class BadConfig(Exception):
+    pass
+
+
 class Tee(object):
     def __init__(self, *files):
         self._files = files
@@ -26,8 +31,6 @@ class Tee(object):
 class TestRunner:
 
     def __init__(self):
-        self._symbolMapfile = None
-
         try:
             self._evbTesterHome = os.environ["EVB_TESTER_HOME"]
         except KeyError:
@@ -39,25 +42,16 @@ class TestRunner:
         parser.add_argument("-v","--verbose",action='store_true',help="print log info also to stdout")
         parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
         parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
-        if self._symbolMapfile:
-            parser.add_argument("-m","--symbolMap",default=self._symbolMapfile,help="symbolMap file to use, [default: %(default)s]")
-        else:
-            parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
 
 
     def run(self,args):
         self.args = vars(args)
         #print(self.args)
-        self._symbolMap = SymbolMap(self.args['symbolMap'])
         try:
             os.mkdir(self.args['outputDir'])
         except OSError:
             pass
-        if self.args['launchers'] == 'start':
-            self.startLaunchers()
-        elif self.args['launchers'] == 'stop':
-            self.stopLaunchers()
-        return self.doIt() or self.args['launchers']
+        self.doIt()
 
 
     def startLaunchers(self):

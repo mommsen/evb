@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from TestRunner import TestRunner,Tee
+from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from TestCase import TestCase
 
@@ -23,27 +23,38 @@ class RunTests(TestRunner):
 
         sys.path.append(self._testCaseDir)
 
-        try:
-            self._symbolMapfile = self._testCaseDir + os.environ["EVB_SYMBOL_MAP"]
-        except KeyError:
-            pass
-
 
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         parser.add_argument("-a","--all",action='store_true',help="run all test cases in "+self._testCaseDir)
         parser.add_argument("tests",nargs='*',help="name of the test cases to run")
+        try:
+            symbolMapfile = self._testCaseDir + os.environ["EVB_SYMBOL_MAP"]
+            parser.add_argument("-m","--symbolMap",default=symbolMapfile,help="symbolMap file to use, [default: %(default)s]")
+        except KeyError:
+            parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
 
 
     def doIt(self):
+        self._symbolMap = SymbolMap(self.args['symbolMap'])
+
+        if self.args['launchers'] == 'start':
+            self.startLaunchers()
+            time.sleep(1)
+        elif self.args['launchers'] == 'stop':
+            self.stopLaunchers()
+            return
+
         patterns = []
         if self.args['all']:
             patterns = [re.compile("^([0-9]x[0-9].*)\.py$")]
         elif self.args['tests']:
             for test in self.args['tests']:
                 patterns.append(re.compile("("+test+")\.py$"))
+        elif self.args['launchers']:
+            return
         else:
-            return False
+            raise BadConfig
 
         testNames = []
         for file in os.listdir(self._testCaseDir):
@@ -68,7 +79,7 @@ class RunTests(TestRunner):
             if not self.args['verbose']:
                 stopTime = time.strftime("%H:%M:%S", time.localtime())
                 print(stopTime+" "+success)
-        return True
+        return
 
 
     def runTest(self,test,stdout):
@@ -96,5 +107,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     runTests = RunTests()
     runTests.addOptions(parser)
-    if not runTests.run( parser.parse_args() ):
+    try:
+        runTests.run( parser.parse_args() )
+    except BadConfig:
         parser.print_help()

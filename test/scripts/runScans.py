@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from TestRunner import TestRunner,Tee
+from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from ConfigCase import ConfigCase
 
@@ -19,12 +19,14 @@ class RunScans(TestRunner):
 
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
+        parser.add_argument("-m","--symbolMap",help="symbolMap file to use")
         parser.add_argument("configs",nargs='+',help="path to the config(s) to run")
         parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size [default: %(default)s]")
         parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
         parser.add_argument("-r","--rms",default=0,type=float,help="relative rms of fragment size [default: %(default)s]")
         parser.add_argument("--short",action='store_true',help="run a short scan")
         parser.add_argument("--full",action='store_true',help="run the full scan")
+        parser.add_argument("--fixPorts",action='store_true',help="fix the port numbers on FEROLs and RUs")
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
 
 
@@ -33,6 +35,8 @@ class RunScans(TestRunner):
             return False
         for configFile in self.args['configs']:
             configName = os.path.splitext(os.path.basename(configFile))[0]
+            if os.path.isdir(configFile):
+                configFile += "/"+configName+".xml"
             logFile = open(self.args['outputDir']+"/"+configName+".txt",'w')
             if self.args['verbose']:
                 stdout = Tee(sys.stdout,logFile)
@@ -60,12 +64,18 @@ class RunScans(TestRunner):
             else:
                 sizes = self.args['sizes']
 
+            if self.args['symbolMap']:
+                symbolMap = SymbolMap(self.args['symbolMap'])
+            else:
+                configDir = os.path.dirname(configFile)
+                symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+
             if self.args['append']:
                 mode = 'a'
             else:
                 mode = 'w'
             with open(self.args['outputDir']+"/"+configName+".dat",mode) as dataFile:
-                configCase = ConfigCase(self._symbolMap,configFile,stdout)
+                configCase = ConfigCase(symbolMap,configFile,self.args['fixPorts'],stdout)
                 configCase.prepare(configName)
                 for fragSize in sizes:
                     fragSizeRMS = int(fragSize * self.args['rms'])
@@ -86,5 +96,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     runScans = RunScans()
     runScans.addOptions(parser)
-    if not runScans.run( parser.parse_args() ):
+    try:
+        runScans.run( parser.parse_args() )
+    except BadConfig:
         parser.print_help()

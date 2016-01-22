@@ -103,7 +103,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile):
+    def __init__(self,symbolMap,configFile,fixPorts):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -114,8 +114,13 @@ class ConfigFromFile(Configuration):
 
         for c in ETroot.getiterator(str(QN(self.xcns,'Context'))):
             context = Context.Context()
-            context.role,count = self.urlToHostAndNumber(c.attrib['url'])
-            context.hostinfo = self.symbolMap.getHostInfo(context.role+str(count))
+            try:
+                url = c.attrib['url']
+                context.role,count = self.urlToHostAndNumber(url)
+                context.hostinfo = self.symbolMap.getHostInfo(context.role+str(count))
+            except TypeError:
+                print("Found unknown role for "+url+", which will be ignored")
+                continue
 
             polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
             context.policy = c.find(QN(polns,'policy').text)
@@ -139,7 +144,10 @@ class ConfigFromFile(Configuration):
                     app.params['i2oHostname'] = context.hostinfo['i2oHostname']
                     app.params['i2oPort'] =  context.hostinfo['i2oPort']
                 elif app.params['class'] == 'ferol::FerolController':
-                    self.rewriteFerolProperties(app)
+                    if fixPorts:
+                        self.rewriteFerolProperties(app)
+                    else:
+                        self.setSendsToEVM(app)
                 elif app.params['class'].startswith('evb::'):
                     app.params['tid'] = str(tid)
                     tid += 1
@@ -147,7 +155,8 @@ class ConfigFromFile(Configuration):
                         context.role = 'EVM'
                         if count != '0':
                             raise Exception("The EVM must map to RU0, but maps to RU"+count)
-                    self.fixFerolPorts(app)
+                    if fixPorts:
+                        self.fixFerolPorts(app)
                 context.applications.append(app)
             self.add(context)
 
@@ -183,6 +192,16 @@ class ConfigFromFile(Configuration):
         else:
             value = ''
         return [name,type,value]
+
+
+    def setSendsToEVM(self,app):
+        evmHostName = self.symbolMap.getHostInfo('RU0')['frlHostname']
+        for prop in app.properties:
+            if prop[0] == 'DestinationIP':
+                if prop[2] == evmHostName:
+                    app.params['sendsToEVM'] = True
+                else:
+                    app.params['sendsToEVM'] = False
 
 
     def rewriteFerolProperties(self,app):
@@ -266,8 +285,10 @@ class ConfigFromFile(Configuration):
         to a pair of strings of hosttype and index. I.e. 'RU' and '0' in this case.
         """
         pattern = re.compile(r'http://([A-Z0-9]*?)([0-9]+)_SOAP_HOST_NAME:.*')
-        h,n = pattern.match(url).group(1), pattern.match(url).group(2) ## so h will be RU/BU/EVM/FEROLCONTROLLER/..., n will be 0,1,2,3,...
-        return h,n
+        match = pattern.match(url)
+        if match:
+            return match.group(1), match.group(2) ## so h will be RU/BU/EVM/FEROLCONTROLLER/..., n will be 0,1,2,3,...
+        return None
 
 
 if __name__ == "__main__":
