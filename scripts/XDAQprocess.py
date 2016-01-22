@@ -125,7 +125,7 @@ class XDAQprocess:
         for app in self._applications:
             state = ''
             tries = 0
-            while not state in ('Ready','Configured','Configuring'):
+            while not state in ('Ready','Configured'):
                 time.sleep(1)
                 state = self.getStateName(*app)
                 if state == 'Failed':
