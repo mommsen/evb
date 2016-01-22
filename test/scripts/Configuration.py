@@ -166,6 +166,8 @@ class ConfigFromFile(Configuration):
         for child in app:
             if 'properties' in child.tag:
                 for prop in child:
+                    if 'rcmsStateListener' in prop.tag:
+                        continue
                     param = self.getValues(prop)
                     if param[1] == 'Array':
                         val = []
