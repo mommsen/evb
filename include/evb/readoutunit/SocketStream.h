@@ -239,6 +239,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::stopProcessing()
 {
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
+  while (parseSocketBuffersActive_) ::usleep(1000);
   socketBufferFIFO_.clear();
   currentFragment_.reset();
   this->fragmentFIFO_.clear();

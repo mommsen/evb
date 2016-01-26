@@ -85,6 +85,7 @@ namespace evb {
       toolbox::task::WorkLoop* posterWL_;
       toolbox::task::ActionSignature* posterAction_;
       volatile bool doProcessing_;
+      volatile bool active_;
 
     };
 
@@ -99,7 +100,8 @@ namespace evb {
 template<class ReadoutUnit>
 evb::readoutunit::BUposter<ReadoutUnit>::BUposter(ReadoutUnit* readoutUnit) :
 readoutUnit_(readoutUnit),
-doProcessing_(false)
+doProcessing_(false),
+active_(false)
 {
   startPosterWorkLoop();
 }
@@ -171,6 +173,14 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUposter<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
+  while (active_) ::usleep(1000);
+  for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin(), itEnd = buFrameQueueMap_.end();
+       it != itEnd; ++it)
+  {
+    toolbox::mem::Reference* bufRef;
+    while ( it->second.frameFIFO->deq(bufRef) )
+      bufRef->release();
+  }
 }
 
 
@@ -219,6 +229,7 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
 
   try
   {
+    active_ = true;
     do {
       workDone = false;
       for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
@@ -247,20 +258,24 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
       }
     } while ( doProcessing_ && workDone );
 
+    active_ = false;
     ::usleep(100);
   }
   catch(xcept::Exception& e)
   {
+    active_ = false;
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
+    active_ = false;
     XCEPT_DECLARE(exception::I2O,
                   sentinelException, e.what());
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
+    active_ = false;
     XCEPT_DECLARE(exception::I2O,
                   sentinelException, "unkown exception");
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );

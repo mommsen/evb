@@ -106,6 +106,7 @@ template<class ReadoutUnit,class Configuration>
 evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::~PipeHandler()
 {
   processPipe_ = false;
+  while (pipeActive_) ::usleep(1000);
   if ( pipeWorkLoop_ && pipeWorkLoop_->isActive() )
     pipeWorkLoop_->cancel();
   socketStreams_.clear();

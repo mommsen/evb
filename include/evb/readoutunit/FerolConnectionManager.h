@@ -84,11 +84,6 @@ namespace evb {
        */
       void drain() const;
 
-      /**
-       * Stop processing events
-       */
-      void stopProcessing();
-
 
     private:
 
@@ -400,11 +395,6 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::drain(
     idle = handlersIdle();
   }
 }
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::stopProcessing()
-{}
 
 
 template<class ReadoutUnit,class Configuration>
