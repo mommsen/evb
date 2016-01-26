@@ -29,11 +29,16 @@ class RunScans(TestRunner):
         parser.add_argument("--full",action='store_true',help="run the full scan")
         parser.add_argument("--fixPorts",action='store_true',help="fix the port numbers on FEROLs and RUs")
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
+        parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
 
 
     def doIt(self):
         if len(self.args['configs']) == 0:
             return False
+        try:
+            os.mkdir(self.args['outputDir'])
+        except OSError:
+            pass
         for configFile in self.args['configs']:
             configName = os.path.splitext(os.path.basename(configFile))[0]
             if os.path.isdir(configFile):
@@ -89,6 +94,7 @@ class RunScans(TestRunner):
                     data['measurement'] = configCase.runScan(fragSize,fragSizeRMS,self.args['nbMeasurements'],self.args['verbose'])
                     dataFile.write(str(data)+"\n")
                     dataFile.flush()
+                del(configCase)
             returnValue = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
             traceback.print_exc(file=stdout)
