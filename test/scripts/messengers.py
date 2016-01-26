@@ -35,8 +35,8 @@ def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None,testname=""):
             response.append(reply)
         s.close()
         return ''.join(response)
-    except socket.error:
-        pass
+    except socket.error as e:
+        return "Failed to conact launcher: "+e.strerror
 
 
 def webPing(soapHostname,soapPort):
@@ -56,14 +56,20 @@ def sendSoapMessage(soapHostname,soapPort,urn,body):
     server = httplib.HTTPConnection(soapHostname,soapPort)
     #server.set_debuglevel(4)
     server.request("POST","",soapMessage,headers)
-    response = server.getresponse().read()
+    try:
+        response = server.getresponse().read()
+    except (httplib.HTTPException,socket.error) as e:
+        return "Received bad response from "+soapHostname+":"+soapPort+": "+str(e)
     return minidom.parseString(response)
 
 
 def sendCmdToApp(command,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
     response = sendSoapMessage(soapHostname,soapPort,urn,"<xdaq:"+command+" xmlns:xdaq=\"urn:xdaq-soap:3.0\"/>")
-    xdaqResponse = response.getElementsByTagName('xdaq:'+command+'Response')
+    try:
+        xdaqResponse = response.getElementsByTagName('xdaq:'+command+'Response')
+    except AttributeError:
+        raise(SOAPexception("Did not get a proper FSM response from "+app+str(instance)+":\n"+response.toprettyxml()))
     if len(xdaqResponse) == 0:
         xdaqResponse = response.getElementsByTagName('xdaq:'+command.lower()+'Response')
     if len(xdaqResponse) != 1:

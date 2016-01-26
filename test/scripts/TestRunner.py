@@ -59,11 +59,13 @@ class TestRunner:
         if not self.args['verbose']:
             launcherCmd += "-l "+self.args['outputDir']+" "
         for launcher in self._symbolMap.launchers:
-            print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
+            if self.args['verbose']:
+                print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
             subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])
 
 
     def stopLaunchers(self):
         for launcher in self._symbolMap.launchers:
-            print("Stopping launcher on "+launcher[0]+":"+str(launcher[1]))
+            if self.args['verbose']:
+                print("Stopping launcher on "+launcher[0]+":"+str(launcher[1]))
             messengers.sendCmdToLauncher("stopLauncher",launcher[0],launcher[1])

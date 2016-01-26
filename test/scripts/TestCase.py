@@ -10,6 +10,7 @@ import socket
 import subprocess
 import sys
 from time import sleep
+import multiprocessing as mp
 
 import messengers
 import Configuration
@@ -21,6 +22,9 @@ class LauncherException(Exception):
 class StateException(Exception):
     pass
 
+class FailedState(Exception):
+    pass
+
 class ValueException(Exception):
     pass
 
@@ -28,13 +32,51 @@ class FileException(Exception):
     pass
 
 
+def startXDAQ(context,testname):
+    ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
+    ret += messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname)
+    return ret
+
+
+def stopXDAQ(context):
+    ret = "Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
+    ret += messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'])
+    return ret
+
+
+def sendCmdToExecutive(context,configCmd):
+    urn = "urn:xdaq-application:lid=0"
+    ret = "Configuring executive on "+context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']
+    response = messengers.sendSoapMessage(context.hostinfo['soapHostname'],context.hostinfo['soapPort'],
+                                            urn,configCmd);
+    try:
+        xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
+        if len(xdaqResponse) != 1:
+            raise AttributeError
+    except AttributeError:
+        raise(messengers.SOAPexception("Did not get a proper configure response from "+
+                                        context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+":\n"+
+                                        response.toprettyxml()))
+    return ret
+
+
+def sendStateCmdToApp(cmd,newState,app):
+    state = messengers.sendCmdToApp(command=cmd,**app)
+    if state not in newState:
+        if state == 'Failed':
+            raise(StateException(app+application['instance']+" has failed"))
+        else:
+            raise(StateException(app+application['instance']+" is in state "+state+
+                                    " instead of target state "+str(newState)))
+
+
 class TestCase:
 
-    def __init__(self,symbolMap,stdout):
+    def __init__(self,config,stdout):
         self._origStdout = sys.stdout
         sys.stdout = stdout
-        self._config = Configuration.Configuration(symbolMap)
-        self.fillConfiguration(symbolMap)
+        self._config = config
+        self._pool = mp.Pool(processes=20)
 
 
     def __del__(self):
@@ -42,9 +84,10 @@ class TestCase:
             shutil.rmtree("/tmp/evb_test")
         except OSError:
             pass
-        for context in self._config.contexts.values():
-            print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-            print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
+        if self._config:
+            results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+            for r in results:
+                print(r.get(timeout=30))
         sys.stdout.flush()
         sys.stdout = self._origStdout
 
@@ -52,8 +95,9 @@ class TestCase:
     def startXDAQs(self,testname):
         try:
             for context in self._config.contexts.values():
-                print("Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-                print(messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname))
+                results = [self._pool.apply_async(startXDAQ, args=(c,testname)) for c in self._config.contexts.values()]
+            for r in results:
+                print(r.get(timeout=30))
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 
@@ -73,30 +117,21 @@ class TestCase:
 
 
     def sendCmdToExecutive(self):
-        urn = "urn:xdaq-application:lid=0"
-        for key,context in self._config.contexts.items():
-            print("Configuring executive on "+context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort'])
-            response = messengers.sendSoapMessage(context.hostinfo['soapHostname'],context.hostinfo['soapPort'],urn,
-                                                  self._config.getConfigCmd(key));
-            xdaqResponse = response.getElementsByTagName('xdaq:ConfigureResponse')
-            if len(xdaqResponse) != 1:
-                raise(messengers.SOAPexception("Did not get a proper configure response from "+
-                                                context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+":\n"+
-                                                response.toprettyxml()))
+        results = [self._pool.apply_async(sendCmdToExecutive, args=(context,self._config.getConfigCmd(key))) for key,context in self._config.contexts.items()]
+        for r in results:
+            r.get(timeout=30)
+
 
     def sendStateCmd(self,cmd,newState,app,instance=None):
         try:
-            for application in self._config.applications[app]:
-                if instance is None or str(instance) == application['instance']:
-                    state = messengers.sendCmdToApp(command=cmd,**application)
-                    if state not in newState:
-                        if state == 'Failed':
-                            raise(StateException(app+application['instance']+" has failed"))
-                        else:
-                            raise(StateException(app+application['instance']+" is in state "+state+
-                                                 " instead of target state "+str(newState)))
-
-
+            if instance:
+                for application in self._config.applications[app]:
+                    if str(instance) == application['instance']:
+                        sendStateCmdToApp(cmd,newState,application)
+            else:
+                results = [self._pool.apply_async(sendStateCmdToApp, args=(cmd,newState,app)) for app in self._config.applications[app]]
+                for r in results:
+                    r.get(timeout=30)
         except KeyError:
             pass
 
@@ -106,6 +141,8 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
                     state = messengers.getStateName(**application)
+                    if state == 'Failed':
+                        raise(FailedState(app+application['instance']+" has Failed"))
                     if state not in targetState:
                         raise(StateException(app+application['instance']+" is not in expected state '"+str(targetState)+"', but '"+state+"'"))
         except KeyError:

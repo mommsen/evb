@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 
+from Configuration import ConfigFromFile
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from ConfigCase import ConfigCase
@@ -19,7 +20,7 @@ class RunScans(TestRunner):
 
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
-        parser.add_argument("-m","--symbolMap",help="symbolMap file to use")
+        parser.add_argument("-m","--symbolMap",help="symbolMap file to use. This assumes that the launchers have been started.")
         parser.add_argument("configs",nargs='+',help="path to the config(s) to run")
         parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size [default: %(default)s]")
         parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
@@ -65,17 +66,20 @@ class RunScans(TestRunner):
                 sizes = self.args['sizes']
 
             if self.args['symbolMap']:
-                symbolMap = SymbolMap(self.args['symbolMap'])
+                self._symbolMap = SymbolMap(self.args['symbolMap'])
             else:
                 configDir = os.path.dirname(configFile)
-                symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+                self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+                self.startLaunchers()
+                time.sleep(1)
 
             if self.args['append']:
                 mode = 'a'
             else:
                 mode = 'w'
             with open(self.args['outputDir']+"/"+configName+".dat",mode) as dataFile:
-                configCase = ConfigCase(symbolMap,configFile,self.args['fixPorts'],stdout)
+                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'])
+                configCase = ConfigCase(config,stdout)
                 configCase.prepare(configName)
                 for fragSize in sizes:
                     fragSizeRMS = int(fragSize * self.args['rms'])
@@ -85,10 +89,13 @@ class RunScans(TestRunner):
                     data['measurement'] = configCase.runScan(fragSize,fragSizeRMS,self.args['nbMeasurements'],self.args['verbose'])
                     dataFile.write(str(data)+"\n")
                     dataFile.flush()
+            returnValue = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
             traceback.print_exc(file=stdout)
-            return "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
-        return "\033[1;37;42m DONE \033[0m"
+            returnValue = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
+        if not self.args['symbolMap']:
+            self.stopLaunchers()
+        return returnValue
 
 
 if __name__ == "__main__":

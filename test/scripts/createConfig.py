@@ -22,6 +22,7 @@ class CreateConfig:
 
     def doIt(self):
         config = self.getConfig()
+        self.setFreeRunning(config)
         symbolMap = self.getSymbolMap(config)
         self.createDir(self.args['output'])
         self.writeSymbolMap(symbolMap,self.args['output'])
@@ -31,10 +32,10 @@ class CreateConfig:
 
     def getConfig(self):
         # Call configurator with options. The output shall be placed in the temporary configFile
-        #configFile = "/Users/mommsen/cmsusr/daq2Test/daq2val/x86_64_slc6/daq2val/29083638/configuration.xml"
+        #configFile = "/nfshome0/mommsen/daq2Test/daq2val/x86_64_slc6/daq2val/29110628/configuration.xml"
         configFile = "/tmp/"+time.strftime('%d%H%M%S')+".xml"
         javaCmd = ['java','-Doracle.net.tns_admin=/etc',
-                   '-jar','configurator_new_workflow.jar',
+                   '-jar',os.environ['EVB_TESTER_HOME']+'/scripts/configurator_new_workflow.jar',
                    '--properties',os.environ['HOME']+'/CONFIGURATOR.properties',
                    '--batch',
                    '--account','daqlocal','--site','daq2',
@@ -50,6 +51,8 @@ class CreateConfig:
             javaCmd.extend(['--blacklistSetup','.cms'])
         if self.args['hostList']:
             javaCmd.extend(['--hostList',self.args['hostList']])
+        if self.args['userSettings']:
+            javaCmd.extend(['--userSettings',self.args['userSettings']])
         configCmd = " ".join(javaCmd)
         self.infoStr += "Java command used:\n%s\n\n" % configCmd
         print("Running "+configCmd+":")
@@ -66,6 +69,38 @@ class CreateConfig:
         except IOError:
             sys.exit(1)
         return ETroot
+
+
+    def setFreeRunning(self,config,frlMode=True):
+        xcns = re.match(r'\{(.*?)\}Partition',config.tag).group(1) ## Extract xdaq namespace
+        for context in config.getiterator(str(QN(xcns,'Context'))):
+            for app in context.getiterator(str(QN(xcns,'Application'))):
+                if app.attrib['class'] == 'ferol::FerolController':
+                    for child in app:
+                        if 'properties' in child.tag:
+                            for prop in child:
+                                if 'OperationMode' in prop.tag:
+                                    if frlMode:
+                                        prop.text = 'FRL_MODE'
+                                    else:
+                                        prop.text = 'FEROL_MODE'
+                                elif 'DataSource' in prop.tag:
+                                    prop.text = 'GENERATOR_SOURCE'
+                                elif 'FrlTriggerMode' in prop.tag:
+                                    prop.text = 'FRL_AUTO_TRIGGER_MODE'
+                                elif 'FerolTriggerMode' in prop.tag:
+                                    prop.text = 'FEROL_AUTO_TRIGGER_MODE'
+                                #elif 'Event_Delay_ns' in prop.tag:
+                                #    prop.text = '1000'
+                if app.attrib['class'] == 'evb::EVM':
+                    for child in app:
+                        if 'properties' in child.tag:
+                            pns = re.match(r'\{(.*?)\}properties',child.tag).group(1) ## Extract property namespace
+                            xsins = "http://www.w3.org/2001/XMLSchema-instance"
+                            el = ET.Element(str(QN(pns,'getLumiSectionFromTrigger')))
+                            el.set(QN(xsins,'type'),'xsd:boolean')
+                            el.text = 'false'
+                            child.append(el)
 
 
     def getHostFromURL(self,url):
@@ -175,5 +210,6 @@ if __name__ == "__main__":
     parser.add_argument("output",help="Path to output directory")
     parser.add_argument("-b","--useBlacklist",action='store_true',help="use latest blacklist")
     parser.add_argument("-l","--hostList",help="only use RUs and BUs from the given file")
+    parser.add_argument("-s","--userSettings",help="override template settings with parameters from file")
     createConfig = CreateConfig( parser.parse_args() )
     createConfig.doIt()

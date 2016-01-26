@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 
+from Configuration import Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from TestCase import TestCase
@@ -86,7 +87,9 @@ class RunTests(TestRunner):
         try:
             testModule = __import__(test,fromlist=test)
             testCase = getattr(testModule,'case_'+test)
-            case = testCase(self._symbolMap,stdout)
+            config = Configuration(self._symbolMap)
+            case = testCase(config,stdout)
+            case.fillConfiguration(self._symbolMap)
             try:
                 case.prepare(test)
                 case.runTest()

@@ -2,43 +2,43 @@ import sys
 import time
 
 import messengers
-import Configuration
 from TestCase import *
+
 
 class ConfigCase(TestCase):
 
-    def __init__(self,symbolMap,configFile,fixPorts,stdout):
-        self._origStdout = sys.stdout
-        sys.stdout = stdout
-        self._config = None #Initialize it in case ConfigFromFile throws an exception
-        self._config = Configuration.ConfigFromFile(symbolMap,configFile,fixPorts)
+    def __init__(self,config,stdout):
+        TestCase.__init__(self,config,stdout)
 
 
     def __del__(self):
-        if self._config:
-            for context in self._config.contexts.values():
-                print("Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort']))
-                print(messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort']))
-        sys.stdout.flush()
-        sys.stdout = self._origStdout
+        TestCase.__del__(self)
 
 
     def checkRate(self):
-        tries = 0
         print("Checking if rate is >10 Hz:")
-        while True:
-            tries += 1
-            try:
-                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
-                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
-                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
-                return
-            except ValueException as e:
-                if tries < 10:
-                    time.sleep(1)
-                else:
-                    print("FAILED: "+str(e))
-                    raise e
+        try:
+            self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
+            self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
+            self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
+            return
+        except ValueException as e:
+            ruCounts = self.getAppParam("eventCount","unsignedLong","RU")
+            str = ""
+            for ru in sorted(ruCounts.keys()):
+                if ruCounts[ru] == 0:
+                    str += " "+ru
+            if len(str):
+                print("RUs with no events:"+str)
+            else:
+                buCounts = self.getAppParam("nbEventsBuilt","unsignedLong","BU")
+                for bu in sorted(buCounts.keys()):
+                    if buCounts[bu] == 0:
+                        str += " "+bu
+                if len(str):
+                    print("BUs with no events:"+str)
+            #raw_input("Press Enter to continue...")
+            raise e
 
 
     def getDataPoint(self):
@@ -104,7 +104,7 @@ class ConfigCase(TestCase):
             self._origStdout.write(str(fragSize)+"B:")
             self._origStdout.flush()
         tries = 0
-        while tries < 3:
+        while tries < 10:
             try:
                 dataPoints = self.doIt(fragSize,fragSizeRMS,nbMeasurements)
                 if not verbose:
@@ -113,7 +113,13 @@ class ConfigCase(TestCase):
                 else:
                     print(str(fragSize)+"B:"+str(self.getBandwidthMB(dataPoints))+"MB/s")
                 return dataPoints
-            except Exception as e:
-                tries += 1
-                self.haltEvB()
+            except (FailedState,StateException,ValueException) as e:
+                print(" failed: "+str(e))
+                while tries < 10:
+                    tries += 1
+                    try:
+                        self.haltEvB()
+                        break
+                    except FailedState as e:
+                        print(" failed: "+str(e))
         raise e
