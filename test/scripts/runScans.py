@@ -99,8 +99,9 @@ class RunScans(TestRunner):
         except Exception as e:
             traceback.print_exc(file=stdout)
             returnValue = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
-        if not self.args['symbolMap']:
-            self.stopLaunchers()
+        finally:
+            if not self.args['symbolMap']:
+                self.stopLaunchers()
         return returnValue
 
 
