@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import datetime
 import re
 import sys
 import time
@@ -25,6 +26,7 @@ class RunScans(TestRunner):
         parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size [default: %(default)s]")
         parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
         parser.add_argument("-r","--rms",default=0,type=float,help="relative rms of fragment size [default: %(default)s]")
+        parser.add_argument("-q","--quick",action='store_true',help="run a quick scan with less sleep time")
         parser.add_argument("--short",action='store_true',help="run a short scan")
         parser.add_argument("--full",action='store_true',help="run the full scan")
         parser.add_argument("--fixPorts",action='store_true',help="fix the port numbers on FEROLs and RUs")
@@ -64,7 +66,7 @@ class RunScans(TestRunner):
         try:
             if self.args['full']:
                 sizes = [256, 512, 768, 1024, 1149, 1280, 1408, 1536, 1664, 1856, 2048, 2560,
-                         3072, 4096, 5120, 6144, 7168, 8192, 10240, 12288, 14336, 16384]
+                         3072, 4096, 6144, 8192, 10240, 12288, 16384]
             elif self.args['short']:
                 sizes = [256, 512, 768, 1024, 1536, 2048, 2560, 4096, 8192, 12288, 16384]
             else:
@@ -78,12 +80,19 @@ class RunScans(TestRunner):
                 self.startLaunchers()
                 time.sleep(1)
 
+            outputFileName = self.args['outputDir']+"/"+configName+".dat"
             if self.args['append']:
                 mode = 'a'
             else:
                 mode = 'w'
-            with open(self.args['outputDir']+"/"+configName+".dat",mode) as dataFile:
-                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'])
+                if os.path.exists(outputFileName):
+                    t = os.path.getmtime(outputFileName)
+                    dateStr = datetime.datetime.fromtimestamp(t).strftime("%Y%m%d_%H%M%S")
+                    bakDir = self.args['outputDir']+'/'+dateStr
+                    os.makedirs(bakDir)
+                    os.rename(outputFileName,bakDir+"/"+configName+".dat")
+            with open(outputFileName,mode) as dataFile:
+                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'])
                 configCase = ConfigCase(config,stdout)
                 configCase.prepare(configName)
                 for fragSize in sizes:
@@ -91,7 +100,7 @@ class RunScans(TestRunner):
                     data = {}
                     data['fragSize'] = fragSize
                     data['fragSizeRMS'] = fragSizeRMS
-                    data['measurement'] = configCase.runScan(fragSize,fragSizeRMS,self.args['nbMeasurements'],self.args['verbose'])
+                    data['measurement'] = configCase.runScan(fragSize,fragSizeRMS,self.args)
                     dataFile.write(str(data)+"\n")
                     dataFile.flush()
                 del(configCase)

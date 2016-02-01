@@ -13,13 +13,18 @@ import SocketServer
 
 class xdaqThread(threading.Thread):
 
-    def __init__(self,xdaqPort,logFile=None):
+    def __init__(self,xdaqPort,logFile,useNuma):
         threading.Thread.__init__(self)
         self.logFile = logFile
         self._process = None
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
-        self._xdaqCommand = [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
+        numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
+        xdaq = [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
+        if useNuma:
+            self._xdaqCommand = numaCtl + xdaq
+        else:
+            self._xdaqCommand = xdaq
 
 
     def run(self):
@@ -37,10 +42,11 @@ class xdaqThread(threading.Thread):
 
 
 class TCPServer(SocketServer.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, logDir=None):
+    def __init__(self, server_address, RequestHandlerClass, logDir, useNuma):
         SocketServer.TCPServer.allow_reuse_address = True
         SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
         self.logDir = logDir
+        self.useNuma = useNuma
 
 
 class xdaqLauncher(SocketServer.BaseRequestHandler):
@@ -112,7 +118,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             return
         self.cleanTempFiles()
         try:
-            thread = xdaqThread(port,self.getLogFile(testname))
+            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma)
             thread.start()
         except KeyError:
             self.request.sendall("Please specify XDAQ_ROOT")
@@ -169,8 +175,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-l","--logDir",help="redirect stdout and stderr to log file")
+    parser.add_argument("-n","--useNuma",action='store_true',help="use numactl to start xdaq.exe")
     parser.add_argument("port",type=int)
     args = vars( parser.parse_args() )
     hostname = socket.gethostbyaddr(socket.gethostname())[0]
-    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'])
+    if args['useNuma'] and any(x in hostname for x in ('ru-','bu-')):
+        useNuma = True
+    else:
+        useNuma = False
+    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'], useNuma=useNuma)
     server.serve_forever()

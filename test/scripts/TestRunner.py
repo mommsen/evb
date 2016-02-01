@@ -40,6 +40,7 @@ class TestRunner:
 
     def addOptions(self,parser):
         parser.add_argument("-v","--verbose",action='store_true',help="print log info also to stdout")
+        parser.add_argument("--numa",action='store_false',help="do not use NUMA settings")
         parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
         parser.add_argument("--logDir",default=self._evbTesterHome+'/log/',help="log directory [default: %(default)s]")
 
@@ -47,6 +48,7 @@ class TestRunner:
     def run(self,args):
         self.args = vars(args)
         #print(self.args)
+        #return
         try:
             os.mkdir(self.args['logDir'])
         except OSError:
@@ -57,7 +59,9 @@ class TestRunner:
     def startLaunchers(self):
         launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
         if not self.args['verbose']:
-            launcherCmd += "-l "+self.args['logDir']+" "
+            launcherCmd += "--logDir "+self.args['logDir']+" "
+        if self.args['numa']:
+            launcherCmd += "--useNuma "
         for launcher in self._symbolMap.launchers:
             if self.args['verbose']:
                 print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))

@@ -103,7 +103,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile,fixPorts):
+    def __init__(self,symbolMap,configFile,fixPorts,useNuma):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -119,12 +119,13 @@ class ConfigFromFile(Configuration):
                 context.role,count = self.urlToHostAndNumber(url)
                 context.hostinfo = self.symbolMap.getHostInfo(context.role+str(count))
             except TypeError:
-                print("Found unknown role for "+url+", which will be ignored")
+                #print("Found unknown role for "+url+", which will be ignored")
                 continue
 
-            polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
-            context.policy = c.find(QN(polns,'policy').text)
-            self.parsePolicy(context.policy)
+            if useNuma:
+                polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
+                context.policy = c.find(QN(polns,'policy').text)
+                self.parsePolicy(context.policy)
 
             for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
                 properties = self.getProperties(application)

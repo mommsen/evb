@@ -52,8 +52,12 @@ class ConfigCase(TestCase):
 
 
     def getBandwidthMB(self,dataPoint):
-        size = sum(list(x['sizes']['RU1'] for x in dataPoint))/float(len(dataPoint))
-        rate = sum(list(x['rates']['RU1'] for x in dataPoint))/float(len(dataPoint))
+        try:
+            size = sum(list(x['sizes']['RU0'] for x in dataPoint))/float(len(dataPoint))
+            rate = sum(list(x['rates']['RU0'] for x in dataPoint))/float(len(dataPoint))
+        except KeyError:
+            size = sum(list(x['sizes']['RU1'] for x in dataPoint))/float(len(dataPoint))
+            rate = sum(list(x['rates']['RU1'] for x in dataPoint))/float(len(dataPoint))
         return int(size*rate/1000000)
 
 
@@ -84,30 +88,35 @@ class ConfigCase(TestCase):
         self.checkRate()
 
 
-    def doIt(self,fragSize,fragSizeRMS,nbMeasurements):
+    def doIt(self,fragSize,fragSizeRMS,args):
         dataPoints = []
         self.setFragmentSize(fragSize,fragSizeRMS)
         self.start()
-        if nbMeasurements == 0:
+        if args['nbMeasurements'] == 0:
             dataPoints.append( self.getDataPoint() )
             raw_input("Press Enter to stop...")
         else:
-            for n in range(nbMeasurements):
-                time.sleep(1)
+            if not args['quick']:
+                time.sleep(60)
+            for n in range(args['nbMeasurements']):
+                if args['quick']:
+                    time.sleep(1)
+                else:
+                    time.sleep(10)
                 dataPoints.append( self.getDataPoint() )
         self.haltEvB()
         return dataPoints
 
 
-    def runScan(self,fragSize,fragSizeRMS,nbMeasurements,verbose):
-        if not verbose:
+    def runScan(self,fragSize,fragSizeRMS,args):
+        if not args['verbose']:
             self._origStdout.write(str(fragSize)+"B:")
             self._origStdout.flush()
         tries = 0
         while tries < 10:
             try:
-                dataPoints = self.doIt(fragSize,fragSizeRMS,nbMeasurements)
-                if not verbose:
+                dataPoints = self.doIt(fragSize,fragSizeRMS,args)
+                if not args['verbose']:
                     self._origStdout.write(str(self.getBandwidthMB(dataPoints))+"MB/s ")
                     self._origStdout.flush()
                 else:

@@ -37,7 +37,7 @@ class PlotScans:
         parser.add_argument("--hideDate",default=False,action="store_true",help="Hide the date")
         parser.add_argument("--hideRate",default=False,action="store_true",help="Hide the rate curves")
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
-        parser.add_argument("-a","--app",default="RU1",help="Take values from given application [default: %(default)s]")
+        parser.add_argument("-a","--app",default="RU0",help="Take values from given application [default: %(default)s]")
         parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
 
 
@@ -301,7 +301,6 @@ class PlotScans:
     def readCaseData(self,case):
         from numpy import mean,sqrt,square
         entry = {}
-        entry['name'] = os.path.splitext(os.path.basename(case))[0]
         entry['sizes'] = []
         entry['rmsSizes'] = []
         entry['rates'] = []
@@ -316,22 +315,28 @@ class PlotScans:
                     continue
                 dataPoint = value['measurement']
                 if 'BU' in self.args['app']:
-                    sizes = list(x['sizes'][self.args['app']]/1000. for x in dataPoint)
+                    rawSizes = list(x['sizes'][self.args['app']]/1000. for x in dataPoint)
+                    sizes = list(x for x in rawSizes if x > 0)
                     averageSize = mean(sizes)
                     entry['sizes'].append(averageSize)
                     entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
-                rates = list(x['rates'][self.args['app']]/1000. for x in dataPoint)
+                rawRates = list(x['rates'][self.args['app']]/1000. for x in dataPoint)
+                rates = list(x for x in rawRates if x > 0)
                 averageRate = mean(rates)
                 entry['rates'].append(averageRate)
                 entry['rmsRates'].append(sqrt(mean(square(averageRate-rates))))
-                throughputs = list(x['sizes'][self.args['app']]*x['rates'][self.args['app']]/1000000. for x in dataPoint)
+                rawThroughputs = list(x['sizes'][self.args['app']]*x['rates'][self.args['app']]/1000000. for x in dataPoint)
+                throughputs = list(x for x in rawThroughputs if x > 0)
                 averageThroughput = mean(throughputs)
                 entry['throughputs'].append(averageThroughput)
                 entry['rmsThroughputs'].append(sqrt(mean(square(averageThroughput-throughputs))))
-        return entry
+        # Sort the entries by size
+        keys = ['sizes'] + [k for k in entry.keys() if k is not 'sizes']
+        sortedEntries = zip(*sorted(zip(*[entry[k] for k in keys]), key=lambda pair: pair[0]))
+        return dict({'name':os.path.splitext(os.path.basename(case))[0]},**dict(zip(keys,sortedEntries)))
 
 
     def readData(self):
