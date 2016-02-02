@@ -103,7 +103,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile,fixPorts,useNuma):
+    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -122,12 +122,17 @@ class ConfigFromFile(Configuration):
                 #print("Found unknown role for "+url+", which will be ignored")
                 continue
 
+            if generateAtRU and context.role == "FEROLCONTROLLER":
+                continue
+
             if useNuma:
                 polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
                 context.policy = c.find(QN(polns,'policy').text)
                 self.parsePolicy(context.policy)
 
             for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
+                if generateAtRU and application.attrib['class'] == "pt::blit::Application":
+                    continue
                 properties = self.getProperties(application)
                 app = Application.Application(application.attrib['class'],application.attrib['instance'],properties)
                 app.params['network'] = application.attrib['network']
@@ -150,6 +155,7 @@ class ConfigFromFile(Configuration):
                     else:
                         self.setSendsToEVM(app)
                 elif app.params['class'].startswith('evb::'):
+                    app.params['network'] = 'infini'
                     app.params['tid'] = str(tid)
                     tid += 1
                     if app.params['class'] == 'evb::EVM':
@@ -158,6 +164,8 @@ class ConfigFromFile(Configuration):
                             raise Exception("The EVM must map to RU0, but maps to RU"+count)
                     if fixPorts:
                         self.fixFerolPorts(app)
+                    if generateAtRU:
+                        self.setLocalInput(app)
                 context.applications.append(app)
             self.add(context)
 
@@ -245,6 +253,16 @@ class ConfigFromFile(Configuration):
             newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[0]))
             self.fedId2Port[fedId0] = self.frlPorts[1]
             self.fedId2Port[fedId1] = self.frlPorts[0]
+        app.properties = newProp
+
+
+    def setLocalInput(self,app):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'inputSource':
+                newProp.append(('inputSource','string','Local'))
+            else:
+                newProp.append(prop)
         app.properties = newProp
 
 

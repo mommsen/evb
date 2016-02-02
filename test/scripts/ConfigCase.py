@@ -69,17 +69,25 @@ class ConfigCase(TestCase):
 
 
     def setFragmentSize(self,fragSize,fragSizeRMS):
-        for application in self._config.applications['FEROL']:
-            if self.sendsToEVM(application):
-                messengers.setParam("Event_Length_bytes_FED0","unsignedInt","1024",**application)
-                messengers.setParam("Event_Length_bytes_FED1","unsignedInt","1024",**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt","0",**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt","0",**application)
-            else:
-                messengers.setParam("Event_Length_bytes_FED0","unsignedInt",str(fragSize),**application)
-                messengers.setParam("Event_Length_bytes_FED1","unsignedInt",str(fragSize),**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt",str(fragSizeRMS),**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt",str(fragSizeRMS),**application)
+        try:
+            for application in self._config.applications['FEROL']:
+                if self.sendsToEVM(application):
+                    messengers.setParam("Event_Length_bytes_FED0","unsignedInt","1024",**application)
+                    messengers.setParam("Event_Length_bytes_FED1","unsignedInt","1024",**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt","0",**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt","0",**application)
+                else:
+                    messengers.setParam("Event_Length_bytes_FED0","unsignedInt",str(fragSize),**application)
+                    messengers.setParam("Event_Length_bytes_FED1","unsignedInt",str(fragSize),**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt",str(fragSizeRMS),**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt",str(fragSizeRMS),**application)
+        except KeyError:
+             for application in self._config.applications['EVM']:
+                    messengers.setParam("dummyFedSize","unsignedInt","1024",**application)
+                    messengers.setParam("dummyFedSizeStdDev","unsignedInt","0",**application)
+             for application in self._config.applications['RU']:
+                    messengers.setParam("dummyFedSize","unsignedInt",str(fragSize),**application)
+                    messengers.setParam("dummyFedSizeStdDev","unsignedInt",str(fragSizeRMS),**application)
 
 
     def start(self):

@@ -32,6 +32,7 @@ class RunScans(TestRunner):
         parser.add_argument("--fixPorts",action='store_true',help="fix the port numbers on FEROLs and RUs")
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
         parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
+        parser.add_argument("--generateAtRU",action='store_true',help="ignore the FEROLs and generate data at the RU")
 
 
     def doIt(self):
@@ -92,7 +93,7 @@ class RunScans(TestRunner):
                     os.makedirs(bakDir)
                     os.rename(outputFileName,bakDir+"/"+configName+".dat")
             with open(outputFileName,mode) as dataFile:
-                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'])
+                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],self.args['generateAtRU'])
                 configCase = ConfigCase(config,stdout)
                 configCase.prepare(configName)
                 for fragSize in sizes:
