@@ -57,7 +57,7 @@ class TestRunner:
 
 
     def startLaunchers(self):
-        launcherCmd = "cd /tmp && sudo rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
+        launcherCmd = "cd /tmp && rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
         if not self.args['verbose']:
             launcherCmd += "--logDir "+self.args['logDir']+" "
         if self.args['numa']:
