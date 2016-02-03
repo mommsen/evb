@@ -121,15 +121,15 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
   const ApplicationDescriptorsAndTids::const_iterator last = (id == numberOfAllocators_-1) ?
     participatingRUs_.end() : participatingRUs_.begin() + (ruCountPerThread*(id+1));
 
-  {
-    boost::mutex::scoped_lock sl(allocateActiveMutex_);
-    allocateActive_.set(id);
-  }
-
   while ( doProcessing_ )
   {
     try
     {
+      {
+        boost::mutex::scoped_lock sl(allocateActiveMutex_);
+        allocateActive_.set(id);
+      }
+
       readoutunit::FragmentRequestPtr fragmentRequest;
       while ( allocateFIFOs_[id]->deq(fragmentRequest) )
       {
@@ -305,7 +305,7 @@ void evb::evm::RUproxy::configure()
     std::ostringstream fifoName;
     fifoName << "allocateFIFO_" << i;
     AllocateFIFOPtr allocateFIFO( new AllocateFIFO(evm_,fifoName.str()) );
-    allocateFIFO->resize(evm_->getConfiguration()->fragmentRequestFIFOCapacity / numberOfAllocators_);
+    allocateFIFO->resize(evm_->getConfiguration()->allocateFIFOCapacity);
     allocateFIFOs_.push_back(allocateFIFO);
   }
 
