@@ -49,17 +49,6 @@ evb::evm::RUproxy::~RUproxy()
 }
 
 
-void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr& fragmentRequest)
-{
-  if ( participatingRUs_.empty() ) return;
-  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    (*it)->enqWait(fragmentRequest);
-  }
-}
-
-
 void evb::evm::RUproxy::startProcessing()
 {
   resetMonitoringCounters();
@@ -106,6 +95,86 @@ void evb::evm::RUproxy::stopProcessing()
 }
 
 
+toolbox::mem::Reference* evb::evm::RUproxy::getReadoutMsgBuffer(const uint32_t readoutMsgSize)
+{
+  toolbox::mem::Reference* rqstBufRef = 0;
+  while ( !rqstBufRef )
+  {
+    try
+    {
+      rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
+        getFrame(fastCtrlMsgPool_, readoutMsgSize);
+    }
+    catch(toolbox::mem::exception::Exception)
+    {
+      rqstBufRef = 0;
+      if ( ! doProcessing_ ) return 0;
+    }
+  }
+  rqstBufRef->setDataSize(readoutMsgSize);
+  return rqstBufRef;
+}
+
+
+void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr& fragmentRequest)
+{
+  if ( participatingRUs_.empty() ) return;
+
+  const uint16_t requestsCount = fragmentRequest->nbRequests;
+  const uint16_t ruCount = fragmentRequest->ruTids.size();
+  const size_t readoutMsgSize = sizeof(msg::ReadoutMsg) +
+    requestsCount * sizeof(EvBid) +
+    ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
+
+  toolbox::mem::Reference* fragmentRequestBufRef = getReadoutMsgBuffer(readoutMsgSize);
+  if ( ! fragmentRequestBufRef ) return;
+
+  I2O_MESSAGE_FRAME* stdMsg =
+    (I2O_MESSAGE_FRAME*)fragmentRequestBufRef->getDataLocation();
+  I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
+  msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+
+  stdMsg->VersionOffset    = 0;
+  stdMsg->MsgFlags         = 0;
+  stdMsg->MessageSize      = readoutMsgSize >> 2;
+  stdMsg->InitiatorAddress = tid_;
+  stdMsg->Function         = I2O_PRIVATE_MESSAGE;
+  pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
+  pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
+  readoutMsg->headerSize   = readoutMsgSize;
+  readoutMsg->buTid        = fragmentRequest->buTid;
+  readoutMsg->priority     = 0; //not used on RU
+  readoutMsg->buResourceId = fragmentRequest->buResourceId;
+  readoutMsg->nbRequests   = requestsCount;
+  readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
+  readoutMsg->nbRUtids     = ruCount;
+
+  unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
+  memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
+  payload += requestsCount*sizeof(EvBid);
+
+  memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
+
+  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    (*it)->enqWait( fragmentRequestBufRef->duplicate() );
+  }
+  fragmentRequestBufRef->release();
+
+  {
+    boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+
+    const uint32_t msgSize = readoutMsgSize*ruCount;
+    allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[requestsCount-1].eventNumber();
+    allocateMonitoring_.perf.sumOfSizes += msgSize;
+    allocateMonitoring_.perf.sumOfSquares += msgSize*msgSize;
+    allocateMonitoring_.perf.logicalCount += requestsCount*ruCount;
+    allocateMonitoring_.perf.i2oCount += ruCount;
+  }
+}
+
+
 bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
 {
   if ( ! doProcessing_ ) return false;
@@ -132,101 +201,54 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
 
       readoutunit::FragmentRequestPtr fragmentRequest;
       while ( allocateFIFOs_[id]->deq(fragmentRequest) )
-      {
-        const uint16_t requestsCount = fragmentRequest->nbRequests;
-        const uint16_t ruCount = fragmentRequest->ruTids.size();
-        const size_t readoutMsgSize = sizeof(msg::ReadoutMsg) +
-          requestsCount * sizeof(EvBid) +
-          ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
-        //std::cout << "readoutMsgSize " << sizeof(msg::ReadoutMsg) << "\t" << sizeof(EvBid) << "\t" << sizeof(I2O_TID) << "\t" << readoutMsgSize << std::endl;
 
+      toolbox::mem::Reference* fragmentRequestBufRef;
+      while ( allocateFIFOs_[id]->deq(fragmentRequestBufRef) )
+      {
         for (ApplicationDescriptorsAndTids::const_iterator it = first; it != last; ++it)
         {
-          toolbox::mem::Reference* rqstBufRef = 0;
-          while ( !rqstBufRef )
+          const uint32_t bufSize = fragmentRequestBufRef->getDataSize();
+          toolbox::mem::Reference* rqstBufRef = getReadoutMsgBuffer(bufSize);
+          if ( ! rqstBufRef )
           {
-            try
+            for (BufRefsAndDescs::iterator it = bufRefsAndDescs.begin(), itEnd = bufRefsAndDescs.end(); it != itEnd; ++it)
             {
-              rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
-                getFrame(fastCtrlMsgPool_, readoutMsgSize);
+              it->first->release();
+              bufRefsAndDescs.clear();
             }
-            catch(toolbox::mem::exception::Exception)
-            {
-              rqstBufRef = 0;
-              if ( ! doProcessing_ )
-              {
-                boost::mutex::scoped_lock sl(allocateActiveMutex_);
-                allocateActive_.reset(id);
-                return false;
-              }
-            }
+            boost::mutex::scoped_lock sl(allocateActiveMutex_);
+            allocateActive_.reset(id);
+            return false;
           }
-          rqstBufRef->setDataSize(readoutMsgSize);
 
-          I2O_MESSAGE_FRAME* stdMsg =
-            (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
-          I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
-          msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
-
-          stdMsg->VersionOffset    = 0;
-          stdMsg->MsgFlags         = 0;
-          stdMsg->MessageSize      = readoutMsgSize >> 2;
-          stdMsg->InitiatorAddress = tid_;
-          stdMsg->TargetAddress    = it->tid;
-          stdMsg->Function         = I2O_PRIVATE_MESSAGE;
-          pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
-          pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-          readoutMsg->headerSize   = readoutMsgSize;
-          readoutMsg->buTid        = fragmentRequest->buTid;
-          readoutMsg->priority     = 0; //not used on RU
-          readoutMsg->buResourceId = fragmentRequest->buResourceId;
-          readoutMsg->nbRequests   = requestsCount;
-          readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
-          readoutMsg->nbRUtids     = ruCount;
-
-          unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
-          memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
-          payload += requestsCount*sizeof(EvBid);
-
-          memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
+          void* payload = rqstBufRef->getDataLocation();
+          memcpy(payload,fragmentRequestBufRef->getDataLocation(),bufSize);
+          I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)payload;
+          stdMsg->TargetAddress = it->tid;
 
           {
+            // Send the readout message to all RUs
             boost::mutex::scoped_lock sl(postFrameMutex_);
 
-            // Send the readout message to the RU
             try
             {
               evm_->getApplicationContext()->
                 postFrame(
                   rqstBufRef,
                   evm_->getApplicationDescriptor(),
-                  it->descriptor //,
-                  //i2oExceptionHandler_,
-                  //it->descriptor
+                  it->descriptor
                 );
             }
             catch(xcept::Exception& e)
             {
               std::ostringstream msg;
-              msg << "Failed to send message to RU TID ";
+              msg << "Failed to send message to RU ";
               msg << it->tid;
               XCEPT_RETHROW(exception::I2O, msg.str(), e);
             }
           }
         }
-
-        if ( id == 0 )
-        {
-          boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
-
-          const uint32_t myRuCount = participatingRUs_.size();
-          const uint32_t msgSize = readoutMsgSize*myRuCount;
-          allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[requestsCount-1].eventNumber();
-          allocateMonitoring_.perf.sumOfSizes += msgSize;
-          allocateMonitoring_.perf.sumOfSquares += msgSize*msgSize;
-          allocateMonitoring_.perf.logicalCount += requestsCount*myRuCount;
-          allocateMonitoring_.perf.i2oCount += myRuCount;
-        }
+        fragmentRequestBufRef->release();
       }
 
       {

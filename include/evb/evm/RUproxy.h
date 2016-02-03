@@ -107,6 +107,7 @@ namespace evb {
 
       void resetMonitoringCounters();
       void createProcessingWorkLoops();
+      toolbox::mem::Reference* getReadoutMsgBuffer(const uint32_t readoutMsgSize);
       bool allocateEvents(toolbox::task::WorkLoop*);
       void getApplicationDescriptors();
       void fillRUInstance(xdata::UnsignedInteger32 instance);
@@ -116,7 +117,7 @@ namespace evb {
 
       toolbox::mem::Pool* fastCtrlMsgPool_;
 
-      typedef OneToOneQueue<readoutunit::FragmentRequestPtr> AllocateFIFO;
+      typedef OneToOneQueue<toolbox::mem::Reference*> AllocateFIFO;
       typedef boost::shared_ptr<AllocateFIFO> AllocateFIFOPtr;
       typedef std::vector<AllocateFIFOPtr> AllocateFIFOs;
       AllocateFIFOs allocateFIFOs_;
