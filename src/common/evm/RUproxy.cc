@@ -199,9 +199,6 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
         allocateActive_.set(id);
       }
 
-      readoutunit::FragmentRequestPtr fragmentRequest;
-      while ( allocateFIFOs_[id]->deq(fragmentRequest) )
-
       toolbox::mem::Reference* fragmentRequestBufRef;
       while ( allocateFIFOs_[id]->deq(fragmentRequestBufRef) )
       {
