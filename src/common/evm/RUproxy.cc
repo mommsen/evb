@@ -211,11 +211,6 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
           toolbox::mem::Reference* rqstBufRef = getReadoutMsgBuffer(bufSize);
           if ( ! rqstBufRef )
           {
-            for (BufRefsAndDescs::iterator it = bufRefsAndDescs.begin(), itEnd = bufRefsAndDescs.end(); it != itEnd; ++it)
-            {
-              it->first->release();
-              bufRefsAndDescs.clear();
-            }
             boost::mutex::scoped_lock sl(allocateActiveMutex_);
             allocateActive_.reset(id);
             return false;
