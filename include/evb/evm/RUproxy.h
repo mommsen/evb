@@ -107,11 +107,9 @@ namespace evb {
 
       void resetMonitoringCounters();
       void startRequestWorkLoop();
-      void createProcessingWorkLoops();
       toolbox::mem::Reference* getRequestMsgBuffer(const uint32_t bufSize);
-      void enqueueMsg(toolbox::mem::Reference*&, const uint32_t msgSize, uint32_t& requestCount);
+      void sendMsgToRUs(toolbox::mem::Reference*&, const uint32_t msgSize, uint32_t& requestCount);
       bool processRequests(toolbox::task::WorkLoop*);
-      bool allocateEvents(toolbox::task::WorkLoop*);
       void getApplicationDescriptors();
       void fillRUInstance(xdata::UnsignedInteger32 instance);
 
@@ -122,25 +120,14 @@ namespace evb {
 
       typedef OneToOneQueue<readoutunit::FragmentRequestPtr> ReadoutMsgFIFO;
       ReadoutMsgFIFO readoutMsgFIFO_;
-      typedef OneToOneQueue<toolbox::mem::Reference*> AllocateFIFO;
-      typedef boost::shared_ptr<AllocateFIFO> AllocateFIFOPtr;
-      typedef std::vector<AllocateFIFOPtr> AllocateFIFOs;
-      AllocateFIFOs allocateFIFOs_;
-      uint32_t numberOfAllocators_;
-      uint32_t ruCount_;
 
       toolbox::task::WorkLoop* processRequestsWL_;
       toolbox::task::ActionSignature* processRequestsAction_;
-      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
-      WorkLoops workLoops_;
-      toolbox::task::ActionSignature* allocateAction_;
       volatile bool doProcessing_;
       volatile bool processingActive_;
-      boost::dynamic_bitset<> allocateActive_;
-      mutable boost::mutex allocateActiveMutex_;
-      boost::mutex postFrameMutex_;
 
       I2O_TID tid_;
+      uint32_t ruCount_;
 
       typedef std::vector<ApplicationDescriptorAndTid> ApplicationDescriptorsAndTids;
       ApplicationDescriptorsAndTids participatingRUs_;

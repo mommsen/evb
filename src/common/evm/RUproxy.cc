@@ -27,29 +27,20 @@ evb::evm::RUproxy::RUproxy
   stateMachine_(stateMachine),
   fastCtrlMsgPool_(fastCtrlMsgPool),
   readoutMsgFIFO_(evm,"readoutMsgFIFO"),
-  numberOfAllocators_(0),
-  ruCount_(0),
   doProcessing_(false),
   processingActive_(false),
-  tid_(0)
+  tid_(0),
+  ruCount_(0)
 {
   resetMonitoringCounters();
   startRequestWorkLoop();
-
-  allocateAction_ =
-    toolbox::task::bind(this, &evb::evm::RUproxy::allocateEvents,
-                        evm_->getIdentifier("ruProxyAllocateEvents") );
 }
 
 
 evb::evm::RUproxy::~RUproxy()
 {
-  for ( WorkLoops::iterator it = workLoops_.begin(), itEnd = workLoops_.end();
-        it != itEnd; ++it)
-  {
-    if ( (*it)->isActive() )
-      (*it)->cancel();
-  }
+  if ( processRequestsWL_->isActive() )
+    processRequestsWL_->cancel();
 }
 
 
@@ -85,10 +76,6 @@ void evb::evm::RUproxy::startProcessing()
   doProcessing_ = true;
 
   processRequestsWL_->submit(processRequestsAction_);
-  for (uint32_t i=0; i < numberOfAllocators_; ++i)
-  {
-    workLoops_.at(i)->submit(allocateAction_);
-  }
 }
 
 
@@ -100,30 +87,18 @@ void evb::evm::RUproxy::drain() const
 
 bool evb::evm::RUproxy::isEmpty() const
 {
-  if ( ! readoutMsgFIFO_.empty() ) return false;
+  if ( readoutMsgFIFO_.empty() && !processingActive_ ) return true;
 
-  AllocateFIFOs::const_iterator it = allocateFIFOs_.begin();
-  while ( it != allocateFIFOs_.end() )
-  {
-    if ( ! (*it)->empty() ) return false;
-    ++it;
-  }
-
-  return ( !processingActive_ && allocateActive_.none() );
+  return false;
 }
 
 
 void evb::evm::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
-  while ( processingActive_ || allocateActive_.any() ) ::usleep(1000);
+  while ( processingActive_ ) ::usleep(1000);
 
   readoutMsgFIFO_.clear();
-  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    (*it)->clear();
-  }
 }
 
 
@@ -185,7 +160,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
 
         if ( msgSize+eventRequestSize > blockSize && rqstBufRef )
         {
-          enqueueMsg(rqstBufRef,msgSize,requestCount);
+          sendMsgToRUs(rqstBufRef,msgSize,requestCount);
         }
 
         if ( ! rqstBufRef )
@@ -233,7 +208,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
         if ( rqstBufRef )
         {
           // send what we have so far
-          enqueueMsg(rqstBufRef,msgSize,requestCount);
+          sendMsgToRUs(rqstBufRef,msgSize,requestCount);
         }
         tries = 0;
       }
@@ -272,7 +247,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
 }
 
 
-void evb::evm::RUproxy::enqueueMsg(toolbox::mem::Reference*& rqstBufRef, const uint32_t msgSize, uint32_t& requestCount)
+void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const uint32_t msgSize, uint32_t& requestCount)
 {
   I2O_MESSAGE_FRAME* stdMsg =
     (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
@@ -290,10 +265,31 @@ void evb::evm::RUproxy::enqueueMsg(toolbox::mem::Reference*& rqstBufRef, const u
   rqstBufRef->setDataSize(msgSize);
   requestCount = 0;
 
-  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
+  for (ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin(), itEnd = participatingRUs_.end();
        it != itEnd; ++it)
   {
-    (*it)->enqWait( rqstBufRef->duplicate() );
+    toolbox::mem::Reference* bufRef = getRequestMsgBuffer(msgSize);
+    void* payload = bufRef->getDataLocation();
+    memcpy(payload,rqstBufRef->getDataLocation(),msgSize);
+    I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)payload;
+    stdMsg->TargetAddress = it->tid;
+
+    try
+    {
+      evm_->getApplicationContext()->
+        postFrame(
+          bufRef,
+          evm_->getApplicationDescriptor(),
+          it->descriptor
+        );
+    }
+    catch(xcept::Exception& e)
+    {
+      std::ostringstream msg;
+      msg << "Failed to send message to RU ";
+      msg << it->tid;
+      XCEPT_RETHROW(exception::I2O, msg.str(), e);
+    }
   }
   rqstBufRef->release();
   rqstBufRef = 0;
@@ -306,111 +302,6 @@ void evb::evm::RUproxy::enqueueMsg(toolbox::mem::Reference*& rqstBufRef, const u
     allocateMonitoring_.perf.sumOfSquares += totalSize*totalSize;
     allocateMonitoring_.perf.i2oCount += ruCount_;
   }
-}
-
-
-bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
-{
-  if ( ! doProcessing_ ) return false;
-
-  const std::string wlName =  wl->getName();
-  const size_t startPos = wlName.find_last_of("_") + 1;
-  const size_t endPos = wlName.find("/",startPos);
-  const uint16_t id = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
-
-  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
-  const uint32_t ruCountPerThread = (ruCount_ + numberOfAllocators_ - 1) / numberOfAllocators_;
-  const ApplicationDescriptorsAndTids::const_iterator first = participatingRUs_.begin() + (ruCountPerThread*id);
-  const ApplicationDescriptorsAndTids::const_iterator last = (id == numberOfAllocators_-1) ?
-    participatingRUs_.end() : participatingRUs_.begin() + (ruCountPerThread*(id+1));
-
-  try
-  {
-    while ( doProcessing_ )
-    {
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.set(id);
-      }
-
-      toolbox::mem::Reference* fragmentRequestBufRef;
-      while ( allocateFIFOs_[id]->deq(fragmentRequestBufRef) )
-      {
-        for (ApplicationDescriptorsAndTids::const_iterator it = first; it != last; ++it)
-        {
-          const uint32_t bufSize = fragmentRequestBufRef->getDataSize();
-          toolbox::mem::Reference* rqstBufRef = getRequestMsgBuffer(bufSize);
-          void* payload = rqstBufRef->getDataLocation();
-          memcpy(payload,fragmentRequestBufRef->getDataLocation(),bufSize);
-          I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)payload;
-          stdMsg->TargetAddress = it->tid;
-
-          {
-            boost::mutex::scoped_lock sl(postFrameMutex_);
-
-            try
-            {
-              evm_->getApplicationContext()->
-                postFrame(
-                  rqstBufRef,
-                  evm_->getApplicationDescriptor(),
-                  it->descriptor
-                );
-            }
-            catch(xcept::Exception& e)
-            {
-              std::ostringstream msg;
-              msg << "Failed to send message to RU ";
-              msg << it->tid;
-              XCEPT_RETHROW(exception::I2O, msg.str(), e);
-            }
-          }
-        }
-        fragmentRequestBufRef->release();
-      }
-
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.reset(id);
-      }
-      ::usleep(100);
-    }
-  }
-  catch(exception::HaltRequested& e)
-  {
-    boost::mutex::scoped_lock sl(allocateActiveMutex_);
-    allocateActive_.reset(id);
-  }
-  catch(xcept::Exception& e)
-  {
-    {
-      boost::mutex::scoped_lock sl(allocateActiveMutex_);
-      allocateActive_.reset(id);
-    }
-    stateMachine_->processFSMEvent( Fail(e) );
-  }
-  catch(std::exception& e)
-  {
-    {
-      boost::mutex::scoped_lock sl(allocateActiveMutex_);
-      allocateActive_.reset(id);
-    }
-    XCEPT_DECLARE(exception::I2O,
-                  sentinelException, e.what());
-    stateMachine_->processFSMEvent( Fail(sentinelException) );
-  }
-  catch(...)
-  {
-    {
-      boost::mutex::scoped_lock sl(allocateActiveMutex_);
-      allocateActive_.reset(id);
-    }
-    XCEPT_DECLARE(exception::I2O,
-                  sentinelException, "unkown exception");
-    stateMachine_->processFSMEvent( Fail(sentinelException) );
-  }
-
-  return doProcessing_;
 }
 
 
@@ -442,53 +333,6 @@ void evb::evm::RUproxy::configure()
 
   readoutMsgFIFO_.clear();
   readoutMsgFIFO_.resize(evm_->getConfiguration()->allocateFIFOCapacity);
-
-  numberOfAllocators_ = std::min(
-    evm_->getConfiguration()->numberOfAllocators.value_,
-    ruCount_
-  );
-  allocateFIFOs_.clear();
-  allocateFIFOs_.reserve(numberOfAllocators_);
-  for ( uint32_t i=0; i < numberOfAllocators_; ++i)
-  {
-    std::ostringstream fifoName;
-    fifoName << "allocateFIFO_" << i;
-    AllocateFIFOPtr allocateFIFO( new AllocateFIFO(evm_,fifoName.str()) );
-    allocateFIFO->resize(evm_->getConfiguration()->allocateFIFOCapacity);
-    allocateFIFOs_.push_back(allocateFIFO);
-  }
-
-  createProcessingWorkLoops();
-}
-
-
-void evb::evm::RUproxy::createProcessingWorkLoops()
-{
-  {
-    boost::mutex::scoped_lock sl(allocateActiveMutex_);
-    allocateActive_.clear();
-    allocateActive_.resize(numberOfAllocators_);
-  }
-
-  const std::string identifier = evm_->getIdentifier();
-
-  try
-  {
-    // Leave any previous created workloops alone. Only add new ones if needed.
-    for (uint16_t i=workLoops_.size(); i < numberOfAllocators_; ++i)
-    {
-      std::ostringstream workLoopName;
-      workLoopName << identifier << "/Allocator_" << i;
-      toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
-
-      if ( ! wl->isActive() ) wl->activate();
-      workLoops_.push_back(wl);
-    }
-  }
-  catch(xcept::Exception& e)
-  {
-    XCEPT_RETHROW(exception::WorkLoop, "Failed to start workloops", e);
-  }
 }
 
 
@@ -621,25 +465,10 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
               .add(td("# active RUs"))
               .add(td(boost::lexical_cast<std::string>(activeRUs))));
 
-    uint32_t activeAllocators = 0;
-    {
-      boost::mutex::scoped_lock sl(allocateActiveMutex_);
-      activeAllocators = allocateActive_.count();
-    }
-    table.add(tr()
-              .add(td("# allocators active"))
-              .add(td(boost::lexical_cast<std::string>(activeAllocators))));
-
     div.add(table);
   }
 
   div.add(readoutMsgFIFO_.getHtmlSnipped());
-
-  for (AllocateFIFOs::const_iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    div.add((*it)->getHtmlSnipped());
-  }
 
   return div;
 }
