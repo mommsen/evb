@@ -314,7 +314,6 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
-  while ( processesActive_.any() ) ::usleep(1000);
   buPoster_.stopProcessing();
 }
 

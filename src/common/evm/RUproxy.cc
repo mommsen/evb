@@ -162,7 +162,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
 {
   if ( ! doProcessing_ ) return false;
 
-  const uint32_t blockSize = evm_->getConfiguration()->blockSize;
+  const uint32_t blockSize = evm_->getConfiguration()->allocateBlockSize;
   toolbox::mem::Reference* rqstBufRef = 0;
   uint32_t msgSize = 0;
   unsigned char* payload = 0;
@@ -183,7 +183,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
           nbRequests * sizeof(EvBid) +
           ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
 
-        if ( msgSize+eventRequestSize > blockSize )
+        if ( msgSize+eventRequestSize > blockSize && rqstBufRef )
         {
           enqueueMsg(rqstBufRef,msgSize,requestCount);
         }
@@ -210,7 +210,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
         payload += nbRequests*sizeof(EvBid);
 
         memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
-        payload += ruCount*sizeof(I2O_TID);
+        payload += ((ruCount+1)&~1)*sizeof(I2O_TID);
         msgSize += eventRequestSize;
         ++requestCount;
 
@@ -243,6 +243,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
   {
     if (rqstBufRef) rqstBufRef->release();
     processingActive_ = false;
+    return false;
   }
   catch(xcept::Exception& e)
   {
@@ -345,7 +346,6 @@ bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
           stdMsg->TargetAddress = it->tid;
 
           {
-            // Send the readout message to all RUs
             boost::mutex::scoped_lock sl(postFrameMutex_);
 
             try
