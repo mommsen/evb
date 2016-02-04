@@ -22,7 +22,7 @@ class CreateConfig:
 
     def doIt(self):
         config = self.getConfig()
-        self.setFreeRunning(config)
+        self.setFreeRunning(config,self.args['ferolMode'])
         symbolMap = self.getSymbolMap(config)
         self.createDir(self.args['output'])
         self.writeSymbolMap(symbolMap,self.args['output'])
@@ -209,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("nBU",help="Number of BUs")
     parser.add_argument("output",help="Path to output directory")
     parser.add_argument("-b","--useBlacklist",action='store_true',help="use latest blacklist")
+    parser.add_argument("--ferolMode",action='store_false',help="generate data on FEROL instead of FRL")
     parser.add_argument("-l","--hostList",help="only use RUs and BUs from the given file")
     parser.add_argument("-s","--userSettings",help="override template settings with parameters from file")
     createConfig = CreateConfig( parser.parse_args() )
