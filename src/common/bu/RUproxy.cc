@@ -288,7 +288,7 @@ void evb::bu::RUproxy::sendRequests()
       (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
-    msg::EventRequest* eventRequest = (msg::EventRequest*)stdMsg+sizeof(msg::ReadoutMsg);
+    msg::EventRequest* eventRequest = (msg::EventRequest*)&readoutMsg->requests[0];
     const uint32_t nbRequests = buResourceId>0 ? configuration_->eventsPerRequest.value_ : 0;
 
     stdMsg->VersionOffset    = 0;
@@ -315,9 +315,7 @@ void evb::bu::RUproxy::sendRequests()
         postFrame(
           rqstBufRef,
           bu_->getApplicationDescriptor(),
-          evm_.descriptor //,
-          //i2oExceptionHandler_,
-          //it->descriptor
+          evm_.descriptor
         );
     }
     catch(xcept::Exception& e)

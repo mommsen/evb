@@ -108,8 +108,8 @@ namespace evb {
       void resetMonitoringCounters();
       void startRequestWorkLoop();
       void createProcessingWorkLoops();
-      toolbox::mem::Reference* getRequestMsgBuffer(const uint32_t blockSize);
-      void enqueueMsg(toolbox::mem::Reference*, const uint32_t msgSize);
+      toolbox::mem::Reference* getRequestMsgBuffer(const uint32_t bufSize);
+      void enqueueMsg(toolbox::mem::Reference*&, const uint32_t msgSize, uint32_t& requestCount);
       bool processRequests(toolbox::task::WorkLoop*);
       bool allocateEvents(toolbox::task::WorkLoop*);
       void getApplicationDescriptors();
