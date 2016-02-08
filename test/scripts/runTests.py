@@ -66,7 +66,7 @@ class RunTests(TestRunner):
         testNames.sort()
 
         for test in testNames:
-            logFile = open(self.args['outputDir']+"/"+test+".txt",'w',0)
+            logFile = open(self.args['logDir']+"/"+test+".txt",'w',0)
             if self.args['verbose']:
                 stdout = Tee(sys.stdout,logFile)
             else:
