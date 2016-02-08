@@ -192,7 +192,7 @@ class PlotScans:
         except TypeError:
             pass
         try:
-            subtagLen = 0.014*len(self.args['subtag'])
+            subtagLen = 0.013*len(self.args['subtag'])
         except TypeError:
             pass
         width = 0.12 + max(tagLen,subtagLen,0.2)
@@ -238,39 +238,41 @@ class PlotScans:
 
 
     def getThroughputGraph(self,n,case):
-        if len(case['sizes']) == 0:
+        try:
+            from numpy import array
+            graph = ROOT.TGraphErrors(len(case['sizes']),
+                                    array(case['sizes'],'f'),
+                                    array(case['throughputs'],'f'),
+                                    array(case['rmsSizes'],'f'),
+                                    array(case['rmsThroughputs'],'f'))
+            graph.SetTitle(case['name'])
+            graph.SetLineWidth(2)
+            graph.SetLineColor(self.colors[n])
+            graph.SetMarkerColor(self.colors[n])
+            graph.SetMarkerStyle(self.markers[n])
+            graph.SetMarkerSize(1.7)
+            graph.Draw("PL")
+            return graph
+        except KeyError:
             return None
-        from numpy import array
-        graph = ROOT.TGraphErrors(len(case['sizes']),
-                                  array(case['sizes'],'f'),
-                                  array(case['throughputs'],'f'),
-                                  array(case['rmsSizes'],'f'),
-                                  array(case['rmsThroughputs'],'f'))
-        graph.SetTitle(case['name'])
-        graph.SetLineWidth(2)
-        graph.SetLineColor(self.colors[n])
-        graph.SetMarkerColor(self.colors[n])
-        graph.SetMarkerStyle(self.markers[n])
-        graph.SetMarkerSize(1.7)
-        graph.Draw("PL")
-        return graph
 
 
     def getRateGraph(self,n,case):
-        if len(case['sizes']) == 0:
+        try:
+            from numpy import array
+            graph = ROOT.TGraphErrors(len(case['sizes']),
+                                        array(case['sizes'],'f'),
+                                        array(case['rates'],'f'),
+                                        array(case['rmsSizes'],'f'),
+                                        array(case['rmsRates'],'f'))
+            graph.SetTitle(case['name'])
+            graph.SetLineWidth(1)
+            graph.SetLineStyle(2)
+            graph.SetLineColor(self.colors[n])
+            graph.Draw("L")
+            return graph
+        except KeyError:
             return None
-        from numpy import array
-        graph = ROOT.TGraphErrors(len(case['sizes']),
-                                  array(case['sizes'],'f'),
-                                  array(case['rates'],'f'),
-                                  array(case['rmsSizes'],'f'),
-                                  array(case['rmsRates'],'f'))
-        graph.SetTitle(case['name'])
-        graph.SetLineWidth(1)
-        graph.SetLineStyle(2)
-        graph.SetLineColor(self.colors[n])
-        graph.Draw("L")
-        return graph
 
 
     def createThroughputGraphs(self):
@@ -317,6 +319,8 @@ class PlotScans:
                 if 'BU' in self.args['app']:
                     rawSizes = list(x['sizes'][self.args['app']]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
+                    if len(sizes) == 0:
+                        continue
                     averageSize = mean(sizes)
                     entry['sizes'].append(averageSize)
                     entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
@@ -356,8 +360,11 @@ class PlotScans:
                 unit = '(B)'
             print("Size %4s : Throughput (MB/s) :      Rate (kHz)"%(unit))
             print(47*"-")
-            for entry in zip(case['sizes'],case['throughputs'],case['rmsThroughputs'],case['rates'],case['rmsRates']):
-                print("%9d :  %6.1f +- %6.1f :  %5.1f +- %5.1f"%entry)
+            try:
+                for entry in zip(case['sizes'],case['throughputs'],case['rmsThroughputs'],case['rates'],case['rmsRates']):
+                    print("%9d :  %6.1f +- %6.1f :  %5.1f +- %5.1f"%entry)
+            except KeyError:
+                pass
             print(47*"-")
 
 

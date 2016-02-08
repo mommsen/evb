@@ -64,9 +64,9 @@ def sendStateCmdToApp(cmd,newState,app):
     state = messengers.sendCmdToApp(command=cmd,**app)
     if state not in newState:
         if state == 'Failed':
-            raise(StateException(app+application['instance']+" has failed"))
+            raise(StateException(app['class']+":"+app['instance']+" has failed"))
         else:
-            raise(StateException(app+application['instance']+" is in state "+state+
+            raise(StateException(app['class']+":"+app['instance']+" is in state "+state+
                                     " instead of target state "+str(newState)))
 
 
@@ -97,7 +97,10 @@ class TestCase:
             for context in self._config.contexts.values():
                 results = [self._pool.apply_async(startXDAQ, args=(c,testname)) for c in self._config.contexts.values()]
             for r in results:
-                print(r.get(timeout=30))
+                try:
+                    print(r.get(timeout=30))
+                except mp.TimeoutError:
+                    print(r)
         except socket.error:
             raise LauncherException("Cannot contact launcher")
 
