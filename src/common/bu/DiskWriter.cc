@@ -144,6 +144,12 @@ void evb::bu::DiskWriter::stopProcessing()
 
   streamHandlers_.clear();
   removeDir(runRawDataDir_);
+
+  if ( configuration_->deleteRawDataFiles )
+  {
+    removeDir(runRawDataDir_.parent_path());
+    removeDir(runMetaDataDir_);
+  }
 }
 
 
@@ -487,7 +493,7 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
 void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
 {
   if ( boost::filesystem::exists(path) &&
-       ( ! boost::filesystem::remove(path) ) )
+       ( ! boost::filesystem::remove_all(path) ) )
   {
     std::ostringstream msg;
     msg << "Failed to remove directory " << path.string();
