@@ -29,6 +29,7 @@ class RunScans(TestRunner):
         parser.add_argument("-q","--quick",action='store_true',help="run a quick scan with less sleep time")
         parser.add_argument("--short",action='store_true',help="run a short scan")
         parser.add_argument("--full",action='store_true',help="run the full scan")
+        parser.add_argument("--compl",action='store_true',help="run the scan points not included in short")
         parser.add_argument("--fixPorts",action='store_true',help="fix the port numbers on FEROLs and RUs")
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
         parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
@@ -70,6 +71,8 @@ class RunScans(TestRunner):
                          3072, 4096, 6144, 8192, 10240, 12288, 16384]
             elif self.args['short']:
                 sizes = [256, 512, 768, 1024, 1536, 2048, 2560, 4096, 8192, 12288, 16384]
+            elif self.args['compl']:
+                sizes = [1149, 1280, 1408, 1664, 1856, 3072, 6144, 10240]
             else:
                 sizes = self.args['sizes']
 
