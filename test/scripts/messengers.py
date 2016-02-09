@@ -105,5 +105,20 @@ def getParam(paramName,paramType,soapHostname,soapPort,launcherPort,app,instance
         return value
 
 
+def readItem(device,offset,item,soapHostname,soapPort,launcherPort,app,instance):
+    urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
+    readItem = """<xdaq:ReadItem xmlns:xdaq="urn:xdaq-soap:3.0" device="%(device)s" offset="%(offset)s" item="%(item)s"/>""" % {'device':device,'offset':offset,'item':item}
+    response = sendSoapMessage(soapHostname,soapPort,urn,readItem)
+    xdaqResponse = response.getElementsByTagName('xdaq:ReadItemResponse')
+    if len(xdaqResponse) != 1:
+        raise(SOAPexception("Failed to read item "+item+" from "+app+str(instance)+":\n"
+                            +response.toprettyxml()))
+    value = xdaqResponse[0].firstChild.data
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
 def getStateName(soapHostname,soapPort,launcherPort,app,instance):
     return getParam("stateName","string",soapHostname,soapPort,launcherPort,app,instance)
