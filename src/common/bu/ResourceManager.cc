@@ -94,6 +94,15 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
     XCEPT_RAISE(exception::EventOrder, msg.str());
   }
 
+  if ( pos->second.builderId == -1 )
+  {
+    std::ostringstream msg;
+    msg << "The buResourceId " << dataBlockMsg->buResourceId;
+    msg << " received from RU tid " << ruTid;
+    msg << " corresponds to an unassigned builder ID" ;
+    XCEPT_RAISE(exception::EventOrder, msg.str());
+  }
+
   if ( dataBlockMsg->blockNb == 1 ) //only the first block contains the EvBid
   {
     if ( pos->second.evbIdList.empty() )
