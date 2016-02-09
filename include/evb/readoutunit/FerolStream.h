@@ -329,7 +329,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::appendFedFragment
         std::ostringstream msg;
         msg << "Received " << bxErrors_
           << " fragments from FED " << fedFragment->getFedId()
-          << " (" << readoutUnit_->getSubSystem() << ") "
+          << " (" << readoutUnit_->getSubSystem() << ")"
           << " with a wrong bunch crossing id."
           << " The current event " << fedFragment->getEvBid().eventNumber()
           << " has bunch crossing id " << fedFragment->getEvBid().bxId()
