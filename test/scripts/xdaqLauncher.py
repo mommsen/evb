@@ -19,6 +19,7 @@ class xdaqThread(threading.Thread):
         self._process = None
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
+        os.environ["LD_LIBRARY_PATH"] = xdaqRoot+"/lib"
         numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
         xdaq = [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
         if useNuma:

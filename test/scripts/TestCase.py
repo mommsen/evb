@@ -144,10 +144,11 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
                     state = messengers.getStateName(**application)
-                    if state == 'Failed':
-                        raise(FailedState(app+application['instance']+" has Failed"))
                     if state not in targetState:
-                        raise(StateException(app+application['instance']+" is not in expected state '"+str(targetState)+"', but '"+state+"'"))
+                        if state == 'Failed':
+                            raise(FailedState(app+application['instance']+" has Failed"))
+                        else:
+                            raise(StateException(app+application['instance']+" is not in expected state '"+str(targetState)+"', but '"+state+"'"))
         except KeyError:
             pass
 
