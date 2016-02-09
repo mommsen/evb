@@ -35,6 +35,7 @@ namespace evb {
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
       xdata::UnsignedInteger32 numberOfAllocators;           // Number of threads used to allocate events to RUs
       xdata::UnsignedInteger32 allocateFIFOCapacity;         // Capacity of the FIFO to store allocation messages
+      xdata::UnsignedInteger32 allocateBlockSize;            // I2O block size used for packing readout msg from EVM to RUs
 
       Configuration()
         : triggerType("None"),
@@ -43,7 +44,8 @@ namespace evb {
           getLumiSectionFromTrigger(true),
           fakeLumiSectionDuration(0),
           numberOfAllocators(2),
-          allocateFIFOCapacity(1440)
+          allocateFIFOCapacity(1440),
+          allocateBlockSize(8192)
       {};
 
       void addToInfoSpace
@@ -63,6 +65,7 @@ namespace evb {
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
         params.add("numberOfAllocators", &numberOfAllocators);
         params.add("allocateFIFOCapacity", &allocateFIFOCapacity);
+        params.add("allocateBlockSize", &allocateBlockSize);
       }
 
       void fillDefaultRUinstances(xdaq::ApplicationContext* context)

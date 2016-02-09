@@ -18,15 +18,14 @@ namespace evb {
     typedef std::vector<uint16_t> FedIds;
 
     /**
-     * BU to EVM to RU message that contains one or more event-builder ids to be sent
+     * Event request for one or more events identified by the event-builder ids to be sent
      * to the BU TID specified. The EVM ignores the evbIds and sends the next nbRequests
      * fragements available. The RU TIDs are filled by the EVM.
      */
-    struct ReadoutMsg
+    struct EventRequest
     {
-      I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
       I2O_TID buTid;                             // BU TID to send the data
-      uint32_t headerSize;                       // Size of the message header
+      uint32_t msgSize;                          // Size of the message
       uint16_t padding;
       uint16_t priority;                         // Priority of the request (0 is highest)
       uint16_t buResourceId;                     // Index of BU resource used to built the event
@@ -38,7 +37,18 @@ namespace evb {
 
       void getEvBids(EvBids&) const;
       void getRUtids(RUtids&) const;
+    };
 
+
+    /**
+     * BU to EVM to RU message that contains one or more event requests
+     */
+    struct ReadoutMsg
+    {
+      I2O_PRIVATE_MESSAGE_FRAME PvtMessageFrame; // I2O information
+      uint32_t padding;
+      uint32_t nbRequests;                       // Number of requests
+      EventRequest requests[];                   // List of event requests
     };
 
 
@@ -89,7 +99,7 @@ namespace evb {
     std::ostream& operator<<
     (
       std::ostream&,
-      const evb::msg::ReadoutMsg
+      const evb::msg::ReadoutMsg*
     );
 
 

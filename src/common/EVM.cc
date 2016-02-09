@@ -161,15 +161,15 @@ namespace evb {
 
 
     template<>
-    void BUproxy<EVM>::handleRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
+    void BUproxy<EVM>::handleRequest(const msg::EventRequest* eventRequest, FragmentRequestPtr& fragmentRequest)
     {
-      fragmentRequest->nbDiscards = readoutMsg->nbRequests; //Always keep nb discards == nb requests for RUs
+      fragmentRequest->nbDiscards = eventRequest->nbRequests; //Always keep nb discards == nb requests for RUs
       fragmentRequest->ruTids = readoutUnit_->getRUtids();
 
       boost::upgrade_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
-      FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(readoutMsg->buTid);
-      if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(readoutMsg->buTid,pos->first) )
+      FragmentRequestFIFOs::iterator pos = fragmentRequestFIFOs_.lower_bound(eventRequest->buTid);
+      if ( pos == fragmentRequestFIFOs_.end() || fragmentRequestFIFOs_.key_comp()(eventRequest->buTid,pos->first) )
       {
         // new TID
         boost::upgrade_to_unique_lock< boost::shared_mutex > ul(sl);
@@ -178,17 +178,17 @@ namespace evb {
         for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
         {
           std::ostringstream name;
-          name << "fragmentRequestFIFO_BU" << readoutMsg->buTid << "_priority" << priority;
+          name << "fragmentRequestFIFO_BU" << eventRequest->buTid << "_priority" << priority;
           const FragmentRequestFIFOPtr requestFIFO( new FragmentRequestFIFO(readoutUnit_,name.str()) );
           requestFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
           prioritizedFragmentRequestFIFOs.push_back(requestFIFO);
         }
         pos = fragmentRequestFIFOs_.insert(pos, FragmentRequestFIFOs::value_type(
-                                             readoutMsg->buTid,prioritizedFragmentRequestFIFOs));
+                                             eventRequest->buTid,prioritizedFragmentRequestFIFOs));
         nextBU_ = pos; //make sure the nextBU points to a valid location
       }
 
-      pos->second[readoutMsg->priority]->enqWait(fragmentRequest);
+      pos->second[eventRequest->priority]->enqWait(fragmentRequest);
     }
 
 

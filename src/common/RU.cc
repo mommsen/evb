@@ -24,10 +24,10 @@ namespace evb {
   namespace readoutunit {
 
     template<>
-    void BUproxy<RU>::handleRequest(const msg::ReadoutMsg* readoutMsg, FragmentRequestPtr& fragmentRequest)
+    void BUproxy<RU>::handleRequest(const msg::EventRequest* eventRequest, FragmentRequestPtr& fragmentRequest)
     {
-      readoutMsg->getEvBids(fragmentRequest->evbIds);
-      readoutMsg->getRUtids(fragmentRequest->ruTids);
+      eventRequest->getEvBids(fragmentRequest->evbIds);
+      eventRequest->getRUtids(fragmentRequest->ruTids);
 
       fragmentRequestFIFO_.enqWait(fragmentRequest);
     }

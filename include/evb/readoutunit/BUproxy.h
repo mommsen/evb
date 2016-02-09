@@ -136,7 +136,7 @@ namespace evb {
       void updateRequestCounters(const FragmentRequestPtr&);
       bool process(toolbox::task::WorkLoop*);
       bool processRequest(FragmentRequestPtr&,SuperFragments&);
-      void handleRequest(const msg::ReadoutMsg*, FragmentRequestPtr&);
+      void handleRequest(const msg::EventRequest*, FragmentRequestPtr&);
       void sendData(const FragmentRequestPtr&, const SuperFragments&);
       toolbox::mem::Reference* getNextBlock(const uint32_t blockNb) const;
       void fillSuperFragmentHeader
@@ -314,7 +314,6 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
-  while ( processesActive_.any() ) ::usleep(1000);
   buPoster_.stopProcessing();
 }
 
@@ -322,44 +321,53 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::stopProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Reference* bufRef)
 {
-  msg::ReadoutMsg* readoutMsg =
-    (msg::ReadoutMsg*)bufRef->getDataLocation();
+  I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)bufRef->getDataLocation();
+  msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+
+  uint32_t nbDiscards = 0;
+  uint32_t nbRequests = 0;
+  unsigned char* payload = (unsigned char*)&readoutMsg->requests[0];
+
+  for (uint32_t i = 0; i < readoutMsg->nbRequests; ++i)
+  {
+    msg::EventRequest* eventRequest = (msg::EventRequest*)payload;
+
+    nbDiscards += eventRequest->nbDiscards;
+
+    if ( eventRequest->nbRequests > 0 )
+    {
+      nbRequests += eventRequest->nbRequests;
+      FragmentRequestPtr fragmentRequest( new FragmentRequest );
+      fragmentRequest->buTid = eventRequest->buTid;
+      fragmentRequest->buResourceId = eventRequest->buResourceId;
+      fragmentRequest->nbRequests = eventRequest->nbRequests;
+      handleRequest(eventRequest, fragmentRequest);
+
+      {
+        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+        requestMonitoring_.logicalCountPerBU[eventRequest->buTid] += eventRequest->nbRequests;
+      }
+    }
+
+    payload += eventRequest->msgSize;
+  }
 
   {
     boost::mutex::scoped_lock sl(dataMonitoringMutex_);
-    dataMonitoring_.outstandingEvents -= readoutMsg->nbDiscards;
+    dataMonitoring_.outstandingEvents -= nbDiscards;
   }
 
-  if ( readoutMsg->nbRequests > 0 )
   {
-    FragmentRequestPtr fragmentRequest( new FragmentRequest );
-    fragmentRequest->buTid = readoutMsg->buTid;
-    fragmentRequest->buResourceId = readoutMsg->buResourceId;
-    fragmentRequest->nbRequests = readoutMsg->nbRequests;
-    handleRequest(readoutMsg, fragmentRequest);
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
-    updateRequestCounters(fragmentRequest);
+    const uint32_t msgSize = stdMsg->MessageSize << 2;
+    requestMonitoring_.perf.sumOfSizes += msgSize;
+    requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
+    requestMonitoring_.perf.logicalCount += nbRequests;
+    ++requestMonitoring_.perf.i2oCount;
   }
 
   bufRef->release();
-}
-
-
-template<class ReadoutUnit>
-void evb::readoutunit::BUproxy<ReadoutUnit>::updateRequestCounters(const FragmentRequestPtr& fragmentRequest)
-{
-  boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-
-  uint32_t msgSize = sizeof(msg::ReadoutMsg) +
-    ((fragmentRequest->ruTids.size()+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
-  if ( !fragmentRequest->evbIds.empty() )
-    msgSize += fragmentRequest->nbRequests * sizeof(EvBid);
-
-  requestMonitoring_.perf.sumOfSizes += msgSize;
-  requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
-  requestMonitoring_.perf.logicalCount += fragmentRequest->nbRequests;
-  ++requestMonitoring_.perf.i2oCount;
-  requestMonitoring_.logicalCountPerBU[fragmentRequest->buTid] += fragmentRequest->nbRequests;
 }
 
 

@@ -1,7 +1,7 @@
 #include "evb/I2OMessages.h"
 
 
-void evb::msg::ReadoutMsg::getEvBids(evb::msg::EvBids& ids) const
+void evb::msg::EventRequest::getEvBids(evb::msg::EvBids& ids) const
 {
   ids.clear();
   ids.reserve(nbRequests);
@@ -16,7 +16,7 @@ void evb::msg::ReadoutMsg::getEvBids(evb::msg::EvBids& ids) const
 }
 
 
-void evb::msg::ReadoutMsg::getRUtids(evb::msg::RUtids& tids) const
+void evb::msg::EventRequest::getRUtids(evb::msg::RUtids& tids) const
 {
   tids.clear();
   tids.reserve(nbRUtids);
@@ -106,18 +106,39 @@ std::ostream& evb::msg::operator<<
 std::ostream& evb::msg::operator<<
 (
   std::ostream& str,
-  const evb::msg::ReadoutMsg readoutMsg
+  const evb::msg::ReadoutMsg* readoutMsg
 )
 {
   str << "ReadoutMsg:" << std::endl;
 
-  str << readoutMsg.PvtMessageFrame;
+  str << readoutMsg->PvtMessageFrame;
+  str << "nbRequests=" << readoutMsg->nbRequests << std::endl;
 
-  str << "buTid=" << readoutMsg.buTid << std::endl;
-  str << "priority=" << readoutMsg.priority << std::endl;
-  str << "buResourceId=" << readoutMsg.buResourceId << std::endl;
-  str << "nbRequests=" << readoutMsg.nbRequests << std::endl;
-  str << "nbRUtids=" << readoutMsg.nbRUtids << std::endl;
+  unsigned char* payload = (unsigned char*)&readoutMsg->requests[0];
+  for (uint32_t i = 0; i < readoutMsg->nbRequests; ++i)
+  {
+    EventRequest* eventRequest = (msg::EventRequest*)payload;
+    str << "  buTid=" << eventRequest->buTid << std::endl;
+    str << "  priority=" << eventRequest->priority << std::endl;
+    str << "  buResourceId=" << eventRequest->buResourceId << std::endl;
+    str << "  nbRequests=" << eventRequest->nbRequests << std::endl;
+    str << "  nbDiscards=" << eventRequest->nbDiscards << std::endl;
+    str << "  nbRUtids=" << eventRequest->nbRUtids << std::endl;
+
+    evb::msg::EvBids evbIds;
+    eventRequest->getEvBids(evbIds);
+    str << "  evbIds:" << std::endl;
+    for (uint32_t i=0; i < eventRequest->nbRequests; ++i)
+      str << "     [" << i << "]: " << evbIds[i] << std::endl;
+
+    evb::msg::RUtids ruTids;
+    eventRequest->getRUtids(ruTids);
+    str << "  ruTids:" << std::endl;
+    for (uint32_t i=0; i < eventRequest->nbRUtids; ++i)
+      str << "     [" << i << "]: " << ruTids[i] << std::endl;
+
+    payload += eventRequest->msgSize;
+  }
 
   return str;
 }

@@ -26,25 +26,44 @@ evb::evm::RUproxy::RUproxy
   evm_(evm),
   stateMachine_(stateMachine),
   fastCtrlMsgPool_(fastCtrlMsgPool),
-  numberOfAllocators_(0),
+  readoutMsgFIFO_(evm,"readoutMsgFIFO"),
   doProcessing_(false),
-  tid_(0)
+  processingActive_(false),
+  tid_(0),
+  ruCount_(0)
 {
   resetMonitoringCounters();
-
-  allocateAction_ =
-    toolbox::task::bind(this, &evb::evm::RUproxy::allocateEvents,
-                        evm_->getIdentifier("ruProxyAllocateEvents") );
+  startRequestWorkLoop();
 }
 
 
 evb::evm::RUproxy::~RUproxy()
 {
-  for ( WorkLoops::iterator it = workLoops_.begin(), itEnd = workLoops_.end();
-        it != itEnd; ++it)
+  if ( processRequestsWL_->isActive() )
+    processRequestsWL_->cancel();
+}
+
+
+void evb::evm::RUproxy::startRequestWorkLoop()
+{
+  try
   {
-    if ( (*it)->isActive() )
-      (*it)->cancel();
+    processRequestsWL_ = toolbox::task::getWorkLoopFactory()->
+      getWorkLoop( evm_->getIdentifier("processRequests"), "waiting" );
+
+    if ( ! processRequestsWL_->isActive() )
+    {
+      processRequestsWL_->activate();
+
+      processRequestsAction_ =
+        toolbox::task::bind(this, &evb::evm::RUproxy::processRequests,
+                            evm_->getIdentifier("processRequests") );
+    }
+  }
+  catch(xcept::Exception& e)
+  {
+    std::string msg = "Failed to start workloop 'processRequests'";
+    XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
 
@@ -56,10 +75,7 @@ void evb::evm::RUproxy::startProcessing()
 
   doProcessing_ = true;
 
-  for (uint32_t i=0; i < numberOfAllocators_; ++i)
-  {
-    workLoops_.at(i)->submit(allocateAction_);
-  }
+  processRequestsWL_->submit(processRequestsAction_);
 }
 
 
@@ -71,31 +87,22 @@ void evb::evm::RUproxy::drain() const
 
 bool evb::evm::RUproxy::isEmpty() const
 {
-  AllocateFIFOs::const_iterator it = allocateFIFOs_.begin();
-  while ( it != allocateFIFOs_.end() )
-  {
-    if ( ! (*it)->empty() ) return false;
-    ++it;
-  }
+  if ( readoutMsgFIFO_.empty() && !processingActive_ ) return true;
 
-  return ( allocateActive_.none() );
+  return false;
 }
 
 
 void evb::evm::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
-  while ( allocateActive_.any() ) ::usleep(1000);
+  while ( processingActive_ ) ::usleep(1000);
 
-  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    (*it)->clear();
-  }
+  readoutMsgFIFO_.clear();
 }
 
 
-toolbox::mem::Reference* evb::evm::RUproxy::getReadoutMsgBuffer(const uint32_t readoutMsgSize)
+toolbox::mem::Reference* evb::evm::RUproxy::getRequestMsgBuffer(const uint32_t bufSize)
 {
   toolbox::mem::Reference* rqstBufRef = 0;
   while ( !rqstBufRef )
@@ -103,183 +110,198 @@ toolbox::mem::Reference* evb::evm::RUproxy::getReadoutMsgBuffer(const uint32_t r
     try
     {
       rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, readoutMsgSize);
+        getFrame(fastCtrlMsgPool_, bufSize);
+      rqstBufRef->setDataSize(bufSize);
     }
     catch(toolbox::mem::exception::Exception)
     {
       rqstBufRef = 0;
-      if ( ! doProcessing_ ) return 0;
+      if ( ! doProcessing_ )
+        throw exception::HaltRequested();
     }
   }
-  rqstBufRef->setDataSize(readoutMsgSize);
   return rqstBufRef;
 }
 
 
 void evb::evm::RUproxy::sendRequest(const readoutunit::FragmentRequestPtr& fragmentRequest)
 {
-  if ( participatingRUs_.empty() ) return;
+  if ( ! participatingRUs_.empty() )
+  {
+    readoutMsgFIFO_.enqWait(fragmentRequest);
+  }
+}
 
-  const uint16_t requestsCount = fragmentRequest->nbRequests;
-  const uint16_t ruCount = fragmentRequest->ruTids.size();
-  const size_t readoutMsgSize = sizeof(msg::ReadoutMsg) +
-    requestsCount * sizeof(EvBid) +
-    ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
 
-  toolbox::mem::Reference* fragmentRequestBufRef = getReadoutMsgBuffer(readoutMsgSize);
-  if ( ! fragmentRequestBufRef ) return;
+bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
+{
+  if ( ! doProcessing_ ) return false;
 
+  const uint32_t blockSize = evm_->getConfiguration()->allocateBlockSize;
+  toolbox::mem::Reference* rqstBufRef = 0;
+  uint32_t msgSize = 0;
+  unsigned char* payload = 0;
+  uint32_t requestCount = 0;
+  uint32_t tries = 0;
+  processingActive_ = true;
+
+  try
+  {
+    while ( doProcessing_ )
+    {
+      readoutunit::FragmentRequestPtr fragmentRequest;
+      if ( readoutMsgFIFO_.deq(fragmentRequest) )
+      {
+        const uint16_t nbRequests = fragmentRequest->nbRequests;
+        const uint16_t ruCount = fragmentRequest->ruTids.size();
+        const size_t eventRequestSize = sizeof(msg::EventRequest) +
+          nbRequests * sizeof(EvBid) +
+          ((ruCount+1)&~1) * sizeof(I2O_TID); // even number of I2O_TIDs to align header to 64-bits
+
+        if ( msgSize+eventRequestSize > blockSize && rqstBufRef )
+        {
+          sendMsgToRUs(rqstBufRef,msgSize,requestCount);
+        }
+
+        if ( ! rqstBufRef )
+        {
+          rqstBufRef = getRequestMsgBuffer(blockSize);
+          msgSize = sizeof(msg::ReadoutMsg);
+          payload = ((unsigned char*)rqstBufRef->getDataLocation()) + msgSize;
+          tries = 0;
+        }
+
+        msg::EventRequest* eventRequest = (msg::EventRequest*)payload;
+        eventRequest->msgSize      = eventRequestSize;
+        eventRequest->buTid        = fragmentRequest->buTid;
+        eventRequest->priority     = 0; //not used on RU
+        eventRequest->buResourceId = fragmentRequest->buResourceId;
+        eventRequest->nbRequests   = nbRequests;
+        eventRequest->nbDiscards   = fragmentRequest->nbDiscards;
+        eventRequest->nbRUtids     = ruCount;
+        payload += sizeof(msg::EventRequest);
+
+        memcpy(payload,&fragmentRequest->evbIds[0],nbRequests*sizeof(EvBid));
+        payload += nbRequests*sizeof(EvBid);
+
+        memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
+        payload += ((ruCount+1)&~1)*sizeof(I2O_TID);
+        msgSize += eventRequestSize;
+        ++requestCount;
+
+        {
+          boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+
+          allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[nbRequests-1].eventNumber();
+          allocateMonitoring_.perf.logicalCount += nbRequests*ruCount_;
+        }
+      }
+      else if ( doProcessing_ && tries < 100 )
+      {
+        ++tries;
+        processingActive_ = false;
+        ::usleep(100);
+        processingActive_ = true;
+      }
+      else
+      {
+        if ( rqstBufRef )
+        {
+          // send what we have so far
+          sendMsgToRUs(rqstBufRef,msgSize,requestCount);
+        }
+        tries = 0;
+      }
+    }
+  }
+  catch(exception::HaltRequested& e)
+  {
+    if (rqstBufRef) rqstBufRef->release();
+    processingActive_ = false;
+    return false;
+  }
+  catch(xcept::Exception& e)
+  {
+    if (rqstBufRef) rqstBufRef->release();
+    processingActive_ = false;
+    stateMachine_->processFSMEvent( Fail(e) );
+  }
+  catch(std::exception& e)
+  {
+    if (rqstBufRef) rqstBufRef->release();
+    processingActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, e.what());
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    if (rqstBufRef) rqstBufRef->release();
+    processingActive_ = false;
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, "unkown exception");
+    stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+
+  return doProcessing_;
+}
+
+
+void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const uint32_t msgSize, uint32_t& requestCount)
+{
   I2O_MESSAGE_FRAME* stdMsg =
-    (I2O_MESSAGE_FRAME*)fragmentRequestBufRef->getDataLocation();
+    (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
   I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
   msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
 
   stdMsg->VersionOffset    = 0;
   stdMsg->MsgFlags         = 0;
-  stdMsg->MessageSize      = readoutMsgSize >> 2;
+  stdMsg->MessageSize      = msgSize >> 2;
   stdMsg->InitiatorAddress = tid_;
   stdMsg->Function         = I2O_PRIVATE_MESSAGE;
   pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
   pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-  readoutMsg->headerSize   = readoutMsgSize;
-  readoutMsg->buTid        = fragmentRequest->buTid;
-  readoutMsg->priority     = 0; //not used on RU
-  readoutMsg->buResourceId = fragmentRequest->buResourceId;
-  readoutMsg->nbRequests   = requestsCount;
-  readoutMsg->nbDiscards   = fragmentRequest->nbDiscards;
-  readoutMsg->nbRUtids     = ruCount;
+  readoutMsg->nbRequests   = requestCount;
+  rqstBufRef->setDataSize(msgSize);
+  requestCount = 0;
 
-  unsigned char* payload = (unsigned char*)&readoutMsg->evbIds[0];
-  memcpy(payload,&fragmentRequest->evbIds[0],requestsCount*sizeof(EvBid));
-  payload += requestsCount*sizeof(EvBid);
-
-  memcpy(payload,&fragmentRequest->ruTids[0],ruCount*sizeof(I2O_TID));
-
-  for (AllocateFIFOs::iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
+  for (ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin(), itEnd = participatingRUs_.end();
        it != itEnd; ++it)
   {
-    (*it)->enqWait( fragmentRequestBufRef->duplicate() );
+    toolbox::mem::Reference* bufRef = getRequestMsgBuffer(msgSize);
+    void* payload = bufRef->getDataLocation();
+    memcpy(payload,rqstBufRef->getDataLocation(),msgSize);
+    I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)payload;
+    stdMsg->TargetAddress = it->tid;
+
+    try
+    {
+      evm_->getApplicationContext()->
+        postFrame(
+          bufRef,
+          evm_->getApplicationDescriptor(),
+          it->descriptor
+        );
+    }
+    catch(xcept::Exception& e)
+    {
+      std::ostringstream msg;
+      msg << "Failed to send message to RU ";
+      msg << it->tid;
+      XCEPT_RETHROW(exception::I2O, msg.str(), e);
+    }
   }
-  fragmentRequestBufRef->release();
+  rqstBufRef->release();
+  rqstBufRef = 0;
 
   {
     boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
-    const uint32_t msgSize = readoutMsgSize*ruCount;
-    allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[requestsCount-1].eventNumber();
-    allocateMonitoring_.perf.sumOfSizes += msgSize;
-    allocateMonitoring_.perf.sumOfSquares += msgSize*msgSize;
-    allocateMonitoring_.perf.logicalCount += requestsCount*ruCount;
-    allocateMonitoring_.perf.i2oCount += ruCount;
+    const uint32_t totalSize = msgSize*ruCount_;
+    allocateMonitoring_.perf.sumOfSizes += totalSize;
+    allocateMonitoring_.perf.sumOfSquares += totalSize*totalSize;
+    allocateMonitoring_.perf.i2oCount += ruCount_;
   }
-}
-
-
-bool evb::evm::RUproxy::allocateEvents(toolbox::task::WorkLoop* wl)
-{
-  if ( ! doProcessing_ ) return false;
-
-  const std::string wlName =  wl->getName();
-  const size_t startPos = wlName.find_last_of("_") + 1;
-  const size_t endPos = wlName.find("/",startPos);
-  const uint16_t id = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
-
-  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
-  const uint32_t ruCountPerThread = (participatingRUs_.size() + numberOfAllocators_ - 1) / numberOfAllocators_;
-  const ApplicationDescriptorsAndTids::const_iterator first = participatingRUs_.begin() + (ruCountPerThread*id);
-  const ApplicationDescriptorsAndTids::const_iterator last = (id == numberOfAllocators_-1) ?
-    participatingRUs_.end() : participatingRUs_.begin() + (ruCountPerThread*(id+1));
-
-  while ( doProcessing_ )
-  {
-    try
-    {
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.set(id);
-      }
-
-      toolbox::mem::Reference* fragmentRequestBufRef;
-      while ( allocateFIFOs_[id]->deq(fragmentRequestBufRef) )
-      {
-        for (ApplicationDescriptorsAndTids::const_iterator it = first; it != last; ++it)
-        {
-          const uint32_t bufSize = fragmentRequestBufRef->getDataSize();
-          toolbox::mem::Reference* rqstBufRef = getReadoutMsgBuffer(bufSize);
-          if ( ! rqstBufRef )
-          {
-            boost::mutex::scoped_lock sl(allocateActiveMutex_);
-            allocateActive_.reset(id);
-            return false;
-          }
-
-          void* payload = rqstBufRef->getDataLocation();
-          memcpy(payload,fragmentRequestBufRef->getDataLocation(),bufSize);
-          I2O_MESSAGE_FRAME* stdMsg = (I2O_MESSAGE_FRAME*)payload;
-          stdMsg->TargetAddress = it->tid;
-
-          {
-            // Send the readout message to all RUs
-            boost::mutex::scoped_lock sl(postFrameMutex_);
-
-            try
-            {
-              evm_->getApplicationContext()->
-                postFrame(
-                  rqstBufRef,
-                  evm_->getApplicationDescriptor(),
-                  it->descriptor
-                );
-            }
-            catch(xcept::Exception& e)
-            {
-              std::ostringstream msg;
-              msg << "Failed to send message to RU ";
-              msg << it->tid;
-              XCEPT_RETHROW(exception::I2O, msg.str(), e);
-            }
-          }
-        }
-        fragmentRequestBufRef->release();
-      }
-
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.reset(id);
-      }
-      ::usleep(100);
-    }
-    catch(xcept::Exception& e)
-    {
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.reset(id);
-      }
-      stateMachine_->processFSMEvent( Fail(e) );
-    }
-    catch(std::exception& e)
-    {
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.reset(id);
-      }
-      XCEPT_DECLARE(exception::I2O,
-                    sentinelException, e.what());
-      stateMachine_->processFSMEvent( Fail(sentinelException) );
-    }
-    catch(...)
-    {
-      {
-        boost::mutex::scoped_lock sl(allocateActiveMutex_);
-        allocateActive_.reset(id);
-      }
-      XCEPT_DECLARE(exception::I2O,
-                    sentinelException, "unkown exception");
-      stateMachine_->processFSMEvent( Fail(sentinelException) );
-    }
-  }
-
-  return doProcessing_;
 }
 
 
@@ -307,53 +329,10 @@ void evb::evm::RUproxy::resetMonitoringCounters()
 void evb::evm::RUproxy::configure()
 {
   getApplicationDescriptors();
+  ruCount_ = participatingRUs_.size();
 
-  numberOfAllocators_ = std::min(
-    evm_->getConfiguration()->numberOfAllocators.value_,
-    static_cast<uint32_t>(participatingRUs_.size())
-  );
-  allocateFIFOs_.clear();
-  allocateFIFOs_.reserve(numberOfAllocators_);
-  for ( uint32_t i=0; i < numberOfAllocators_; ++i)
-  {
-    std::ostringstream fifoName;
-    fifoName << "allocateFIFO_" << i;
-    AllocateFIFOPtr allocateFIFO( new AllocateFIFO(evm_,fifoName.str()) );
-    allocateFIFO->resize(evm_->getConfiguration()->allocateFIFOCapacity);
-    allocateFIFOs_.push_back(allocateFIFO);
-  }
-
-  createProcessingWorkLoops();
-}
-
-
-void evb::evm::RUproxy::createProcessingWorkLoops()
-{
-  {
-    boost::mutex::scoped_lock sl(allocateActiveMutex_);
-    allocateActive_.clear();
-    allocateActive_.resize(numberOfAllocators_);
-  }
-
-  const std::string identifier = evm_->getIdentifier();
-
-  try
-  {
-    // Leave any previous created workloops alone. Only add new ones if needed.
-    for (uint16_t i=workLoops_.size(); i < numberOfAllocators_; ++i)
-    {
-      std::ostringstream workLoopName;
-      workLoopName << identifier << "/Allocator_" << i;
-      toolbox::task::WorkLoop* wl = toolbox::task::getWorkLoopFactory()->getWorkLoop( workLoopName.str(), "waiting" );
-
-      if ( ! wl->isActive() ) wl->activate();
-      workLoops_.push_back(wl);
-    }
-  }
-  catch(xcept::Exception& e)
-  {
-    XCEPT_RETHROW(exception::WorkLoop, "Failed to start workloops", e);
-  }
+  readoutMsgFIFO_.clear();
+  readoutMsgFIFO_.resize(evm_->getConfiguration()->allocateFIFOCapacity);
 }
 
 
@@ -372,6 +351,7 @@ void evb::evm::RUproxy::getApplicationDescriptors()
 
   // Clear list of participating RUs
   participatingRUs_.clear();
+  ruCount_ = 0;
   ruTids_.clear();
   ruTids_.push_back(tid_);
 
@@ -485,22 +465,10 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
               .add(td("# active RUs"))
               .add(td(boost::lexical_cast<std::string>(activeRUs))));
 
-    uint32_t activeAllocators = 0;
-    {
-      boost::mutex::scoped_lock sl(allocateActiveMutex_);
-      activeAllocators = allocateActive_.count();
-    }
-    table.add(tr()
-              .add(td("# allocators active"))
-              .add(td(boost::lexical_cast<std::string>(activeAllocators))));
-
     div.add(table);
   }
-  for (AllocateFIFOs::const_iterator it = allocateFIFOs_.begin(), itEnd = allocateFIFOs_.end();
-       it != itEnd; ++it)
-  {
-    div.add((*it)->getHtmlSnipped());
-  }
+
+  div.add(readoutMsgFIFO_.getHtmlSnipped());
 
   return div;
 }

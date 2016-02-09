@@ -275,7 +275,7 @@ void evb::bu::RUproxy::sendRequests()
   uint16_t buResourceId;
   uint16_t priority;
   uint16_t eventsToDiscard;
-  const uint32_t msgSize = sizeof(msg::ReadoutMsg);
+  const uint32_t msgSize = sizeof(msg::ReadoutMsg) + sizeof(msg::EventRequest);
 
   while ( resourceManager_->getResourceId(buResourceId,priority,eventsToDiscard) )
   {
@@ -288,6 +288,7 @@ void evb::bu::RUproxy::sendRequests()
       (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
+    msg::EventRequest* eventRequest = (msg::EventRequest*)&readoutMsg->requests[0];
     const uint32_t nbRequests = buResourceId>0 ? configuration_->eventsPerRequest.value_ : 0;
 
     stdMsg->VersionOffset    = 0;
@@ -298,13 +299,14 @@ void evb::bu::RUproxy::sendRequests()
     stdMsg->Function         = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-    readoutMsg->headerSize   = msgSize;
-    readoutMsg->buTid        = tid_;
-    readoutMsg->priority     = priority;
-    readoutMsg->buResourceId = buResourceId;
-    readoutMsg->nbRequests   = nbRequests;
-    readoutMsg->nbDiscards   = eventsToDiscard;
-    readoutMsg->nbRUtids     = 0; // will be filled by EVM
+    readoutMsg->nbRequests   = 1; //only one EventRequest is sent per message
+    eventRequest->msgSize      = msgSize;
+    eventRequest->buTid        = tid_;
+    eventRequest->priority     = priority;
+    eventRequest->buResourceId = buResourceId;
+    eventRequest->nbRequests   = nbRequests;
+    eventRequest->nbDiscards   = eventsToDiscard;
+    eventRequest->nbRUtids     = 0; // will be filled by EVM
 
     // Send the request to the EVM
     try
@@ -313,9 +315,7 @@ void evb::bu::RUproxy::sendRequests()
         postFrame(
           rqstBufRef,
           bu_->getApplicationDescriptor(),
-          evm_.descriptor //,
-          //i2oExceptionHandler_,
-          //it->descriptor
+          evm_.descriptor
         );
     }
     catch(xcept::Exception& e)
