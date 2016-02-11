@@ -33,7 +33,6 @@ namespace evb {
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
       xdata::Boolean getLumiSectionFromTrigger;              // If set to true, try to get the lumi section number from the trigger. Otherwise, use fake LS
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
-      xdata::UnsignedInteger32 numberOfAllocators;           // Number of threads used to allocate events to RUs
       xdata::UnsignedInteger32 allocateFIFOCapacity;         // Capacity of the FIFO to store allocation messages
       xdata::UnsignedInteger32 allocateBlockSize;            // I2O block size used for packing readout msg from EVM to RUs
 
@@ -43,7 +42,6 @@ namespace evb {
           maxTriggerAgeMSec(1000),
           getLumiSectionFromTrigger(true),
           fakeLumiSectionDuration(0),
-          numberOfAllocators(2),
           allocateFIFOCapacity(1440),
           allocateBlockSize(8192)
       {};
@@ -63,7 +61,6 @@ namespace evb {
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
         params.add("getLumiSectionFromTrigger", &getLumiSectionFromTrigger);
         params.add("fakeLumiSectionDuration", &fakeLumiSectionDuration);
-        params.add("numberOfAllocators", &numberOfAllocators);
         params.add("allocateFIFOCapacity", &allocateFIFOCapacity);
         params.add("allocateBlockSize", &allocateBlockSize);
       }
