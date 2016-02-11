@@ -24,7 +24,7 @@ class case_2x1_drainingFailed(TestCase):
         sys.stdout.flush()
         self.stop('EVM')
         try:
-            self.waitForAppState('Ready','EVM')
+            self.waitForAppState('Ready','EVM',maxTries=10)
         except StateException:
             self.checkAppState('Draining','EVM')
         else:

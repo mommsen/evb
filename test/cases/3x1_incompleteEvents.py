@@ -29,6 +29,7 @@ class case_3x1_incompleteEvents(TestCase):
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
 
         # Wait for ls timeouts
         time.sleep(10)

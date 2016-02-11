@@ -153,7 +153,7 @@ class TestCase:
             pass
 
 
-    def waitForAppState(self,targetState,app,instance=None,maxTries=10,runDir=None):
+    def waitForAppState(self,targetState,app,instance=None,maxTries=30,runDir=None):
         tries = 0
         while True:
             try:
@@ -394,9 +394,14 @@ class TestCase:
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         sleep(2)
         eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
-        lastEvent = self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0']
-        return lastEvent + max(3*eventRate,10000)
-
+        try:
+            # Use roughtly a median value of the FEROL event counts
+            # In case of a tolerated syncLoss, some FEROLs will have huge counts
+            ferolEventNumbers = sorted( self.getAppParam('lastEventNumber','unsignedInt','FEROL').values() )
+            middleIndex = len(ferolEventNumbers) // 2
+            return ferolEventNumbers[middleIndex] + eventRate
+        except IndexError:
+            return self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'] + 3*eventRate
 
 
     def checkEVM(self,superFragmentSize,eventRate=100):

@@ -23,27 +23,27 @@ class case_2x1_syncLoss(TestCase):
         sys.stdout.write("Resync on FED "+str(fed)+" at event "+str(resyncAtEvent))
         sys.stdout.flush()
         tries = 0
-        while tries < 60:
-            time.sleep(1)
-            tries += 1
-            sys.stdout.write(".")
-            sys.stdout.flush()
+        while True:
             try:
                 self.checkAppState("SyncLoss",app)
                 print(" done")
                 break
             except StateException:
-                pass
-        if tries == 30:
-            print(" FAILED")
-            raise(StateException("EVM not in expected stats 'SyncLoss'"))
-        time.sleep(2)
+                tries += 1
+                if tries > 60:
+                    print(" FAILED")
+                    raise(StateException("EVM not in expected stats 'SyncLoss'"))
+                else:
+                    time.sleep(1)
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
         if app == "EVM":
             self.checkAppState("Enabled","RU")
         else:
             self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))

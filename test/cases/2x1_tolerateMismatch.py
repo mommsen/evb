@@ -50,9 +50,17 @@ class case_2x1_tolerateMismatch(TestCase):
 
         evmSize = sum([size for fed,size in enumerate(self.fedSizes) if fed in evmFEDs])
         ruSize  = sum([size for fed,size in enumerate(self.fedSizes) if fed in ruFEDs])
-        self.checkEVM(evmSize)
-        self.checkRU(ruSize)
-        self.checkBU(evmSize+ruSize)
+        tries = 0;
+        while True:
+            try:
+                self.checkEVM(evmSize)
+                self.checkRU(ruSize)
+                self.checkBU(evmSize+ruSize)
+                break
+            except ValueException as e:
+                tries += 1
+                if tries > 10:
+                    raise e
 
         self.checkAppParam('nbEventsMissingData','unsignedLong',1000,operator.ge,"BU")
         dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed000[0-3]+.txt$",app="EVM")
@@ -158,6 +166,7 @@ class case_2x1_tolerateMismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
         dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
@@ -174,6 +183,7 @@ class case_2x1_tolerateMismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         self.checkAppParam('nbEventsMissingData','unsignedLong',0,operator.eq,"BU")
         dumps = self.getFiles("dump_run"+str(self.runNumber).zfill(6)+"_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:

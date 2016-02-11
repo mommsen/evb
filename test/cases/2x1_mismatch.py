@@ -26,6 +26,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000001_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
@@ -44,6 +45,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000002_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
@@ -62,6 +64,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000003_event[0-9]+_fed[0-9]+.txt$",app="RU")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
@@ -80,6 +83,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","EVM")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000004_event[0-9]+_fed[0-9]+.txt$",app="RU")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
@@ -98,6 +102,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000005_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
@@ -116,6 +121,7 @@ class case_2x1_mismatch(TestCase):
         self.checkAppState("Enabled","RU")
         self.checkAppState("Enabled","BU")
         self.checkAppParam('eventRate','unsignedInt',0,operator.eq,"EVM")
+        self.checkAppParam('fragmentRate','unsignedInt',0,operator.eq,"FEROL")
         dumps = self.getFiles("dump_run000006_event[0-9]+_fed[0-9]+.txt$",app="EVM")
         if len(dumps) != 1:
             raise ValueException("Expected one FED dump file, but found: "+str(dumps))
