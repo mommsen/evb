@@ -53,7 +53,7 @@ namespace evb {
        * Mark the resource contained in the passed data block as under construction.
        * Returns the builder identifier to be used for building this resource.
        */
-      uint16_t underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*&);
+      uint16_t underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*);
 
       /**
        * Mark the resouces used by the event as complete

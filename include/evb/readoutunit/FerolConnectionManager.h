@@ -158,7 +158,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::pipeSe
       XCEPT_RAISE(exception::TCP,msg.str());
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }
@@ -246,7 +246,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
       XCEPT_RAISE(exception::Configuration,msg.str());
     }
   }
-  catch(xcept::Exception &e)
+  catch(xcept::Exception& e)
   {
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
   }

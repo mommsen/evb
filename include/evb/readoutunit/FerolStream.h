@@ -66,6 +66,11 @@ namespace evb {
       virtual void drain();
 
       /**
+       * Block the input queue
+       */
+      virtual void blockInput();
+
+      /**
        * Stop processing events
        */
       virtual void stopProcessing();
@@ -131,6 +136,7 @@ namespace evb {
       const uint16_t fedId_;
       bool isMasterStream_;
       volatile bool doProcessing_;
+      volatile bool blockInput_;
       volatile bool syncLoss_;
       uint32_t eventNumberToStop_;
       uint32_t bxErrors_;
@@ -186,6 +192,7 @@ evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::FerolStream
   fedId_(fedId),
   isMasterStream_(false),
   doProcessing_(false),
+  blockInput_(false),
   syncLoss_(false),
   eventNumberToStop_(0),
   bxErrors_(0),
@@ -249,6 +256,8 @@ bool evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getNextFedFragmen
 {
   if ( ! doProcessing_ )
     throw exception::HaltRequested();
+
+  if ( blockInput_ ) return false;
 
   return fragmentFIFO_.deq(fedFragment);
 }
@@ -364,6 +373,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::startProcessing(c
   evbIdFactory_->reset(runNumber);
   fedFragmentFactory_.reset(runNumber);
   doProcessing_ = true;
+  blockInput_ = false;
   syncLoss_ = false;
 }
 
@@ -372,6 +382,13 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::drain()
 {
   while ( !fragmentFIFO_.empty() ) ::usleep(1000);
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::blockInput()
+{
+  blockInput_ = true;
 }
 
 

@@ -116,6 +116,11 @@ namespace evb {
       void drain() const;
 
       /**
+       * Block the input queues
+       */
+      void blockInput();
+
+      /**
        * Stop processing events
        */
       void stopProcessing();
@@ -437,6 +442,21 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::drain() const
          it != itEnd; ++it)
     {
       it->second->drain();
+    }
+  }
+}
+
+
+template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::Input<ReadoutUnit,Configuration>::blockInput()
+{
+  {
+    boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
+
+    for (typename FerolStreams::const_iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
+         it != itEnd; ++it)
+    {
+      it->second->blockInput();
     }
   }
 }

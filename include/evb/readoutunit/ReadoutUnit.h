@@ -225,6 +225,18 @@ throw (i2o::exception::Exception)
   {
     this->stateMachine_->processFSMEvent( Fail(e) );
   }
+  catch(std::exception& e)
+  {
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, e.what());
+    this->stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
+  catch(...)
+  {
+    XCEPT_DECLARE(exception::I2O,
+                  sentinelException, "unkown exception");
+    this->stateMachine_->processFSMEvent( Fail(sentinelException) );
+  }
 }
 
 

@@ -60,11 +60,13 @@ evb::bu::RUproxy::~RUproxy()
 
 void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 {
+  toolbox::mem::Reference* nextRef = 0;
+
   try
   {
     do
     {
-      toolbox::mem::Reference* nextRef = bufRef->getNextReference();
+      nextRef = bufRef->getNextReference();
       bufRef->setNextReference(0);
 
       const I2O_MESSAGE_FRAME* stdMsg =
@@ -154,8 +156,10 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         }
 
         const uint16_t builderId = resourceManager_->underConstruction(dataBlockMsg);
+        const bool superFragmentComplete = dataBlockPos->second->append(bufRef);
+        bufRef = nextRef;
 
-        if ( dataBlockPos->second->append(bufRef) )
+        if ( superFragmentComplete )
         {
           eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
@@ -163,23 +167,26 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
             arrivalTimes_.erase(arrivalTimePos);
         }
       }
-
-      bufRef = nextRef;
-
     } while ( bufRef );
   }
   catch(xcept::Exception& e)
   {
+    if ( bufRef ) bufRef->release();
+    if ( nextRef ) nextRef->release();
     stateMachine_->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
+    if ( bufRef ) bufRef->release();
+    if ( nextRef ) nextRef->release();
     XCEPT_DECLARE(exception::SuperFragment,
                   sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
+    if ( bufRef ) bufRef->release();
+    if ( nextRef ) nextRef->release();
     XCEPT_DECLARE(exception::SuperFragment,
                   sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );

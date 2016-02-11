@@ -80,7 +80,7 @@ void evb::bu::ResourceManager::startResourceMonitorWorkLoop()
 }
 
 
-uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME*& dataBlockMsg)
+uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg)
 {
   const BuilderResources::iterator pos = builderResources_.find(dataBlockMsg->buResourceId);
   const I2O_TID ruTid = ((I2O_MESSAGE_FRAME*)dataBlockMsg)->InitiatorAddress;
@@ -577,8 +577,6 @@ float evb::bu::ResourceManager::getOverThreshold()
 
 bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
-  std::string msg = "Failed to update available resources";
-
   try
   {
     const float availableResources = getAvailableResources();
@@ -597,19 +595,18 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
   }
   catch(xcept::Exception &e)
   {
-    XCEPT_DECLARE_NESTED(exception::FFF, sentinelException, msg, e);
-    bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
+    bu_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
     XCEPT_DECLARE(exception::FFF,
-                  sentinelException, msg+": "+e.what());
+                  sentinelException, e.what());
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
     XCEPT_DECLARE(exception::FFF,
-                  sentinelException, msg+": "+"unkown exception");
+                  sentinelException, "unkown exception");
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -696,15 +693,11 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
 
   if ( allFUsQuarantined )
   {
-    XCEPT_DECLARE(exception::FFF, e,
-                  "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them");
-    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+    XCEPT_RAISE(exception::FFF, "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them");
   }
   else if ( allFUsStale )
   {
-    XCEPT_DECLARE(exception::FFF, e,
-                  "All FUs in the appliance are reporting a stale file handle");
-    bu_->getStateMachine()->processFSMEvent( Fail(e) );
+    XCEPT_RAISE(exception::FFF, "All FUs in the appliance are reporting a stale file handle");
   }
   else if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
   {
