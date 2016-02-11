@@ -82,7 +82,6 @@ namespace evb {
       void openConnection();
       void startWorkLoops();
       bool generating(toolbox::task::WorkLoop*);
-      bool sending(toolbox::task::WorkLoop*);
       void updateCounters(toolbox::mem::Reference*);
       void sendData(toolbox::mem::Reference*);
       void getPerformance(PerformanceMonitor&);
@@ -90,16 +89,10 @@ namespace evb {
       int sockfd_;
 
       volatile bool doProcessing_;
-      volatile bool generatingActive_;
-      volatile bool sendingActive_;
+      volatile bool active_;
 
-      toolbox::task::WorkLoop* generatingWL_;
-      toolbox::task::WorkLoop* sendingWL_;
-      toolbox::task::ActionSignature* generatingAction_;
-      toolbox::task::ActionSignature* sendingAction_;
-
-      typedef OneToOneQueue<toolbox::mem::Reference*> FragmentFIFO;
-      FragmentFIFO fragmentFIFO_;
+      toolbox::task::WorkLoop* workLoop_;
+      toolbox::task::ActionSignature* action_;
 
       dummyFEROL::FragmentGenerator fragmentGenerator_;
       uint32_t lastResync_;
@@ -117,7 +110,7 @@ namespace evb {
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::Double bandwidth_;
       xdata::Double frameRate_;
-      xdata::Double fragmentRate_;
+      xdata::UnsignedInteger32 fragmentRate_;
       xdata::Double fragmentSize_;
       xdata::Double fragmentSizeStdDev_;
 

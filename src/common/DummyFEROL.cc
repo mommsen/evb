@@ -26,8 +26,7 @@ evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),
   sockfd_(0),
   doProcessing_(false),
-  generatingActive_(false),
-  fragmentFIFO_(this,"fragmentFIFO"),
+  active_(false),
   lastResync_(0)
 {
   stateMachine_.reset( new dummyFEROL::StateMachine(this) );
@@ -45,10 +44,8 @@ evb::test::DummyFEROL::~DummyFEROL()
 {
   closeConnection();
 
-  if ( generatingWL_ && generatingWL_->isActive() )
-    generatingWL_->cancel();
-  if ( sendingWL_ && sendingWL_->isActive() )
-    sendingWL_->cancel();
+  if ( workLoop_ && workLoop_->isActive() )
+    workLoop_->cancel();
 }
 
 
@@ -66,6 +63,7 @@ void evb::test::DummyFEROL::do_appendApplicationInfoSpaceItems
   nbBXerrors_ = 0;
 
   appInfoSpaceParams.add("lastEventNumber", &lastEventNumber_);
+  appInfoSpaceParams.add("fragmentRate", &fragmentRate_);
   appInfoSpaceParams.add("stopAtEvent", &stopAtEvent_);
   appInfoSpaceParams.add("resyncAtEvent", &resyncAtEvent_);
   appInfoSpaceParams.add("skipNbEvents", &skipNbEvents_);
@@ -174,18 +172,18 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::scientific);
       str.precision(2);
-      str << frameRate_.value_ ;
+      str << fragmentRate_.value_ ;
       table.add(tr()
-                .add(td("rate (frame/s)"))
+                .add(td("rate (fragments/s)"))
                 .add(td(str.str())));
     }
     {
       std::ostringstream str;
       str.setf(std::ios::scientific);
       str.precision(2);
-      str << fragmentRate_.value_ ;
+      str << frameRate_.value_ ;
       table.add(tr()
-                .add(td("rate (fragments/s)"))
+                .add(td("rate (frame/s)"))
                 .add(td(str.str())));
     }
     {
@@ -194,13 +192,11 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
       str.precision(1);
       str << fragmentSize_.value_ / 1e3 << " +/- " << fragmentSizeStdDev_.value_ / 1e3;
       table.add(tr()
-                .add(td("FED size (kB)"))
+                .add(td("frame size (kB)"))
                 .add(td(str.str())));
     }
     div.add(table);
   }
-
-  div.add(fragmentFIFO_.getHtmlSnipped());
 
   return div;
 }
@@ -217,9 +213,6 @@ void evb::test::DummyFEROL::resetMonitoringCounters()
 
 void evb::test::DummyFEROL::configure()
 {
-  fragmentFIFO_.clear();
-  fragmentFIFO_.resize(configuration_->fragmentFIFOCapacity);
-
   fragmentGenerator_.configure(
     configuration_->fedId,
     configuration_->usePlayback,
@@ -340,23 +333,21 @@ void evb::test::DummyFEROL::startProcessing()
   stopAtEvent_ = 0;
   doProcessing_ = true;
   fragmentGenerator_.reset();
-  generatingWL_->submit(generatingAction_);
-  sendingWL_->submit(sendingAction_);
+  workLoop_->submit(action_);
 }
 
 
 void evb::test::DummyFEROL::drain()
 {
   if ( stopAtEvent_.value_ == 0 ) stopAtEvent_.value_ = lastEventNumber_;
-  while ( generatingActive_ || !fragmentFIFO_.empty() || sendingActive_ ) ::usleep(1000);
+  while ( active_ ) ::usleep(1000);
 }
 
 
 void evb::test::DummyFEROL::stopProcessing()
 {
   doProcessing_ = false;
-  while ( generatingActive_ || sendingActive_ ) ::usleep(1000);
-  fragmentFIFO_.clear();
+  while ( active_ ) ::usleep(1000);
 }
 
 
@@ -377,37 +368,19 @@ void evb::test::DummyFEROL::startWorkLoops()
 {
   try
   {
-    generatingWL_ = toolbox::task::getWorkLoopFactory()->
+    workLoop_ = toolbox::task::getWorkLoopFactory()->
       getWorkLoop( getIdentifier("generating"), "waiting" );
 
-    generatingAction_ =
+    action_ =
       toolbox::task::bind(this, &evb::test::DummyFEROL::generating,
                           getIdentifier("generatingAction") );
 
-    if ( ! generatingWL_->isActive() )
-      generatingWL_->activate();
+    if ( ! workLoop_->isActive() )
+      workLoop_->activate();
   }
   catch(xcept::Exception& e)
   {
     std::string msg = "Failed to start workloop 'Generating'";
-    XCEPT_RETHROW(exception::WorkLoop, msg, e);
-  }
-
-  try
-  {
-    sendingWL_ = toolbox::task::getWorkLoopFactory()->
-      getWorkLoop( getIdentifier("sending"), "waiting" );
-
-    sendingAction_ =
-      toolbox::task::bind(this, &evb::test::DummyFEROL::sending,
-                          getIdentifier("sendingAction") );
-
-    if ( ! sendingWL_->isActive() )
-      sendingWL_->activate();
-  }
-  catch(xcept::Exception& e)
-  {
-    std::string msg = "Failed to start workloop 'Sending'";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -417,7 +390,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 {
   if ( ! doProcessing_ ) return false;
 
-  generatingActive_ = true;
+  active_ = true;
 
   try
   {
@@ -437,63 +410,33 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
                                       skipNbEvents_.value_,duplicateNbEvents_.value_,
                                       corruptNbEvents_.value_,nbCRCerrors_.value_,nbBXerrors_.value_) )
       {
-        fragmentFIFO_.enqWait(bufRef);
+        updateCounters(bufRef);
+        sendData(bufRef);
+        ::usleep(1000);
       }
     }
   }
   catch(xcept::Exception &e)
   {
-    generatingActive_ = false;
+    active_ = false;
     stateMachine_->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
-    generatingActive_ = false;
+    active_ = false;
     XCEPT_DECLARE(exception::DummyData,
                   sentinelException, e.what());
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
-    generatingActive_ = false;
+    active_ = false;
     XCEPT_DECLARE(exception::DummyData,
                   sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
 
-  generatingActive_ = false;
-
-  return doProcessing_;
-}
-
-
-bool __attribute__((optimize("O0")))  // Optimization causes segfaults as bufRef is null
-evb::test::DummyFEROL::sending(toolbox::task::WorkLoop *wl)
-{
-  if ( ! doProcessing_ ) return false;
-
-  sendingActive_ = true;
-
-  try
-  {
-    toolbox::mem::Reference* bufRef = 0;
-
-    while ( fragmentFIFO_.deq(bufRef) )
-    {
-      updateCounters(bufRef);
-      sendData(bufRef);
-      ::usleep(1000);
-    }
-  }
-  catch(xcept::Exception &e)
-  {
-    sendingActive_ = false;
-    stateMachine_->processFSMEvent( Fail(e) );
-  }
-
-  sendingActive_ = false;
-
-  ::usleep(1000);
+  active_ = false;
 
   return doProcessing_;
 }
