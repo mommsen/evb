@@ -103,7 +103,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU):
+    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,ferolMode):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -154,6 +154,7 @@ class ConfigFromFile(Configuration):
                         self.rewriteFerolProperties(app)
                     else:
                         self.setSendsToEVM(app)
+                    self.setOperationMode(app,ferolMode)
                 elif app.params['class'].startswith('evb::'):
                     app.params['network'] = 'infini'
                     app.params['tid'] = str(tid)
@@ -253,6 +254,16 @@ class ConfigFromFile(Configuration):
             newProp.append(('TCP_DESTINATION_PORT_FED1','unsignedInt',self.frlPorts[0]))
             self.fedId2Port[fedId0] = self.frlPorts[1]
             self.fedId2Port[fedId1] = self.frlPorts[0]
+        app.properties = newProp
+
+
+    def setOperationMode(self,app,ferolMode):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'OperationMode':
+                newProp.append(('OperationMode','string',ferolMode))
+            else:
+                newProp.append(prop)
         app.properties = newProp
 
 

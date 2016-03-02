@@ -7,8 +7,9 @@ from TestCase import *
 
 class ConfigCase(TestCase):
 
-    def __init__(self,config,stdout):
+    def __init__(self,config,stdout,fedSizeScaleFactors):
         TestCase.__init__(self,config,stdout)
+        self.fedSizeScaleFactors = fedSizeScaleFactors
 
 
     def __del__(self):
@@ -63,9 +64,26 @@ class ConfigCase(TestCase):
 
     def sendsToEVM(self,application):
         for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
-            if app.params['class'] == 'ferol::FerolController':
+            if app.params['class'] == 'ferol::FerolController' and app.params['instance'] == application['instance']:
                 return app.params['sendsToEVM']
         return False
+
+
+    def getFragmentScaleFactor(self,application):
+        scaleFactors = [1.0,1.0]
+        if len(self.fedSizeScaleFactors):
+            for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
+                if app.params['class'] == 'ferol::FerolController' and app.params['instance'] == application['instance']:
+                    for prop in app.properties:
+                        try:
+                            if prop[0] == 'expectedFedId_0':
+                                scaleFactors[0] = self.fedSizeScaleFactors[prop[2]]
+                            elif prop[0] == 'expectedFedId_1':
+                                scaleFactors[1] = self.fedSizeScaleFactors[prop[2]]
+                        except KeyError:
+                            if prop[2] != '0xffffffff':
+                                print("Missing scale factor for FED id "+prop[2])
+        return scaleFactors
 
 
     def setFragmentSize(self,fragSize,fragSizeRMS):
@@ -77,10 +95,11 @@ class ConfigCase(TestCase):
                     messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt","0",**application)
                     messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt","0",**application)
                 else:
-                    messengers.setParam("Event_Length_bytes_FED0","unsignedInt",str(fragSize),**application)
-                    messengers.setParam("Event_Length_bytes_FED1","unsignedInt",str(fragSize),**application)
-                    messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt",str(fragSizeRMS),**application)
-                    messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt",str(fragSizeRMS),**application)
+                    scaleFactors = self.getFragmentScaleFactor(application)
+                    messengers.setParam("Event_Length_bytes_FED0","unsignedInt",str(int(fragSize * scaleFactors[0]) & ~0x7),**application)
+                    messengers.setParam("Event_Length_bytes_FED1","unsignedInt",str(int(fragSize * scaleFactors[1]) & ~0x7),**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt",str(int(fragSizeRMS * scaleFactors[0])),**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt",str(int(fragSizeRMS * scaleFactors[1])),**application)
         except KeyError:
              for application in self._config.applications['EVM']:
                     messengers.setParam("dummyFedSize","unsignedInt","1024",**application)

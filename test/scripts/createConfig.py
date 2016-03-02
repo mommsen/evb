@@ -71,7 +71,7 @@ class CreateConfig:
         return ETroot
 
 
-    def setFreeRunning(self,config,frlMode=True):
+    def setFreeRunning(self,config,ferolMode):
         xcns = re.match(r'\{(.*?)\}Partition',config.tag).group(1) ## Extract xdaq namespace
         for context in config.getiterator(str(QN(xcns,'Context'))):
             for app in context.getiterator(str(QN(xcns,'Application'))):
@@ -80,10 +80,10 @@ class CreateConfig:
                         if 'properties' in child.tag:
                             for prop in child:
                                 if 'OperationMode' in prop.tag:
-                                    if frlMode:
-                                        prop.text = 'FRL_MODE'
-                                    else:
+                                    if ferolMode:
                                         prop.text = 'FEROL_MODE'
+                                    else:
+                                        prop.text = 'FRL_MODE'
                                 elif 'DataSource' in prop.tag:
                                     prop.text = 'GENERATOR_SOURCE'
                                 elif 'FrlTriggerMode' in prop.tag:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("nBU",help="Number of BUs")
     parser.add_argument("output",help="Path to output directory")
     parser.add_argument("-b","--useBlacklist",action='store_true',help="use latest blacklist")
-    parser.add_argument("--ferolMode",action='store_false',help="generate data on FEROL instead of FRL")
+    parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
     parser.add_argument("-l","--hostList",help="only use RUs and BUs from the given file")
     parser.add_argument("-s","--userSettings",help="override template settings with parameters from file")
     createConfig = CreateConfig( parser.parse_args() )

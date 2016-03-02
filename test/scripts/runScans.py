@@ -34,6 +34,20 @@ class RunScans(TestRunner):
         parser.add_argument("-a","--append",action='store_true',help="append measurements to data file")
         parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
         parser.add_argument("--generateAtRU",action='store_true',help="ignore the FEROLs and generate data at the RU")
+        parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
+        parser.add_argument("--scaleFedSizesFromFile",help="scale the FED fragment sizes relative to the sizes in the given file")
+
+
+    def fillFedSizeScalesFromFile(self):
+        self.fedSizeScaleFactors = {}
+        if self.args['scaleFedSizesFromFile']:
+            with open(self.args['scaleFedSizesFromFile']) as file:
+                for line in file:
+                    (fedId,fedSize,_) = line.split(',',2)
+                    try:
+                        self.fedSizeScaleFactors[fedId] = float(fedSize)/2048.
+                    except ValueError:
+                        pass
 
 
     def doIt(self):
@@ -43,6 +57,7 @@ class RunScans(TestRunner):
             os.mkdir(self.args['outputDir'])
         except OSError:
             pass
+        self.fillFedSizeScalesFromFile()
         for configFile in self.args['configs']:
             configName = os.path.splitext(os.path.basename(configFile))[0]
             if os.path.isdir(configFile):
@@ -96,8 +111,12 @@ class RunScans(TestRunner):
                     os.makedirs(bakDir)
                     os.rename(outputFileName,bakDir+"/"+configName+".dat")
             with open(outputFileName,mode) as dataFile:
-                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],self.args['generateAtRU'])
-                configCase = ConfigCase(config,stdout)
+                if self.args['ferolMode']:
+                    ferolMode = 'FEROL_MODE'
+                else:
+                    ferolMode = 'FRL_MODE'
+                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],self.args['generateAtRU'],ferolMode)
+                configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors)
                 configCase.prepare(configName)
                 for fragSize in sizes:
                     fragSizeRMS = int(fragSize * self.args['rms'])

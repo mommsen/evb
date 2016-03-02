@@ -39,6 +39,7 @@ class PlotScans:
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
         parser.add_argument("-a","--app",default="RU0",help="Take values from given application [default: %(default)s]")
         parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
+        parser.add_argument("--totalThroughput",default=False,action="store_true",help="Plot the total event-builder throughput")
 
 
     def createCanvas(self):
@@ -60,15 +61,22 @@ class PlotScans:
             self.throughputPad.SetLogy()
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
-        if 'BU' in self.args['app']:
-            range = [1,5000,0,10000]
+        titleY = "Throughput on %(app)s (MB/s)"%(self.args)
+        titleYoffset = 1.4
+        if self.args['totalThroughput']:
+            range = [100,6000,0,200]
+            title = "Throughput vs. Event Size"
+            titleX = "Event Size (kB)"
+            titleY = "Total EvB throughput (GB/s)"
+            titleYoffset = 1.2
+        elif 'BU' in self.args['app']:
+            range = [100,5000,0,10000]
             title = "Throughput vs. Event Size"
             titleX = "Event Size (kB)"
         else:
             range = [250,17000,0,5900]
             title = "Throughput vs. Fragment Size"
             titleX = "Fragment Size (bytes)"
-        titleY = "Throughput on %(app)s (MB/s)"%(self.args)
         if not self.args['minx']:
             self.args['minx'] = range[0]
         if not self.args['maxx']:
@@ -89,9 +97,22 @@ class PlotScans:
         self.throughputTH2D.GetYaxis().SetTitle(self.args['titleY'])
         self.throughputTH2D.GetXaxis().SetMoreLogLabels()
         self.throughputTH2D.GetXaxis().SetNoExponent()
-        self.throughputTH2D.GetYaxis().SetTitleOffset(1.4)
+        self.throughputTH2D.GetYaxis().SetTitleOffset(titleYoffset)
         self.throughputTH2D.GetXaxis().SetTitleOffset(1.2)
         self.throughputTH2D.Draw()
+        if self.args['totalThroughput']:
+            minValueX = self.args['minx'] / self.nominalSize
+            maxValueX = self.args['maxx'] / self.nominalSize
+            self.relEventSizeAxis = ROOT.TGaxis(self.args['minx'],self.args['maxy'],self.args['maxx'],self.args['maxy'],minValueX,maxValueX,510,'G-');
+            self.relEventSizeAxis.SetTitle("Relative event size")
+            self.relEventSizeAxis.SetTitleOffset(1.3)
+            self.relEventSizeAxis.SetMoreLogLabels()
+            self.relEventSizeAxis.SetNoExponent()
+            self.relEventSizeAxis.SetTitleFont(self.throughputTH2D.GetXaxis().GetTitleFont())
+            self.relEventSizeAxis.SetTitleSize(self.throughputTH2D.GetXaxis().GetTitleSize())
+            self.relEventSizeAxis.SetLabelFont(self.throughputTH2D.GetXaxis().GetLabelFont())
+            self.relEventSizeAxis.SetLabelSize(self.throughputTH2D.GetXaxis().GetLabelSize())
+            self.relEventSizeAxis.Draw()
 
 
     def createRatePad(self):
@@ -316,14 +337,20 @@ class PlotScans:
                 except ValueError:
                     continue
                 dataPoint = value['measurement']
-                if 'BU' in self.args['app']:
-                    rawSizes = list(x['sizes'][self.args['app']]/1000. for x in dataPoint)
+                if self.args['totalThroughput']:
+                    app = 'BU0'
+                else:
+                    app = self.args['app']
+                if 'BU' in app:
+                    rawSizes = list(x['sizes'][app]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
                     if len(sizes) == 0:
                         continue
                     averageSize = mean(sizes)
                     entry['sizes'].append(averageSize)
                     entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
+                    if value['fragSize'] == 2048:
+                        self.nominalSize = averageSize
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
@@ -332,7 +359,10 @@ class PlotScans:
                 averageRate = mean(rates)
                 entry['rates'].append(averageRate)
                 entry['rmsRates'].append(sqrt(mean(square(averageRate-rates))))
-                rawThroughputs = list(x['sizes'][self.args['app']]*x['rates'][self.args['app']]/1000000. for x in dataPoint)
+                if self.args['totalThroughput']:
+                    rawThroughputs = list(sum(x['sizes'][k]*x['rates'][k]/1000000000. for k in x['rates'].keys() if k.startswith(('EVM','RU'))) for x in dataPoint)
+                else:
+                    rawThroughputs = list(x['sizes'][self.args['app']]*x['rates'][self.args['app']]/1000000. for x in dataPoint)
                 throughputs = list(x for x in rawThroughputs if x > 0)
                 averageThroughput = mean(throughputs)
                 entry['throughputs'].append(averageThroughput)
@@ -354,11 +384,16 @@ class PlotScans:
             print(47*"-")
             print("Case: "+case['name']+" - "+self.args['app'])
             print(47*"-")
-            if 'BU' in self.args['app']:
-                unit = '(kB)'
+            if self.args['totalThroughput']:
+                sizeUnit = '(kB)'
+                througputUnit = '(GB/s)'
             else:
-                unit = '(B)'
-            print("Size %4s : Throughput (MB/s) :      Rate (kHz)"%(unit))
+                througputUnit = '(MB/s)'
+                if 'BU' in self.args['app']:
+                    sizeUnit = '(kB)'
+                else:
+                    sizeUnit = '(B)'
+            print("Size %4s : Throughput %7s :      Rate (kHz)"%(sizeUnit,througputUnit))
             print(47*"-")
             try:
                 for entry in zip(case['sizes'],case['throughputs'],case['rmsThroughputs'],case['rates'],case['rmsRates']):
