@@ -136,7 +136,7 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::createStream
   boost::mutex::scoped_lock sl(socketStreamsMutex_);
 
   const SocketStreamPtr socketStream(
-    new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,ferolSource)
+    new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,ferolSource->fedId)
   );
   socketStreams_.insert( typename SocketStreams::value_type(sid,socketStream) );
 }
@@ -154,7 +154,7 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::addFerolStreams
   for ( typename SocketStreams::const_iterator it = socketStreams_.begin(), itEnd = socketStreams_.end();
         it != itEnd; ++it)
   {
-    const uint32_t fedId = it->second->getFerolSource()->fedId.value_;
+    const uint32_t fedId = it->second->getFedId();
     if ( fedIds.erase(fedId) )
     {
       it->second->configure();

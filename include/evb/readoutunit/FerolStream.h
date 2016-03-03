@@ -105,6 +105,12 @@ namespace evb {
       { return evbIdFactory_; }
 
       /**
+       * Return the FED id associated with this stream
+       */
+      uint16_t getFedId() const
+      { return fedId_; }
+
+      /**
        * Return the requested monitoring quantities.
        */
       void retrieveMonitoringQuantities(uint32_t& dataReadyCount,

@@ -34,7 +34,7 @@ namespace evb {
     {
     public:
 
-      SocketStream(ReadoutUnit*, const typename Configuration::FerolSource*);
+      SocketStream(ReadoutUnit*, const uint16_t fedId);
 
       ~SocketStream();
 
@@ -63,19 +63,11 @@ namespace evb {
        */
       virtual void stopProcessing();
 
-      /**
-       * Return the information about the FEROL connected to this stream
-       */
-      const typename Configuration::FerolSource* getFerolSource() const
-      { return ferolSource_; }
-
 
     private:
 
       void startParseSocketBuffersWorkLoop();
       bool parseSocketBuffers(toolbox::task::WorkLoop*);
-
-      const typename Configuration::FerolSource* ferolSource_;
 
       typedef OneToOneQueue<SocketBufferPtr> SocketBufferFIFO;
       SocketBufferFIFO socketBufferFIFO_;
@@ -100,11 +92,10 @@ template<class ReadoutUnit,class Configuration>
 evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::SocketStream
 (
   ReadoutUnit* readoutUnit,
-  const typename Configuration::FerolSource* ferolSource
+  const uint16_t fedId
 ) :
-  FerolStream<ReadoutUnit,Configuration>(readoutUnit,ferolSource->fedId.value_),
-  ferolSource_(ferolSource),
-  socketBufferFIFO_(readoutUnit,"socketBufferFIFO_FED_"+boost::lexical_cast<std::string>(ferolSource->fedId.value_)),
+  FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
+  socketBufferFIFO_(readoutUnit,"socketBufferFIFO_FED_"+boost::lexical_cast<std::string>(fedId)),
   parseSocketBuffersActive_(false)
 {
   startParseSocketBuffersWorkLoop();
