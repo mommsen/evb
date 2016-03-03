@@ -293,7 +293,6 @@ class TestCase:
             messengers.sendCmdToApp(command='Enable',**application)
         for application in self._config.ptIBV:
             messengers.sendCmdToApp(command='connect',**application)
-        sleep(10)
 
 
     def configureEvB(self,maxTries=10):

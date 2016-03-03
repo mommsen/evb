@@ -5,7 +5,7 @@ from xml.etree.ElementTree import QName as QN
 
 import XMLtools
 
-id = 11
+id = 200
 
 class Application:
 
@@ -22,7 +22,7 @@ class Application:
 
     def __del__(self):
         global id
-        id = 11
+        id = 200
 
 
     def addInContext(self,context,ns):

@@ -14,7 +14,7 @@ class Context:
         self.role = None
         self.hostinfo = None
         self.policy = None
-        self.applications = []
+        self.applications = [Application.Application('xmem::probe::Application',Context.ptInstance,[]),]
 
 
     def getContext(self,ns,fullConfig=True):
