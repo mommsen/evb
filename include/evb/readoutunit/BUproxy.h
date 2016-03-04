@@ -474,37 +474,22 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     for ( SuperFragment::FedFragments::const_iterator it = fedFragments.begin(), itEnd = fedFragments.end();
           it != itEnd; ++it)
     {
-      const DataLocations& fedData = (*it)->getDataLocations();
-      for ( DataLocations::const_iterator it = fedData.begin(), itEnd = fedData.end();
-            it != itEnd; ++it)
+      uint32_t copiedSize = 0;
+      while ( ! (*it)->fillData(payload,remainingPayloadSize,copiedSize) )
       {
-        const unsigned char* chunkBase  = (unsigned char*)it->iov_base;
-        uint32_t chunkSize = it->iov_len;
-        uint32_t copiedSize = 0;
-
-        while ( chunkSize > remainingPayloadSize )
-        {
-          // fill the remaining block
-          memcpy(payload, chunkBase + copiedSize, remainingPayloadSize);
-          copiedSize += remainingPayloadSize;
-          chunkSize -= remainingPayloadSize;
-          remainingSuperFragmentSize -= remainingPayloadSize;
-
-          // get a new block
-          toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
-          payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-          remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
-          fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
-          tail->setNextReference(nextBlock);
-          tail = nextBlock;
-        }
-
-        // fill the remaining fragment into the block
-        memcpy(payload, chunkBase + copiedSize, chunkSize);
-        payload += chunkSize;
-        remainingPayloadSize -= chunkSize;
-        remainingSuperFragmentSize -= chunkSize;
+        // not all data fit into the remainingPayloadSize
+        // get a new block
+        remainingSuperFragmentSize -= copiedSize;
+        toolbox::mem::Reference* nextBlock = getNextBlock(++blockNb);
+        payload = (unsigned char*)nextBlock->getDataLocation() + sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+        remainingPayloadSize = readoutUnit_->getConfiguration()->blockSize - sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+        fillSuperFragmentHeader(payload,remainingPayloadSize,i+1,superFragment,remainingSuperFragmentSize);
+        tail->setNextReference(nextBlock);
+        tail = nextBlock;
       }
+      payload += copiedSize;
+      remainingPayloadSize -= copiedSize;
+      remainingSuperFragmentSize -= copiedSize;
 
       const fedt_t* trailer = (fedt_t*)(payload - sizeof(fedt_t));
       assert ( FED_TCTRLID_EXTRACT(trailer->eventsize) == FED_SLINK_END_MARKER );
@@ -544,7 +529,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
     if ( dataBlockMsg->blockNb == 1 )
     {
-      dataBlockMsg->headerSize     = blockHeaderSize;
+      dataBlockMsg->headerSize = blockHeaderSize;
 
       unsigned char* payload = (unsigned char*)&dataBlockMsg->evbIds[0];
       size_t size = nbSuperFragments*sizeof(EvBid);
@@ -558,7 +543,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     }
     else
     {
-      dataBlockMsg->headerSize     = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
+      dataBlockMsg->headerSize = sizeof(msg::I2O_DATA_BLOCK_MESSAGE_FRAME);
     }
 
     payloadSize += bufRef->getDataSize();

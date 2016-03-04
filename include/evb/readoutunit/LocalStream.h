@@ -3,19 +3,15 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
-#include "evb/EvBid.h"
-#include "evb/FragmentTracker.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"
-#include "interface/shared/ferol_header.h"
 #include "toolbox/lang/Class.h"
-#include "toolbox/mem/CommittedHeapAllocator.h"
-#include "toolbox/mem/MemoryPoolFactory.h"
-#include "toolbox/mem/Pool.h"
-#include "toolbox/mem/Reference.h"
+#include "toolbox/math/random.h"
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -58,23 +54,26 @@ namespace evb {
       /**
        * Set the trigger rate for generating events
        */
-      virtual void setMaxTriggerRate(const uint32_t maxTriggerRate);
+      virtual void setMaxTriggerRate(const uint32_t maxTriggerRate)
+      { maxTriggerRate_ = maxTriggerRate; }
 
 
     private:
 
-      bool getFedFragment(const EvBid&,toolbox::mem::Reference*&);
-      void createFragmentPool(const std::string& fedId);
-      void startGeneratorWorkLoop(const std::string& fedId);
+      void startGeneratorWorkLoop();
       bool generating(toolbox::task::WorkLoop*);
+      void waitForNextTrigger();
+      uint32_t getFedSize() const;
 
+      const boost::shared_ptr<Configuration> configuration_;
       toolbox::task::WorkLoop* generatingWorkLoop_;
       toolbox::task::ActionSignature* generatingAction_;
+      boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
 
       volatile bool generatingActive_;
-
-      FragmentTracker fragmentTracker_;
-      toolbox::mem::Pool* fragmentPool_;
+      uint32_t maxTriggerRate_;
+      double lastTime_;
+      uint32_t availableTriggers_;
 
     };
 
@@ -92,18 +91,25 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
   const uint16_t fedId
 ) :
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
+  configuration_(readoutUnit->getConfiguration()),
   generatingActive_(false),
-  fragmentTracker_(fedId,
-                   readoutUnit->getConfiguration()->dummyFedSize,
-                   readoutUnit->getConfiguration()->useLogNormal,
-                   readoutUnit->getConfiguration()->dummyFedSizeStdDev,
-                   readoutUnit->getConfiguration()->dummyFedSizeMin,
-                   readoutUnit->getConfiguration()->dummyFedSizeMax,
-                   readoutUnit->getConfiguration()->computeCRC)
+  maxTriggerRate_(0),
+  lastTime_(0),
+  availableTriggers_(0)
 {
-  const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
-  createFragmentPool(fedIdStr);
-  startGeneratorWorkLoop(fedIdStr);
+  if ( configuration_->dummyFedSizeMin.value_ < sizeof(fedh_t) + sizeof(fedt_t) )
+  {
+    std::ostringstream msg;
+    msg << "The minimal FED size in the configuration (dummyFedSizeMin) must be at least ";
+    msg << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << configuration_->dummyFedSizeMin << " Bytes";
+    XCEPT_RAISE(exception::Configuration, msg.str());
+  }
+  if ( configuration_->useLogNormal )
+  {
+    logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev) );
+  }
+
+  startGeneratorWorkLoop();
 }
 
 
@@ -116,36 +122,9 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::~LocalStream()
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::createFragmentPool(const std::string& fedIdStr)
+void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWorkLoop()
 {
-  toolbox::net::URN urn("toolbox-mem-pool", this->readoutUnit_->getIdentifier("fragmentPool_"+fedIdStr));
-
-  try
-  {
-    toolbox::mem::getMemoryPoolFactory()->destroyPool(urn);
-  }
-  catch(toolbox::mem::exception::MemoryPoolNotFound)
-  {
-    // don't care
-  }
-
-  try
-  {
-    toolbox::mem::CommittedHeapAllocator* a =
-      new toolbox::mem::CommittedHeapAllocator(this->readoutUnit_->getConfiguration()->fragmentPoolSize.value_);
-    fragmentPool_ = toolbox::mem::getMemoryPoolFactory()->createPool(urn,a);
-  }
-  catch(toolbox::mem::exception::Exception& e)
-  {
-    XCEPT_RETHROW(exception::OutOfMemory,
-                  "Failed to create memory pool for dummy fragments", e);
-  }
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startGeneratorWorkLoop(const std::string& fedIdStr)
-{
+  const std::string fedIdStr = boost::lexical_cast<std::string>(this->fedId_);
   try
   {
     generatingWorkLoop_ =
@@ -171,25 +150,19 @@ template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbox::task::WorkLoop*)
 {
   generatingActive_ = true;
-  toolbox::mem::Reference* bufRef = 0;
-  fragmentTracker_.startRun();
-  EvBid evbId = this->evbIdFactory_->getEvBid();
+  FedFragmentPtr fedFragment;
 
   try
   {
-    while ( evbId.eventNumber() <= this->eventNumberToStop_ )
+    do
     {
-      if ( !this->fragmentFIFO_.full() && getFedFragment(evbId,bufRef) )
-      {
-        FedFragmentPtr fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_,evbId,bufRef);
-        this->addFedFragment(fedFragment);
-        evbId = this->evbIdFactory_->getEvBid();
-      }
-      else
-      {
-        ::usleep(10);
-      }
+      waitForNextTrigger();
+      const uint32_t fedSize = getFedSize();
+      fedFragment = this->fedFragmentFactory_.getDummyFragment(this->fedId_,this->isMasterStream_,fedSize,
+                                                               configuration_->computeCRC);
+      this->addFedFragment(fedFragment);
     }
+    while ( fedFragment->getEventNumber() < this->eventNumberToStop_ );
   }
   catch(xcept::Exception &e)
   {
@@ -218,76 +191,47 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedFragment
-(
-  const EvBid& evbId,
-  toolbox::mem::Reference*& bufRef
-)
+void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::waitForNextTrigger()
 {
-  const uint32_t fedSize = fragmentTracker_.startFragment(evbId);
+  if ( maxTriggerRate_ == 0 ) return;
 
-  if ( (fedSize & 0x7) != 0 )
+  if ( availableTriggers_ > 0 )
   {
-    std::ostringstream msg;
-    msg << "The dummy FED " << this->fedId_ << " is " << fedSize << " Bytes, which is not a multiple of 8 Bytes";
-    XCEPT_RAISE(exception::Configuration, msg.str());
+    --availableTriggers_;
+    return;
   }
 
-  const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
-
-  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
-  const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
-  assert(ferolBlocks < 2048);
-  const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
-  uint32_t remainingFedSize = fedSize;
-
-  try
+  struct timeval time;
+  double now = 0;
+  while ( availableTriggers_ == 0 )
   {
-    bufRef = toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fragmentPool_,ferolSize);
-  }
-  catch(xcept::Exception)
-  {
-    return false;
-  }
-
-  bufRef->setDataSize(ferolSize);
-  unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  memset(payload, 0, ferolSize);
-
-  for (uint16_t packetNumber=0; packetNumber < ferolBlocks; ++packetNumber)
-  {
-    ferolh_t* ferolHeader = (ferolh_t*)payload;
-    ferolHeader->set_signature();
-    ferolHeader->set_fed_id(this->fedId_);
-    ferolHeader->set_event_number(evbId.eventNumber());
-    ferolHeader->set_packet_number(packetNumber);
-    payload += sizeof(ferolh_t);
-    uint32_t length = 0;
-
-    if (packetNumber == 0)
-      ferolHeader->set_first_packet();
-
-    if ( remainingFedSize > ferolPayloadSize )
-    {
-      length = ferolPayloadSize;
-    }
+    gettimeofday(&time,0);
+    now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+    if ( lastTime_ == 0 )
+      availableTriggers_ = 1;
     else
-    {
-      length = remainingFedSize;
-      ferolHeader->set_last_packet();
-    }
-    remainingFedSize -= length;
-
-    const size_t filledBytes = fragmentTracker_.fillData(payload, length);
-    ferolHeader->set_data_length(filledBytes);
-
-    payload += filledBytes;
+      availableTriggers_ = static_cast<uint32_t>( (now - lastTime_) * maxTriggerRate_ );
   }
+  lastTime_ = now;
+  --availableTriggers_;
+}
 
-  assert( remainingFedSize == 0 );
 
-  return true;
+template<class ReadoutUnit,class Configuration>
+uint32_t evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedSize() const
+{
+  uint32_t fedSize;
+  if ( configuration_->useLogNormal )
+  {
+    fedSize = std::max((uint32_t)logNormalGen_->getRawRandomSize(), configuration_->dummyFedSizeMin.value_);
+    if ( configuration_->dummyFedSizeMax.value_ > 0 && fedSize > configuration_->dummyFedSizeMax.value_ )
+      fedSize = configuration_->dummyFedSizeMax;
+  }
+  else
+  {
+    fedSize = configuration_->dummyFedSize;
+  }
+  return fedSize & ~0x7;
 }
 
 
@@ -297,6 +241,11 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startProcessing(c
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
 
   this->eventNumberToStop_ = (1 << 25); //larger than maximum event number
+  struct timeval time;
+  gettimeofday(&time,0);
+  lastTime_ = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+  availableTriggers_ = 0;
+
   generatingWorkLoop_->submit(generatingAction_);
 }
 
@@ -314,13 +263,6 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::stopProcessing()
   this->eventNumberToStop_ = 0;
 
   FerolStream<ReadoutUnit,Configuration>::stopProcessing();
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::setMaxTriggerRate(const uint32_t maxTriggerRate)
-{
-  fragmentTracker_.setMaxTriggerRate(maxTriggerRate);
 }
 
 

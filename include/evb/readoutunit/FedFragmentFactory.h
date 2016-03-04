@@ -8,6 +8,7 @@
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
+#include "evb/readoutunit/DummyFragment.h"
 #include "evb/readoutunit/SocketBuffer.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/StateMachine.h"
@@ -33,6 +34,7 @@ namespace evb {
 
       FedFragmentPtr getFedFragment(const uint16_t fedId, const bool isMasterFed);
       FedFragmentPtr getFedFragment(const uint16_t fedId, const bool isMasterFed, const EvBid&, toolbox::mem::Reference*);
+      FedFragmentPtr getDummyFragment(const uint16_t fedId, const bool isMasterFed, const uint32_t fedSize, const bool computeCRC);
 
       bool append(FedFragmentPtr&, SocketBufferPtr&, uint32_t& usedSize);
 
@@ -168,6 +170,31 @@ evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUni
                     readoutUnit_->getConfiguration()->checkCRC,
                     fedErrors_.fedErrors,
                     fedErrors_.crcErrors
+    )
+  );
+}
+
+
+template<class ReadoutUnit>
+evb::readoutunit::FedFragmentPtr
+evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getDummyFragment
+(
+  const uint16_t fedId,
+  const bool isMasterFed,
+  const uint32_t fedSize,
+  const bool computeCRC
+)
+{
+  return FedFragmentPtr(
+    new DummyFragment(fedId,
+                      isMasterFed,
+                      fedSize,
+                      computeCRC,
+                      readoutUnit_->getSubSystem(),
+                      evbIdFactory_,
+                      readoutUnit_->getConfiguration()->checkCRC,
+                      fedErrors_.fedErrors,
+                      fedErrors_.crcErrors
     )
   );
 }

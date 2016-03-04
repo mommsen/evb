@@ -40,6 +40,7 @@ Sources=\
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
+	readoutunit/DummyFragment.cc \
 	readoutunit/FedFragment.cc \
 	readoutunit/SuperFragment.cc \
 	EVM.cc \
