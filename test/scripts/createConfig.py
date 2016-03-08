@@ -36,17 +36,22 @@ class CreateConfig:
         configFile = "/tmp/"+time.strftime('%d%H%M%S')+".xml"
         javaCmd = ['java','-Doracle.net.tns_admin=/etc',
                    '-jar',os.environ['EVB_TESTER_HOME']+'/scripts/configurator_new_workflow.jar',
-                   '--properties',os.environ['HOME']+'/CONFIGURATOR.properties',
+                   '--properties',self.args['properties'],
                    '--batch',
-                   '--account','daqlocal','--site','daq2',
                    '--buildDPSet',
                    '--fbSet',self.args['fbset'],
-                   '--mainRCMSHost','cmsrc-daq.cms',
-                   '--routingOptimizer','GREEDY_OPTIMIZER',
                    '--nBU',self.args['nBU'],
                    '--makeConfig',
                    '--swt',self.args['swt'],
                    '--saveXML',configFile]
+        if self.args['daqval']:
+            javaCmd.extend(['--mainRCMSHost','cmsrc-daqvaldev.cms',
+                            '--routingOptimizer','EVB2_OPTIMIZER',
+                            '--account','daqlocal','--site','daqvaldev'])
+        else:
+            javaCmd.extend(['--mainRCMSHost','cmsrc-daq.cms',
+                            '--routingOptimizer','GREEDY_OPTIMIZER',
+                            '--account','daqlocal','--site','daq2'])
         if self.args['useBlacklist']:
             javaCmd.extend(['--blacklistSetup','.cms'])
         if self.args['hostList']:
@@ -208,9 +213,11 @@ if __name__ == "__main__":
     parser.add_argument("swt",help="Software template to use")
     parser.add_argument("nBU",help="Number of BUs")
     parser.add_argument("output",help="Path to output directory")
+    parser.add_argument("-p","--properties",default=os.environ['HOME']+'/CONFIGURATOR.properties',help="use properties file [default: %(default)s]")
     parser.add_argument("-b","--useBlacklist",action='store_true',help="use latest blacklist")
     parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
     parser.add_argument("-l","--hostList",help="only use RUs and BUs from the given file")
     parser.add_argument("-s","--userSettings",help="override template settings with parameters from file")
+    parser.add_argument("--daqval",action='store_true',help="use daq2val settings")
     createConfig = CreateConfig( parser.parse_args() )
     createConfig.doIt()
