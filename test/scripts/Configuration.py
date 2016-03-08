@@ -163,10 +163,10 @@ class ConfigFromFile(Configuration):
                         context.role = 'EVM'
                         if count != '0':
                             raise Exception("The EVM must map to RU0, but maps to RU"+count)
-                    if fixPorts:
-                        self.fixFerolPorts(app)
                     if generateAtRU:
                         self.setLocalInput(app)
+                    elif fixPorts:
+                        self.fixFerolPorts(app)
                 context.applications.append(app)
             self.add(context)
 
@@ -272,7 +272,7 @@ class ConfigFromFile(Configuration):
         for prop in app.properties:
             if prop[0] == 'inputSource':
                 newProp.append(('inputSource','string','Local'))
-            else:
+            elif prop[0] != 'ferolSources':
                 newProp.append(prop)
         app.properties = newProp
 
@@ -303,11 +303,14 @@ class ConfigFromFile(Configuration):
                 pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME:([A-Z_0-9]*)(.*)',element.attrib['pattern'])
                 if pattern:
                     hostInfo = self.symbolMap.getHostInfo( pattern.group(2) )
-                    if 'FRL_PORT' in pattern.group(3):
-                        port = 0
+                    if len(pattern.group(3)) > 0:
+                        if 'FRL_PORT' in pattern.group(3):
+                            port = 0
+                        else:
+                            port = 1
+                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+self.frlPorts[port]+pattern.group(4)
                     else:
-                        port = 1
-                    element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+self.frlPorts[port]+pattern.group(4)
+                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+pattern.group(4)
 
 
     def urlToHostAndNumber(self,url):
