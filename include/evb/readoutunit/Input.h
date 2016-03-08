@@ -24,7 +24,6 @@
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
 #include "evb/Exception.h"
-#include "evb/FragmentTracker.h"
 #include "evb/InfoSpaceItems.h"
 #include "evb/OneToOneQueue.h"
 #include "evb/PerformanceMonitor.h"
