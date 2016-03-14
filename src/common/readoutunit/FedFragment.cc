@@ -2,7 +2,7 @@
 #include "evb/DumpUtility.h"
 #include "evb/Exception.h"
 #include "evb/readoutunit/FedFragment.h"
-#include "interface/shared/i2ogevb2g.h"
+//#include "interface/shared/i2ogevb2g.h"
 
 
 evb::CRCCalculator evb::readoutunit::FedFragment::crcCalculator_;
@@ -18,15 +18,20 @@ evb::readoutunit::FedFragment::FedFragment
   uint32_t& crcErrors
 )
   : typeOfNextComponent_(FEROL_HEADER),
-    evbIdFactory_(evbIdFactory),checkCRC_(checkCRC),
-    fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
-    fedId_(fedId),isMasterFed_(isMasterFed),
-    subSystem_(subSystem),
+    fedId_(fedId),
     bxId_(FED_BXID_WIDTH+1),
-    eventNumber_(0),fedSize_(0),
+    eventNumber_(0),
+    fedSize_(0),
+    isComplete_(false),
+    tmpBufferSize_(0),
+    evbIdFactory_(evbIdFactory),
+    checkCRC_(checkCRC),
+    fedErrorCount_(fedErrorCount),crcErrors_(crcErrors),
+    isMasterFed_(isMasterFed),
+    subSystem_(subSystem),
     isCorrupted_(false),isOutOfSequence_(false),
-    hasCRCerror_(false),hasFEDerror_(false),isComplete_(false),
-    bufRef_(0),tmpBufferSize_(0)
+    hasCRCerror_(false),hasFEDerror_(false),
+    bufRef_(0),copyOffset_(0)
 {}
 
 
@@ -43,6 +48,38 @@ evb::readoutunit::FedFragment::~FedFragment()
 
     bufRef_ = nextBufRef;
   };
+}
+
+
+bool evb::readoutunit::FedFragment::fillData(unsigned char* payload, const uint32_t remainingPayloadSize, uint32_t& copiedSize)
+{
+  assert( isComplete_ );
+
+  copiedSize = 0;
+
+  while ( copyIterator_ != dataLocations_.end() )
+  {
+    const unsigned char* chunkBase  = (unsigned char*)copyIterator_->iov_base;
+    const uint32_t chunkSize = copyIterator_->iov_len;
+
+    if ( chunkSize-copyOffset_ <= remainingPayloadSize-copiedSize )
+    {
+      // fill the remaining fragment
+      memcpy(payload+copiedSize, chunkBase+copyOffset_, chunkSize-copyOffset_);
+      copiedSize += chunkSize-copyOffset_;
+      ++copyIterator_;
+      copyOffset_ = 0;
+    }
+    else
+    {
+      // fill the remaining payload
+      memcpy(payload+copiedSize, chunkBase+copyOffset_, remainingPayloadSize-copiedSize);
+      copyOffset_ += remainingPayloadSize-copiedSize;
+      copiedSize = remainingPayloadSize;
+      return false;
+    }
+  }
+  return true;
 }
 
 
@@ -222,18 +259,18 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
         fedt_t* fedTrailer;
         if ( tmpBufferSize_ > 0 )
         {
-          // previous buffer contained part of this header
-          const uint32_t missingHeaderBytes = sizeof(fedt_t)-tmpBufferSize_;
-          memcpy(&tmpBuffer_[tmpBufferSize_],pos+usedSize,missingHeaderBytes);
-          usedSize += missingHeaderBytes;
-          dataLocation.iov_len += missingHeaderBytes;
-          remainingBufferSize -= missingHeaderBytes;
+          // previous buffer contained part of this trailer
+          const uint32_t missingTrailerBytes = sizeof(fedt_t)-tmpBufferSize_;
+          memcpy(&tmpBuffer_[tmpBufferSize_],pos+usedSize,missingTrailerBytes);
+          usedSize += missingTrailerBytes;
+          dataLocation.iov_len += missingTrailerBytes;
+          remainingBufferSize -= missingTrailerBytes;
           tmpBufferSize_ = 0;
           fedTrailer = (fedt_t*)&tmpBuffer_[0];
         }
         else if ( remainingBufferSize < sizeof(fedt_t) )
         {
-          // the header is not fully contained in this buffer
+          // the trailer is not fully contained in this buffer
           // safe it for the next round
           if ( tmpBuffer_.size() < sizeof(fedt_t) )
             tmpBuffer_.resize( sizeof(fedt_t) );
@@ -255,6 +292,7 @@ bool evb::readoutunit::FedFragment::parse(toolbox::mem::Reference* bufRef, uint3
 
         isComplete_ = true;
         dataLocations_.push_back(dataLocation);
+        copyIterator_ = dataLocations_.begin();
 
         checkFedTrailer(fedTrailer);
 
