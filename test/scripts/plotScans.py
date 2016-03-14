@@ -376,7 +376,11 @@ class PlotScans:
     def readData(self):
         self.cases = []
         for case in self.args['cases']:
-            self.cases.append( self.readCaseData(case) )
+            try:
+                self.cases.append( self.readCaseData(case) )
+            except IOError as e:
+                print(e)
+                self.args['cases'].remove(case)
 
 
     def printTable(self):
