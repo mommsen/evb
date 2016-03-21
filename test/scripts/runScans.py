@@ -54,7 +54,7 @@ class RunScans(TestRunner):
         if len(self.args['configs']) == 0:
             return False
         try:
-            os.mkdir(self.args['outputDir'])
+            os.makedirs(self.args['outputDir'])
         except OSError:
             pass
         self.fillFedSizeScalesFromFile()

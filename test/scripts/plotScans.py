@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+from collections import OrderedDict
 
 import ROOT
 from ROOT import gROOT,gStyle
@@ -12,10 +13,11 @@ from ROOT import gROOT,gStyle
 class PlotScans:
 
     def __init__(self):
-        self.colors  = [1,2,ROOT.kGreen+1,4,51,95,65,41,46,39,32]
+        self.colors  = [1,4,417,2,51,95,65,41,46,39,32]
         self.markers = [20,21,22,23,34,33,29,24,25,26,27,28]
         self.latex = ROOT.TLatex()
         self.latex.SetNDC(1)
+        self.nominalSize = None
 
 
     def addOptions(self,parser):
@@ -36,10 +38,15 @@ class PlotScans:
         parser.add_argument("--logy",default=False,action="store_true",help="Use logarithmic scale on y axis [default: %(default)s]")
         parser.add_argument("--hideDate",default=False,action="store_true",help="Hide the date")
         parser.add_argument("--hideRate",default=False,action="store_true",help="Hide the rate curves")
+        parser.add_argument("--hideLineSpeed",default=False,action="store_true",help="Hide the line speed line")
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
         parser.add_argument("-a","--app",default="RU0",help="Take values from given application [default: %(default)s]")
         parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
+        parser.add_argument('--colors',nargs="*",type=int,help="Give a list of custom colors to be used")
+        parser.add_argument('--markers',nargs="*",type=int,help="Give a list of custom markers to be used")
         parser.add_argument("--totalThroughput",default=False,action="store_true",help="Plot the total event-builder throughput")
+        parser.add_argument("--showRelEventSize",default=False,action="store_true",help="Show the relative event size")
+        parser.add_argument("--plotMaxRU",default=False,action="store_true",help="Plot the RU with the highest througput")
 
 
     def createCanvas(self):
@@ -61,7 +68,8 @@ class PlotScans:
             self.throughputPad.SetLogy()
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
-        titleY = "Throughput on %(app)s (MB/s)"%(self.args)
+        app = self.args['app'].replace('0','')
+        titleY = "Throughput on "+app+" (MB/s)"
         titleYoffset = 1.4
         if self.args['totalThroughput']:
             range = [100,6000,0,200]
@@ -77,6 +85,11 @@ class PlotScans:
             range = [250,17000,0,5900]
             title = "Throughput vs. Fragment Size"
             titleX = "Fragment Size (bytes)"
+        if self.args['plotMaxRU']:
+            range = [0.1,7,0,5900]
+            title = "Throughput vs. Rel. Fragment Size"
+            titleX = "Relative fragment size"
+            titleY = "Max throughput on RU (MB/s)"
         if not self.args['minx']:
             self.args['minx'] = range[0]
         if not self.args['maxx']:
@@ -100,7 +113,7 @@ class PlotScans:
         self.throughputTH2D.GetYaxis().SetTitleOffset(titleYoffset)
         self.throughputTH2D.GetXaxis().SetTitleOffset(1.2)
         self.throughputTH2D.Draw()
-        if self.args['totalThroughput']:
+        if self.args['showRelEventSize']:
             minValueX = self.args['minx'] / self.nominalSize
             maxValueX = self.args['maxx'] / self.nominalSize
             self.relEventSizeAxis = ROOT.TGaxis(self.args['minx'],self.args['maxy'],self.args['maxx'],self.args['maxy'],minValueX,maxValueX,510,'G-');
@@ -128,7 +141,8 @@ class PlotScans:
         self.ratePad.cd()
         if 'BU' in self.args['app']:
             ratemaxy = 20
-            titleR = "Event Rate at %(app)s (kHz)"%(self.args)
+            app = self.args['app'].replace('0','')
+            titleR = "Event Rate at "+app+" (kHz)"
             titleOffset = 1.1
         else:
             ratemaxy = 380
@@ -178,15 +192,15 @@ class PlotScans:
 
     def createCMSpreliminary(self):
         self.auxPad.cd()
-        self.CMSpave = ROOT.TPave(0.62,0.80,0.899,0.898,0,'NDC')
-        self.CMSpave.SetFillStyle(1001)
-        self.CMSpave.SetFillColor(0)
-        self.CMSpave.Draw()
+        #self.CMSpave = ROOT.TPave(0.62,0.80,0.899,0.898,0,'NDC')
+        #self.CMSpave.SetFillStyle(1001)
+        #self.CMSpave.SetFillColor(0)
+        #self.CMSpave.Draw()
         self.latex.SetTextFont(62)
         self.latex.SetTextSize(0.05)
-        self.latex.DrawLatex(0.625,0.83,"CMS")
+        self.latex.DrawLatex(0.617,0.83,"CMS")
         self.latex.SetTextFont(52)
-        self.latex.DrawLatex(0.71,0.83,"Preliminary")
+        self.latex.DrawLatex(0.70,0.83,"Preliminary")
 
 
     def createDate(self):
@@ -208,23 +222,23 @@ class PlotScans:
         legendPosY = 0.828
         tagLen = 0
         subtagLen = 0
+        #try:
+        #    tagLen = 0.017*len(self.args['tag'])
+        #except TypeError:
+        #    pass
         try:
-            tagLen = 0.020*len(self.args['tag'])
-        except TypeError:
-            pass
-        try:
-            subtagLen = 0.013*len(self.args['subtag'])
+            subtagLen = 0.01*len(self.args['subtag'])
         except TypeError:
             pass
         width = 0.12 + max(tagLen,subtagLen,0.2)
         if width > 0.9: width=0.899
         if self.args['tag']:
-            self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
-            self.pave.SetFillStyle(1001)
-            self.pave.SetFillColor(0)
-            self.pave.Draw()
+            #self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
+            #self.pave.SetFillStyle(1001)
+            #self.pave.SetFillColor(0)
+            #self.pave.Draw()
             self.latex.SetTextSize(0.05)
-            self.latex.DrawLatex(0.14,legendPosY,self.args['tag'])
+            self.latex.DrawLatex(0.13,legendPosY,self.args['tag'])
             legendPosY -= 0.06
         if self.args['subtag']:
             self.pave2 = ROOT.TPave(0.12,legendPosY-0.02,width,legendPosY+0.03,0,'NDC')
@@ -232,10 +246,10 @@ class PlotScans:
             self.pave2.SetFillColor(0)
             self.pave2.Draw()
             self.latex.SetTextSize(0.035)
-            self.latex.DrawLatex(0.145,legendPosY,self.args['subtag'])
+            self.latex.DrawLatex(0.13,legendPosY,self.args['subtag'])
             legendPosY -= 0.02
         nlegentries = len(self.args['cases'])
-        self.legend = ROOT.TLegend(0.12,legendPosY-nlegentries*0.04,width,legendPosY)
+        self.legend = ROOT.TLegend(0.115,legendPosY-nlegentries*0.04,width,legendPosY)
         self.legend.SetFillStyle(1001)
         self.legend.SetFillColor(0)
         self.legend.SetTextFont(42)
@@ -339,8 +353,11 @@ class PlotScans:
                 dataPoint = value['measurement']
                 if self.args['totalThroughput']:
                     app = 'BU0'
-                else:
+                elif self.args['app'] in dataPoint[0]['sizes']:
                     app = self.args['app']
+                else:
+                    app = 'RU0'
+                    self.args['app'] = app
                 if 'BU' in app:
                     rawSizes = list(x['sizes'][app]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
@@ -349,8 +366,23 @@ class PlotScans:
                     averageSize = mean(sizes)
                     entry['sizes'].append(averageSize)
                     entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
-                    if value['fragSize'] == 2048:
+                    if value['fragSize'] == 2048 and not self.nominalSize:
                         self.nominalSize = averageSize
+                elif self.args['plotMaxRU']:
+                    entry['sizes'].append(value['fragSize']/2048.)
+                    entry['rmsSizes'].append(value['fragSizeRMS']/2048.)
+                    maxThroughput = 0
+                    maxRate = 0
+                    appWitMaxRate = ""
+                    for x in dataPoint:
+                        for app,rate,throughput in ((k,x['rates'][k],x['sizes'][k]*x['rates'][k]/1000000000.) for k in x['rates'].keys() if k.startswith('RU')):
+                            if rate > maxRate:
+                                maxRate = rate
+                                appWithMaxRate = app
+                            if throughput > maxThroughput:
+                                maxThroughput = throughput
+                                self.args['app'] = app
+                    print(value['fragSize'],self.args['app'],maxRate,appWithMaxRate)
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
@@ -384,9 +416,9 @@ class PlotScans:
 
 
     def printTable(self):
-        for case in self.cases:
+        for n,case in enumerate(self.cases):
             print(47*"-")
-            print("Case: "+case['name']+" - "+self.args['app'])
+            print("Case: "+case['name']+" - "+self.args['app']+" - color:"+str(self.colors[n])+" - marker"+str(self.markers[n]))
             print(47*"-")
             if self.args['totalThroughput']:
                 sizeUnit = '(kB)'
@@ -407,16 +439,24 @@ class PlotScans:
             print(47*"-")
 
 
+    def fillColorsMarkers(self):
+        if self.args['colors']:
+            self.colors = list(OrderedDict.fromkeys(self.args['colors']+self.colors))
+        if self.args['markers']:
+            self.markers = list(OrderedDict.fromkeys(self.args['markers']+self.markers))
+
+
     def doIt(self,args):
         self.args = vars(args)
         #print(self.args)
-
+        self.fillColorsMarkers()
         self.readData()
         self.printTable()
         self.createCanvas()
         self.createThroughputPad()
         self.createAuxPad()
-        self.createLineSpeed()
+        if not self.args['hideLineSpeed']:
+            self.createLineSpeed()
         if not self.args['hideDate']:
             self.createDate()
         if not self.args['hideRate']:
