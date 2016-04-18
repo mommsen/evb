@@ -210,7 +210,7 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::waitForNextTrigge
     if ( lastTime_ == 0 )
       availableTriggers_ = 1;
     else
-      availableTriggers_ = static_cast<uint32_t>( (now - lastTime_) * maxTriggerRate_ );
+      availableTriggers_ = static_cast<uint32_t>( (now>lastTime_?now-lastTime_:0) * maxTriggerRate_ );
   }
   lastTime_ = now;
   --availableTriggers_;

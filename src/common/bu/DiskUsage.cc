@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/filesystem.hpp>
 
 #include "evb/bu/DiskUsage.h"

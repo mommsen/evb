@@ -16,7 +16,6 @@
 #include <assert.h>
 #include <math.h>
 #include <sstream>
-#include <sys/time.h>
 
 evb::test::dummyFEROL::FragmentGenerator::FragmentGenerator() :
   frameSize_(0),

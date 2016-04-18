@@ -125,9 +125,10 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
             }
             else
             {
-              const uint64_t deltaNS = (ts.tv_sec - arrivalTimePos->second.tv_sec)*1000000000
+              const int64_t deltaNS = (ts.tv_sec - arrivalTimePos->second.tv_sec)*1000000000
                 + (ts.tv_nsec - arrivalTimePos->second.tv_nsec);
-              countsPerRuPos->second.sumArrivalTime += deltaNS;
+              if ( deltaNS > 0 )
+                countsPerRuPos->second.sumArrivalTime += deltaNS;
             }
             countsPerRuPos->second.timeSamples++;
           }

@@ -244,11 +244,12 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
   if ( blockedResources_ == nbResources_ )
   {
     // do not expire any lumi section if all resources are blocked
-    time_t now = time(0);
+    const time_t now = time(0);
     for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
           it != itEnd; ++it)
     {
-      it->second->startTime = now;
+      if ( now > it->second->startTime )
+        it->second->startTime = now;
     }
 
     return false;
@@ -266,7 +267,8 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
     else // check if the current lumi section timed out
     {
       uint32_t lumiSection = oldestLumiSection->second->lumiSection;
-      const uint32_t lumiDuration = time(0) - oldestLumiSection->second->startTime;
+      const time_t now = time(0);
+      const uint32_t lumiDuration = now>oldestLumiSection->second->startTime ? now-oldestLumiSection->second->startTime : 0;
       if ( lumiSection > 0 && lumiSectionTimeout_ > 0 && lumiDuration > lumiSectionTimeout_ )
       {
         std::ostringstream msg;
@@ -1083,14 +1085,14 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
                 .add(td("#incomplete"))
                 .add(td("age (s)")));
 
-      time_t now = time(0);
+      const time_t now = time(0);
       for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
             it != itEnd; ++it)
       {
         std::ostringstream str;
         str.setf(std::ios::fixed);
         str.precision(1);
-        str << now - it->second->startTime;
+        str << (now>it->second->startTime ? now-it->second->startTime : 0);
 
         table.add(tr()
                   .add(td(boost::lexical_cast<std::string>(it->first)))
