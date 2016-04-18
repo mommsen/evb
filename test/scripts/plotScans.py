@@ -418,7 +418,7 @@ class PlotScans:
     def printTable(self):
         for n,case in enumerate(self.cases):
             print(47*"-")
-            print("Case: "+case['name']+" - "+self.args['app']+" - color:"+str(self.colors[n])+" - marker"+str(self.markers[n]))
+            print("Case: "+case['name']+" - "+self.args['app']+" - color:"+str(self.colors[n])+" - marker:"+str(self.markers[n]))
             print(47*"-")
             if self.args['totalThroughput']:
                 sizeUnit = '(kB)'
