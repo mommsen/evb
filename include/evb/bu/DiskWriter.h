@@ -110,7 +110,7 @@ namespace evb {
         uint32_t totalEvents;
         uint32_t nbEvents;
         uint32_t nbEventsWritten;
-        uint32_t nbBytesWritten;
+        uint64_t nbBytesWritten;
         uint32_t nbIncompleteEvents;
         uint32_t fileCount;
         uint32_t index;
