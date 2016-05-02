@@ -43,7 +43,7 @@ class case_3x1_noFragments(TestCase):
         self.clear('EVM')
         self.clear('RU')
         self.clear('BU')
-        self.checkBuDir(testDir,runNumber,eventSize=24576)
+        self.checkBuDir(testDir,runNumber,eventSize=14360)
 
         runNumber=time.strftime("%s",time.localtime())
         self.enableEvB(runNumber=runNumber)

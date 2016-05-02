@@ -35,7 +35,7 @@ class case_3x1_incompleteEvents(TestCase):
         time.sleep(10)
 
         self.haltEvB()
-        self.checkBuDir(testDir,runNumber,eventSize=24576)
+        self.checkBuDir(testDir,runNumber,eventSize=14360)
 
 
     def fillConfiguration(self,symbolMap):

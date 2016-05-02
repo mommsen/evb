@@ -43,7 +43,7 @@ class case_2x1_write(TestCase):
         sys.stdout.write("Stopping EvB")
         self.waitForState('Ready')
         print(" done")
-        self.checkBuDir(testDir,runNumber,eventSize=28672)
+        self.checkBuDir(testDir,runNumber,eventSize=26648)
 
         runNumber=time.strftime("%s",time.localtime())
         self.enableEvB(sleepTime=15,runNumber=runNumber)
@@ -51,7 +51,7 @@ class case_2x1_write(TestCase):
         self.checkRU(24576)
         self.checkBU(26624)
         self.stopEvB()
-        self.checkBuDir(testDir,runNumber,eventSize=28672)
+        self.checkBuDir(testDir,runNumber,eventSize=26648)
 
 
     def fillConfiguration(self,symbolMap):

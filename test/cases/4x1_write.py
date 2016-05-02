@@ -31,7 +31,7 @@ class case_4x1_write(TestCase):
         self.checkRU(16384)
         self.checkBU(65536)
         self.stopEvB()
-        self.checkBuDir(testDir,runNumber,eventSize=69632)
+        self.checkBuDir(testDir,runNumber,eventSize=65560)
         for run in dummyRuns:
             eorFile = testDir+"/run"+run+"/run"+run+"_ls0000_EoR.jsn"
             if not os.path.isfile(eorFile):

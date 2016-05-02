@@ -493,6 +493,7 @@ class TestCase:
                 raise ValueException("Total event count from EVM "+str(eolsData[2])+" does not match "+str(totalEvents)+" in "+eolsFile)
 
             eventCounter = 0
+            fileSizes = 0
             if eolsData[1] > 0:
                 runLsCounter += 1
                 lastLumiWithFiles = int(lumiSection)
@@ -509,9 +510,12 @@ class TestCase:
                             fileSize = os.path.getsize(rawFile)
                         except OSError:
                             raise FileException(rawFile+" does not exist")
-                            eventCount = fileSize/eventSize
-                            if eventCount != jsonData[0]:
-                                raise ValueException("expected "+str(jsonData[0])+", but found "+str(eventCount)+" events in JSON file "+jsonFile)
+                        eventCount = fileSize/eventSize
+                        if eventCount != jsonData[0]:
+                            raise ValueException("expected "+str(jsonData[0])+", but found "+str(eventCount)+" events in raw file "+rawFile)
+                        if fileSize != jsonData[1]:
+                            raise ValueException("expected a file size of "+str(jsonData[1])+" Bytes, but "+rawFile+" has a size of "+str(fileSize)+" Bytes")
+                        fileSizes += fileSize
 
             else:
                 fileCounter = len( glob.glob(runDir+"/run"+runNumber+"_ls"+lumiSection+"*[raw,jsn]") ) - 1
@@ -520,6 +524,8 @@ class TestCase:
                 raise ValueException("expected "+str(eolsData[0])+" events in LS "+lumiSection+", but found "+str(eventCounter)+" events in raw data JSON files")
             if fileCounter != eolsData[1]:
                 raise ValueException("expected "+str(eolsData[1])+" files for LS "+lumiSection+", but found "+str(fileCounter)+" raw data files")
+            if eventSize and fileSizes != eolsData[4]:
+                raise ValueException("expected "+str(eolsData[4])+" Bytes written for LS "+lumiSection+", but found "+str(fileSizes)+" Bytes")
             runEventCounter += eventCounter
 
         eorFile=runDir+"/run"+runNumber+"_ls0000_EoR.jsn"

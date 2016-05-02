@@ -35,7 +35,7 @@ class case_2x1_laggingFU(TestCase):
         self.checkRU(24576)
         self.checkBU(26624)
         self.stopEvB()
-        self.checkBuDir(testDir,runNumber,eventSize=28672)
+        self.checkBuDir(testDir,runNumber,eventSize=26648)
 
 
     def fillConfiguration(self,symbolMap):

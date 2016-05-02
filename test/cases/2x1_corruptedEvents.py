@@ -52,7 +52,7 @@ class case_2x1_corruptedEvents(TestCase):
             raise ValueException("Expected one dump file from FED 7, but found: "+str(dumps))
 
         self.haltEvB()
-        self.checkBuDir(testDir,"000001",eventSize=16384)
+        self.checkBuDir(testDir,"000001")
 
         self.configureEvB()
         self.enableEvB(runNumber=2)
@@ -83,7 +83,7 @@ class case_2x1_corruptedEvents(TestCase):
         self.checkBU(16384)
         self.checkIt()
         self.stopEvB()
-        self.checkBuDir(testDir,"000002",eventSize=16384)
+        self.checkBuDir(testDir,"000002")
 
 
     def fillConfiguration(self,symbolMap):
