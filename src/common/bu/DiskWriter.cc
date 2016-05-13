@@ -222,37 +222,29 @@ void evb::bu::DiskWriter::doLumiSectionAccounting(const bool completeLumiSection
   {
     if ( configuration_->dropEventData ) continue;
 
-    const uint32_t totalEventsInLumiSection =
-      bu_->getRUproxy()->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
-
+    LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
+    if ( pos->second->nbEvents > 0 )
+    {
+      std::ostringstream msg;
+      msg << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
+      XCEPT_RAISE(exception::EventOrder, msg.str());
+    }
     if ( lumiSectionAccount->nbEvents == 0 )
     {
-      // empty lumi section
-      const LumiInfoPtr lumiInfo( new LumiInfo(lumiSectionAccount->lumiSection) );
-      lumiInfo->totalEvents = totalEventsInLumiSection;
-      diskWriterMonitoring_.currentLumiSection = lumiSectionAccount->lumiSection + 1;
-      writeEoLS(lumiInfo);
+      pos->second->isEmpty = true;
     }
     else
     {
-      LumiStatistics::iterator pos = getLumiStatistics(lumiSectionAccount->lumiSection);
-      if ( pos->second->nbEvents > 0 )
-      {
-        std::ostringstream msg;
-        msg << "Got a duplicated account for lumi section " << lumiSectionAccount->lumiSection;
-        XCEPT_RAISE(exception::EventOrder, msg.str());
-      }
       pos->second->nbEvents = lumiSectionAccount->nbEvents;
       pos->second->nbIncompleteEvents = lumiSectionAccount->nbIncompleteEvents;
-      pos->second->totalEvents = totalEventsInLumiSection;
     }
+    pos->second->totalEvents = bu_->getRUproxy()->getTotalEventsInLumiSection(lumiSectionAccount->lumiSection);
   }
 
   LumiStatistics::iterator it = lumiStatistics_.begin();
   while ( it != lumiStatistics_.end() )
   {
-    if ( it->second->nbEvents > 0 &&
-         it->second->nbEvents == it->second->nbEventsWritten + it->second->nbIncompleteEvents )
+    if ( it->second->isComplete() )
     {
       writeEoLS(it->second);
 

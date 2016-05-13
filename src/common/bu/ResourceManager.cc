@@ -172,8 +172,6 @@ uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
-  if ( lumiSection == 0 ) return;
-
   boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(lumiSection);
@@ -181,8 +179,12 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
   if ( pos == lumiSectionAccounts_.end() )
   {
     // backfill any skipped lumi sections
-    const uint32_t newestLumiSection = lumiSectionAccounts_.empty() ? 0 : lumiSectionAccounts_.rbegin()->first;
-    for ( uint32_t ls = newestLumiSection+1; ls <= lumiSection; ++ls )
+    // if there are pervious LS, fill anything in between
+    // if the current lumiSection is 0, this means that we do not create any LS numbers,
+    // otherwise start with the first legal LS 1
+    const uint32_t newestLumiSection = !lumiSectionAccounts_.empty() ? lumiSectionAccounts_.rbegin()->first + 1 :
+      (lumiSection == 0 ? 0 : 1);
+    for ( uint32_t ls = newestLumiSection; ls <= lumiSection; ++ls )
     {
       LumiSectionAccountPtr lumiAccount( new LumiSectionAccount(ls) );
       pos = lumiSectionAccounts_.insert(LumiSectionAccounts::value_type(ls,lumiAccount)).first;
@@ -204,8 +206,6 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
 
 void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiSection)
 {
-  if ( lumiSection == 0 ) return;
-
   boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::iterator pos = lumiSectionAccounts_.find(lumiSection);
