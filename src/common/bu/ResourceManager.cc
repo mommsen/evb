@@ -40,6 +40,7 @@ evb::bu::ResourceManager::ResourceManager
   queuedLS_(0),
   queuedLSonFUs_(-1),
   fuOutBwMB_(0),
+  stopRequests_(false),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
