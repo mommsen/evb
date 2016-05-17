@@ -4,7 +4,7 @@ from TestCase import *
 from Context import RU,BU
 
 
-class case_2x2_stale(TestCase):
+class case_2x2_bandwidth(TestCase):
 
     def runTest(self):
         testDir="/tmp/evb_test/ramdisk"
@@ -15,22 +15,26 @@ class case_2x2_stale(TestCase):
             self.setAppParam('metaDataDir','string',buDir,'BU',instance)
             self.setAppParam('hltParameterSetURL','string','file://'+buDir,'BU',instance)
         self.prepareAppliance(testDir+"/BU0",runNumber)
-        self.writeResourceSummary(testDir+"/BU0",runNumber,activeResources=16,staleResources=16,cloud=32)
         self.prepareAppliance(testDir+"/BU1",runNumber)
-        self.writeResourceSummary(testDir+"/BU1",runNumber,activeResources=0,staleResources=32,cloud=32)
         self.configureEvB()
-        try:
-            self.enableEvB(sleepTime=2,runNumber=runNumber)
-        except StateException:
-            self.checkAppState("Throttled","BU",0)
-            self.checkAppState("Failed","BU",1)
-        else:
-            raise StateException("EvB should not be Enabled")
+        self.enableEvB()
+        self.writeResourceSummary(testDir+"/BU0",runNumber,outputBandwidthMB=110)
+        self.writeResourceSummary(testDir+"/BU1",runNumber,outputBandwidthMB=130)
         time.sleep(5)
+        self.checkAppState("Throttled","BU",0)
+        self.checkAppState("Blocked","BU",1)
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624,instance=0)
-        self.haltEvB()
+        self.writeResourceSummary(testDir+"/BU0",runNumber,outputBandwidthMB=90)
+        self.writeResourceSummary(testDir+"/BU1",runNumber,outputBandwidthMB=110)
+        time.sleep(5)
+        self.checkAppState("Enabled","BU",0)
+        self.checkAppState("Throttled","BU",1)
+        self.checkEVM(2048)
+        self.checkRU(24576)
+        self.checkBU(26624)
+        self.stopEvB()
 
 
     def fillConfiguration(self,symbolMap):

@@ -433,12 +433,7 @@ class TestCase:
             raise ValueError("EVM counted "+str(evmEventCount)+" events, while BUs built "+str(buEventCount)+" events")
 
 
-    def prepareAppliance(self,testDir,runNumber,activeResources=160,quarantinedResources=0,staleResources=0,activeRunCMSSWMaxLS=-1,activeRunNumQueuedLS=-1,outputBandwidthMB=100,cloud=0):
-        try:
-            shutil.rmtree(testDir)
-        except OSError:
-            pass
-        os.makedirs(testDir+'/appliance')
+    def writeResourceSummary(self,testDir,runNumber,activeResources=160,quarantinedResources=0,staleResources=0,activeRunCMSSWMaxLS=-1,activeRunNumQueuedLS=-1,outputBandwidthMB=100,cloud=0,stopRequested=False):
         stat = os.statvfs(testDir)
         ramDiskOccupancy = 1 - stat.f_bfree/float(stat.f_blocks)
         with open(testDir+'/appliance/resource_summary','w') as resourceSummary:
@@ -449,9 +444,19 @@ class TestCase:
                 ', "quarantined": '+str(quarantinedResources)+
                 ', "stale_resources": '+str(staleResources)+
                 ', "activeRunCMSSWMaxLS": '+str(activeRunCMSSWMaxLS)+
+                ', "bu_stop_requests_flag": '+str(stopRequested).lower()+
                 ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
                 ', "outputBandwidthMB": '+str(outputBandwidthMB)+
                 ', "cloud": '+str(cloud)+'}')
+        return ramDiskOccupancy
+
+
+    def prepareAppliance(self,testDir,runNumber):
+        try:
+            shutil.rmtree(testDir)
+        except OSError:
+            pass
+        os.makedirs(testDir+'/appliance')
         with open(testDir+'/HltConfig.py','w') as config:
             config.write("dummy HLT menu for EvB test")
         with open(testDir+'/fffParameters.jsn','w') as param:
@@ -460,7 +465,7 @@ class TestCase:
             param.write('    "CMSSW_VERSION": "CMSSW_7_4_2",')
             param.write('    "TRANSFER_MODE": "TIER0_TRANSFER_OFF"')
             param.write('}')
-        return ramDiskOccupancy
+        return self.writeResourceSummary(testDir,runNumber)
 
 
     def checkBuDir(self,testDir,runNumber,eventSize=None,buInstance=None):

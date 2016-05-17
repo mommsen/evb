@@ -14,8 +14,10 @@ class case_2x2_quarantined(TestCase):
             self.setAppParam('rawDataDir','string',buDir,'BU',instance)
             self.setAppParam('metaDataDir','string',buDir,'BU',instance)
             self.setAppParam('hltParameterSetURL','string','file://'+buDir,'BU',instance)
-        self.prepareAppliance(testDir+"/BU0",runNumber,activeResources=16,quarantinedResources=16)
-        self.prepareAppliance(testDir+"/BU1",runNumber,activeResources=0,quarantinedResources=32)
+        self.prepareAppliance(testDir+"/BU0",runNumber)
+        self.writeResourceSummary(testDir+"/BU0",runNumber,activeResources=16,quarantinedResources=16)
+        self.prepareAppliance(testDir+"/BU1",runNumber)
+        self.writeResourceSummary(testDir+"/BU1",runNumber,activeResources=0,quarantinedResources=32)
         self.configureEvB()
         try:
             self.enableEvB(sleepTime=2,runNumber=runNumber)
