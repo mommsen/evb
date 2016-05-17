@@ -188,7 +188,7 @@ size_t evb::FragmentTracker::fillData
           // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
           fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
           crcCalculator_.compute(fedCRC_,payload,sizeof(fedt_t));
-          fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
+          fedTrailer->conscheck |= (fedCRC_ << FED_CRCS_SHIFT);
         }
 
         payload += sizeof(fedt_t);

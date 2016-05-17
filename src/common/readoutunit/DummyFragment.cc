@@ -93,7 +93,7 @@ bool evb::readoutunit::DummyFragment::fillData(unsigned char* payload, const uin
         memset(payload+copiedSize, 0xCA, payloadSize);
 
         if ( computeCRC_ )
-          crcCalculator_.compute(fedCRC_,payload+copiedSize,payloadSize);
+          crcCalculator_.compute(fedCRC_,(uint8_t*)(payload+copiedSize),payloadSize);
 
         copiedSize += payloadSize;
         remainingFedSize_ -= payloadSize;
@@ -158,7 +158,7 @@ void evb::readoutunit::DummyFragment::fillFedTrailer(fedt_t* fedTrailer)
     // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
     fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
     crcCalculator_.compute(fedCRC_,(uint8_t*)fedTrailer,sizeof(fedt_t));
-    fedTrailer->conscheck = (fedCRC_ << FED_CRCS_SHIFT);
+    fedTrailer->conscheck |= (fedCRC_ << FED_CRCS_SHIFT);
   }
 }
 

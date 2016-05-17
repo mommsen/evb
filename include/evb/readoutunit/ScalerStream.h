@@ -281,7 +281,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
       fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) | (fedSize>>3);
       fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
       crcCalculator_.compute(crc,payload-dataLength,dataLength);
-      fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
+      fedTrailer->conscheck |= (crc << FED_CRCS_SHIFT);
     }
     else
     {

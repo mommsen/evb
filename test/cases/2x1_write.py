@@ -58,7 +58,7 @@ class case_2x1_write(TestCase):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('fedSourceIds','unsignedInt',(512,)),
-             ('fakeLumiSectionDuration','unsignedInt','5')
+             ('fakeLumiSectionDuration','unsignedInt','4')
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
