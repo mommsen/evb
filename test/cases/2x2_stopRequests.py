@@ -4,7 +4,7 @@ from TestCase import *
 from Context import RU,BU
 
 
-class case_2x2_bandwidth(TestCase):
+class case_2x2_stopRequests(TestCase):
 
     def runTest(self):
         testDir="/tmp/evb_test/ramdisk"
@@ -18,19 +18,38 @@ class case_2x2_bandwidth(TestCase):
         self.prepareAppliance(testDir+"/BU1",runNumber)
         self.configureEvB()
         self.enableEvB(runNumber=runNumber)
-        self.writeResourceSummary(testDir+"/BU0",runNumber,outputBandwidthMB=110)
-        self.writeResourceSummary(testDir+"/BU1",runNumber,outputBandwidthMB=130)
-        time.sleep(5)
-        self.checkAppState("Throttled","BU",0)
-        self.checkAppState("Blocked","BU",1)
+        self.writeResourceSummary(testDir+"/BU1",runNumber,stopRequested=True)
+        time.sleep(15)
+        self.checkAppState("Enabled","BU",0)
+        self.checkAppState("Stopped","BU",1)
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624,instance=0)
-        self.writeResourceSummary(testDir+"/BU0",runNumber,outputBandwidthMB=90)
-        self.writeResourceSummary(testDir+"/BU1",runNumber,outputBandwidthMB=110)
-        time.sleep(5)
-        self.checkAppState("Enabled","BU",0)
-        self.checkAppState("Throttled","BU",1)
+        self.stopEvB()
+        for instance in range(2):
+            buDir = testDir+"/BU"+str(instance)
+            self.checkBuDir(buDir,runNumber,eventSize=26648,buInstance=instance)
+
+        runNumber=time.strftime("%s",time.localtime())
+        try:
+            self.enableEvB(sleepTime=2,runNumber=runNumber)
+        except StateException:
+            self.checkAppState("Stopped","BU",1)
+        else:
+            raise StateException("EvB should not be Enabled")
+        time.sleep(15)
+        self.checkEVM(2048)
+        self.checkRU(24576)
+        self.checkBU(26624,instance=0)
+        self.stopEvB()
+        for instance in range(2):
+            buDir = testDir+"/BU"+str(instance)
+            self.checkBuDir(buDir,runNumber,eventSize=26648,buInstance=instance)
+
+        runNumber=time.strftime("%s",time.localtime())
+        self.writeResourceSummary(testDir+"/BU1",runNumber,stopRequested=False)
+        self.enableEvB(runNumber=runNumber)
+        self.checkAppState("Enabled","BU")
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624)
@@ -44,17 +63,19 @@ class case_2x2_bandwidth(TestCase):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('fedSourceIds','unsignedInt',(512,)),
-             ('fakeLumiSectionDuration','unsignedInt','5')
+             ('fakeLumiSectionDuration','unsignedInt','4')
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
+            ('lumiSectionTimeout','unsignedInt','6'),
             ('resourcesPerCore','double','1'),
             ('staleResourceTime','unsignedInt','0')
             ]) )
         self._config.add( BU(symbolMap,[
+            ('lumiSectionTimeout','unsignedInt','6'),
             ('resourcesPerCore','double','1'),
             ('staleResourceTime','unsignedInt','0')
             ]) )

@@ -343,6 +343,25 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 
 bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& priority, uint16_t& eventsToDiscard)
 {
+  if ( blockedResources_ == nbResources_ || stopRequests_ )
+  {
+    if ( eventsToDiscard_ > 0 )
+    {
+      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+
+      buResourceId = 0;
+      priority = 0;
+      eventsToDiscard = eventsToDiscard_;
+      eventsToDiscard_ = 0;
+      return true;
+    }
+    else
+    {
+      ::usleep(1000);
+      return false;
+    }
+  }
+
   BuilderResources::iterator pos;
   if ( resourceFIFO_.deq(pos) )
   {
@@ -365,17 +384,6 @@ bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& p
       ++eventMonitoring_.outstandingRequests;
       return true;
     }
-  }
-
-  if ( blockedResources_ == nbResources_ && eventsToDiscard_ > 0 )
-  {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-
-    buResourceId = 0;
-    priority = 0;
-    eventsToDiscard = eventsToDiscard_;
-    eventsToDiscard_ = 0;
-    return true;
   }
 
   return false;
@@ -427,6 +435,7 @@ float evb::bu::ResourceManager::getAvailableResources()
 
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(resourceSummary_.string(), pt);
+    stopRequests_ = pt.get<bool>("bu_stop_requests_flag");
     fusHLT_ = pt.get<int>("active_resources");
     fusCloud_ = pt.get<int>("cloud");
     fusQuarantined_ = pt.get<int>("quarantined");
@@ -460,6 +469,11 @@ float evb::bu::ResourceManager::getAvailableResources()
     return 0;
   }
   resourceSummaryFailureAlreadyNotified_ = false;
+
+  if ( stopRequests_ )
+  {
+    bu_->getStateMachine()->processFSMEvent( StopRequests() );
+  }
 
   if ( lsLatency > configuration_->lumiSectionLatencyHigh.value_ )
   {

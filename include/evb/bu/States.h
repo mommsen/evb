@@ -46,6 +46,7 @@ namespace evb {
     class Blocked;
     class Mist;
     class Cloud;
+    class Stopped;
 
 
     ///////////////////
@@ -65,7 +66,8 @@ namespace evb {
       boost::statechart::in_state_reaction<Throttle>,
       boost::statechart::in_state_reaction<Block>,
       boost::statechart::in_state_reaction<Misted>,
-      boost::statechart::in_state_reaction<Clouded>
+      boost::statechart::in_state_reaction<Clouded>,
+      boost::statechart::in_state_reaction<StopRequests>
       > reactions;
 
       Outermost(my_context c) : my_state("Outermost", c)
@@ -244,7 +246,13 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Stop,Draining>
+      boost::statechart::transition<Stop,Draining>,
+      boost::statechart::transition<Release,Enabled>,
+      boost::statechart::transition<Throttle,Throttled>,
+      boost::statechart::transition<Block,Blocked>,
+      boost::statechart::transition<Misted,Mist>,
+      boost::statechart::transition<Clouded,Cloud>,
+      boost::statechart::transition<StopRequests,Stopped>
       > reactions;
 
       Processing(my_context c) : my_state("Processing", c)
@@ -292,11 +300,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::in_state_reaction<Release>,
-      boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::transition<Block,Blocked>,
-      boost::statechart::transition<Misted,Mist>,
-      boost::statechart::transition<Clouded,Cloud>
+      boost::statechart::in_state_reaction<Release>
       > reactions;
 
       Enabled(my_context c) : my_state("Enabled", c)
@@ -319,11 +323,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Release,Enabled>,
-      boost::statechart::in_state_reaction<Throttle>,
-      boost::statechart::transition<Block,Blocked>,
-      boost::statechart::transition<Misted,Mist>,
-      boost::statechart::transition<Clouded,Cloud>
+      boost::statechart::in_state_reaction<Throttle>
       > reactions;
 
       Throttled(my_context c) : my_state("Throttled", c)
@@ -346,11 +346,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Release,Enabled>,
-      boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::in_state_reaction<Block>,
-      boost::statechart::transition<Misted,Mist>,
-      boost::statechart::transition<Clouded,Cloud>
+      boost::statechart::in_state_reaction<Block>
       > reactions;
 
       Blocked(my_context c) : my_state("Blocked", c)
@@ -373,11 +369,7 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Release,Enabled>,
-      boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::transition<Block,Blocked>,
-      boost::statechart::in_state_reaction<Misted>,
-      boost::statechart::transition<Clouded,Cloud>
+      boost::statechart::in_state_reaction<Misted>
       > reactions;
 
       Mist(my_context c) : my_state("Mist", c)
@@ -400,10 +392,6 @@ namespace evb {
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::transition<Release,Enabled>,
-      boost::statechart::transition<Throttle,Throttled>,
-      boost::statechart::transition<Block,Blocked>,
-      boost::statechart::transition<Misted,Mist>,
       boost::statechart::in_state_reaction<Clouded>
       > reactions;
 
@@ -414,6 +402,34 @@ namespace evb {
 
       virtual void entryAction()
       { outermost_context().notifyRCMS("Cloud"); }
+
+    };
+
+
+    /**
+     * The Stopped state of the outer-state Processing.
+     */
+    class Stopped: public EvBState<Stopped,Processing>
+    {
+
+    public:
+
+      typedef boost::mpl::list<
+      boost::statechart::in_state_reaction<Release>,
+      boost::statechart::in_state_reaction<Throttle>,
+      boost::statechart::in_state_reaction<Block>,
+      boost::statechart::in_state_reaction<Misted>,
+      boost::statechart::in_state_reaction<Clouded>,
+      boost::statechart::in_state_reaction<StopRequests>
+      > reactions;
+
+      Stopped(my_context c) : my_state("Stopped", c)
+      { safeEntryAction(); }
+      virtual ~Stopped()
+      { safeExitAction(); }
+
+      virtual void entryAction()
+      { outermost_context().notifyRCMS("Stopped"); }
 
     };
 

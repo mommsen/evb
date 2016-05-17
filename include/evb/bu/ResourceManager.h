@@ -215,6 +215,7 @@ namespace evb {
       uint32_t queuedLS_;
       int32_t queuedLSonFUs_;
       double fuOutBwMB_;
+      bool stopRequests_;
       mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
