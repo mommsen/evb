@@ -14,6 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/exceptions.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -38,6 +39,7 @@ evb::bu::ResourceManager::ResourceManager
   initiallyQueuedLS_(0),
   queuedLS_(0),
   queuedLSonFUs_(-1),
+  fuOutBwMB_(0),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
@@ -429,10 +431,12 @@ float evb::bu::ResourceManager::getAvailableResources()
     fusCloud_ = pt.get<int>("cloud");
     fusQuarantined_ = pt.get<int>("quarantined");
     fusStale_ = pt.get<int>("stale_resources");
+    fuOutBwMB_ = pt.get<double>("outputBandwidthMB");
+    queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
+
     resourcesFromFUs = (fusHLT_ == 0) ? 0 :
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
 
-    queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
     const uint32_t activeFURun = pt.get<int>("activeFURun");
     const uint32_t activeRunCMSSWMaxLS = std::max(0,pt.get<int>("activeRunCMSSWMaxLS"));
     if ( activeFURun == runNumber_ && activeRunCMSSWMaxLS > 0 )
@@ -469,6 +473,20 @@ float evb::bu::ResourceManager::getAvailableResources()
     }
     return 0;
   }
+
+  if ( fuOutBwMB_ > configuration_->fuOutputBandwidthHigh.value_ )
+  {
+    if ( ! resourceLimitiationAlreadyNotified_ )
+    {
+      std::ostringstream msg;
+      msg << "The output bandwidth from the FUs is " << fuOutBwMB_ << " MB/s, which is higher than the high water mark of "
+        << configuration_->fuOutputBandwidthHigh.value_ << " MB/s";
+      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
+      resourceLimitiationAlreadyNotified_ = true;
+    }
+    return 0;
+  }
+
   if ( queuedLSonFUs_ > static_cast<int32_t>(configuration_->maxFuLumiSectionLatency.value_) )
   {
     if ( ! resourceLimitiationAlreadyNotified_ )
@@ -480,6 +498,22 @@ float evb::bu::ResourceManager::getAvailableResources()
       resourceLimitiationAlreadyNotified_ = true;
     }
     return 0;
+  }
+
+  if ( fuOutBwMB_ > configuration_->fuOutputBandwidthLow.value_ )
+  {
+    if ( ! resourceLimitiationAlreadyNotified_ )
+    {
+      std::ostringstream msg;
+      msg << "Throttling requests as the output bandwidth from the FUs is " << fuOutBwMB_ << " MB/s, which is above the low water mark of "
+        << configuration_->fuOutputBandwidthLow.value_ << " MB/s";
+      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
+      resourceLimitiationAlreadyNotified_ = true;
+    }
+
+    const float throttle = 1 - ( (fuOutBwMB_ - configuration_->fuOutputBandwidthLow) /
+                                 (configuration_->fuOutputBandwidthHigh - configuration_->fuOutputBandwidthLow) );
+    resourcesFromFUs = std::min(resourcesFromFUs,static_cast<float>(nbResources_)) * throttle;
   }
 
   if ( lsLatency > configuration_->lumiSectionLatencyLow.value_ )
@@ -495,7 +529,7 @@ float evb::bu::ResourceManager::getAvailableResources()
 
     const float throttle = 1 - ( static_cast<float>(lsLatency - configuration_->lumiSectionLatencyLow) /
                                  (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
-    return std::min(resourcesFromFUs,static_cast<float>(nbResources_)) * throttle;
+    resourcesFromFUs = std::min(resourcesFromFUs,static_cast<float>(nbResources_)) * throttle;
   }
 
   if ( resourcesFromFUs >= static_cast<float>(nbResources_) )
@@ -529,6 +563,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
     initiallyQueuedLS_ = 0;
     queuedLS_ = 0;
     queuedLSonFUs_ = -1;
+    fuOutBwMB_ = 0;
     resourceSummaryFailureAlreadyNotified_ = true;
   }
 }
@@ -738,6 +773,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   fuSlotsCloud_ = 0;
   fuSlotsQuarantined_ = 0;
   fuSlotsStale_ = 0;
+  fuOutputBandwidthInMB_ = 0;
   queuedLumiSections_ = 0;
   queuedLumiSectionsOnFUs_ = -1;
   ramDiskSizeInGB_ = 0;
@@ -757,6 +793,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("fuSlotsCloud", &fuSlotsCloud_);
   items.add("fuSlotsQuarantined", &fuSlotsQuarantined_);
   items.add("fuSlotsStale", &fuSlotsStale_);
+  items.add("fuOutputBandwidthInMB", &fuOutputBandwidthInMB_);
   items.add("queuedLumiSections", &queuedLumiSections_);
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
@@ -778,6 +815,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     fuSlotsCloud_ = fusCloud_;
     fuSlotsQuarantined_ = fusQuarantined_;
     fuSlotsStale_ = fusStale_;
+    fuOutputBandwidthInMB_ = fuOutBwMB_;
     queuedLumiSections_ = queuedLS_;
     queuedLumiSectionsOnFUs_ = queuedLSonFUs_;
   }
@@ -1031,6 +1069,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       table.add(tr()
                 .add(td("# queued lumi sections on FUs"))
                 .add(td(boost::lexical_cast<std::string>(queuedLSonFUs_))));
+      table.add(tr()
+                .add(td("output bandwidth of FUs (MB/s)"))
+                .add(td(boost::lexical_cast<std::string>(fuOutBwMB_))));
       table.add(tr()
                 .add(td("# blocked resources"))
                 .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));

@@ -36,4 +36,5 @@
   <xmas:item name="queuedLumiSectionsOnFUs" infospace="urn:evb::BU" type="int 32"/>
   <xmas:item name="ramDiskSizeInGB"         infospace="urn:evb::BU" type="double"/>
   <xmas:item name="ramDiskUsed"             infospace="urn:evb::BU" type="double"/>
+  <xmas:item name="fuOutputBandwidthInMB"   infospace="urn:evb::BU" type="double"/>
 </xmas:flash>

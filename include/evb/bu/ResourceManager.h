@@ -214,6 +214,7 @@ namespace evb {
       uint32_t initiallyQueuedLS_;
       uint32_t queuedLS_;
       int32_t queuedLSonFUs_;
+      double fuOutBwMB_;
       mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
@@ -255,6 +256,7 @@ namespace evb {
       xdata::UnsignedInteger32 fuSlotsCloud_;
       xdata::UnsignedInteger32 fuSlotsQuarantined_;
       xdata::UnsignedInteger32 fuSlotsStale_;
+      xdata::Double fuOutputBandwidthInMB_;
       xdata::Integer32 queuedLumiSections_;
       xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
