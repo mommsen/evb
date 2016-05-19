@@ -40,7 +40,7 @@ evb::bu::ResourceManager::ResourceManager
   queuedLS_(0),
   queuedLSonFUs_(-1),
   fuOutBwMB_(0),
-  stopRequests_(false),
+  requestEvents_(true),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
@@ -344,7 +344,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 
 bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& priority, uint16_t& eventsToDiscard)
 {
-  if ( blockedResources_ == nbResources_ || stopRequests_ )
+  if ( blockedResources_ == nbResources_ || !requestEvents_ )
   {
     if ( eventsToDiscard_ > 0 )
     {
@@ -436,13 +436,17 @@ float evb::bu::ResourceManager::getAvailableResources()
 
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(resourceSummary_.string(), pt);
-    stopRequests_ = pt.get<bool>("bu_stop_requests_flag");
     fusHLT_ = pt.get<int>("active_resources");
     fusCloud_ = pt.get<int>("cloud");
     fusQuarantined_ = pt.get<int>("quarantined");
     fusStale_ = pt.get<int>("stale_resources");
     fuOutBwMB_ = pt.get<double>("outputBandwidthMB");
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
+
+    if ( pt.get<bool>("bu_stop_requests_flag") )
+    {
+      bu_->getStateMachine()->processFSMEvent( StopRequests() );
+    }
 
     resourcesFromFUs = (fusHLT_ == 0) ? 0 :
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
@@ -470,11 +474,6 @@ float evb::bu::ResourceManager::getAvailableResources()
     return 0;
   }
   resourceSummaryFailureAlreadyNotified_ = false;
-
-  if ( stopRequests_ )
-  {
-    bu_->getStateMachine()->processFSMEvent( StopRequests() );
-  }
 
   if ( lsLatency > configuration_->lumiSectionLatencyHigh.value_ )
   {
@@ -782,6 +781,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   eventSizeStdDev_ = 0;
   outstandingRequests_ = 0;
   nbTotalResources_ = 1;
+  nbSentResources_ = 0;
+  nbUsedResources_ = 0;
   nbBlockedResources_ = 1;
   priority_ = 0;
   fuSlotsHLT_ = 0;
@@ -802,6 +803,8 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("eventSizeStdDev", &eventSizeStdDev_);
   items.add("outstandingRequests", &outstandingRequests_);
   items.add("nbTotalResources", &nbTotalResources_);
+  items.add("nbSentResources", &nbSentResources_);
+  items.add("nbUsedResources", &nbUsedResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
   items.add("priority", &priority_);
   items.add("fuSlotsHLT", &fuSlotsHLT_);
@@ -819,9 +822,6 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::ResourceManager::updateMonitoringItems()
 {
   updateDiskUsages();
-
-  nbTotalResources_ = nbResources_;
-  nbBlockedResources_ = blockedResources_;
 
   {
     boost::mutex::scoped_lock sl(lsLatencyMutex_);
@@ -844,10 +844,29 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     bandwidth_ = eventMonitoring_.perf.bandwidth(deltaT);
     eventSize_ = eventMonitoring_.perf.size();
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
-    outstandingRequests_ = std::max(0,eventMonitoring_.outstandingRequests);
     priority_ = currentPriority_;
 
     eventMonitoring_.perf.reset();
+  }
+  {
+    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+
+    nbTotalResources_ = nbResources_;
+    nbBlockedResources_ = 0;
+    nbSentResources_ = 0;
+    nbUsedResources_ = 0;
+
+    for (BuilderResources::const_iterator it = builderResources_.begin(), itEnd = builderResources_.end();
+          it != itEnd; ++it)
+    {
+      if ( it->second.blocked )
+        ++nbBlockedResources_;
+      else if ( it->second.evbIdList.empty() )
+        ++nbSentResources_;
+      else if ( it->second.builderId >= 0 )
+        ++nbUsedResources_;
+    }
+    outstandingRequests_ = nbSentResources_;
   }
 }
 
@@ -1084,9 +1103,25 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       table.add(tr()
                 .add(td("# queued lumi sections on FUs"))
                 .add(td(boost::lexical_cast<std::string>(queuedLSonFUs_))));
-      table.add(tr()
-                .add(td("output bandwidth of FUs (MB/s)"))
-                .add(td(boost::lexical_cast<std::string>(fuOutBwMB_))));
+      {
+          std::ostringstream str;
+          str.setf(std::ios::fixed);
+          str.precision(2);
+          std::string unit;
+          if (fuOutBwMB_ > 0.1)
+          {
+            str << fuOutBwMB_;
+            unit = "(MB/s)";
+          }
+          else
+          {
+            str << fuOutBwMB_*1000;
+            unit = "(kB/s)";
+          }
+          table.add(tr()
+                    .add(td("output bandwidth of FUs "+unit))
+                    .add(td(str.str())));
+      }
       table.add(tr()
                 .add(td("# blocked resources"))
                 .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));

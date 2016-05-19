@@ -86,6 +86,14 @@ void evb::bu::Configuring::exitAction()
 }
 
 
+void evb::bu::Ready::entryAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.resourceManager()->requestEvents(true);
+  stateMachine.notifyRCMS("Ready");
+}
+
+
 void evb::bu::Running::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
@@ -160,6 +168,14 @@ void evb::bu::Draining::activity()
 void evb::bu::Draining::exitAction()
 {
   doDraining_ = false;
+}
+
+
+void evb::bu::Stopped::entryAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.resourceManager()->requestEvents(false);
+  stateMachine.notifyRCMS("Stopped");
 }
 
 

@@ -208,8 +208,7 @@ namespace evb {
       virtual ~Ready()
       { safeExitAction(); }
 
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Ready"); }
+      virtual void entryAction();
 
     };
 
@@ -428,8 +427,7 @@ namespace evb {
       virtual ~Stopped()
       { safeExitAction(); }
 
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Stopped"); }
+      virtual void entryAction();
 
     };
 

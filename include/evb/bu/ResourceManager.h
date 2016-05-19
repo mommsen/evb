@@ -163,6 +163,11 @@ namespace evb {
        */
       uint64_t getNbEventsBuilt() const;
 
+      /**
+       * Enable or disable the requests for events
+       */
+      void requestEvents(const bool val)
+      { requestEvents_ = val; }
 
     private:
 
@@ -215,7 +220,7 @@ namespace evb {
       uint32_t queuedLS_;
       int32_t queuedLSonFUs_;
       double fuOutBwMB_;
-      bool stopRequests_;
+      bool requestEvents_;
       mutable boost::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
@@ -251,6 +256,8 @@ namespace evb {
       xdata::UnsignedInteger32 eventSizeStdDev_;
       xdata::UnsignedInteger32 outstandingRequests_;
       xdata::UnsignedInteger32 nbTotalResources_;
+      xdata::UnsignedInteger32 nbSentResources_;
+      xdata::UnsignedInteger32 nbUsedResources_;
       xdata::UnsignedInteger32 nbBlockedResources_;
       xdata::UnsignedInteger32 priority_;
       xdata::UnsignedInteger32 fuSlotsHLT_;

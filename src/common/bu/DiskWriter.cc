@@ -248,8 +248,14 @@ void evb::bu::DiskWriter::doLumiSectionAccounting(const bool completeLumiSection
     {
       writeEoLS(it->second);
 
-      if ( it->second->nbEventsWritten > 0 )
-        ++diskWriterMonitoring_.nbLumiSections;
+      {
+        boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+
+        if ( it->second->nbEventsWritten > 0 )
+          ++diskWriterMonitoring_.nbLumiSections;
+        if ( diskWriterMonitoring_.currentLumiSection < it->second->lumiSection )
+          diskWriterMonitoring_.currentLumiSection = it->second->lumiSection;
+      }
 
       lumiStatistics_.erase(it++);
     }
