@@ -171,9 +171,9 @@ namespace evb {
       toolbox::task::WorkLoop* fileMoverWorkLoop_;
       toolbox::task::ActionSignature* lumiAccountingAction_;
       toolbox::task::ActionSignature* fileMoverAction_;
-      bool doProcessing_;
-      bool lumiAccountingActive_;
-      bool fileMoverActive_;
+      volatile bool doProcessing_;
+      volatile bool lumiAccountingActive_;
+      volatile bool fileMoverActive_;
 
       struct DiskWriterMonitoring
       {
