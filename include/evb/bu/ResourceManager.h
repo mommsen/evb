@@ -254,7 +254,6 @@ namespace evb {
       xdata::UnsignedInteger64 bandwidth_;
       xdata::UnsignedInteger32 eventSize_;
       xdata::UnsignedInteger32 eventSizeStdDev_;
-      xdata::UnsignedInteger32 outstandingRequests_;
       xdata::UnsignedInteger32 nbTotalResources_;
       xdata::UnsignedInteger32 nbSentResources_;
       xdata::UnsignedInteger32 nbUsedResources_;

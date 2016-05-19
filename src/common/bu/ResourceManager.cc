@@ -779,7 +779,6 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   bandwidth_ = 0;
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
-  outstandingRequests_ = 0;
   nbTotalResources_ = 1;
   nbSentResources_ = 0;
   nbUsedResources_ = 0;
@@ -801,7 +800,6 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("bandwidth", &bandwidth_);
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
-  items.add("outstandingRequests", &outstandingRequests_);
   items.add("nbTotalResources", &nbTotalResources_);
   items.add("nbSentResources", &nbSentResources_);
   items.add("nbUsedResources", &nbUsedResources_);
@@ -866,7 +864,6 @@ void evb::bu::ResourceManager::updateMonitoringItems()
       else if ( it->second.builderId >= 0 )
         ++nbUsedResources_;
     }
-    outstandingRequests_ = nbSentResources_;
   }
 }
 

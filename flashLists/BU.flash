@@ -25,8 +25,9 @@
   <xmas:item name="nbLumiSections"          infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="currentLumiSection"      infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbTotalResources"        infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="nbSentResources"         infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="nbUsedResources"         infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="nbBlockedResources"      infospace="urn:evb::BU" type="unsigned int 32"/>
-  <xmas:item name="outstandingRequests"     infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuSlotsHLT"              infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuSlotsCloud"            infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fuSlotsQuarantined"      infospace="urn:evb::BU" type="unsigned int 32"/>
