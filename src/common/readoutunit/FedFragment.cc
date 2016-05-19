@@ -443,17 +443,27 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
 {
   if ( checkCRC_ == 0 || eventNumber_ % checkCRC_ != 0 ) return;
 
-  // Force C,F,R & CRC field to zero before re-computing the CRC.
+  // Force C,F,R & CRC field in the last word to zero before re-computing the CRC.
   // See http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html#CDF
-  const uint32_t conscheck = fedTrailer->conscheck;
-  fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
+  DataLocations::const_reverse_iterator rit = dataLocations_.rbegin();
+  uint32_t trailerPos = sizeof(fedt_t);
+  while ( rit->iov_len < trailerPos )
+  {
+    trailerPos -= rit->iov_len;
+    ++rit;
+  }
+  uint32_t* conscheck = (uint32_t*)((uint8_t*)rit->iov_base + rit->iov_len - trailerPos);
+  assert( *conscheck == fedTrailer->conscheck );
+  const uint32_t origConscheck = *conscheck;
+  *conscheck &= ~(FED_CRCS_MASK | 0xC004);
 
   // We need to assure here that the buffer given to the CRC calculator is Byte aligned.
   uint16_t crc = 0xffff;
   std::vector<unsigned char> buffer; //don't use tmpBuffer here as it might contain the FED trailer
+  buffer.resize(8);
   uint8_t overflow = 0;
-  for ( DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
-        it != itEnd; ++it)
+  for (DataLocations::const_iterator it = dataLocations_.begin(), itEnd = dataLocations_.end();
+       it != itEnd; ++it)
   {
     uint8_t offset = 0;
     if ( overflow > 0 )
@@ -467,14 +477,13 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
     crcCalculator_.compute(crc,(uint8_t*)it->iov_base+offset,remainingSize-overflow);
     if ( overflow > 0 )
     {
-      buffer.resize(8);
       memcpy(&buffer[0],(uint8_t*)it->iov_base+offset+remainingSize-overflow,overflow);
     }
   }
 
-  fedTrailer->conscheck = conscheck;
+  *conscheck = origConscheck;
 
-  const uint16_t trailerCRC = FED_CRCS_EXTRACT(conscheck);
+  const uint16_t trailerCRC = FED_CRCS_EXTRACT(origConscheck);
   if ( trailerCRC != crc )
   {
     hasCRCerror_ = true;
