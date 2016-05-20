@@ -780,6 +780,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
   nbTotalResources_ = 1;
+  nbFreeResources_ = 0;
   nbSentResources_ = 0;
   nbUsedResources_ = 0;
   nbBlockedResources_ = 1;
@@ -801,6 +802,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
   items.add("nbTotalResources", &nbTotalResources_);
+  items.add("nbFreeResources", &nbFreeResources_);
   items.add("nbSentResources", &nbSentResources_);
   items.add("nbUsedResources", &nbUsedResources_);
   items.add("nbBlockedResources", &nbBlockedResources_);
@@ -851,6 +853,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 
     nbTotalResources_ = nbResources_;
     nbBlockedResources_ = 0;
+    nbFreeResources_ = 0;
     nbSentResources_ = 0;
     nbUsedResources_ = 0;
 
@@ -859,9 +862,11 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     {
       if ( it->second.blocked )
         ++nbBlockedResources_;
+      else if ( it->second.builderId == -1 )
+        ++nbFreeResources_;
       else if ( it->second.evbIdList.empty() )
         ++nbSentResources_;
-      else if ( it->second.builderId >= 0 )
+      else
         ++nbUsedResources_;
     }
   }
