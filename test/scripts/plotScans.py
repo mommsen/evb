@@ -469,6 +469,7 @@ class PlotScans:
         self.createCMSpreliminary()
         self.canvas.Print(self.canvas.GetName()+".pdf")
         self.canvas.Print(self.canvas.GetName()+".png")
+        self.canvas.Print(self.canvas.GetName()+".C")
 
 
 if __name__ == "__main__":

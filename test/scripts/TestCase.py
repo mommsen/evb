@@ -164,7 +164,7 @@ class TestCase:
                 sys.stdout.write('.')
                 sys.stdout.flush()
                 if tries > maxTries:
-                    print("")
+                    print(" failed")
                     raise(e)
                 if runDir:
                     for rawFile in glob.glob(runDir+"/*.raw"):
