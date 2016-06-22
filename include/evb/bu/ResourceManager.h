@@ -216,6 +216,7 @@ namespace evb {
       uint32_t fusCloud_;
       uint32_t fusQuarantined_;
       uint32_t fusStale_;
+      uint32_t allFUsStaleDetected_;
       uint32_t initiallyQueuedLS_;
       uint32_t queuedLS_;
       int32_t queuedLSonFUs_;

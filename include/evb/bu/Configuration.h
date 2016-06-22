@@ -36,6 +36,7 @@ namespace evb {
       xdata::UnsignedInteger32 lumiSectionLatencyLow;      // Low water mark on how many LS may be queued for the FUs
       xdata::UnsignedInteger32 lumiSectionLatencyHigh;     // High water mark on how many LS may be queued for the FUs
       xdata::UnsignedInteger32 maxFuLumiSectionLatency;    // Maximum number of lumi sections the FUs may lag behind
+      xdata::UnsignedInteger32 maxTriesFUsStale;           // Maximum number of consecutive tests for FU staleness before failing
       xdata::UnsignedInteger32 staleResourceTime;          // Number of seconds after which a FU resource is no longer considered
       xdata::UnsignedInteger32 superFragmentFIFOCapacity;  // Capacity of the FIFO for super-fragment
       xdata::Boolean dropEventData;                        // If true, drop the data as soon as the event is complete
@@ -77,6 +78,7 @@ namespace evb {
           lumiSectionLatencyLow(1),
           lumiSectionLatencyHigh(4),
           maxFuLumiSectionLatency(3),
+          maxTriesFUsStale(60),
           staleResourceTime(10),
           superFragmentFIFOCapacity(3072),
           dropEventData(false),
@@ -126,6 +128,7 @@ namespace evb {
         params.add("lumiSectionLatencyLow", &lumiSectionLatencyLow);
         params.add("lumiSectionLatencyHigh", &lumiSectionLatencyHigh);
         params.add("maxFuLumiSectionLatency", &maxFuLumiSectionLatency);
+        params.add("maxTriesFUsStale", &maxTriesFUsStale);
         params.add("staleResourceTime", &staleResourceTime);
         params.add("superFragmentFIFOCapacity", &superFragmentFIFOCapacity);
         params.add("dropEventData", &dropEventData);

@@ -36,6 +36,7 @@ evb::bu::ResourceManager::ResourceManager
   fusCloud_(0),
   fusQuarantined_(0),
   fusStale_(0),
+  allFUsStaleDetected_(0),
   initiallyQueuedLS_(0),
   queuedLS_(0),
   queuedLSonFUs_(-1),
@@ -429,7 +430,7 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
 
   uint32_t lsLatency = 0;
-  float resourcesFromFUs =  0;
+  float resourcesFromFUs = 0;
   try
   {
     boost::mutex::scoped_lock sl(lsLatencyMutex_);
@@ -736,21 +737,33 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
     fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
   }
 
+  if ( allFUsQuarantined )
+  {
+    XCEPT_RAISE(exception::FFF, "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them.");
+  }
+
+  if ( allFUsStale )
+  {
+    if ( ++allFUsStaleDetected_ >= configuration_->maxTriesFUsStale )
+    {
+      std::ostringstream msg;
+      msg << "All FUs in the appliance are reporting a stale file handle since more than ";
+      msg << allFUsStaleDetected_ << " seconds";
+      XCEPT_RAISE(exception::FFF, msg.str());
+    }
+  }
+  else
+  {
+    allFUsStaleDetected_ = 0;
+  }
+
   uint32_t outstandingRequests;
   {
     boost::mutex::scoped_lock sl(eventMonitoringMutex_);
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
-  if ( allFUsQuarantined )
-  {
-    XCEPT_RAISE(exception::FFF, "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them");
-  }
-  else if ( allFUsStale )
-  {
-    XCEPT_RAISE(exception::FFF, "All FUs in the appliance are reporting a stale file handle");
-  }
-  else if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
+  if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
   {
     bu_->getStateMachine()->processFSMEvent( Release() );
   }
