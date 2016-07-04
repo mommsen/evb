@@ -18,14 +18,14 @@ class RunScans(TestRunner):
     def __init__(self):
         TestRunner.__init__(self)
 
-
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         parser.add_argument("-m","--symbolMap",help="symbolMap file to use. This assumes that the launchers have been started.")
         parser.add_argument("configs",nargs='+',help="path to the config(s) to run")
         parser.add_argument("-n","--nbMeasurements",default=10,type=int,help="number of measurements to take for each fragment size [default: %(default)s]")
-        parser.add_argument("-s","--sizes",default=(2048,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
-        parser.add_argument("-r","--rms",default=0,type=float,help="relative rms of fragment size [default: %(default)s]")
+        parser.add_argument("-r","--relsizes",nargs="*",type=float,help="relative event sizes to scan")
+        parser.add_argument("-s","--sizes",default=(ConfigCase.defaultFedSize,),nargs="+",type=int,help="fragment sizes (in Bytes) to scan [default: %(default)s]")
+        parser.add_argument("--rms",default=0,type=float,help="relative rms of fragment size [default: %(default)s]")
         parser.add_argument("-q","--quick",action='store_true',help="run a quick scan with less sleep time")
         parser.add_argument("--short",action='store_true',help="run a short scan")
         parser.add_argument("--full",action='store_true',help="run the full scan")
@@ -36,6 +36,7 @@ class RunScans(TestRunner):
         parser.add_argument("--generateAtRU",action='store_true',help="ignore the FEROLs and generate data at the RU")
         parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
         parser.add_argument("--scaleFedSizesFromFile",help="scale the FED fragment sizes relative to the sizes in the given file")
+        parser.add_argument("--calculateFedSizesFromFile",help="calculate the FED fragment sizes using the parameters in the given file")
 
 
     def fillFedSizeScalesFromFile(self):
@@ -43,9 +44,17 @@ class RunScans(TestRunner):
         if self.args['scaleFedSizesFromFile']:
             with open(self.args['scaleFedSizesFromFile']) as file:
                 for line in file:
-                    (fedId,fedSize,_) = line.split(',',2)
+                    (fedId,fedSize,fedSizeRMS,_) = line.split(',',3)
                     try:
-                        self.fedSizeScaleFactors[fedId] = float(fedSize)/2048.
+                        self.fedSizeScaleFactors[fedId] = (0.,float(fedSize)/ConfigCase.defaultFedSize,0.,float(fedSizeRMS)/float(fedSize))
+                    except ValueError:
+                        pass
+        elif self.args['calculateFedSizesFromFile']:
+            with open(self.args['calculateFedSizesFromFile']) as file:
+                for line in file:
+                    (fedId,a,b,c,rms,_) = line.split(',',5)
+                    try:
+                        self.fedSizeScaleFactors[fedId] = (float(a),float(b),float(c),float(rms))
                     except ValueError:
                         pass
 
@@ -81,13 +90,16 @@ class RunScans(TestRunner):
 
     def runConfig(self,configName,configFile,stdout):
         try:
-            if self.args['full']:
-                sizes = [256, 512, 768, 1024, 1149, 1280, 1408, 1536, 1664, 1856, 2048, 2560,
-                         3072, 4096, 6144, 8192, 10240, 12288, 16384]
+            allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,3072,4096,6144,8192,10240,12288,16384]
+            shortSizes = [256,512,768,1024,1280,1536,2048,2560,4096,8192,12288,16384]
+            if self.args['relsizes']:
+                sizes = [ int(r * ConfigCase.defaultFedSize) for r in self.args['relsizes'] ]
+            elif self.args['full']:
+                sizes = allSizes
             elif self.args['short']:
-                sizes = [256, 512, 768, 1024, 1280, 1536, 2048, 2560, 4096, 8192, 12288, 16384]
+                sizes = shortSizes
             elif self.args['compl']:
-                sizes = [1149, 1408, 1664, 1856, 3072, 6144, 10240]
+                sizes = [ s for s in allSizes if s not in shortSizes ]
             else:
                 sizes = self.args['sizes']
 
