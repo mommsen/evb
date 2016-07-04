@@ -27,7 +27,6 @@ namespace evb {
      */
     struct Configuration : public readoutunit::Configuration
     {
-      xdata::String triggerType;                             // The type of trigger for extracting LS. Valid values are "TCDS","GTP","GTPe","None"
       xdata::UnsignedInteger32 maxTriggerRate;               // Maximum trigger rate in Hz when generating dummy data. 0 means no limitation.
       xdata::Vector<xdata::UnsignedInteger32> ruInstances;   // Vector of RU instances served from the EVM
       xdata::UnsignedInteger32 maxTriggerAgeMSec;            // Maximum time in milliseconds before sending a response to event requests
@@ -37,8 +36,7 @@ namespace evb {
       xdata::UnsignedInteger32 allocateBlockSize;            // I2O block size used for packing readout msg from EVM to RUs
 
       Configuration()
-        : triggerType("None"),
-          maxTriggerRate(0),
+        : maxTriggerRate(0),
           maxTriggerAgeMSec(1000),
           getLumiSectionFromTrigger(true),
           fakeLumiSectionDuration(0),
@@ -55,7 +53,6 @@ namespace evb {
         readoutunit::Configuration::addToInfoSpace(params,context);
         fillDefaultRUinstances(context);
 
-        params.add("triggerType", &triggerType);
         params.add("maxTriggerRate", &maxTriggerRate, InfoSpaceItems::change);
         params.add("ruInstances", &ruInstances);
         params.add("maxTriggerAgeMSec", &maxTriggerAgeMSec);
