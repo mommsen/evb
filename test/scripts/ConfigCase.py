@@ -74,9 +74,8 @@ class ConfigCase(TestCase):
     def calculateFedSize(self,fedId,fragSize):
         (a,b,c,rms) = self.fedSizeScaleFactors[fedId]
         relSize = fragSize / ConfigCase.defaultFedSize
-        fedSize = a + ( b*relSize + c*relSize*relSize ) * ConfigCase.defaultFedSize
+        fedSize = a + b*relSize + c*relSize*relSize
         fedSizeRMS = fedSize * rms
-        print a,b,c,relSize,fedSize,fedSizeRMS
         return (int(fedSize)&~0x7,int(fedSizeRMS)&~0x7)
 
 
