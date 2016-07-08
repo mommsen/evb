@@ -441,7 +441,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     fusCloud_ = pt.get<int>("cloud");
     fusQuarantined_ = pt.get<int>("quarantined");
     fusStale_ = pt.get<int>("stale_resources");
-    fuOutBwMB_ = pt.get<double>("outputBandwidthMB");
+    fuOutBwMB_ = pt.get<double>("activeRunLSBWMB");
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
 
     if ( pt.get<bool>("bu_stop_requests_flag") )
