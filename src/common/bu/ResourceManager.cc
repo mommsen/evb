@@ -343,52 +343,47 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
 }
 
 
-bool evb::bu::ResourceManager::getResourceId(uint16_t& buResourceId, uint16_t& priority, uint16_t& eventsToDiscard)
+void evb::bu::ResourceManager::getAllAvailableResources(BUresources& resources)
 {
+  resources.clear();
+
   if ( blockedResources_ == nbResources_ || !requestEvents_ )
   {
     if ( eventsToDiscard_ > 0 )
     {
       boost::mutex::scoped_lock sl(eventMonitoringMutex_);
-
-      buResourceId = 0;
-      priority = 0;
-      eventsToDiscard = eventsToDiscard_;
+      resources.push_back( BUresource(0,0,eventsToDiscard_) );
       eventsToDiscard_ = 0;
-      return true;
     }
     else
     {
       ::usleep(1000);
-      return false;
     }
   }
-
-  BuilderResources::iterator pos;
-  if ( resourceFIFO_.deq(pos) )
+  else
   {
-    if ( pos->second.blocked )
+    BuilderResources::iterator pos;
+    while ( doProcessing_ && resourceFIFO_.deq(pos) )
     {
-      ::usleep(configuration_->sleepTimeBlocked*1000);
+      if ( pos->second.blocked )
+      {
+        ::usleep(configuration_->sleepTimeBlocked*1000);
 
-      boost::mutex::scoped_lock sl(resourceFIFOmutex_);
-      resourceFIFO_.enqWait(pos);
-    }
-    else
-    {
-      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+        resourceFIFO_.enqWait(pos);
+        return;
+      }
+      else
+      {
+        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
 
-      pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
-      buResourceId = pos->first;
-      priority = currentPriority_;
-      eventsToDiscard = eventsToDiscard_;
-      eventsToDiscard_ = 0;
-      ++eventMonitoring_.outstandingRequests;
-      return true;
+        pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
+        resources.push_back( BUresource(pos->first,currentPriority_,eventsToDiscard_) );
+        eventsToDiscard_ = 0;
+        ++eventMonitoring_.outstandingRequests;
+      }
     }
   }
-
-  return false;
 }
 
 

@@ -280,13 +280,15 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 
 void evb::bu::RUproxy::sendRequests()
 {
-  uint16_t buResourceId;
-  uint16_t priority;
-  uint16_t eventsToDiscard;
-  const uint32_t msgSize = sizeof(msg::ReadoutMsg) + sizeof(msg::EventRequest);
+  ResourceManager::BUresources resources;
+  resourceManager_->getAllAvailableResources(resources);
+  const uint32_t nbRequests = resources.size();
 
-  while ( resourceManager_->getResourceId(buResourceId,priority,eventsToDiscard) )
+  if ( nbRequests > 0 )
   {
+    const uint32_t msgSize = sizeof(msg::ReadoutMsg) + nbRequests*sizeof(msg::EventRequest);
+    uint32_t nbEventsRequested = 0;
+
     toolbox::mem::Reference* rqstBufRef =
       toolbox::mem::getMemoryPoolFactory()->
       getFrame(fastCtrlMsgPool_, msgSize);
@@ -296,9 +298,6 @@ void evb::bu::RUproxy::sendRequests()
       (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
     I2O_PRIVATE_MESSAGE_FRAME* pvtMsg = (I2O_PRIVATE_MESSAGE_FRAME*)stdMsg;
     msg::ReadoutMsg* readoutMsg = (msg::ReadoutMsg*)stdMsg;
-    msg::EventRequest* eventRequest = (msg::EventRequest*)&readoutMsg->requests[0];
-    const uint32_t nbRequests = buResourceId>0 ? configuration_->eventsPerRequest.value_ : 0;
-
     stdMsg->VersionOffset    = 0;
     stdMsg->MsgFlags         = 0;
     stdMsg->MessageSize      = msgSize >> 2;
@@ -307,14 +306,24 @@ void evb::bu::RUproxy::sendRequests()
     stdMsg->Function         = I2O_PRIVATE_MESSAGE;
     pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
-    readoutMsg->nbRequests   = 1; //only one EventRequest is sent per message
-    eventRequest->msgSize      = msgSize;
-    eventRequest->buTid        = tid_;
-    eventRequest->priority     = priority;
-    eventRequest->buResourceId = buResourceId;
-    eventRequest->nbRequests   = nbRequests;
-    eventRequest->nbDiscards   = eventsToDiscard;
-    eventRequest->nbRUtids     = 0; // will be filled by EVM
+    readoutMsg->nbRequests   = nbRequests;
+
+    unsigned char* payload = (unsigned char*)&readoutMsg->requests[0];
+    for ( ResourceManager::BUresources::const_iterator it = resources.begin(), itEnd = resources.end();
+          it != itEnd; ++it )
+    {
+      msg::EventRequest* eventRequest = (msg::EventRequest*)payload;
+      eventRequest->msgSize      = sizeof(msg::EventRequest);
+      eventRequest->buTid        = tid_;
+      eventRequest->priority     = it->priority;
+      eventRequest->buResourceId = it->id;
+      eventRequest->nbRequests   = it->id>0 ? configuration_->eventsPerRequest.value_ : 0;;
+      eventRequest->nbDiscards   = it->eventsToDiscard;
+      eventRequest->nbRUtids     = 0; // will be filled by EVM
+
+      nbEventsRequested += eventRequest->nbRequests;
+      payload += sizeof(msg::EventRequest);
+    }
 
     // Send the request to the EVM
     try
@@ -338,7 +347,7 @@ void evb::bu::RUproxy::sendRequests()
 
     requestMonitoring_.perf.sumOfSizes += msgSize;
     requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
-    requestMonitoring_.perf.logicalCount += nbRequests;
+    requestMonitoring_.perf.logicalCount += nbEventsRequested;
     ++requestMonitoring_.perf.i2oCount;
   }
 }

@@ -69,7 +69,17 @@ namespace evb {
        * Get the next resource id for which to request trigger data.
        * Return false if no free resource id is available.
        */
-      bool getResourceId(uint16_t& resourceId, uint16_t& priority, uint16_t& eventsToDiscard);
+      struct BUresource
+      {
+        uint16_t id;
+        uint16_t priority;
+        uint16_t eventsToDiscard;
+
+        BUresource(const uint16_t id,const uint16_t priority,const uint16_t eventsToDiscard)
+          : id(id),priority(priority),eventsToDiscard(eventsToDiscard) {};
+      };
+      typedef std::vector<BUresource> BUresources;
+      void getAllAvailableResources(BUresources&);
 
       /**
        * Return the next lumi-section account.
