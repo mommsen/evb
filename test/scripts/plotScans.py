@@ -46,6 +46,7 @@ class PlotScans:
         parser.add_argument('--markers',nargs="*",type=int,help="Give a list of custom markers to be used")
         parser.add_argument("--totalThroughput",default=False,action="store_true",help="Plot the total event-builder throughput")
         parser.add_argument("--showRelEventSize",default=False,action="store_true",help="Show the relative event size")
+        parser.add_argument("--showVertices",nargs=2,type=float,help="Show priary vertices with abscissa and slope given as arguments")
         parser.add_argument("--plotMaxRU",default=False,action="store_true",help="Plot the RU with the highest througput")
 
 
@@ -113,11 +114,21 @@ class PlotScans:
         self.throughputTH2D.GetYaxis().SetTitleOffset(titleYoffset)
         self.throughputTH2D.GetXaxis().SetTitleOffset(1.2)
         self.throughputTH2D.Draw()
-        if self.args['showRelEventSize']:
-            minValueX = self.args['minx'] / self.nominalSize
-            maxValueX = self.args['maxx'] / self.nominalSize
-            self.relEventSizeAxis = ROOT.TGaxis(self.args['minx'],self.args['maxy'],self.args['maxx'],self.args['maxy'],minValueX,maxValueX,510,'G-');
-            self.relEventSizeAxis.SetTitle("Relative event size")
+        if self.args['showRelEventSize'] or self.args['showVertices']:
+            if self.args['showRelEventSize']:
+                minValueX = self.args['minx'] / self.nominalSize
+                maxValueX = self.args['maxx'] / self.nominalSize
+                title="Relative event size"
+            else:
+                minValueX = (self.args['minx']-self.args['showVertices'][0])/self.args['showVertices'][1]
+                maxValueX = (self.args['maxx']-self.args['showVertices'][0])/self.args['showVertices'][1]
+                title="Number of rec. primary vertices"
+            if self.args['nologx']:
+                logOpt=''
+            else:
+                logOpt='G'
+            self.relEventSizeAxis = ROOT.TGaxis(self.args['minx'],self.args['maxy'],self.args['maxx'],self.args['maxy'],minValueX,maxValueX,510,logOpt+'-');
+            self.relEventSizeAxis.SetTitle(title)
             self.relEventSizeAxis.SetTitleOffset(1.3)
             self.relEventSizeAxis.SetMoreLogLabels()
             self.relEventSizeAxis.SetNoExponent()
@@ -376,13 +387,10 @@ class PlotScans:
                     appWitMaxRate = ""
                     for x in dataPoint:
                         for app,rate,throughput in ((k,x['rates'][k],x['sizes'][k]*x['rates'][k]/1000000000.) for k in x['rates'].keys() if k.startswith('RU')):
-                            if rate > maxRate:
-                                maxRate = rate
-                                appWithMaxRate = app
                             if throughput > maxThroughput:
                                 maxThroughput = throughput
                                 self.args['app'] = app
-                    print(value['fragSize'],self.args['app'],maxRate,appWithMaxRate)
+                    print(value['fragSize'],self.args['app'],maxThroughput)
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
