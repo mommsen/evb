@@ -446,7 +446,7 @@ class TestCase:
                 ', "activeRunCMSSWMaxLS": '+str(activeRunCMSSWMaxLS)+
                 ', "bu_stop_requests_flag": '+str(stopRequested).lower()+
                 ', "activeRunNumQueuedLS": '+str(activeRunNumQueuedLS)+
-                ', "outputBandwidthMB": '+str(outputBandwidthMB)+
+                ', "activeRunLSBWMB": '+str(outputBandwidthMB)+
                 ', "cloud": '+str(cloud)+'}')
         return ramDiskOccupancy
 
