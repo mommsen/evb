@@ -6,7 +6,6 @@
 #include <curl/curl.h>
 #include <map>
 #include <stdint.h>
-#include <sys/time.h>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/ApplicationDescriptorAndTid.h"
@@ -130,6 +129,7 @@ namespace evb {
       void startProcessingWorkLoop();
       bool requestFragments(toolbox::task::WorkLoop*);
       void sendRequests();
+      uint64_t getTimeStamp() const;
       void getApplicationDescriptorForEVM();
       cgicc::table getStatisticsPerRU() const;
       uint32_t getValueFromEVM(const std::string& url);
@@ -154,6 +154,7 @@ namespace evb {
       std::string evmURL_;
       CURL* curl_;
       std::string curlBuffer_;
+      float roundTripTimeSampling_;
 
       // Lookup table of data blocks, indexed by RU tid and BU resource id
       struct Index
@@ -172,16 +173,13 @@ namespace evb {
       {
         uint64_t logicalCount;
         uint64_t payload;
-        uint64_t sumArrivalTime;
-        uint32_t timeSamples;
+        uint32_t roundTripTime;
         uint32_t deltaTns;
 
-        StatsPerRU() :
-          logicalCount(0),payload(0),sumArrivalTime(0),timeSamples(0),deltaTns(0) {};
+        StatsPerRU() : logicalCount(0),payload(0),roundTripTime(0) {};
       };
       typedef std::map<uint32_t,StatsPerRU> CountsPerRU;
-      typedef std::map<uint32_t,timespec> ArrivalTimes;
-      ArrivalTimes arrivalTimes_;
+
       struct FragmentMonitoring
       {
         uint32_t lastEventNumberFromEVM;
@@ -212,6 +210,7 @@ namespace evb {
       xdata::UnsignedInteger64 fragmentCount_;
       xdata::Vector<xdata::UnsignedInteger64> fragmentCountPerRU_;
       xdata::Vector<xdata::UnsignedInteger64> payloadPerRU_;
+      xdata::UnsignedInteger32 slowestRUtid_;
     };
 
   } //namespace evb::bu

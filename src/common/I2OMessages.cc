@@ -120,6 +120,7 @@ std::ostream& evb::msg::operator<<
     EventRequest* eventRequest = (msg::EventRequest*)payload;
     str << "  buTid=" << eventRequest->buTid << std::endl;
     str << "  priority=" << eventRequest->priority << std::endl;
+    str << "  timeStampNS=" << eventRequest->timeStampNS << std::endl;
     str << "  buResourceId=" << eventRequest->buResourceId << std::endl;
     str << "  nbRequests=" << eventRequest->nbRequests << std::endl;
     str << "  nbDiscards=" << eventRequest->nbDiscards << std::endl;
@@ -184,6 +185,7 @@ std::ostream& evb::msg::operator<<
   str << "buResourceId=" << dataBlockMsg.buResourceId << std::endl;
   str << "nbBlocks=" << dataBlockMsg.nbBlocks << std::endl;
   str << "blockNb=" << dataBlockMsg.blockNb << std::endl;
+  str << "timeStampNS=" << dataBlockMsg.timeStampNS << std::endl;
   str << "nbSuperFragments=" << dataBlockMsg.nbSuperFragments << std::endl;
   str << "nbRUtids=" << dataBlockMsg.nbRUtids << std::endl;
 

@@ -64,7 +64,7 @@ namespace evb {
       xdata::Vector<xdata::String> hltFiles;               // List of file names to retrieve from hltParameterSetURL
       xdata::String blacklistName;                         // Name of the blacklist file
       xdata::String fuBlacklist;                           // The FUs to blacklist as string
-      xdata::UnsignedInteger32 timeSamplePreScale;         // Sample arrival time difference for every Nth I2O mesage (0 disables it)
+      xdata::UnsignedInteger32 roundTripTimeSamples;       // Rolling average of round trip times for the last N I2O mesage (0 disables it)
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -105,7 +105,7 @@ namespace evb {
           hltParameterSetURL(""),
           blacklistName("blacklist"),
           fuBlacklist("[]"),
-          timeSamplePreScale(10000)
+          roundTripTimeSamples(1000)
       {
         hltFiles.push_back("HltConfig.py");
         hltFiles.push_back("fffParameters.jsn");
@@ -156,7 +156,7 @@ namespace evb {
         params.add("hltFiles", &hltFiles);
         params.add("blacklistName", &blacklistName);
         params.add("fuBlacklist", &fuBlacklist);
-        params.add("timeSamplePreScale", &timeSamplePreScale);
+        params.add("roundTripTimeSamples", &roundTripTimeSamples);
       }
     };
 

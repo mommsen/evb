@@ -15,7 +15,9 @@
 
 #include <boost/lexical_cast.hpp>
 
+#include <limits>
 #include <string.h>
+#include <time.h>
 
 
 evb::bu::RUproxy::RUproxy
@@ -32,7 +34,8 @@ evb::bu::RUproxy::RUproxy
   configuration_(bu->getConfiguration()),
   doProcessing_(false),
   requestFragmentsActive_(false),
-  tid_(0)
+  tid_(0),
+  roundTripTimeSampling_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -78,7 +81,6 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       Index index;
       index.ruTid = stdMsg->InitiatorAddress;
       index.buResourceId = dataBlockMsg->buResourceId;
-      ArrivalTimes::iterator arrivalTimePos = arrivalTimes_.end();
 
       {
         boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
@@ -112,26 +114,9 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
           fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
           countsPerRuPos->second.logicalCount += nbSuperFragments;
 
-          if ( configuration_->timeSamplePreScale > 0U &&
-               lastEventNumber % configuration_->timeSamplePreScale < nbSuperFragments )
-          {
-            timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            arrivalTimePos = arrivalTimes_.lower_bound(lastEventNumber);
-            if ( arrivalTimePos == arrivalTimes_.end() || (arrivalTimes_.key_comp()(lastEventNumber,arrivalTimePos->first)) )
-            {
-              // first block for this event number
-              arrivalTimes_.insert(arrivalTimePos, ArrivalTimes::value_type(lastEventNumber,ts));
-            }
-            else
-            {
-              const int64_t deltaNS = (ts.tv_sec - arrivalTimePos->second.tv_sec)*1000000000
-                + (ts.tv_nsec - arrivalTimePos->second.tv_nsec);
-              if ( deltaNS > 0 )
-                countsPerRuPos->second.sumArrivalTime += deltaNS;
-            }
-            countsPerRuPos->second.timeSamples++;
-          }
+          const uint64_t now = getTimeStamp();
+          const uint64_t deltaT = now>dataBlockMsg->timeStampNS ? now-dataBlockMsg->timeStampNS : 0;
+          countsPerRuPos->second.roundTripTime = (roundTripTimeSampling_*deltaT) + (1-roundTripTimeSampling_)*countsPerRuPos->second.roundTripTime;
         }
       }
 
@@ -164,8 +149,6 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
         {
           eventBuilder_->addSuperFragment(builderId,dataBlockPos->second);
           dataBlockMap_.erase(dataBlockPos);
-          if ( arrivalTimePos != arrivalTimes_.end() )
-            arrivalTimes_.erase(arrivalTimePos);
         }
       }
     } while ( bufRef );
@@ -308,6 +291,7 @@ void evb::bu::RUproxy::sendRequests()
     pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
     readoutMsg->nbRequests   = nbRequests;
 
+    const uint64_t now = getTimeStamp();
     unsigned char* payload = (unsigned char*)&readoutMsg->requests[0];
     for ( ResourceManager::BUresources::const_iterator it = resources.begin(), itEnd = resources.end();
           it != itEnd; ++it )
@@ -316,6 +300,7 @@ void evb::bu::RUproxy::sendRequests()
       eventRequest->msgSize      = sizeof(msg::EventRequest);
       eventRequest->buTid        = tid_;
       eventRequest->priority     = it->priority;
+      eventRequest->timeStampNS  = now;
       eventRequest->buResourceId = it->id;
       eventRequest->nbRequests   = it->id>0 ? configuration_->eventsPerRequest.value_ : 0;;
       eventRequest->nbDiscards   = it->eventsToDiscard;
@@ -353,17 +338,30 @@ void evb::bu::RUproxy::sendRequests()
 }
 
 
+uint64_t evb::bu::RUproxy::getTimeStamp() const
+{
+  if ( configuration_->roundTripTimeSamples == 0U )
+    return 0;
+
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  return (ts.tv_sec*1000000000 + ts.tv_nsec);
+}
+
+
 void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 {
   requestCount_ = 0;
   fragmentCount_ = 0;
   fragmentCountPerRU_.clear();
   payloadPerRU_.clear();
+  slowestRUtid_ = 0;
 
   items.add("requestCount", &requestCount_);
   items.add("fragmentCount", &fragmentCount_);
   items.add("fragmentCountPerRU", &fragmentCountPerRU_);
   items.add("payloadPerRU", &payloadPerRU_);
+  items.add("slowestRUtid", &slowestRUtid_);
 }
 
 
@@ -397,6 +395,24 @@ void evb::bu::RUproxy::updateMonitoringItems()
     fragmentCountPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
     payloadPerRU_.clear();
     payloadPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
+    slowestRUtid_ = 0;
+
+    uint32_t minRoundTripTime = std::numeric_limits<uint32_t>::max();
+    uint32_t maxRoundTripTime = 0;
+    for (CountsPerRU::iterator it = fragmentMonitoring_.countsPerRU.begin(),
+           itEnd = fragmentMonitoring_.countsPerRU.end();
+         it != itEnd; ++it)
+    {
+      if ( minRoundTripTime > it->second.roundTripTime )
+      {
+        minRoundTripTime = it->second.roundTripTime;
+      }
+      if ( maxRoundTripTime < it->second.roundTripTime )
+      {
+        maxRoundTripTime = it->second.roundTripTime;
+        slowestRUtid_ = it->first;
+      }
+    }
 
     for (CountsPerRU::iterator it = fragmentMonitoring_.countsPerRU.begin(),
            itEnd = fragmentMonitoring_.countsPerRU.end();
@@ -404,12 +420,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
     {
       fragmentCountPerRU_.push_back(it->second.logicalCount);
       payloadPerRU_.push_back(it->second.payload);
-      it->second.deltaTns = it->second.timeSamples>0 ? it->second.sumArrivalTime / it->second.timeSamples : 0;
-      if ( it->second.timeSamples > 10 )
-      {
-        it->second.sumArrivalTime = 0;
-        it->second.timeSamples = 0;
-      }
+      it->second.deltaTns = it->second.roundTripTime - minRoundTripTime;
     }
     fragmentMonitoring_.perf.reset();
   }
@@ -441,6 +452,8 @@ void evb::bu::RUproxy::configure()
     boost::mutex::scoped_lock sl(dataBlockMapMutex_);
     dataBlockMap_.clear();
   }
+
+  roundTripTimeSampling_ = configuration_->roundTripTimeSamples>0U ? 1./configuration_->roundTripTimeSamples : 0;
 
   getApplicationDescriptors();
 }

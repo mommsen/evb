@@ -176,6 +176,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
         eventRequest->buTid        = fragmentRequest->buTid;
         eventRequest->priority     = 0; //not used on RU
         eventRequest->buResourceId = fragmentRequest->buResourceId;
+        eventRequest->timeStampNS  = fragmentRequest->timeStampNS;
         eventRequest->nbRequests   = nbRequests;
         eventRequest->nbDiscards   = fragmentRequest->nbDiscards;
         eventRequest->nbRUtids     = ruCount;
@@ -262,6 +263,7 @@ void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const
   pvtMsg->OrganizationID   = XDAQ_ORGANIZATION_ID;
   pvtMsg->XFunctionCode    = I2O_SHIP_FRAGMENTS;
   readoutMsg->nbRequests   = requestCount;
+
   rqstBufRef->setDataSize(msgSize);
   requestCount = 0;
 

@@ -18,6 +18,7 @@ namespace evb {
       uint16_t buResourceId;
       uint16_t nbRequests;
       uint16_t nbDiscards;
+      uint64_t timeStampNS;
       std::vector<EvBid> evbIds;
       std::vector<I2O_TID> ruTids;
     };
@@ -38,6 +39,7 @@ namespace evb {
         str << "buResourceId=" << request->buResourceId << std::endl;
         str << "nbRequests=" << request->nbRequests << std::endl;
         str << "nbDiscards=" << request->nbDiscards << std::endl;
+        str << "timeStampNS=" << request->timeStampNS << std::endl;
         if ( !request->evbIds.empty() )
         {
           str << "evbIds:" << std::endl;

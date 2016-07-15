@@ -28,6 +28,7 @@ namespace evb {
       uint32_t msgSize;                          // Size of the message
       uint16_t padding;
       uint16_t priority;                         // Priority of the request (0 is highest)
+      uint64_t timeStampNS;                      // time stamp in ns set by the BU when sending request
       uint16_t buResourceId;                     // Index of BU resource used to built the event
       uint16_t nbRequests;                       // Number of requested EvBids
       uint16_t nbDiscards;                       // Number of previously sent EvBids to discard
@@ -79,6 +80,7 @@ namespace evb {
       uint16_t buResourceId;                     // Index of BU resource used to built the event
       uint32_t nbBlocks;                         // Total number of I2O blocks
       uint32_t blockNb;                          // Index of the this block
+      uint64_t timeStampNS;                      // time stamp in ns set by the BU when sending request
       uint16_t nbSuperFragments;                 // Total number of super fragments
       uint16_t nbRUtids;                         // Number of RU TIDs
       EvBid evbIds[];                            // The EvBids of the super fragments

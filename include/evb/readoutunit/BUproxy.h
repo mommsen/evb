@@ -341,6 +341,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
       FragmentRequestPtr fragmentRequest( new FragmentRequest );
       fragmentRequest->buTid = eventRequest->buTid;
       fragmentRequest->buResourceId = eventRequest->buResourceId;
+      fragmentRequest->timeStampNS = eventRequest->timeStampNS;
       fragmentRequest->nbRequests = eventRequest->nbRequests;
       handleRequest(eventRequest, fragmentRequest);
 
@@ -523,6 +524,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     pvtMsg->OrganizationID         = XDAQ_ORGANIZATION_ID;
     pvtMsg->XFunctionCode          = I2O_BU_CACHE;
     dataBlockMsg->buResourceId     = fragmentRequest->buResourceId;
+    dataBlockMsg->timeStampNS      = fragmentRequest->timeStampNS;
     dataBlockMsg->nbBlocks         = blockNb;
     dataBlockMsg->nbSuperFragments = nbSuperFragments;
     dataBlockMsg->nbRUtids         = nbRUtids;
