@@ -48,6 +48,7 @@ class PlotScans:
         parser.add_argument("--showRelEventSize",default=False,action="store_true",help="Show the relative event size")
         parser.add_argument("--showVertices",nargs=2,type=float,help="Show priary vertices with abscissa and slope given as arguments")
         parser.add_argument("--plotMaxRU",default=False,action="store_true",help="Plot the RU with the highest througput")
+        parser.add_argument("--plotSuperFragmentSize",default=False,action="store_true",help="Plot the measured super-fragment size instead of set fragment size")
 
 
     def createCanvas(self):
@@ -78,6 +79,10 @@ class PlotScans:
             titleX = "Event Size (kB)"
             titleY = "Total EvB throughput (GB/s)"
             titleYoffset = 1.2
+        elif self.args['plotSuperFragmentSize']:
+            range = [0,330,0,5900]
+            title = "Throughput vs. Super-fragment Size"
+            titleX = "Super-fragment Size (kB)"
         elif 'BU' in self.args['app']:
             range = [100,5000,0,10000]
             title = "Throughput vs. Event Size"
@@ -369,7 +374,7 @@ class PlotScans:
                 else:
                     app = 'RU0'
                     self.args['app'] = app
-                if 'BU' in app:
+                if 'BU' in app or self.args['plotSuperFragmentSize']:
                     rawSizes = list(x['sizes'][app]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
                     if len(sizes) == 0:

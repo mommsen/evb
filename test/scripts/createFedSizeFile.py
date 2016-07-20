@@ -14,7 +14,10 @@ with open(args['outputFile'],'w') as outputFile:
     outputFile.write("#fedId,size,rms\n")
     with open(args['paramFile']) as paramFile:
         for line in paramFile:
-            (fedIds,a,b,c,rms,_) = line.split(',',5)
+            try:
+                (fedIds,a,b,c,rms) = line.split(',',5)
+            except ValueError:
+                (fedIds,a,b,c,rms,_) = line.split(',',6)
             try:
                 for id in fedIds.split('+'):
                     fedSize = float(a)+float(b)*args['relEventSize']+float(c)*args['relEventSize']**2
