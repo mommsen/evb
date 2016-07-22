@@ -16,6 +16,11 @@
   <xmas:item name="eventsInRU"                    infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="incompleteSuperFragmentCount"  infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="eventCount"                    infospace="urn:evb::RU" type="unsigned int 64"/>
+  <xmas:item name="dataReadyCount"                infospace="urn:evb::RU" type="unsigned int 64"/>
+  <xmas:item name="requestCount"                  infospace="urn:evb::RU" type="unsigned int 64"/>
+  <xmas:item name="requestCountPerBU"             infospace="urn:evb::RU" type="vector unsigned int 64"/>
+  <xmas:item name="fragmentCount"                 infospace="urn:evb::RU" type="unsigned int 64"/>
+  <xmas:item name="payloadPerBU"                  infospace="urn:evb::RU" type="vector unsigned int 64"/>
   <xmas:item name="requestRate"                   infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="fragmentRate"                  infospace="urn:evb::RU" type="unsigned int 32"/>
   <xmas:item name="buTids"                        infospace="urn:evb::RU" type="vector unsigned int 32"/>

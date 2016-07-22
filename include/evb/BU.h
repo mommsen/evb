@@ -81,6 +81,12 @@ namespace evb {
     xdata::UnsignedInteger64 nbEventsWithCRCerrors_;
     xdata::UnsignedInteger64 nbEventsMissingData_;
     xdata::UnsignedInteger32 nbLumiSections_;
+
+    // Obsolete parameters kept for backward compatibility
+    xdata::UnsignedInteger64 bandwidth_;
+    xdata::UnsignedInteger64 requestCount_;
+    xdata::UnsignedInteger64 fragmentCount_;
+
   };
 
 

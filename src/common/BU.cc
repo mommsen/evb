@@ -73,6 +73,15 @@ void evb::BU::do_appendMonitoringInfoSpaceItems
   eventBuilder_->appendMonitoringItems(monitoringParams);
   ruProxy_->appendMonitoringItems(monitoringParams);
   stateMachine_->appendMonitoringItems(monitoringParams);
+
+  // Obsolete parameters kept for backward compatibility
+  bandwidth_ = 0;
+  requestCount_ = 0;
+  fragmentCount_ = 0;
+
+  monitoringParams.add("bandwidth", &bandwidth_);
+  monitoringParams.add("requestCount", &requestCount_);
+  monitoringParams.add("fragmentCount", &fragmentCount_);
 }
 
 

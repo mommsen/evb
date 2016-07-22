@@ -97,6 +97,13 @@ namespace evb {
       xdata::UnsignedInteger32 lastEventNumber_;
       xdata::UnsignedInteger32 stopLocalInputAtEvent_;
 
+      // Obsolete parameters kept for backward compatibility
+      xdata::UnsignedInteger64 dataReadyCount_;
+      xdata::UnsignedInteger64 requestCount_;
+      xdata::UnsignedInteger64 fragmentCount_;
+      xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
+      xdata::Vector<xdata::UnsignedInteger64> payloadPerBU_;
+
     };
 
   } } // namespace evb::readoutunit
@@ -151,6 +158,19 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::do_appendMo
   input_->appendMonitoringItems(monitoringParams);
   buProxy_->appendMonitoringItems(monitoringParams);
   this->stateMachine_->appendMonitoringItems(monitoringParams);
+
+  // Obsolete parameters kept for backward compatibility
+  dataReadyCount_ = 0;
+  requestCount_ = 0;
+  fragmentCount_ = 0;
+  requestCountPerBU_.clear();
+  payloadPerBU_.clear();
+
+  monitoringParams.add("dataReadyCount", &dataReadyCount_);
+  monitoringParams.add("requestCount", &requestCount_);
+  monitoringParams.add("fragmentCount", &fragmentCount_);
+  monitoringParams.add("requestCountPerBU", &requestCountPerBU_);
+  monitoringParams.add("payloadPerBU", &payloadPerBU_);
 }
 
 
