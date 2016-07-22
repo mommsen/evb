@@ -311,29 +311,33 @@ void evb::bu::RUproxy::sendRequests()
     }
 
     // Send the request to the EVM
+    uint32_t retries = 0;
     try
     {
-      bu_->getApplicationContext()->
-        postFrame(
-          rqstBufRef,
-          bu_->getApplicationDescriptor(),
-          evm_.descriptor
-        );
+      retries = bu_->postMessage(rqstBufRef,evm_.descriptor);
     }
-    catch(xcept::Exception& e)
+    catch(exception::I2O& e)
     {
+      {
+        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+        requestMonitoring_.perf.retryCount += retries;
+      }
+
       std::ostringstream msg;
       msg << "Failed to send message to EVM TID ";
       msg << evm_.tid;
       XCEPT_RETHROW(exception::I2O, msg.str(), e);
     }
 
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    {
+      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
-    requestMonitoring_.perf.sumOfSizes += msgSize;
-    requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
-    requestMonitoring_.perf.logicalCount += nbEventsRequested;
-    ++requestMonitoring_.perf.i2oCount;
+      requestMonitoring_.perf.sumOfSizes += msgSize;
+      requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
+      requestMonitoring_.perf.logicalCount += nbEventsRequested;
+      ++requestMonitoring_.perf.i2oCount;
+      requestMonitoring_.perf.retryCount += retries;
+    }
   }
 }
 
@@ -351,14 +355,16 @@ uint64_t evb::bu::RUproxy::getTimeStamp() const
 
 void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 {
-  requestCount_ = 0;
-  fragmentCount_ = 0;
+  requestRate_ = 0;
+  requestRetryRate_ = 0;
+  fragmentRate_ = 0;
   fragmentCountPerRU_.clear();
   payloadPerRU_.clear();
   slowestRUtid_ = 0;
 
-  items.add("requestCount", &requestCount_);
-  items.add("fragmentCount", &fragmentCount_);
+  items.add("requestRate", &requestRate_);
+  items.add("requestRetryRate", &requestRetryRate_);
+  items.add("fragmentRate", &fragmentRate_);
   items.add("fragmentCountPerRU", &fragmentCountPerRU_);
   items.add("payloadPerRU", &payloadPerRU_);
   items.add("slowestRUtid", &slowestRUtid_);
@@ -371,25 +377,25 @@ void evb::bu::RUproxy::updateMonitoringItems()
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     const double deltaT = requestMonitoring_.perf.deltaT();
-    requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
-    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
+    requestMonitoring_.throughput = requestMonitoring_.perf.throughput(deltaT);
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
+    requestMonitoring_.retryRate = requestMonitoring_.perf.retryRate(deltaT);
     requestMonitoring_.packingFactor = requestMonitoring_.perf.packingFactor();
     requestMonitoring_.perf.reset();
-    requestCount_ = requestMonitoring_.requestCount;
+    requestRate_ = requestMonitoring_.i2oRate;
+    requestRetryRate_ = requestMonitoring_.retryRate;
   }
   {
     boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
 
     const double deltaT = fragmentMonitoring_.perf.deltaT();
     fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
-    fragmentMonitoring_.fragmentCount += fragmentMonitoring_.perf.logicalCount;
-    fragmentMonitoring_.bandwidth = fragmentMonitoring_.perf.bandwidth(deltaT);
+    fragmentMonitoring_.throughput = fragmentMonitoring_.perf.throughput(deltaT);
     fragmentMonitoring_.fragmentRate = fragmentMonitoring_.perf.logicalRate(deltaT);
     fragmentMonitoring_.i2oRate = fragmentMonitoring_.perf.i2oRate(deltaT);
     fragmentMonitoring_.packingFactor = fragmentMonitoring_.perf.packingFactor();
-    fragmentCount_ = fragmentMonitoring_.fragmentCount;
+    fragmentRate_ = fragmentMonitoring_.i2oRate;
 
     fragmentCountPerRU_.clear();
     fragmentCountPerRU_.reserve(fragmentMonitoring_.countsPerRU.size());
@@ -431,7 +437,8 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 {
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-    requestMonitoring_.requestCount = 0;
+    requestMonitoring_.requestRate = 0;
+    requestMonitoring_.requestRetryRate = 0;
     requestMonitoring_.perf.reset();
   }
   {
@@ -439,7 +446,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
     fragmentMonitoring_.lastEventNumberFromEVM = 0;
     fragmentMonitoring_.lastEventNumberFromRUs = 0;
     fragmentMonitoring_.incompleteSuperFragments = 0;
-    fragmentMonitoring_.fragmentCount = 0;
+    fragmentMonitoring_.fragmentRate = 0;
     fragmentMonitoring_.perf.reset();
     fragmentMonitoring_.countsPerRU.clear();
   }
@@ -622,42 +629,18 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
               .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.incompleteSuperFragments))));
     table.add(tr()
               .add(th("Event data").set("colspan","2")));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << fragmentMonitoring_.bandwidth / 1e6;
-      table.add(tr()
-                .add(td("throughput (MB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << fragmentMonitoring_.fragmentRate;
-      table.add(tr()
-                .add(td("fragment rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << fragmentMonitoring_.i2oRate;
-      table.add(tr()
-                .add(td("I2O rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << fragmentMonitoring_.packingFactor;
-      table.add(tr()
-                .add(td("Fragments/I2O"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (MB/s)"))
+              .add(td(doubleToString(fragmentMonitoring_.throughput / 1e6,2))));
+    table.add(tr()
+              .add(td("fragment rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.fragmentRate))));
+    table.add(tr()
+              .add(td("I2O rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(fragmentMonitoring_.i2oRate))));
+    table.add(tr()
+              .add(td("Fragments/I2O"))
+              .add(td(doubleToString(fragmentMonitoring_.packingFactor,1))));
     div.add(table);
   }
   {
@@ -668,42 +651,21 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
 
     table.add(tr()
               .add(th("Event requests").set("colspan","2")));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << requestMonitoring_.bandwidth / 1e3;
-      table.add(tr()
-                .add(td("throughput (kB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << requestMonitoring_.requestRate;
-      table.add(tr()
-                .add(td("request rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << requestMonitoring_.i2oRate;
-      table.add(tr()
-                .add(td("I2O rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << requestMonitoring_.packingFactor;
-      table.add(tr()
-                .add(td("Events requested/I2O"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (kB/s)"))
+              .add(td(doubleToString(requestMonitoring_.throughput / 1e3,2))));
+    table.add(tr()
+              .add(td("request rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.requestRate))));
+    table.add(tr()
+              .add(td("I2O rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oRate))));
+    table.add(tr()
+              .add(td("I2O retry rate (Hz)"))
+              .add(td(doubleToString(requestMonitoring_.retryRate,2))));
+    table.add(tr()
+              .add(td("Events requested/I2O"))
+              .add(td(doubleToString(requestMonitoring_.packingFactor,1))));
     div.add(table);
   }
 

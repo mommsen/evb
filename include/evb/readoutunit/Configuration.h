@@ -74,6 +74,8 @@ namespace evb {
       xdata::UnsignedInteger32 maxDumpsPerFED;               // Maximum number of fragment dumps per FED and run
       xdata::UnsignedInteger32 ferolConnectTimeOut;          // Timeout in seconds when waiting for FEROL connections
       xdata::UnsignedInteger32 maxTimeWithIncompleteEvents;  // Build incomplete events for at most this time in seconds
+      xdata::UnsignedInteger32 maxPostRetries;               // Max. attempts to post an I2O message
+
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -105,7 +107,8 @@ namespace evb {
           tolerateOutOfSequenceEvents(false),
           maxDumpsPerFED(10),
           ferolConnectTimeOut(5),
-          maxTimeWithIncompleteEvents(60)
+          maxTimeWithIncompleteEvents(60),
+          maxPostRetries(10)
       {};
 
       void addToInfoSpace
@@ -146,6 +149,7 @@ namespace evb {
         params.add("maxDumpsPerFED", &maxDumpsPerFED);
         params.add("ferolConnectTimeOut", &ferolConnectTimeOut);
         params.add("maxTimeWithIncompleteEvents", &maxTimeWithIncompleteEvents);
+        params.add("maxPostRetries", &maxPostRetries);
       }
 
     };

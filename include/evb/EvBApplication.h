@@ -79,6 +79,12 @@ namespace evb {
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
 
+    uint32_t postMessage
+    (
+      toolbox::mem::Reference*,
+      xdaq::ApplicationDescriptor* destination
+    );
+
     typedef boost::function<cgicc::div()> QueueContentFunction;
     void registerQueueCallback(const std::string name, QueueContentFunction);
 
@@ -782,6 +788,44 @@ std::string evb::EvBApplication<Configuration,StateMachine>::getCurrentTimeUTC()
     asctime_r(&tm,buf);
   }
   return buf;
+}
+
+
+template<class Configuration,class StateMachine>
+uint32_t evb::EvBApplication<Configuration,StateMachine>::postMessage
+(
+  toolbox::mem::Reference* bufRef,
+  xdaq::ApplicationDescriptor* destination
+)
+{
+  bool success = false;
+  uint32_t retries = 0;
+  do
+  {
+    try
+    {
+      this->getApplicationContext()->
+        postFrame(
+          bufRef,
+          this->getApplicationDescriptor(),
+          destination
+        );
+      success = true;
+    }
+    catch(xcept::Exception& e)
+    {
+      if ( ++retries > configuration_->maxPostRetries )
+      {
+        std::ostringstream msg;
+        msg << "Failed to send message after " <<
+          retries << " retries to " << destination->getURN();
+        XCEPT_RETHROW(exception::I2O, msg.str(), e);
+      }
+      ::usleep(100);
+    }
+  } while (!success);
+
+  return retries;
 }
 
 

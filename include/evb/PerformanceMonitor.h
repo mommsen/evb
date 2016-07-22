@@ -13,6 +13,7 @@ namespace evb {
   {
     uint64_t logicalCount;
     uint64_t i2oCount;
+    uint64_t retryCount;
     uint64_t sumOfSizes;
     uint64_t sumOfSquares;
     double startTime;
@@ -39,17 +40,22 @@ namespace evb {
       return ( deltaT>0 ? i2oCount/deltaT : 0 );
     }
 
+    double retryRate(const double& deltaT) const
+    {
+      return ( deltaT>0 ? retryCount/deltaT : 0 );
+    }
+
     double packingFactor() const
     {
       return ( i2oCount>0 ? static_cast<double>(logicalCount)/i2oCount : 0 );
     }
 
-    double bandwidth(const double& deltaT) const
+    double throughput(const double& deltaT) const
     {
       return ( deltaT>0 ? sumOfSizes/deltaT : 0 );
     }
 
-    double bandwidthStdDev(const double& deltaT) const
+    double throughputStdDev(const double& deltaT) const
     {
       if ( deltaT <= 0 ) return 0;
 
@@ -80,6 +86,7 @@ namespace evb {
     {
       logicalCount = 0;
       i2oCount = 0;
+      retryCount = 0;
       sumOfSizes = 0;
       sumOfSquares = 0;
 
@@ -92,6 +99,7 @@ namespace evb {
     {
       logicalCount = other.logicalCount;
       i2oCount = other.i2oCount;
+      retryCount = other.retryCount;
       sumOfSizes = other.sumOfSizes;
       sumOfSquares = other.sumOfSquares;
       startTime = other.startTime;
@@ -104,6 +112,7 @@ namespace evb {
       PerformanceMonitor diff;
       diff.logicalCount = logicalCount - other.logicalCount;
       diff.i2oCount = i2oCount - other.i2oCount;
+      diff.retryCount = retryCount - other.retryCount;
       diff.sumOfSizes = sumOfSizes - other.sumOfSizes;
       diff.sumOfSquares = sumOfSquares - other.sumOfSquares;
       diff.startTime = startTime - other.startTime;

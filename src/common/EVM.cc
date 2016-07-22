@@ -28,6 +28,13 @@ evb::EVM::EVM(xdaq::ApplicationStub* app) :
 }
 
 
+void evb::EVM::do_appendMonitoringInfoSpaceItems(InfoSpaceItems& items)
+{
+  evm::ReadoutUnit::do_appendMonitoringInfoSpaceItems(items);
+  ruProxy_->appendMonitoringItems(items);
+}
+
+
 void evb::EVM::do_updateMonitoringInfo()
 {
   evm::ReadoutUnit::do_updateMonitoringInfo();

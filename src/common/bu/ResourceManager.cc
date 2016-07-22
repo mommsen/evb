@@ -489,7 +489,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     if ( ! resourceLimitiationAlreadyNotified_ )
     {
       std::ostringstream msg;
-      msg << "The output bandwidth from the FUs is " << fuOutBwMB_ << " MB/s, which is higher than the high water mark of "
+      msg << "The output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is higher than the high water mark of "
         << configuration_->fuOutputBandwidthHigh.value_ << " MB/s";
       LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
       resourceLimitiationAlreadyNotified_ = true;
@@ -515,7 +515,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     if ( ! resourceLimitiationAlreadyNotified_ )
     {
       std::ostringstream msg;
-      msg << "Throttling requests as the output bandwidth from the FUs is " << fuOutBwMB_ << " MB/s, which is above the low water mark of "
+      msg << "Throttling requests as the output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is above the low water mark of "
         << configuration_->fuOutputBandwidthLow.value_ << " MB/s";
       LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
       resourceLimitiationAlreadyNotified_ = true;
@@ -784,7 +784,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
   eventRate_ = 0;
-  bandwidth_ = 0;
+  throughput_ = 0;
   eventSize_ = 0;
   eventSizeStdDev_ = 0;
   nbTotalResources_ = 1;
@@ -806,7 +806,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
   items.add("eventRate", &eventRate_);
-  items.add("bandwidth", &bandwidth_);
+  items.add("throughput", &throughput_);
   items.add("eventSize", &eventSize_);
   items.add("eventSizeStdDev", &eventSizeStdDev_);
   items.add("nbTotalResources", &nbTotalResources_);
@@ -849,7 +849,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
     nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
     eventRate_ = eventMonitoring_.perf.logicalRate(deltaT);
-    bandwidth_ = eventMonitoring_.perf.bandwidth(deltaT);
+    throughput_ = eventMonitoring_.perf.throughput(deltaT);
     eventSize_ = eventMonitoring_.perf.size();
     eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
     priority_ = currentPriority_;
@@ -915,11 +915,11 @@ uint32_t evb::bu::ResourceManager::getEventRate() const
 }
 
 
-uint32_t evb::bu::ResourceManager::getBandwidth() const
+uint32_t evb::bu::ResourceManager::getThroughput() const
 {
   boost::mutex::scoped_lock sl(eventMonitoringMutex_);
   const double deltaT = eventMonitoring_.perf.deltaT();
-  return eventMonitoring_.perf.bandwidth(deltaT);
+  return eventMonitoring_.perf.throughput(deltaT);
 }
 
 
@@ -1057,24 +1057,12 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table.add(tr()
               .add(td("priority of requests"))
               .add(td(boost::lexical_cast<std::string>(currentPriority_))));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << bandwidth_.value_ / 1e6;
-      table.add(tr()
-                .add(td("throughput (MB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::scientific);
-      str.precision(4);
-      str << eventRate_.value_;
-      table.add(tr()
-                .add(td("rate (events/s)"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (MB/s)"))
+              .add(td(doubleToString(throughput_.value_ / 1e6,2))));
+    table.add(tr()
+              .add(td("rate (events/s)"))
+              .add(td(boost::lexical_cast<std::string>(eventRate_))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);
@@ -1113,25 +1101,9 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       table.add(tr()
                 .add(td("# queued lumi sections on FUs"))
                 .add(td(boost::lexical_cast<std::string>(queuedLSonFUs_))));
-      {
-          std::ostringstream str;
-          str.setf(std::ios::fixed);
-          str.precision(2);
-          std::string unit;
-          if (fuOutBwMB_ > 0.1)
-          {
-            str << fuOutBwMB_;
-            unit = "(MB/s)";
-          }
-          else
-          {
-            str << fuOutBwMB_*1000;
-            unit = "(kB/s)";
-          }
-          table.add(tr()
-                    .add(td("output bandwidth of FUs "+unit))
-                    .add(td(str.str())));
-      }
+      table.add(tr()
+                .add(td("output throughput of FUs (MB/s)"))
+                .add(td(doubleToString(fuOutBwMB_,2))));
       table.add(tr()
                 .add(td("# blocked resources"))
                 .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));
@@ -1190,16 +1162,11 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
             it != itEnd; ++it)
       {
-        std::ostringstream str;
-        str.setf(std::ios::fixed);
-        str.precision(1);
-        str << (now>it->second->startTime ? now-it->second->startTime : 0);
-
         table.add(tr()
                   .add(td(boost::lexical_cast<std::string>(it->first)))
                   .add(td(boost::lexical_cast<std::string>(it->second->nbEvents)))
                   .add(td(boost::lexical_cast<std::string>(it->second->nbIncompleteEvents)))
-                  .add(td(str.str())));
+                  .add(td(doubleToString((now>it->second->startTime ? now-it->second->startTime : 0),0))));
       }
 
       div.add(table);

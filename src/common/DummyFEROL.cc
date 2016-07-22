@@ -4,6 +4,7 @@
 #include "interface/shared/fed_trailer.h"
 #include "interface/shared/ferol_header.h"
 #include "interface/shared/i2oXFunctionCodes.h"
+#include "evb/Constants.h"
 #include "evb/DummyFEROL.h"
 #include "evb/dummyFEROL/States.h"
 #include "evb/dummyFEROL/StateMachine.h"
@@ -80,14 +81,14 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
 )
 {
   lastEventNumber_ = 0;
-  bandwidth_ = 0;
+  throughput_ = 0;
   frameRate_ = 0;
   fragmentRate_ = 0;
   fragmentSize_ = 0;
   fragmentSizeStdDev_ = 0;
 
   monitoringParams.add("lastEventNumber", &lastEventNumber_);
-  monitoringParams.add("bandwidth", &bandwidth_);
+  monitoringParams.add("throughput", &throughput_);
   monitoringParams.add("frameRate", &frameRate_);
   monitoringParams.add("fragmentRate", &fragmentRate_);
   monitoringParams.add("fragmentSize", &fragmentSize_);
@@ -100,7 +101,7 @@ void evb::test::DummyFEROL::do_updateMonitoringInfo()
   boost::mutex::scoped_lock sl(dataMonitoringMutex_);
 
   const double deltaT = dataMonitoring_.deltaT();
-  bandwidth_ = dataMonitoring_.bandwidth(deltaT);
+  throughput_ = dataMonitoring_.throughput(deltaT);
   frameRate_ = dataMonitoring_.i2oRate(deltaT);
   fragmentRate_ = dataMonitoring_.logicalRate(deltaT);
   fragmentSize_ = dataMonitoring_.size();
@@ -159,33 +160,15 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
     table.add(tr()
               .add(td("last resync"))
               .add(td(boost::lexical_cast<std::string>(lastResync_))));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << bandwidth_.value_ / 1e6;
-      table.add(tr()
-                .add(td("throughput (MB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::scientific);
-      str.precision(2);
-      str << fragmentRate_.value_ ;
-      table.add(tr()
-                .add(td("rate (fragments/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::scientific);
-      str.precision(2);
-      str << frameRate_.value_ ;
-      table.add(tr()
-                .add(td("rate (frame/s)"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (MB/s)"))
+              .add(td(doubleToString(throughput_.value_ / 1e6,2))));
+    table.add(tr()
+              .add(td("rate (fragments/s)"))
+              .add(td(boost::lexical_cast<std::string>(fragmentRate_))));
+    table.add(tr()
+              .add(td("rate (frame/s)"))
+              .add(td(doubleToString(frameRate_,2))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);

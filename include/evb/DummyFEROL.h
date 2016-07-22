@@ -108,7 +108,7 @@ namespace evb {
       xdata::UnsignedInteger32 nbCRCerrors_;
       xdata::UnsignedInteger32 nbBXerrors_;
       xdata::UnsignedInteger32 lastEventNumber_;
-      xdata::Double bandwidth_;
+      xdata::Double throughput_;
       xdata::Double frameRate_;
       xdata::UnsignedInteger32 fragmentRate_;
       xdata::Double fragmentSize_;

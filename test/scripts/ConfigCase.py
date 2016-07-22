@@ -54,7 +54,7 @@ class ConfigCase(TestCase):
         return {'rates':rates,'sizes':sizes}
 
 
-    def getBandwidthMB(self,dataPoint):
+    def getThroughputMB(self,dataPoint):
         try:
             size = sum(list(x['sizes']['RU0'] for x in dataPoint))/float(len(dataPoint))
             rate = sum(list(x['rates']['RU0'] for x in dataPoint))/float(len(dataPoint))
@@ -154,10 +154,10 @@ class ConfigCase(TestCase):
             try:
                 dataPoints = self.doIt(fragSize,fragSizeRMS,args)
                 if not args['verbose']:
-                    self._origStdout.write("%dMB/s "%(self.getBandwidthMB(dataPoints)))
+                    self._origStdout.write("%dMB/s "%(self.getThroughputMB(dataPoints)))
                     self._origStdout.flush()
                 else:
-                    print("%3.2f:%dMB/s" % (relSize,self.getBandwidthMB(dataPoints)))
+                    print("%3.2f:%dMB/s" % (relSize,self.getThroughputMB(dataPoints)))
                 return dataPoints
             except (FailedState,StateException,ValueException) as e:
                 print(" failed: "+str(e))

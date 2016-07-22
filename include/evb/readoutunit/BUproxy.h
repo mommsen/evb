@@ -41,6 +41,7 @@
 #include "xcept/tools.h"
 #include "xdaq/Application.h"
 #include "xdata/Boolean.h"
+#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xdata/Vector.h"
@@ -149,7 +150,6 @@ namespace evb {
       ) const;
       bool isEmpty();
       void doLumiSectionTransition() {};
-      cgicc::table getStatisticsPerBU() const;
       std::string getHelpTextForBuRequests() const;
 
       ReadoutUnit* readoutUnit_;
@@ -182,8 +182,7 @@ namespace evb {
       typedef std::map<I2O_TID,uint64_t> CountsPerBU;
       struct RequestMonitoring
       {
-        uint64_t requestCount;
-        uint64_t bandwidth;
+        uint64_t throughput;
         uint32_t requestRate;
         uint32_t i2oRate;
         double packingFactor;
@@ -199,21 +198,18 @@ namespace evb {
         int32_t outstandingEvents;
         uint64_t fragmentCount;
         uint64_t nbEventsBuilt;
-        uint64_t bandwidth;
+        uint64_t throughput;
         uint32_t fragmentRate;
         uint32_t i2oRate;
         double packingFactor;
         PerformanceMonitor perf;
-        CountsPerBU payloadPerBU;
       } dataMonitoring_;
       mutable boost::mutex dataMonitoringMutex_;
 
       xdata::UnsignedInteger32 activeRequests_;
-      xdata::UnsignedInteger64 requestCount_;
-      xdata::UnsignedInteger64 fragmentCount_;
+      xdata::UnsignedInteger32 requestRate_;
+      xdata::UnsignedInteger32 fragmentRate_;
       xdata::UnsignedInteger64 nbEventsBuilt_;
-      xdata::Vector<xdata::UnsignedInteger64> requestCountPerBU_;
-      xdata::Vector<xdata::UnsignedInteger64> payloadPerBU_;
 
     };
 
@@ -571,7 +567,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     dataMonitoring_.perf.sumOfSizes += payloadSize;
     dataMonitoring_.perf.sumOfSquares += payloadSize*payloadSize;
     dataMonitoring_.perf.logicalCount += nbSuperFragments;
-    dataMonitoring_.payloadPerBU[fragmentRequest->buTid] += payloadSize;
   }
 
   if ( lumiTransition )
@@ -711,18 +706,16 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
 {
   activeRequests_ = 0;
-  requestCount_ = 0;
-  fragmentCount_ = 0;
+  requestRate_ = 0;
+  fragmentRate_ = 0;
   nbEventsBuilt_ = 0;
-  requestCountPerBU_.clear();
-  payloadPerBU_.clear();
 
   items.add("activeRequests", &activeRequests_);
-  items.add("requestCount", &requestCount_);
-  items.add("fragmentCount", &fragmentCount_);
+  items.add("requestRate", &requestRate_);
+  items.add("fragmentRate", &fragmentRate_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
-  items.add("requestCountPerBU", &requestCountPerBU_);
-  items.add("payloadPerBU", &payloadPerBU_);
+
+  buPoster_.appendMonitoringItems(items);
 }
 
 
@@ -750,22 +743,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     const double deltaT = requestMonitoring_.perf.deltaT();
-    requestMonitoring_.requestCount += requestMonitoring_.perf.logicalCount;
-    requestMonitoring_.bandwidth = requestMonitoring_.perf.bandwidth(deltaT);
+    requestMonitoring_.throughput = requestMonitoring_.perf.throughput(deltaT);
     requestMonitoring_.requestRate = requestMonitoring_.perf.logicalRate(deltaT);
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
     requestMonitoring_.packingFactor = requestMonitoring_.perf.packingFactor();
-    requestCount_ = requestMonitoring_.requestCount;
-
-    requestCountPerBU_.clear();
-    requestCountPerBU_.reserve(requestMonitoring_.logicalCountPerBU.size());
-    CountsPerBU::const_iterator it, itEnd;
-    for (it = requestMonitoring_.logicalCountPerBU.begin(),
-           itEnd = requestMonitoring_.logicalCountPerBU.end();
-         it != itEnd; ++it)
-    {
-      requestCountPerBU_.push_back(it->second);
-    }
+    requestRate_ = requestMonitoring_.i2oRate;
     requestMonitoring_.perf.reset();
   }
   {
@@ -774,28 +756,19 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     const double deltaT = dataMonitoring_.perf.deltaT();
     dataMonitoring_.fragmentCount += dataMonitoring_.perf.logicalCount;
     dataMonitoring_.nbEventsBuilt += dataMonitoring_.fragmentCount - dataMonitoring_.outstandingEvents;
-    dataMonitoring_.bandwidth = dataMonitoring_.perf.bandwidth(deltaT);
+    dataMonitoring_.throughput = dataMonitoring_.perf.throughput(deltaT);
     dataMonitoring_.fragmentRate = dataMonitoring_.perf.logicalRate(deltaT);
     dataMonitoring_.i2oRate = dataMonitoring_.perf.i2oRate(deltaT);
     dataMonitoring_.packingFactor = dataMonitoring_.perf.packingFactor();
-    fragmentCount_ = dataMonitoring_.fragmentCount;
+    fragmentRate_ = dataMonitoring_.i2oRate;
     nbEventsBuilt_ = dataMonitoring_.nbEventsBuilt;
-
-    payloadPerBU_.clear();
-    payloadPerBU_.reserve(dataMonitoring_.payloadPerBU.size());
-    CountsPerBU::const_iterator it, itEnd;
-    for (it = dataMonitoring_.payloadPerBU.begin(),
-           itEnd = dataMonitoring_.payloadPerBU.end();
-         it != itEnd; ++it)
-    {
-      payloadPerBU_.push_back(it->second);
-    }
     dataMonitoring_.perf.reset();
   }
   {
     boost::mutex::scoped_lock sl(processesActiveMutex_);
     nbActiveProcesses_ = processesActive_.count();
   }
+  buPoster_.updateMonitoringItems();
 }
 
 
@@ -805,7 +778,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 
   {
     boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
-    requestMonitoring_.requestCount = 0;
     requestMonitoring_.perf.reset();
     requestMonitoring_.logicalCountPerBU.clear();
   }
@@ -817,7 +789,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
     dataMonitoring_.fragmentCount = 0;
     dataMonitoring_.nbEventsBuilt = 0;
     dataMonitoring_.perf.reset();
-    dataMonitoring_.payloadPerBU.clear();
   }
 }
 
@@ -883,42 +854,18 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
 
     table.add(tr()
               .add(th("Event data").set("colspan","2")));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << dataMonitoring_.bandwidth / 1e6;
-      table.add(tr()
-                .add(td("throughput (MB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << dataMonitoring_.fragmentRate;
-      table.add(tr()
-                .add(td("fragment rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << dataMonitoring_.i2oRate;
-      table.add(tr()
-                .add(td("I2O rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << dataMonitoring_.packingFactor;
-      table.add(tr()
-                .add(td("Fragments/I2O"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (MB/s)"))
+              .add(td(doubleToString(dataMonitoring_.throughput / 1e6,2))));
+    table.add(tr()
+              .add(td("fragment rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.fragmentRate))));
+    table.add(tr()
+              .add(td("I2O rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(dataMonitoring_.i2oRate))));
+    table.add(tr()
+              .add(td("Fragments/I2O"))
+              .add(td(doubleToString(dataMonitoring_.packingFactor,1))));
     div.add(table);
   }
 
@@ -930,42 +877,18 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
 
     table.add(tr()
               .add(th("Event requests").set("colspan","2")));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << requestMonitoring_.bandwidth / 1e3;
-      table.add(tr()
-                .add(td("throughput (kB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << requestMonitoring_.requestRate;
-      table.add(tr()
-                .add(td("request rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << requestMonitoring_.i2oRate;
-      table.add(tr()
-                .add(td("I2O rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << requestMonitoring_.packingFactor;
-      table.add(tr()
-                .add(td("Events requested/I2O"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (kB/s)"))
+              .add(td(doubleToString(requestMonitoring_.throughput / 1e3,2))));
+    table.add(tr()
+              .add(td("request rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.requestRate))));
+    table.add(tr()
+              .add(td("I2O rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.i2oRate))));
+    table.add(tr()
+              .add(td("Events requested/I2O"))
+              .add(td(doubleToString(requestMonitoring_.packingFactor,1))));
     div.add(table);
 
     {
@@ -996,51 +919,9 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   }
 
   div.add(buPoster_.getPosterFIFOs());
-  div.add(getStatisticsPerBU());
+  div.add(buPoster_.getStatisticsPerBU());
 
   return div;
-}
-
-
-template<class ReadoutUnit>
-cgicc::table evb::readoutunit::BUproxy<ReadoutUnit>::getStatisticsPerBU() const
-{
-  using namespace cgicc;
-
-  table table;
-  table.set("title","Number of event requests and sum of payload per BU.");
-
-  table.add(tr()
-            .add(th("Statistics per BU").set("colspan","4")));
-  table.add(tr()
-            .add(td("Instance"))
-            .add(td("TID"))
-            .add(td("Nb requests"))
-            .add(td("Data payload (MB)")));
-
-  CountsPerBU::const_iterator it, itEnd;
-  for (it=requestMonitoring_.logicalCountPerBU.begin(), itEnd = requestMonitoring_.logicalCountPerBU.end();
-       it != itEnd; ++it)
-  {
-    const I2O_TID buTID = it->first;
-    uint32_t payloadPerBU = 0;
-    try
-    {
-      payloadPerBU = dataMonitoring_.payloadPerBU.at(buTID) / 1e6;
-    }
-    catch(std::out_of_range) {}
-
-    xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(buTID);
-    const std::string url = bu->getContextDescriptor()->getURL() + "/" + bu->getURN();
-    table.add(tr()
-              .add(td()
-                   .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
-              .add(td(boost::lexical_cast<std::string>(buTID)))
-              .add(td(boost::lexical_cast<std::string>(requestMonitoring_.logicalCountPerBU.at(buTID))))
-              .add(td(boost::lexical_cast<std::string>(payloadPerBU))));
-  }
-
-  return table;
 }
 
 #endif // _evb_readoutunit_BUproxy_h_

@@ -59,6 +59,12 @@ namespace evb {
       void sendRequest(const readoutunit::FragmentRequestPtr&);
 
       /**
+       * Append the info space items to be published in the
+       * monitoring info space to the InfoSpaceItems
+       */
+      void appendMonitoringItems(InfoSpaceItems&);
+
+      /**
        * Update all values of the items put into the monitoring
        * info space. The caller has to make sure that the info
        * space where the items reside is locked and properly unlocked
@@ -136,13 +142,17 @@ namespace evb {
       struct AllocateMonitoring
       {
         uint32_t lastEventNumberToRUs;
-        uint64_t bandwidth;
+        uint64_t throughput;
         uint32_t assignmentRate;
         uint32_t i2oRate;
+        double retryRate;
         double packingFactor;
         PerformanceMonitor perf;
      } allocateMonitoring_;
       mutable boost::mutex allocateMonitoringMutex_;
+
+      xdata::UnsignedInteger32 allocateRate_;
+      xdata::Double allocateRetryRate_;
 
     };
 

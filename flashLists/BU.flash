@@ -8,12 +8,13 @@
   <xmas:item name="runNumber"               infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="stateName"               infospace="urn:evb::BU" type="string"/>
   <xmas:item name="errorMsg"                infospace="urn:evb::BU" type="string"/>
-  <xmas:item name="bandwidth"               infospace="urn:evb::BU" type="unsigned int 64"/>
+  <xmas:item name="throughput"               infospace="urn:evb::BU" type="unsigned int 64"/>
   <xmas:item name="eventRate"               infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="eventSize"               infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="eventSizeStdDev"         infospace="urn:evb::BU" type="unsigned int 32"/>
-  <xmas:item name="requestCount"            infospace="urn:evb::BU" type="unsigned int 64"/>
-  <xmas:item name="fragmentCount"           infospace="urn:evb::BU" type="unsigned int 64"/>
+  <xmas:item name="requestRate"             infospace="urn:evb::BU" type="unsigned int 32"/>
+  <xmas:item name="requestRetryRate"        infospace="urn:evb::BU" type="double"/>
+  <xmas:item name="fragmentRate"            infospace="urn:evb::BU" type="unsigned int 32"/>
   <xmas:item name="fragmentCountPerRU"      infospace="urn:evb::BU" type="vector unsigned int 64"/>
   <xmas:item name="payloadPerRU"            infospace="urn:evb::BU" type="vector unsigned int 64"/>
   <xmas:item name="slowestRUtid"            infospace="urn:evb::BU" type="unsigned int 32"/>

@@ -159,9 +159,9 @@ namespace evb {
       uint32_t getEventRate() const;
 
       /**
-       * Return the averaged bandwidth into the BU
+       * Return the averaged throughput into the BU
        */
-      uint32_t getBandwidth() const;
+      uint32_t getThroughput() const;
 
       /**
        * Return the current number of events in the BU
@@ -262,7 +262,7 @@ namespace evb {
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger64 nbEventsBuilt_;
       xdata::UnsignedInteger32 eventRate_;
-      xdata::UnsignedInteger64 bandwidth_;
+      xdata::UnsignedInteger64 throughput_;
       xdata::UnsignedInteger32 eventSize_;
       xdata::UnsignedInteger32 eventSizeStdDev_;
       xdata::UnsignedInteger32 nbTotalResources_;

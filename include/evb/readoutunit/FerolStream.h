@@ -113,8 +113,7 @@ namespace evb {
       /**
        * Return the requested monitoring quantities.
        */
-      void retrieveMonitoringQuantities(uint32_t& dataReadyCount,
-                                        uint32_t& queueElements,
+      void retrieveMonitoringQuantities(uint32_t& queueElements,
                                         uint32_t& corruptedEvents,
                                         uint32_t& eventsOutOfSequence,
                                         uint32_t& crcErrors,
@@ -424,7 +423,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::resetMonitoringCo
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitoringQuantities
 (
-  uint32_t& dataReadyCount,
   uint32_t& queueElements,
   uint32_t& corruptedEvents,
   uint32_t& eventsOutOfSequence,
@@ -436,9 +434,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
     boost::mutex::scoped_lock sl(inputMonitorMutex_);
 
     const double deltaT = inputMonitor_.perf.deltaT();
-    inputMonitor_.eventCount += inputMonitor_.perf.logicalCount;
     inputMonitor_.rate = inputMonitor_.perf.logicalRate(deltaT);
-    inputMonitor_.bandwidth = inputMonitor_.perf.bandwidth(deltaT);
+    inputMonitor_.throughput = inputMonitor_.perf.throughput(deltaT);
     const uint32_t eventSize = inputMonitor_.perf.size();
     if ( eventSize > 0 )
     {
@@ -464,7 +461,6 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
   queueElements = fragmentFIFO_.elements();
 
-  dataReadyCount += inputMonitor_.eventCount;
   corruptedEvents = fedFragmentFactory_.getCorruptedEvents();
   eventsOutOfSequence = fedFragmentFactory_.getEventsOutOfSequence();
   crcErrors = fedFragmentFactory_.getCRCerrors();
@@ -492,12 +488,7 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
     row.add(td(boost::lexical_cast<std::string>(inputMonitor_.lastEventNumber)));
     row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(inputMonitor_.eventSize))
                +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(inputMonitor_.eventSizeStdDev))));
-
-    std::ostringstream str;
-    str.setf(std::ios::fixed);
-    str.precision(1);
-    str << inputMonitor_.bandwidth / 1e6;
-    row.add(td(str.str()));
+    row.add(td(doubleToString(inputMonitor_.throughput / 1e6,1)));
   }
 
   row.add(td(boost::lexical_cast<std::string>(fedFragmentFactory_.getCRCerrors())))

@@ -43,7 +43,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
 {
   eventSize_ = 0;
   eventRate_ = 0;
-  bandwidth_ = 0;
+  throughput_ = 0;
   nbEventsInBU_ = 0;
   nbEventsBuilt_ = 0;
   nbLumiSections_ = 0;
@@ -53,7 +53,7 @@ void evb::BU::do_appendApplicationInfoSpaceItems
 
   appInfoSpaceParams.add("eventSize", &eventSize_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("eventRate", &eventRate_, InfoSpaceItems::retrieve);
-  appInfoSpaceParams.add("bandwidth", &bandwidth_, InfoSpaceItems::retrieve);
+  appInfoSpaceParams.add("throughput", &throughput_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsInBU", &nbEventsInBU_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbEventsBuilt", &nbEventsBuilt_, InfoSpaceItems::retrieve);
   appInfoSpaceParams.add("nbLumiSections", &nbLumiSections_, InfoSpaceItems::retrieve);
@@ -92,8 +92,8 @@ void evb::BU::do_handleItemRetrieveEvent(const std::string& item)
     eventSize_ = resourceManager_->getEventSize();
   else if (item == "eventRate")
     eventRate_ = resourceManager_->getEventRate();
-  else if (item == "bandwidth")
-    bandwidth_ = resourceManager_->getBandwidth();
+  else if (item == "throughput")
+    throughput_ = resourceManager_->getThroughput();
   else if (item == "nbEventsInBU")
     nbEventsInBU_ = resourceManager_->getNbEventsInBU();
   else if (item == "nbEventsBuilt")

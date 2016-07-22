@@ -15,15 +15,15 @@ namespace evb {
       uint32_t lastEventNumber;
       uint64_t eventCount;
       PerformanceMonitor perf;
-      double rate;
+      uint32_t rate;
       double eventSize;
       double eventSizeStdDev;
-      double bandwidth;
+      double throughput;
 
       InputMonitor() { reset(); }
 
       void reset()
-      { lastEventNumber=0;eventCount=0;rate=0;eventSize=0;eventSizeStdDev=0;bandwidth=0; }
+      { lastEventNumber=0;eventCount=0;rate=0;eventSize=0;eventSizeStdDev=0;throughput=0; }
     };
 
   } } // namespace evb::readoutunit

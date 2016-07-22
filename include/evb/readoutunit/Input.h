@@ -213,7 +213,6 @@ namespace evb {
       xdata::UnsignedInteger32 superFragmentSizeStdDev_;
       xdata::UnsignedInteger32 incompleteSuperFragmentCount_;
       xdata::UnsignedInteger64 eventCount_;
-      xdata::UnsignedInteger64 dataReadyCount_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithoutFragments_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithErrors_;
       xdata::Vector<xdata::UnsignedInteger32> fedDataCorruption_;
@@ -516,7 +515,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   superFragmentSizeStdDev_ = 0;
   incompleteSuperFragmentCount_ = 0;
   eventCount_ = 0;
-  dataReadyCount_ = 0;
   fedIdsWithoutFragments_.clear();
   fedIdsWithErrors_.clear();
   fedDataCorruption_.clear();
@@ -530,7 +528,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   items.add("superFragmentSizeStdDev", &superFragmentSizeStdDev_);
   items.add("incompleteSuperFragmentCount", &incompleteSuperFragmentCount_);
   items.add("eventCount", &eventCount_);
-  items.add("dataReadyCount", &dataReadyCount_);
   items.add("fedIdsWithoutFragments", &fedIdsWithoutFragments_);
   items.add("fedIdsWithErrors", &fedIdsWithErrors_);
   items.add("fedDataCorruption", &fedDataCorruption_);
@@ -553,7 +550,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     fedCRCerrors_.clear();
     fedBXerrors_.clear();
 
-    uint32_t dataReadyCount = 0;
     uint32_t maxElements = 0;
 
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
@@ -565,7 +561,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       uint32_t crcErrors = 0;
       uint32_t bxErrors = 0;
 
-      it->second->retrieveMonitoringQuantities(dataReadyCount,queueElements,corruptedEvents,eventsOutOfSequence,crcErrors,bxErrors);
+      it->second->retrieveMonitoringQuantities(queueElements,corruptedEvents,eventsOutOfSequence,crcErrors,bxErrors);
 
       if ( queueElements > maxElements )
         maxElements = queueElements;
@@ -583,7 +579,6 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       }
     }
     incompleteSuperFragmentCount_ = maxElements;
-    dataReadyCount_.value_ = dataReadyCount;
   }
 
   {
@@ -591,7 +586,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 
     const double deltaT = superFragmentMonitor_.perf.deltaT();
     superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
-    superFragmentMonitor_.bandwidth = superFragmentMonitor_.perf.bandwidth(deltaT);
+    superFragmentMonitor_.throughput = superFragmentMonitor_.perf.throughput(deltaT);
     const uint32_t eventSize = superFragmentMonitor_.perf.size();
     superFragmentMonitor_.eventSize = eventSize;
     superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
@@ -787,24 +782,12 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     table.add(tr()
               .add(td("# events with missing FEDs"))
               .add(td(boost::lexical_cast<std::string>(incompleteEvents_))));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << superFragmentMonitor_.bandwidth / 1e6;
-      table.add(tr()
-                .add(td("throughput (MB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::scientific);
-      str.precision(4);
-      str << superFragmentMonitor_.rate;
-      table.add(tr()
-                .add(td("rate (events/s)"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (MB/s)"))
+              .add(td(doubleToString(superFragmentMonitor_.throughput / 1e6,2))));
+    table.add(tr()
+              .add(td("rate (events/s)"))
+              .add(td(boost::lexical_cast<std::string>(superFragmentMonitor_.rate))));
     {
       std::ostringstream str;
       str.setf(std::ios::fixed);

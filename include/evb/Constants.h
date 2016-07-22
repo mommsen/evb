@@ -2,7 +2,9 @@
 #define _evb_Constants_h_
 
 #include <algorithm>
+#include <iomanip>
 #include <iterator>
+#include <sstream>
 #include <stdint.h>
 
 
@@ -19,6 +21,15 @@ namespace evb {
 
   inline bool isFibonacci(const uint64_t value)
   { return ( std::find(fibonacci,fibonacci+92,value) != fibonacci+92 ); }
+
+  inline std::string doubleToString(const double& value, const uint8_t precision)
+  {
+    std::ostringstream str;
+    str.setf(std::ios::fixed);
+    str.precision(precision);
+    str << value;
+    return str.str();
+  }
 
 } // namespace evb
 

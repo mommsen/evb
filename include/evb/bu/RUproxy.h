@@ -20,6 +20,7 @@
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "xdaq/Application.h"
+#include "xdata/Double.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xdata/Vector.h"
@@ -185,8 +186,7 @@ namespace evb {
         uint32_t lastEventNumberFromEVM;
         uint32_t lastEventNumberFromRUs;
         uint32_t incompleteSuperFragments;
-        uint64_t fragmentCount;
-        uint64_t bandwidth;
+        uint64_t throughput;
         uint32_t fragmentRate;
         uint32_t i2oRate;
         double packingFactor;
@@ -197,17 +197,19 @@ namespace evb {
 
       struct RequestMonitoring
       {
-        uint64_t requestCount;
-        uint64_t bandwidth;
+        uint64_t throughput;
         uint32_t requestRate;
+        double requestRetryRate;
         uint32_t i2oRate;
+        double retryRate;
         double packingFactor;
         PerformanceMonitor perf;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
 
-      xdata::UnsignedInteger64 requestCount_;
-      xdata::UnsignedInteger64 fragmentCount_;
+      xdata::UnsignedInteger32 requestRate_;
+      xdata::Double requestRetryRate_;
+      xdata::UnsignedInteger32 fragmentRate_;
       xdata::Vector<xdata::UnsignedInteger64> fragmentCountPerRU_;
       xdata::Vector<xdata::UnsignedInteger64> payloadPerRU_;
       xdata::UnsignedInteger32 slowestRUtid_;

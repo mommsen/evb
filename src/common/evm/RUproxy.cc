@@ -267,6 +267,7 @@ void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const
   rqstBufRef->setDataSize(msgSize);
   requestCount = 0;
 
+  uint32_t retries = 0;
   for (ApplicationDescriptorsAndTids::const_iterator it = participatingRUs_.begin(), itEnd = participatingRUs_.end();
        it != itEnd; ++it)
   {
@@ -278,14 +279,9 @@ void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const
 
     try
     {
-      evm_->getApplicationContext()->
-        postFrame(
-          bufRef,
-          evm_->getApplicationDescriptor(),
-          it->descriptor
-        );
+      retries += evm_->postMessage(bufRef,it->descriptor);
     }
-    catch(xcept::Exception& e)
+    catch(exception::I2O& e)
     {
       std::ostringstream msg;
       msg << "Failed to send message to RU ";
@@ -303,7 +299,18 @@ void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const
     allocateMonitoring_.perf.sumOfSizes += totalSize;
     allocateMonitoring_.perf.sumOfSquares += totalSize*totalSize;
     allocateMonitoring_.perf.i2oCount += ruCount_;
+    allocateMonitoring_.perf.retryCount += retries;
   }
+}
+
+
+void evb::evm::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
+{
+  allocateRate_ = 0;
+  allocateRetryRate_ = 0;
+
+  items.add("allocateRate", &allocateRate_);
+  items.add("allocateRetryRate", &allocateRetryRate_);
 }
 
 
@@ -312,11 +319,15 @@ void evb::evm::RUproxy::updateMonitoringItems()
   boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
 
   const double deltaT = allocateMonitoring_.perf.deltaT();
-  allocateMonitoring_.bandwidth = allocateMonitoring_.perf.bandwidth(deltaT);
+  allocateMonitoring_.throughput = allocateMonitoring_.perf.throughput(deltaT);
   allocateMonitoring_.assignmentRate = allocateMonitoring_.perf.logicalRate(deltaT);
   allocateMonitoring_.i2oRate = allocateMonitoring_.perf.i2oRate(deltaT);
+  allocateMonitoring_.retryRate = allocateMonitoring_.perf.retryRate(deltaT);
   allocateMonitoring_.packingFactor = allocateMonitoring_.perf.packingFactor();
   allocateMonitoring_.perf.reset();
+
+  allocateRate_ = allocateMonitoring_.i2oRate;
+  allocateRetryRate_ = allocateMonitoring_.retryRate;
 }
 
 
@@ -425,42 +436,21 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     table.add(tr()
               .add(td("last event number to RUs"))
               .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.lastEventNumberToRUs))));
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(2);
-      str << allocateMonitoring_.bandwidth / 1e3;
-      table.add(tr()
-                .add(td("throughput (kB/s)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << allocateMonitoring_.assignmentRate;
-      table.add(tr()
-                .add(td("assignment rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(0);
-      str << allocateMonitoring_.i2oRate;
-      table.add(tr()
-                .add(td("I2O rate (Hz)"))
-                .add(td(str.str())));
-    }
-    {
-      std::ostringstream str;
-      str.setf(std::ios::fixed);
-      str.precision(1);
-      str << allocateMonitoring_.packingFactor;
-      table.add(tr()
-                .add(td("Events assigned/I2O"))
-                .add(td(str.str())));
-    }
+    table.add(tr()
+              .add(td("throughput (kB/s)"))
+              .add(td(doubleToString(allocateMonitoring_.throughput / 1e3,2))));
+    table.add(tr()
+              .add(td("assignment rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.assignmentRate))));
+    table.add(tr()
+              .add(td("I2O rate (Hz)"))
+              .add(td(boost::lexical_cast<std::string>(allocateMonitoring_.i2oRate))));
+    table.add(tr()
+              .add(td("I2O retry rate (Hz)"))
+              .add(td(doubleToString(allocateMonitoring_.retryRate,2))));
+    table.add(tr()
+              .add(td("Events assigned/I2O"))
+              .add(td(doubleToString(allocateMonitoring_.packingFactor,1))));
 
     const uint32_t activeRUs = ruTids_.empty() ? 0 : ruTids_.size()-1; //exclude the EVM TID
     table.add(tr()

@@ -72,7 +72,7 @@ namespace evb {
     boost::shared_ptr<bu::EventBuilder> eventBuilder_;
     boost::shared_ptr<bu::RUproxy> ruProxy_;
 
-    xdata::UnsignedInteger64 bandwidth_;
+    xdata::UnsignedInteger64 throughput_;
     xdata::UnsignedInteger32 eventRate_;
     xdata::UnsignedInteger32 eventSize_;
     xdata::UnsignedInteger32 nbEventsInBU_;

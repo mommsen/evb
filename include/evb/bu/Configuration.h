@@ -65,6 +65,8 @@ namespace evb {
       xdata::String blacklistName;                         // Name of the blacklist file
       xdata::String fuBlacklist;                           // The FUs to blacklist as string
       xdata::UnsignedInteger32 roundTripTimeSamples;       // Rolling average of round trip times for the last N I2O mesage (0 disables it)
+      xdata::UnsignedInteger32 maxPostRetries;             // Max. attempts to post an I2O message
+
 
       Configuration()
         : sendPoolName("sudapl"),
@@ -105,7 +107,8 @@ namespace evb {
           hltParameterSetURL(""),
           blacklistName("blacklist"),
           fuBlacklist("[]"),
-          roundTripTimeSamples(1000)
+          roundTripTimeSamples(1000),
+          maxPostRetries(10)
       {
         hltFiles.push_back("HltConfig.py");
         hltFiles.push_back("fffParameters.jsn");
@@ -157,6 +160,7 @@ namespace evb {
         params.add("blacklistName", &blacklistName);
         params.add("fuBlacklist", &fuBlacklist);
         params.add("roundTripTimeSamples", &roundTripTimeSamples);
+        params.add("maxPostRetries", &maxPostRetries);
       }
     };
 

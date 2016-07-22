@@ -2,19 +2,27 @@
 #define _evb_readoutunit_BUposter_h_
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <map>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
+#include "evb/Constants.h"
 #include "evb/OneToOneQueue.h"
+#include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "i2o/utils/AddressMap.h"
 #include "toolbox/lang/Class.h"
 #include "toolbox/mem/Reference.h"
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
+#include "xdata/Double.h"
+#include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
+#include "xdata/Vector.h"
 #include "xgi/Output.h"
 
 
@@ -58,9 +66,28 @@ namespace evb {
       void stopProcessing();
 
       /**
+       * Append the info space items to be published in the
+       * monitoring info space to the InfoSpaceItems
+       */
+      void appendMonitoringItems(InfoSpaceItems&);
+
+      /**
+       * Update all values of the items put into the monitoring
+       * info space. The caller has to make sure that the info
+       * space where the items reside is locked and properly unlocked
+       * after the call.
+       */
+      void updateMonitoringItems();
+
+      /**
        * Return the poster FIFOs as HTML snipped
        */
       cgicc::div getPosterFIFOs() const;
+
+      /**
+       * Return a cgicc::table containing information for each BU connection
+       */
+      cgicc::table getStatisticsPerBU() const;
 
 
     private:
@@ -72,20 +99,32 @@ namespace evb {
 
       typedef OneToOneQueue<toolbox::mem::Reference*> FrameFIFO;
       typedef boost::shared_ptr<FrameFIFO> FrameFIFOPtr;
-      struct BUdescriptorAndFIFO {
+      struct BUconnection {
+        const I2O_TID tid;
         xdaq::ApplicationDescriptor* bu;
         const FrameFIFOPtr frameFIFO;
-        BUdescriptorAndFIFO(xdaq::ApplicationDescriptor* bu, const FrameFIFOPtr frameFIFO)
-          : bu(bu),frameFIFO(frameFIFO) {};
+        uint64_t throughput;
+        uint32_t i2oRate;
+        double retryRate;
+        PerformanceMonitor perf;
+        mutable boost::mutex perfMutex;
+
+        BUconnection(const I2O_TID tid, const FrameFIFOPtr& frameFIFO);
       };
-      typedef std::map<I2O_TID,BUdescriptorAndFIFO> BuFrameQueueMap;
-      BuFrameQueueMap buFrameQueueMap_;
-      mutable boost::mutex buFrameQueueMapMutex_;
+      typedef boost::shared_ptr<BUconnection> BUconnectionPtr;
+      typedef std::map<I2O_TID,BUconnectionPtr> BUconnections;
+      BUconnections buConnections_;
+      mutable boost::shared_mutex buConnectionsMutex_;
 
       toolbox::task::WorkLoop* posterWL_;
       toolbox::task::ActionSignature* posterAction_;
       volatile bool doProcessing_;
       volatile bool active_;
+
+      xdata::Vector<xdata::UnsignedInteger32> buTids_;
+      xdata::Vector<xdata::UnsignedInteger64> throughputPerBU_;
+      xdata::Vector<xdata::UnsignedInteger32> fragmentRatePerBU_;
+      xdata::Vector<xdata::Double> retryRatePerBU_;
 
     };
 
@@ -116,6 +155,58 @@ evb::readoutunit::BUposter<ReadoutUnit>::~BUposter()
 
 
 template<class ReadoutUnit>
+void evb::readoutunit::BUposter<ReadoutUnit>::appendMonitoringItems(InfoSpaceItems& items)
+{
+  buTids_.clear();
+  throughputPerBU_.clear();
+  fragmentRatePerBU_.clear();
+  retryRatePerBU_.clear();
+
+  items.add("buTids", &buTids_);
+  items.add("throughputPerBU", &throughputPerBU_);
+  items.add("fragmentRatePerBU", &fragmentRatePerBU_);
+  items.add("retryRatePerBU", &retryRatePerBU_);
+}
+
+
+template<class ReadoutUnit>
+void evb::readoutunit::BUposter<ReadoutUnit>::updateMonitoringItems()
+{
+  boost::shared_lock<boost::shared_mutex> sl(buConnectionsMutex_);
+
+  const uint32_t nbConnections = buConnections_.size();
+  buTids_.clear();
+  buTids_.reserve(nbConnections);
+
+  throughputPerBU_.clear();
+  throughputPerBU_.reserve(nbConnections);
+
+  fragmentRatePerBU_.clear();
+  fragmentRatePerBU_.reserve(nbConnections);
+
+  retryRatePerBU_.clear();
+  retryRatePerBU_.reserve(nbConnections);
+
+  for (typename BUconnections::iterator it = buConnections_.begin(), itEnd = buConnections_.end();
+       it != itEnd; ++it)
+  {
+    boost::mutex::scoped_lock sl(it->second->perfMutex);
+
+    const double deltaT = it->second->perf.deltaT();
+    it->second->throughput = it->second->perf.throughput(deltaT);
+    it->second->i2oRate = it->second->perf.i2oRate(deltaT);
+    it->second->retryRate = it->second->perf.retryRate(deltaT);
+    it->second->perf.reset();
+
+    buTids_.push_back(it->first);
+    throughputPerBU_.push_back(it->second->throughput);
+    fragmentRatePerBU_.push_back(it->second->i2oRate);
+    retryRatePerBU_.push_back(it->second->retryRate);
+  }
+}
+
+
+template<class ReadoutUnit>
 void evb::readoutunit::BUposter<ReadoutUnit>::startPosterWorkLoop()
 {
   try
@@ -142,8 +233,8 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUposter<ReadoutUnit>::startProcessing()
 {
   {
-    boost::mutex::scoped_lock sl(buFrameQueueMapMutex_);
-    buFrameQueueMap_.clear();
+    boost::unique_lock<boost::shared_mutex> ul(buConnectionsMutex_);
+    buConnections_.clear();
   }
 
   doProcessing_ = true;
@@ -157,13 +248,13 @@ void evb::readoutunit::BUposter<ReadoutUnit>::drain() const
   bool haveFrames = false;
   do
   {
-    boost::mutex::scoped_lock sl(buFrameQueueMapMutex_);
+    boost::shared_lock<boost::shared_mutex> sl(buConnectionsMutex_);
 
     haveFrames = false;
-    for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin(), itEnd = buFrameQueueMap_.end();
+    for (typename BUconnections::const_iterator it = buConnections_.begin(), itEnd = buConnections_.end();
           it != itEnd; ++it)
     {
-      haveFrames |= ( ! it->second.frameFIFO->empty() );
+      haveFrames |= ( ! it->second->frameFIFO->empty() );
     }
   } while ( haveFrames && ::usleep(1000) );
 }
@@ -174,12 +265,17 @@ void evb::readoutunit::BUposter<ReadoutUnit>::stopProcessing()
 {
   doProcessing_ = false;
   while (active_) ::usleep(1000);
-  for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin(), itEnd = buFrameQueueMap_.end();
-       it != itEnd; ++it)
+
   {
-    toolbox::mem::Reference* bufRef;
-    while ( it->second.frameFIFO->deq(bufRef) )
-      bufRef->release();
+    boost::unique_lock<boost::shared_mutex> ul(buConnectionsMutex_);
+
+    for (typename BUconnections::const_iterator it = buConnections_.begin(), itEnd = buConnections_.end();
+         it != itEnd; ++it)
+    {
+      toolbox::mem::Reference* bufRef;
+      while ( it->second->frameFIFO->deq(bufRef) )
+        bufRef->release();
+    }
   }
 }
 
@@ -187,35 +283,24 @@ void evb::readoutunit::BUposter<ReadoutUnit>::stopProcessing()
 template<class ReadoutUnit>
 void evb::readoutunit::BUposter<ReadoutUnit>::sendFrame(const I2O_TID tid, toolbox::mem::Reference* bufRef)
 {
-  boost::mutex::scoped_lock sl(buFrameQueueMapMutex_);
+  boost::upgrade_lock<boost::shared_mutex> sl(buConnectionsMutex_);
 
-  typename BuFrameQueueMap::iterator pos = buFrameQueueMap_.lower_bound(tid);
-  if ( pos == buFrameQueueMap_.end() || buFrameQueueMap_.key_comp()(tid,pos->first) )
+  typename BUconnections::iterator pos = buConnections_.lower_bound(tid);
+  if ( pos == buConnections_.end() || buConnections_.key_comp()(tid,pos->first) )
   {
     // new TID
+    boost::upgrade_to_unique_lock<boost::shared_mutex> ul(sl);
+
     std::ostringstream name;
     name << "frameFIFO_BU" << tid;
     const FrameFIFOPtr frameFIFO( new FrameFIFO(readoutUnit_,name.str()) );
     frameFIFO->resize(readoutUnit_->getConfiguration()->fragmentRequestFIFOCapacity);
 
-    try
-    {
-      BUdescriptorAndFIFO buDescriptorAndFIFO(
-        i2o::utils::getAddressMap()->getApplicationDescriptor(tid),
-        frameFIFO);
-
-      pos = buFrameQueueMap_.insert(pos, typename BuFrameQueueMap::value_type(tid,buDescriptorAndFIFO));
-    }
-    catch(xcept::Exception& e)
-    {
-      std::ostringstream msg;
-      msg << "Failed to get application descriptor for BU with tid ";
-      msg << tid;
-      XCEPT_RAISE(exception::I2O, msg.str());
-    }
+    BUconnectionPtr buConnection(new BUconnection(tid,frameFIFO));
+    pos = buConnections_.insert(pos, typename BUconnections::value_type(tid,buConnection));
   }
 
-  pos->second.frameFIFO->enqWait(bufRef);
+  pos->second->frameFIFO->enqWait(bufRef);
 }
 
 
@@ -231,22 +316,27 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
   {
     active_ = true;
     do {
+      boost::shared_lock<boost::shared_mutex> sl(buConnectionsMutex_);
+
       workDone = false;
-      for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin();
-           it != buFrameQueueMap_.end(); ++it)
+      for (typename BUconnections::iterator it = buConnections_.begin();
+           it != buConnections_.end(); ++it)
       {
-        if ( it->second.frameFIFO->deq(bufRef) )
+        if ( it->second->frameFIFO->deq(bufRef) )
         {
           try
           {
-            readoutUnit_->getApplicationContext()->
-              postFrame(
-                bufRef,
-                readoutUnit_->getApplicationDescriptor(),
-                it->second.bu
-              );
+            const uint32_t payloadSize = bufRef->getDataSize();
+            const uint32_t retries = readoutUnit_->postMessage(bufRef,it->second->bu);
+            {
+              boost::mutex::scoped_lock sl(it->second->perfMutex);
+              it->second->perf.retryCount += retries;
+              it->second->perf.sumOfSizes += payloadSize;
+              it->second->perf.sumOfSquares += payloadSize*payloadSize;
+              it->second->perf.i2oCount++;
+            }
           }
-          catch(xcept::Exception& e)
+          catch(exception::I2O& e)
           {
             std::ostringstream msg;
             msg << "Failed to send super fragment to BU TID ";
@@ -291,15 +381,74 @@ cgicc::div evb::readoutunit::BUposter<ReadoutUnit>::getPosterFIFOs() const
   using namespace cgicc;
 
   cgicc::div div;
-  boost::mutex::scoped_lock sl(buFrameQueueMapMutex_);
+  boost::shared_lock<boost::shared_mutex> sl(buConnectionsMutex_);
 
-  for (typename BuFrameQueueMap::const_iterator it = buFrameQueueMap_.begin(), itEnd = buFrameQueueMap_.end();
+  for (typename BUconnections::const_iterator it = buConnections_.begin(), itEnd = buConnections_.end();
        it != itEnd; ++it)
   {
-    div.add(it->second.frameFIFO->getHtmlSnipped());
+    div.add(it->second->frameFIFO->getHtmlSnipped());
   }
 
   return div;
+}
+
+
+template<class ReadoutUnit>
+cgicc::table evb::readoutunit::BUposter<ReadoutUnit>::getStatisticsPerBU() const
+{
+  using namespace cgicc;
+
+  table table;
+  table.set("title","Statistics per BU connection");
+
+  table.add(tr()
+            .add(th("Statistics per BU").set("colspan","5")));
+  table.add(tr()
+            .add(td("Instance"))
+            .add(td("TID"))
+            .add(td("Throughput (MB/s)"))
+            .add(td("I2O rate (Hz)"))
+            .add(td("Retry rate (Hz)")));
+
+  boost::shared_lock<boost::shared_mutex> sl(buConnectionsMutex_);
+
+  for (typename BUconnections::const_iterator it = buConnections_.begin(), itEnd = buConnections_.end();
+       it != itEnd; ++it)
+  {
+    xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
+    const std::string url = bu->getContextDescriptor()->getURL() + "/" + bu->getURN();
+    table.add(tr()
+              .add(td()
+                   .add(a("BU "+boost::lexical_cast<std::string>(bu->getInstance())).set("href",url).set("target","_blank")))
+              .add(td(boost::lexical_cast<std::string>(it->first)))
+              .add(td(doubleToString(it->second->throughput / 1e6,2)))
+              .add(td(boost::lexical_cast<std::string>(it->second->i2oRate)))
+              .add(td(doubleToString(it->second->retryRate,2))));
+  }
+
+  return table;
+}
+
+
+template<class ReadoutUnit>
+evb::readoutunit::BUposter<ReadoutUnit>::BUconnection::BUconnection
+(
+  const I2O_TID tid,
+  const FrameFIFOPtr& frameFIFO
+)
+  : tid(tid),frameFIFO(frameFIFO)
+{
+  try
+  {
+    bu = i2o::utils::getAddressMap()->getApplicationDescriptor(tid);
+  }
+  catch(xcept::Exception& e)
+  {
+    std::ostringstream msg;
+    msg << "Failed to get application descriptor for BU with tid ";
+    msg << tid;
+    XCEPT_RAISE(exception::I2O, msg.str());
+  }
 }
 
 
