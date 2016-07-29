@@ -104,7 +104,7 @@ void evb::evm::RUproxy::stopProcessing()
 toolbox::mem::Reference* evb::evm::RUproxy::getRequestMsgBuffer(const uint32_t bufSize)
 {
   toolbox::mem::Reference* rqstBufRef = 0;
-  while ( !rqstBufRef )
+  do
   {
     try
     {
@@ -118,7 +118,8 @@ toolbox::mem::Reference* evb::evm::RUproxy::getRequestMsgBuffer(const uint32_t b
       if ( ! doProcessing_ )
         throw exception::HaltRequested();
     }
-  }
+  } while ( !rqstBufRef );
+
   return rqstBufRef;
 }
 

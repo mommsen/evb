@@ -156,7 +156,7 @@ namespace evb {
       typename ReadoutUnit::InputPtr input_;
       BUposter<ReadoutUnit> buPoster_;
       I2O_TID tid_;
-      toolbox::mem::Pool* superFragmentPool_;
+      toolbox::mem::Pool* msgPool_;
 
       typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
       WorkLoops workLoops_;
@@ -225,46 +225,11 @@ evb::readoutunit::BUproxy<ReadoutUnit>::BUproxy(ReadoutUnit* readoutUnit) :
 readoutUnit_(readoutUnit),
 buPoster_(readoutUnit),
 tid_(0),
+msgPool_(readoutUnit->getMsgPool()),
 doProcessing_(false),
 nbActiveProcesses_(0),
 fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
 {
-  try
-  {
-    toolbox::net::URN urn("toolbox-mem-pool",readoutUnit_->getConfiguration()->sendPoolName);
-    superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
-  }
-  catch(toolbox::mem::exception::MemoryPoolNotFound)
-  {
-    toolbox::net::URN poolURN("toolbox-mem-pool","superFragment");
-    try
-    {
-      superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->
-        createPool(poolURN, new toolbox::mem::HeapAllocator());
-    }
-    catch(toolbox::mem::exception::DuplicateMemoryPool)
-    {
-      // Pool already exists from a previous construction of this class
-      // Note that destroying the pool in the destructor is not working
-      // because the previous instance is destroyed after the new one
-      // is constructed.
-      superFragmentPool_ = toolbox::mem::getMemoryPoolFactory()->
-        findPool(poolURN);
-    }
-  }
-  catch(toolbox::mem::exception::Exception& e)
-  {
-    XCEPT_RETHROW(exception::OutOfMemory,
-                  "Failed to create memory pool for super-fragments", e);
-  }
-
-  toolbox::mem::Allocator* allocator = dynamic_cast<toolbox::mem::Allocator*>(superFragmentPool_->getAllocator());
-  if ( allocator->isCommittedSizeSupported() )
-  {
-    size_t committedSize = allocator->getCommittedSize();
-    superFragmentPool_->setHighThreshold((unsigned long) (committedSize * 0.9));
-  }
-
   resetMonitoringCounters();
   startProcessingWorkLoop();
 }
@@ -587,11 +552,22 @@ toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
   const uint32_t blockNb
 ) const
 {
-  while ( superFragmentPool_->isHighThresholdExceeded() ) ::usleep(1000);
+  toolbox::mem::Reference* bufRef = 0;
 
-  toolbox::mem::Reference* bufRef =
-    toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
-  bufRef->setDataSize(readoutUnit_->getConfiguration()->blockSize);
+  do
+  {
+    try
+    {
+      const uint32_t blockSize = readoutUnit_->getConfiguration()->blockSize;
+      bufRef = toolbox::mem::getMemoryPoolFactory()->
+        getFrame(msgPool_,blockSize);
+      bufRef->setDataSize(blockSize);
+    }
+    catch(toolbox::mem::exception::Exception)
+    {
+      bufRef = 0;
+    }
+  } while ( !bufRef );
 
   msg::I2O_DATA_BLOCK_MESSAGE_FRAME* dataBlockMsg = (msg::I2O_DATA_BLOCK_MESSAGE_FRAME*)bufRef->getDataLocation();
   dataBlockMsg->blockNb = blockNb;
@@ -654,12 +630,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
   if ( readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks.value_ > 0 )
   {
     toolbox::mem::Reference* head =
-      toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
+      toolbox::mem::getMemoryPoolFactory()->getFrame(msgPool_,readoutUnit_->getConfiguration()->blockSize);
     toolbox::mem::Reference* tail = head;
     for (uint32_t i = 1; i < readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks; ++i)
     {
       toolbox::mem::Reference* bufRef =
-        toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
+        toolbox::mem::getMemoryPoolFactory()->getFrame(msgPool_,readoutUnit_->getConfiguration()->blockSize);
       tail->setNextReference(bufRef);
       tail = bufRef;
     }
