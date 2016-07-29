@@ -271,10 +271,20 @@ void evb::bu::RUproxy::sendRequests()
     const uint32_t msgSize = sizeof(msg::ReadoutMsg) + nbRequests*sizeof(msg::EventRequest);
     uint32_t nbEventsRequested = 0;
 
-    toolbox::mem::Reference* rqstBufRef =
-      toolbox::mem::getMemoryPoolFactory()->
-      getFrame(msgPool_, msgSize);
-    rqstBufRef->setDataSize(msgSize);
+    toolbox::mem::Reference* rqstBufRef = 0;
+    do
+    {
+      try
+      {
+        rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
+          getFrame(msgPool_, msgSize);
+        rqstBufRef->setDataSize(msgSize);
+      }
+      catch(toolbox::mem::exception::Exception)
+      {
+        rqstBufRef = 0;
+      }
+    } while ( !rqstBufRef );
 
     I2O_MESSAGE_FRAME* stdMsg =
       (I2O_MESSAGE_FRAME*)rqstBufRef->getDataLocation();
