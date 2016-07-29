@@ -78,6 +78,7 @@ namespace evb {
     const std::string& getSubSystem() const { return subSystem_; }
     boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
     boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
+    toolbox::mem::Pool* getMsgPool() const;
 
     uint32_t postMessage
     (
@@ -106,7 +107,6 @@ namespace evb {
     cgicc::div getWebPageHeader() const;
     cgicc::div getWebPageBanner() const;
 
-    toolbox::mem::Pool* getFastControlMsgPool() const;
     xoap::MessageReference createFsmSoapResponseMsg
     (
       const std::string& event,
@@ -748,30 +748,44 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::createFs
 
 
 template<class Configuration,class StateMachine>
-toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getFastControlMsgPool() const
+toolbox::mem::Pool* evb::EvBApplication<Configuration,StateMachine>::getMsgPool() const
 {
-  toolbox::mem::Pool* fastCtrlMsgPool = 0;
+  toolbox::mem::Pool* pool = 0;
+  toolbox::net::URN urn("toolbox-mem-pool", configuration_->sendPoolName);
 
   try
   {
-    toolbox::net::URN urn("toolbox-mem-pool", configuration_->sendPoolName);
-    fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
+    pool = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
   }
   catch(toolbox::mem::exception::MemoryPoolNotFound)
   {
-    const std::string fastCtrlMsgPoolName( getIdentifier(" fast control message pool") );
+    try
+    {
+      pool = toolbox::mem::getMemoryPoolFactory()->
+        createPool(urn, new toolbox::mem::HeapAllocator());
+    }
+    catch(toolbox::mem::exception::DuplicateMemoryPool)
+    {
+      // Pool already exists from a previous construction of this class
+      // Note that destroying the pool in the destructor is not working
+      // because the previous instance is destroyed after the new one
+      // is constructed.
+      pool = toolbox::mem::getMemoryPoolFactory()->findPool(urn);
+    }
 
-    toolbox::net::URN urn("toolbox-mem-pool", fastCtrlMsgPoolName);
-    toolbox::mem::HeapAllocator* a = new toolbox::mem::HeapAllocator();
-
-    fastCtrlMsgPool = toolbox::mem::getMemoryPoolFactory()->createPool(urn, a);
+    toolbox::mem::Allocator* allocator = dynamic_cast<toolbox::mem::Allocator*>(pool->getAllocator());
+    if ( allocator->isCommittedSizeSupported() )
+    {
+      size_t committedSize = allocator->getCommittedSize();
+      pool->setHighThreshold((unsigned long) (committedSize * 0.9));
+    }
   }
   catch(toolbox::mem::exception::Exception e)
   {
-    XCEPT_RETHROW(exception::OutOfMemory, "Failed to create fast control message memory pool", e);
+    XCEPT_RETHROW(exception::OutOfMemory, "Failed to create I2O message memory pool", e);
   }
 
-  return fastCtrlMsgPool;
+  return pool;
 }
 
 
@@ -818,7 +832,8 @@ uint32_t evb::EvBApplication<Configuration,StateMachine>::postMessage
       {
         std::ostringstream msg;
         msg << "Failed to send message after " <<
-          retries << " retries to " << destination->getURN();
+          retries << " retries to " <<
+          destination->getContextDescriptor()->getURL() << "/" << destination->getURN();
         XCEPT_RETHROW(exception::I2O, msg.str(), e);
       }
       ::usleep(100);

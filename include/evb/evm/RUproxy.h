@@ -47,8 +47,7 @@ namespace evb {
       RUproxy
       (
         EVM*,
-        boost::shared_ptr< readoutunit::StateMachine<EVM> >,
-        toolbox::mem::Pool*
+        boost::shared_ptr< readoutunit::StateMachine<EVM> >
       );
 
       ~RUproxy();
@@ -122,7 +121,7 @@ namespace evb {
       EVM* evm_;
       boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine_;
 
-      toolbox::mem::Pool* fastCtrlMsgPool_;
+      toolbox::mem::Pool* msgPool_;
 
       typedef OneToOneQueue<readoutunit::FragmentRequestPtr> ReadoutMsgFIFO;
       ReadoutMsgFIFO readoutMsgFIFO_;

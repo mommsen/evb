@@ -24,13 +24,12 @@ evb::bu::RUproxy::RUproxy
 (
   BU* bu,
   boost::shared_ptr<EventBuilder> eventBuilder,
-  boost::shared_ptr<ResourceManager> resourceManager,
-  toolbox::mem::Pool* fastCtrlMsgPool
+  boost::shared_ptr<ResourceManager> resourceManager
 ) :
   bu_(bu),
   eventBuilder_(eventBuilder),
   resourceManager_(resourceManager),
-  fastCtrlMsgPool_(fastCtrlMsgPool),
+  msgPool_(bu->getMsgPool()),
   configuration_(bu->getConfiguration()),
   doProcessing_(false),
   requestFragmentsActive_(false),
@@ -274,7 +273,7 @@ void evb::bu::RUproxy::sendRequests()
 
     toolbox::mem::Reference* rqstBufRef =
       toolbox::mem::getMemoryPoolFactory()->
-      getFrame(fastCtrlMsgPool_, msgSize);
+      getFrame(msgPool_, msgSize);
     rqstBufRef->setDataSize(msgSize);
 
     I2O_MESSAGE_FRAME* stdMsg =

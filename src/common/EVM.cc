@@ -14,12 +14,10 @@
 evb::EVM::EVM(xdaq::ApplicationStub* app) :
   evm::ReadoutUnit(app,"/evb/images/evm64x64.gif")
 {
-  toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
-
   this->stateMachine_.reset( new evm::EVMStateMachine(this) );
   this->input_.reset( new readoutunit::Input<EVM,evm::Configuration>(this) );
   this->ferolConnectionManager_.reset( new readoutunit::FerolConnectionManager<EVM,evm::Configuration>(this) );
-  this->ruProxy_.reset( new evm::RUproxy(this,this->stateMachine_,fastCtrlMsgPool) );
+  this->ruProxy_.reset( new evm::RUproxy(this,this->stateMachine_) );
   this->buProxy_.reset( new readoutunit::BUproxy<EVM>(this) );
 
   this->initialize();

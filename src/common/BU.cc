@@ -17,12 +17,10 @@
 evb::BU::BU(xdaq::ApplicationStub* app) :
   EvBApplication<bu::Configuration,bu::StateMachine>(app,"/evb/images/bu64x64.gif")
 {
-  toolbox::mem::Pool* fastCtrlMsgPool = getFastControlMsgPool();
-
   resourceManager_.reset( new bu::ResourceManager(this) );
   diskWriter_.reset( new bu::DiskWriter(this, resourceManager_) );
   eventBuilder_.reset( new bu::EventBuilder(this, diskWriter_, resourceManager_) );
-  ruProxy_.reset( new bu::RUproxy(this, eventBuilder_, resourceManager_, fastCtrlMsgPool) );
+  ruProxy_.reset( new bu::RUproxy(this, eventBuilder_, resourceManager_) );
   stateMachine_.reset( new bu::StateMachine(this,
                                             ruProxy_, diskWriter_, eventBuilder_, resourceManager_) );
 
