@@ -283,6 +283,7 @@ void evb::bu::RUproxy::sendRequests()
       catch(toolbox::mem::exception::Exception)
       {
         rqstBufRef = 0;
+        ::usleep(100);
       }
     } while ( !rqstBufRef );
 

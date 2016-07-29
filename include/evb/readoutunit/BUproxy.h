@@ -566,6 +566,7 @@ toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
     catch(toolbox::mem::exception::Exception)
     {
       bufRef = 0;
+      ::usleep(100);
     }
   } while ( !bufRef );
 

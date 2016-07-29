@@ -117,6 +117,7 @@ toolbox::mem::Reference* evb::evm::RUproxy::getRequestMsgBuffer(const uint32_t b
       rqstBufRef = 0;
       if ( ! doProcessing_ )
         throw exception::HaltRequested();
+      ::usleep(100);
     }
   } while ( !rqstBufRef );
 
