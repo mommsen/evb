@@ -13,8 +13,8 @@ from ROOT import gROOT,gStyle
 class PlotScans:
 
     def __init__(self):
-        self.colors  = [1,4,417,2,51,95,65,41,46,39,32]
-        self.markers = [20,21,22,23,34,33,29,24,25,26,27,28]
+        self.colors  = [1,4,417,2,51,95,65,41,46,39,32,49]
+        self.markers = [20,21,22,23,34,33,29,24,25,26,27,28,29]
         self.latex = ROOT.TLatex()
         self.latex.SetNDC(1)
         self.nominalSize = None
@@ -80,7 +80,7 @@ class PlotScans:
             titleY = "Total EvB throughput (GB/s)"
             titleYoffset = 1.2
         elif self.args['plotSuperFragmentSize']:
-            range = [0,330,0,5900]
+            range = [0,100,0,5900]
             title = "Throughput vs. Super-fragment Size"
             titleX = "Super-fragment Size (kB)"
         elif 'BU' in self.args['app']:
@@ -92,9 +92,9 @@ class PlotScans:
             title = "Throughput vs. Fragment Size"
             titleX = "Fragment Size (bytes)"
         if self.args['plotMaxRU']:
-            range = [0.1,7,0,5900]
-            title = "Throughput vs. Rel. Fragment Size"
-            titleX = "Relative fragment size"
+            range = [5,100,0,5900]
+            title = "Throughput vs. Super-fragment Size"
+            titleX = "Super-fragment Size (kB)"
             titleY = "Max throughput on RU (MB/s)"
         if not self.args['minx']:
             self.args['minx'] = range[0]
@@ -374,7 +374,15 @@ class PlotScans:
                 else:
                     app = 'RU0'
                     self.args['app'] = app
-                if 'BU' in app or self.args['plotSuperFragmentSize']:
+                if self.args['plotMaxRU']:
+                    maxThroughput = 0
+                    for ru in list(k for k in dataPoint[0]['rates'].keys() if k.startswith('RU')):
+                        throughput = mean(list(x['sizes'][ru]*x['rates'][ru]/1000000000. for x in dataPoint))
+                        if throughput > maxThroughput:
+                            maxThroughput = throughput
+                            self.args['app'] = ru
+                    print(value['fragSize'],self.args['app'],maxThroughput)
+                if 'BU' in app or self.args['plotMaxRU'] or self.args['plotSuperFragmentSize']:
                     rawSizes = list(x['sizes'][app]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
                     if len(sizes) == 0:
@@ -384,18 +392,6 @@ class PlotScans:
                     entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
                     if value['fragSize'] == 2048 and not self.nominalSize:
                         self.nominalSize = averageSize
-                elif self.args['plotMaxRU']:
-                    entry['sizes'].append(value['fragSize']/2048.)
-                    entry['rmsSizes'].append(value['fragSizeRMS']/2048.)
-                    maxThroughput = 0
-                    maxRate = 0
-                    appWitMaxRate = ""
-                    for x in dataPoint:
-                        for app,rate,throughput in ((k,x['rates'][k],x['sizes'][k]*x['rates'][k]/1000000000.) for k in x['rates'].keys() if k.startswith('RU')):
-                            if throughput > maxThroughput:
-                                maxThroughput = throughput
-                                self.args['app'] = app
-                    print(value['fragSize'],self.args['app'],maxThroughput)
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])

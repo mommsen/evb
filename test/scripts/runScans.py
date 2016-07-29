@@ -52,7 +52,10 @@ class RunScans(TestRunner):
         elif self.args['calculateFedSizesFromFile']:
             with open(self.args['calculateFedSizesFromFile']) as file:
                 for line in file:
-                    (fedIds,a,b,c,rms) = line.split(',',5)
+                    try:
+                        (fedIds,a,b,c,rms) = line.split(',',5)
+                    except ValueError:
+                        (fedIds,a,b,c,rms,_) = line.split(',')
                     try:
                         for id in fedIds.split('+'):
                             self.fedSizeScaleFactors[id] = (float(a),float(b),float(c),float(rms))
