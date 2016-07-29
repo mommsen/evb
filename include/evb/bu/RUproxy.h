@@ -51,8 +51,7 @@ namespace evb {
       (
         BU*,
         boost::shared_ptr<EventBuilder>,
-        boost::shared_ptr<ResourceManager>,
-        toolbox::mem::Pool*
+        boost::shared_ptr<ResourceManager>
       );
 
       ~RUproxy();
@@ -141,7 +140,7 @@ namespace evb {
       boost::shared_ptr<ResourceManager> resourceManager_;
       boost::shared_ptr<StateMachine> stateMachine_;
 
-      toolbox::mem::Pool* fastCtrlMsgPool_;
+      toolbox::mem::Pool* msgPool_;
       const ConfigurationPtr configuration_;
 
       bool doProcessing_;

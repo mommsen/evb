@@ -20,12 +20,11 @@
 evb::evm::RUproxy::RUproxy
 (
   EVM* evm,
-  boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine,
-  toolbox::mem::Pool* fastCtrlMsgPool
+  boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine
 ) :
   evm_(evm),
   stateMachine_(stateMachine),
-  fastCtrlMsgPool_(fastCtrlMsgPool),
+  msgPool_(evm->getMsgPool()),
   readoutMsgFIFO_(evm,"readoutMsgFIFO"),
   doProcessing_(false),
   processingActive_(false),
@@ -110,7 +109,7 @@ toolbox::mem::Reference* evb::evm::RUproxy::getRequestMsgBuffer(const uint32_t b
     try
     {
       rqstBufRef = toolbox::mem::getMemoryPoolFactory()->
-        getFrame(fastCtrlMsgPool_, bufSize);
+        getFrame(msgPool_, bufSize);
       rqstBufRef->setDataSize(bufSize);
     }
     catch(toolbox::mem::exception::Exception)

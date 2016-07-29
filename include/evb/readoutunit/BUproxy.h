@@ -258,6 +258,13 @@ fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
                   "Failed to create memory pool for super-fragments", e);
   }
 
+  toolbox::mem::Allocator* allocator = dynamic_cast<toolbox::mem::Allocator*>(superFragmentPool_->getAllocator());
+  if ( allocator->isCommittedSizeSupported() )
+  {
+    size_t committedSize = allocator->getCommittedSize();
+    superFragmentPool_->setHighThreshold((unsigned long) (committedSize * 0.9));
+  }
+
   resetMonitoringCounters();
   startProcessingWorkLoop();
 }
@@ -580,6 +587,8 @@ toolbox::mem::Reference* evb::readoutunit::BUproxy<ReadoutUnit>::getNextBlock
   const uint32_t blockNb
 ) const
 {
+  while ( superFragmentPool_->isHighThresholdExceeded() ) ::usleep(1000);
+
   toolbox::mem::Reference* bufRef =
     toolbox::mem::getMemoryPoolFactory()->getFrame(superFragmentPool_,readoutUnit_->getConfiguration()->blockSize);
   bufRef->setDataSize(readoutUnit_->getConfiguration()->blockSize);
