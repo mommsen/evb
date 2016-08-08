@@ -42,6 +42,7 @@ evb::bu::ResourceManager::ResourceManager
   queuedLSonFUs_(-1),
   fuOutBwMB_(0),
   requestEvents_(true),
+  stopRequested_(false),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
@@ -438,11 +439,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     fusStale_ = pt.get<int>("stale_resources");
     fuOutBwMB_ = pt.get<double>("activeRunLSBWMB");
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
-
-    if ( pt.get<bool>("bu_stop_requests_flag") )
-    {
-      bu_->getStateMachine()->processFSMEvent( StopRequests() );
-    }
+    stopRequested_ = pt.get<bool>("bu_stop_requests_flag");
 
     resourcesFromFUs = (fusHLT_ == 0) ? 0 :
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
@@ -722,6 +719,9 @@ uint16_t evb::bu::ResourceManager::getPriority()
 
 void evb::bu::ResourceManager::changeStatesBasedOnResources()
 {
+  if ( stopRequested_ )
+    bu_->getStateMachine()->processFSMEvent( StopRequests() );
+
   bool allFUsQuarantined;
   bool allFUsStale;
   bool fusInCloud;
