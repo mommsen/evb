@@ -139,6 +139,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
   if ( ! doProcessing_ ) return false;
 
   const uint32_t blockSize = evm_->getConfiguration()->allocateBlockSize;
+  const uint32_t maxAllocateTries = (evm_->getConfiguration()->maxAllocateTime / 10) + 1;
   toolbox::mem::Reference* rqstBufRef = 0;
   uint32_t msgSize = 0;
   unsigned char* payload = 0;
@@ -198,12 +199,9 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
           allocateMonitoring_.perf.logicalCount += nbRequests*ruCount_;
         }
       }
-      else if ( doProcessing_ && tries < 100 )
+      else if ( ++tries < maxAllocateTries )
       {
-        ++tries;
-        processingActive_ = false;
-        ::usleep(100);
-        processingActive_ = true;
+        ::usleep(10);
       }
       else
       {
@@ -244,6 +242,8 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
                   sentinelException, "unkown exception");
     stateMachine_->processFSMEvent( Fail(sentinelException) );
   }
+
+  processingActive_ = false;
 
   return doProcessing_;
 }
