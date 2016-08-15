@@ -30,7 +30,8 @@ namespace evb {
       xdata::UnsignedInteger32 maxEvtsUnderConstruction;   // Maximum number of events in BU
       xdata::UnsignedInteger32 eventsPerRequest;           // Number of events requested at a time
       xdata::Double resourcesPerCore;                      // Number of resource IDs per active FU core
-      xdata::UnsignedInteger32 sleepTimeBlocked;           // Time to sleep in ms for each blocked resource
+      xdata::UnsignedInteger32 sleepTimeBlocked;           // Time to sleep in ns for each blocked resource
+      xdata::UnsignedInteger32 maxRequestRate;             // Maximum rate in Hz to send request to EVM
       xdata::Double fuOutputBandwidthLow;                  // Low water mark on bandwidth used for output of FUs
       xdata::Double fuOutputBandwidthHigh;                 // High water mark on bandwidth used for output of FUs
       xdata::UnsignedInteger32 lumiSectionLatencyLow;      // Low water mark on how many LS may be queued for the FUs
@@ -74,7 +75,8 @@ namespace evb {
           maxEvtsUnderConstruction(256),
           eventsPerRequest(8),
           resourcesPerCore(0.2),
-          sleepTimeBlocked(5),
+          sleepTimeBlocked(5000),
+          maxRequestRate(1000),
           fuOutputBandwidthLow(100),
           fuOutputBandwidthHigh(120),
           lumiSectionLatencyLow(1),
@@ -126,6 +128,7 @@ namespace evb {
         params.add("eventsPerRequest", &eventsPerRequest);
         params.add("resourcesPerCore", &resourcesPerCore);
         params.add("sleepTimeBlocked", &sleepTimeBlocked);
+        params.add("maxRequestRate", &maxRequestRate);
         params.add("fuOutputBandwidthLow", &fuOutputBandwidthLow);
         params.add("fuOutputBandwidthHigh", &fuOutputBandwidthHigh);
         params.add("lumiSectionLatencyLow", &lumiSectionLatencyLow);
