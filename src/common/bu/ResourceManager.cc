@@ -368,7 +368,7 @@ void evb::bu::ResourceManager::getAllAvailableResources(BUresources& resources)
     {
       if ( pos->second.blocked )
       {
-        ::usleep(configuration_->sleepTimeBlocked*1000);
+        ::usleep(configuration_->sleepTimeBlocked);
 
         boost::mutex::scoped_lock sl(resourceFIFOmutex_);
         resourceFIFO_.enqWait(pos);

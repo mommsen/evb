@@ -224,9 +224,9 @@ void evb::bu::RUproxy::startProcessingWorkLoop()
 
 bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 {
-  ::usleep(1000);
-
   if ( ! doProcessing_ ) return false;
+
+  ::usleep(1000000/configuration_->maxRequestRate);
 
   requestFragmentsActive_ = true;
 
