@@ -130,6 +130,11 @@ class ConfigFromFile(Configuration):
                 context.policy = c.find(QN(polns,'policy').text)
                 self.parsePolicy(context.policy)
 
+            maxbulksize="0x10000"
+            for endpoint in c.findall(QN(self.xcns,'Endpoint').text): ## all 'Endpoint's of this context
+                if endpoint.attrib['protocol'] == "btcp":
+                    maxbulksize = endpoint.attrib['maxbulksize']
+
             for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
                 if generateAtRU and application.attrib['class'] == "pt::blit::Application":
                     continue
@@ -141,6 +146,7 @@ class ConfigFromFile(Configuration):
                     app.params['frlHostname'] = context.hostinfo['frlHostname']
                     app.params['frlPort'] = self.frlPorts[0]
                     app.params['frlPort2'] = self.frlPorts[1]
+                    app.params['maxbulksize'] = maxbulksize
                 elif app.params['class'] == 'pt::ibv::Application':
                     app.params['protocol'] = 'ibv'
                     app.params['i2oHostname'] = context.hostinfo['i2oHostname']
@@ -327,8 +333,8 @@ class ConfigFromFile(Configuration):
 
 
 if __name__ == "__main__":
-    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/scans/daq2valSymbolMap.txt")
-    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/scans/8s8fx1x2_evb_ibv_COL.xml")
+    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20160822/canon_1str_1x1/symbolMap.txt")
+    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20160822/canon_1str_1x1/canon_1str_1x1.xml",False,False,False,True)
     #print(config.contexts)
     for key in config.contexts.keys():
         config.getConfigCmd(key)

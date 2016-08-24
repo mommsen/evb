@@ -148,7 +148,7 @@ class Application:
             endpoint.set('pollingCycle','1')
             endpoint.set('rmode','select')
             endpoint.set('nonblock','true')
-            endpoint.set('maxbulksize','131072')
+            endpoint.set('maxbulksize',self.params['maxbulksize'])
             endpoint.set('hostname',self.params['frlHostname'])
             endpoint.set('port',str(self.params['frlPort']))
             endpoint.set('network','ferola')

@@ -120,16 +120,18 @@ class RU(Context):
 
 
     def addPtBlitApplication(self):
+        maxBlockSize='0x10000'
         properties = [
             ('maxClients','unsignedInt','32'),
             ('maxReceiveBuffers','unsignedInt','128'),
-            ('maxBlockSize','unsignedInt','131072')
+            ('maxBlockSize','unsignedInt',maxBlockSize)
             ]
         app = Application.Application('pt::blit::Application',Context.ptInstance,properties)
         Context.ptInstance += 1
         app.params['frlHostname'] = self.hostinfo['frlHostname']
         app.params['frlPort'] = self.hostinfo['frlPort']
         app.params['frlPort2'] = self.hostinfo['frlPort2']
+        app.params['maxbulksize'] = maxBlockSize
         self.applications.append(app)
 
 
