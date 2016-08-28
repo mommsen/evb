@@ -1,11 +1,10 @@
 #include <algorithm>
 #include <sstream>
 #include <string.h>
-#include <sys/time.h>
-#include <time.h>
 
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
+#include "evb/Constants.h"
 #include "evb/Exception.h"
 #include "evb/FragmentTracker.h"
 
@@ -40,7 +39,7 @@ evb::FragmentTracker::FragmentTracker
   }
   if (useLogNormal)
   {
-    logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),fedSize,fedSizeStdDev) );
+    logNormalGen_.reset( new toolbox::math::LogNormalGen(getTimeStamp(),fedSize,fedSizeStdDev) );
   }
 }
 
@@ -69,9 +68,7 @@ uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
 
 void evb::FragmentTracker::startRun()
 {
-  struct timeval time;
-  gettimeofday(&time,0);
-  lastTime_ = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+  lastTime_ = getTimeStamp();
   availableTriggers_ = 0;
 }
 
@@ -86,16 +83,14 @@ void evb::FragmentTracker::waitForNextTrigger()
     return;
   }
 
-  struct timeval time;
-  double now = 0;
+  uint64_t now = 0;
   while ( availableTriggers_ == 0 )
   {
-    gettimeofday(&time,0);
-    now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+    now = getTimeStamp();
     if ( lastTime_ == 0 )
       availableTriggers_ = 1;
     else
-      availableTriggers_ = static_cast<uint32_t>(now>lastTime_ ? (now-lastTime_)*maxTriggerRate_ : 0);
+      availableTriggers_ = static_cast<uint32_t>(now>lastTime_ ? (now-lastTime_)/1e9*maxTriggerRate_ : 0);
   }
   lastTime_ = now;
   --availableTriggers_;

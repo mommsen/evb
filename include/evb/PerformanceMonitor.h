@@ -1,10 +1,11 @@
 #ifndef _evb_PerformaceMonitor_h_
 #define _evb_PerformaceMonitor_h_
 
+#include "evb/Constants.h"
+
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 
 namespace evb {
@@ -16,7 +17,7 @@ namespace evb {
     uint64_t retryCount;
     uint64_t sumOfSizes;
     uint64_t sumOfSquares;
-    double startTime;
+    uint64_t startTime;
 
     PerformanceMonitor()
     {
@@ -25,9 +26,8 @@ namespace evb {
 
     double deltaT() const
     {
-      struct timeval time;
-      gettimeofday(&time,0);
-      return ( time.tv_sec + static_cast<double>(time.tv_usec) / 1000000 - startTime );
+      const uint64_t now = getTimeStamp();
+      return (now>startTime ? (now-startTime)/1e9 : 0);
     }
 
     double logicalRate(const double& deltaT) const
@@ -89,10 +89,7 @@ namespace evb {
       retryCount = 0;
       sumOfSizes = 0;
       sumOfSquares = 0;
-
-      struct timeval time;
-      gettimeofday(&time,0);
-      startTime = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+      startTime = getTimeStamp();
     }
 
     PerformanceMonitor& operator=(const PerformanceMonitor& other)

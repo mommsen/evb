@@ -6,6 +6,7 @@
 #include <iterator>
 #include <sstream>
 #include <stdint.h>
+#include <time.h>
 
 
 namespace evb {
@@ -21,6 +22,13 @@ namespace evb {
 
   inline bool isFibonacci(const uint64_t value)
   { return ( std::find(fibonacci,fibonacci+92,value) != fibonacci+92 ); }
+
+  inline uint64_t getTimeStamp()
+  {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (ts.tv_sec*1000000000 + ts.tv_nsec);
+  }
 
   inline std::string doubleToString(const double& value, const uint8_t precision)
   {

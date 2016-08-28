@@ -17,7 +17,6 @@
 
 #include <limits>
 #include <string.h>
-#include <time.h>
 
 
 evb::bu::RUproxy::RUproxy
@@ -356,10 +355,8 @@ uint64_t evb::bu::RUproxy::getTimeStamp() const
 {
   if ( configuration_->roundTripTimeSamples == 0U )
     return 0;
-
-  struct timespec ts;
-  clock_gettime(CLOCK_REALTIME, &ts);
-  return (ts.tv_sec*1000000000 + ts.tv_nsec);
+  else
+    return evb::getTimeStamp();
 }
 
 

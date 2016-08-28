@@ -86,7 +86,7 @@ namespace evb {
     uint32_t currentFedSize_;
     uint32_t remainingFedSize_;
     EvBid evbId_;
-    double lastTime_;
+    uint64_t lastTime_;
     uint32_t availableTriggers_;
   };
 
