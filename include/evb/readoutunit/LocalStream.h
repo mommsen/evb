@@ -3,9 +3,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <sys/time.h>
-#include <time.h>
 
+#include "evb/Constants.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
@@ -72,7 +71,7 @@ namespace evb {
 
       volatile bool generatingActive_;
       uint32_t maxTriggerRate_;
-      double lastTime_;
+      uint64_t lastTime_;
       uint32_t availableTriggers_;
 
     };
@@ -106,7 +105,7 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
   }
   if ( configuration_->useLogNormal )
   {
-    logNormalGen_.reset( new toolbox::math::LogNormalGen(time(0),configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev) );
+    logNormalGen_.reset( new toolbox::math::LogNormalGen(getTimeStamp(),configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev) );
   }
 
   startGeneratorWorkLoop();
@@ -201,16 +200,14 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::waitForNextTrigge
     return;
   }
 
-  struct timeval time;
-  double now = 0;
+  uint64_t now = 0;
   while ( availableTriggers_ == 0 )
   {
-    gettimeofday(&time,0);
-    now = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+    now = getTimeStamp();
     if ( lastTime_ == 0 )
       availableTriggers_ = 1;
     else
-      availableTriggers_ = static_cast<uint32_t>(now>lastTime_ ? (now-lastTime_)*maxTriggerRate_ : 0);
+      availableTriggers_ = static_cast<uint32_t>(now>lastTime_ ? (now-lastTime_)/1e9*maxTriggerRate_ : 0);
   }
   lastTime_ = now;
   --availableTriggers_;
@@ -241,9 +238,7 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::startProcessing(c
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
 
   this->eventNumberToStop_ = (1 << 25); //larger than maximum event number
-  struct timeval time;
-  gettimeofday(&time,0);
-  lastTime_ = time.tv_sec + static_cast<double>(time.tv_usec) / 1000000;
+  lastTime_ = getTimeStamp();
   availableTriggers_ = 0;
 
   generatingWorkLoop_->submit(generatingAction_);
