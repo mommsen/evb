@@ -138,21 +138,21 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
 {
   if ( ! doProcessing_ ) return false;
 
+  processingActive_ = true;
+
   const uint32_t blockSize = evm_->getConfiguration()->allocateBlockSize;
-  const uint32_t maxAllocateTries = (evm_->getConfiguration()->maxAllocateTime / 10) + 1;
   toolbox::mem::Reference* rqstBufRef = 0;
   uint32_t msgSize = 0;
   unsigned char* payload = 0;
   uint32_t requestCount = 0;
-  uint32_t tries = 0;
-  processingActive_ = true;
+  uint64_t timeLimit = getTimeStamp() + evm_->getConfiguration()->maxAllocateTime;
 
   try
   {
-    while ( doProcessing_ )
+    do
     {
       readoutunit::FragmentRequestPtr fragmentRequest;
-      if ( readoutMsgFIFO_.deq(fragmentRequest) )
+      while ( readoutMsgFIFO_.deq(fragmentRequest) )
       {
         const uint16_t nbRequests = fragmentRequest->nbRequests;
         const uint16_t ruCount = fragmentRequest->ruTids.size();
@@ -170,7 +170,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
           rqstBufRef = getRequestMsgBuffer(blockSize);
           msgSize = sizeof(msg::ReadoutMsg);
           payload = ((unsigned char*)rqstBufRef->getDataLocation()) + msgSize;
-          tries = 0;
+          timeLimit = getTimeStamp() + evm_->getConfiguration()->maxAllocateTime;
         }
 
         msg::EventRequest* eventRequest = (msg::EventRequest*)payload;
@@ -199,19 +199,13 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
           allocateMonitoring_.perf.logicalCount += nbRequests*ruCount_;
         }
       }
-      else if ( ++tries < maxAllocateTries )
-      {
-        ::usleep(10);
-      }
-      else
-      {
-        if ( rqstBufRef )
-        {
-          // send what we have so far
-          sendMsgToRUs(rqstBufRef,msgSize,requestCount);
-        }
-        tries = 0;
-      }
+      ::usleep(10);
+    } while ( getTimeStamp() < timeLimit );
+
+    if ( rqstBufRef )
+    {
+      // send what we have
+      sendMsgToRUs(rqstBufRef,msgSize,requestCount);
     }
   }
   catch(exception::HaltRequested& e)
