@@ -1,4 +1,5 @@
 import copy
+import gzip
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -107,7 +108,15 @@ class ConfigFromFile(Configuration):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
-        ETroot = ET.parse(configFile).getroot()
+
+        if os.path.exists(configFile):
+            ETroot = ET.parse(configFile).getroot()
+        elif os.path.exists(configFile+".gz"):
+            f = gzip.open(configFile+".gz") #gzip.open() doesn't support the context manager protocol needed for it to be used in a 'with' statement.
+            ETroot = ET.parse(f).getroot()
+            f.close()
+        else:
+            raise IOError(configFile+"(.gz) does not exist")
 
         self.xcns = re.match(r'\{(.*?)\}Partition',ETroot.tag).group(1) ## Extract xdaq namespace
         tid = 1
@@ -333,8 +342,8 @@ class ConfigFromFile(Configuration):
 
 
 if __name__ == "__main__":
-    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20160822/canon_1str_1x1/symbolMap.txt")
-    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20160822/canon_1str_1x1/canon_1str_1x1.xml",False,False,False,True)
+    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20160823/canon_1str_1x1/symbolMap.txt")
+    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20160823/canon_1str_1x1/canon_1str_1x1.xml",False,False,False,True)
     #print(config.contexts)
     for key in config.contexts.keys():
         config.getConfigCmd(key)
