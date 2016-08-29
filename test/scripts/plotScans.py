@@ -238,21 +238,21 @@ class PlotScans:
         legendPosY = 0.828
         tagLen = 0
         subtagLen = 0
-        #try:
-        #    tagLen = 0.017*len(self.args['tag'])
-        #except TypeError:
-        #    pass
         try:
-            subtagLen = 0.01*len(self.args['subtag'])
+            tagLen = 0.017*len(self.args['tag'])
+        except TypeError:
+            pass
+        try:
+            subtagLen = 0.013*len(self.args['subtag'])
         except TypeError:
             pass
         width = 0.12 + max(tagLen,subtagLen,0.2)
         if width > 0.9: width=0.899
         if self.args['tag']:
-            #self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
-            #self.pave.SetFillStyle(1001)
-            #self.pave.SetFillColor(0)
-            #self.pave.Draw()
+            self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
+            self.pave.SetFillStyle(1001)
+            self.pave.SetFillColor(0)
+            self.pave.Draw()
             self.latex.SetTextSize(0.05)
             self.latex.DrawLatex(0.13,legendPosY,self.args['tag'])
             legendPosY -= 0.06
@@ -270,6 +270,7 @@ class PlotScans:
         self.legend.SetFillColor(0)
         self.legend.SetTextFont(42)
         self.legend.SetTextSize(0.033)
+        self.legend.SetTextAlign(13);
         self.legend.SetBorderSize(0)
         self.legend.Draw()
 
