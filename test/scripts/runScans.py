@@ -94,7 +94,7 @@ class RunScans(TestRunner):
 
     def runConfig(self,configName,configFile,stdout):
         try:
-            allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,3072,4096,6144,8192,10240,12288,16384]
+            allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,4096,8192,12288,16384]
             shortSizes = [256,512,768,1024,1280,1536,2048,2560,4096,8192,12288,16384]
             if self.args['relsizes']:
                 sizes = [ int(r * ConfigCase.defaultFedSize) for r in self.args['relsizes'] ]
