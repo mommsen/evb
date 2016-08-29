@@ -43,7 +43,7 @@ namespace evb {
           fakeLumiSectionDuration(0),
           allocateFIFOCapacity(1440),
           allocateBlockSize(8192),
-          maxAllocateTime(100)
+          maxAllocateTime(2500)
       {};
 
       void addToInfoSpace
