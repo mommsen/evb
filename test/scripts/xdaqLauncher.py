@@ -20,12 +20,15 @@ class xdaqThread(threading.Thread):
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
         os.environ["LD_LIBRARY_PATH"] = xdaqRoot+"/lib"
-        numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
-        xdaq = [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
+        hostname = socket.gethostname()
+        numaCtl = []
         if useNuma:
-            self._xdaqCommand = numaCtl + xdaq
-        else:
-            self._xdaqCommand = xdaq
+            if 'ru-' in hostname:
+                numaCtl = ['/usr/bin/numactl','--cpunodebind=1','--membind=1']
+            elif 'bu-' in hostname:
+                numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
+
+        self._xdaqCommand = numaCtl + [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
 
 
     def run(self):
