@@ -145,7 +145,8 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
   uint32_t msgSize = 0;
   unsigned char* payload = 0;
   uint32_t requestCount = 0;
-  uint64_t timeLimit = getTimeStamp() + evm_->getConfiguration()->maxAllocateTime;
+  const uint64_t maxAllocateTime = evm_->getConfiguration()->maxAllocateTime * 1000 * ruCount_;
+  uint64_t timeLimit = getTimeStamp() + maxAllocateTime;
 
   try
   {
@@ -170,7 +171,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
           rqstBufRef = getRequestMsgBuffer(blockSize);
           msgSize = sizeof(msg::ReadoutMsg);
           payload = ((unsigned char*)rqstBufRef->getDataLocation()) + msgSize;
-          timeLimit = getTimeStamp() + evm_->getConfiguration()->maxAllocateTime;
+          timeLimit = getTimeStamp() + maxAllocateTime;
         }
 
         msg::EventRequest* eventRequest = (msg::EventRequest*)payload;

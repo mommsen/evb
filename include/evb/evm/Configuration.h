@@ -34,7 +34,7 @@ namespace evb {
       xdata::UnsignedInteger32 fakeLumiSectionDuration;      // Duration in seconds of a fake luminosity section. If 0, don't generate lumi sections
       xdata::UnsignedInteger32 allocateFIFOCapacity;         // Capacity of the FIFO to store allocation messages
       xdata::UnsignedInteger32 allocateBlockSize;            // I2O block size used for packing readout msg from EVM to RUs
-      xdata::UnsignedInteger32 maxAllocateTime;              // Maximum time in ns waited while packing readout msg from EVM to RUs
+      xdata::UnsignedInteger32 maxAllocateTime;              // Maximum time in microseconds waited while packing readout msg from EVM to RUs
 
       Configuration()
         : maxTriggerRate(0),
@@ -43,7 +43,7 @@ namespace evb {
           fakeLumiSectionDuration(0),
           allocateFIFOCapacity(1440),
           allocateBlockSize(8192),
-          maxAllocateTime(2500)
+          maxAllocateTime(250)
       {};
 
       void addToInfoSpace
