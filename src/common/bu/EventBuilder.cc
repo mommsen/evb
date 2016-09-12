@@ -402,6 +402,7 @@ uint32_t evb::bu::EventBuilder::handleCompleteEvents
     }
     catch(exception::DataCorruption& e)
     {
+      resourceManager_->eventCompleted(event);
       resourceManager_->discardEvent(event);
       completeEvents.erase(pos++);
       throw; // rethrow the exception such that it can be handled outside of critical section
