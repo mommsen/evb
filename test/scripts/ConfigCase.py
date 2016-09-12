@@ -120,8 +120,9 @@ class ConfigCase(TestCase):
 
 
     def start(self):
+        runNumber=time.strftime("%s",time.localtime())
         self.configureEvB(maxTries=30)
-        self.enableEvB(maxTries=30)
+        self.enableEvB(maxTries=30,runNumber=runNumber)
         self.checkRate()
 
 
