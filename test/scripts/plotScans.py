@@ -18,6 +18,9 @@ class PlotScans:
         self.latex = ROOT.TLatex()
         self.latex.SetNDC(1)
         self.nominalSize = None
+        self.axisTitleSize = 0.044
+        self.labelSize = 0.042
+        self.marginSize = 0.114
 
 
     def addOptions(self,parser):
@@ -70,6 +73,7 @@ class PlotScans:
             self.throughputPad.SetLogy()
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
+        self.throughputPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
         app = self.args['app'].replace('0','')
         titleY = "Throughput on "+app+" (MB/s)"
         titleYoffset = 1.4
@@ -117,7 +121,11 @@ class PlotScans:
         self.throughputTH2D.GetXaxis().SetMoreLogLabels()
         self.throughputTH2D.GetXaxis().SetNoExponent()
         self.throughputTH2D.GetYaxis().SetTitleOffset(titleYoffset)
+        self.throughputTH2D.GetYaxis().SetLabelSize(self.labelSize)
+        self.throughputTH2D.GetYaxis().SetTitleSize(self.axisTitleSize)
         self.throughputTH2D.GetXaxis().SetTitleOffset(1.2)
+        self.throughputTH2D.GetXaxis().SetTitleSize(self.axisTitleSize)
+        self.throughputTH2D.GetXaxis().SetLabelSize(self.labelSize)
         self.throughputTH2D.Draw()
         if self.args['showRelEventSize'] or self.args['showVertices']:
             if self.args['showRelEventSize']:
@@ -149,6 +157,7 @@ class PlotScans:
         self.ratePad.SetFillStyle(4000) ## transparent
         self.ratePad.SetFillColor(0)
         self.ratePad.SetFrameFillStyle(4000)
+        self.ratePad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
         if not self.args['nologx']:
             self.ratePad.SetLogx()
         if self.args['logy']:
@@ -173,6 +182,8 @@ class PlotScans:
         self.rateTH2D.GetXaxis().SetLabelOffset(999);
         self.rateTH2D.GetYaxis().SetTitle(self.args['titleR'])
         self.rateTH2D.GetYaxis().SetTitleOffset(titleOffset)
+        self.rateTH2D.GetYaxis().SetTitleSize(self.axisTitleSize)
+        self.rateTH2D.GetYaxis().SetLabelSize(self.labelSize);
         self.rateTH2D.Draw('Y+')
 
 
@@ -181,6 +192,7 @@ class PlotScans:
         self.auxPad.SetFillStyle(4000) ## transparent
         self.auxPad.SetFillColor(0)
         self.auxPad.SetFrameFillStyle(4000)
+        self.auxPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
         self.auxPad.Draw()
 
     def createLineSpeed(self):
@@ -235,43 +247,44 @@ class PlotScans:
     def createLegend(self):
         self.throughputPad.cd()
         self.latex.SetTextFont(42)
-        legendPosY = 0.828
-        tagLen = 0
-        subtagLen = 0
-        try:
-            tagLen = 0.017*len(self.args['tag'])
-        except TypeError:
-            pass
-        try:
-            subtagLen = 0.013*len(self.args['subtag'])
-        except TypeError:
-            pass
-        width = 0.12 + max(tagLen,subtagLen,0.2)
-        if width > 0.9: width=0.899
+        legendPosX = 0.125
+        legendPosY = 0.83
+        width = 0.33
+        height = 0
+        firstLine = 0
         if self.args['tag']:
-            self.pave = ROOT.TPave(0.12,legendPosY-0.03,width,legendPosY+0.069,0,'NDC')
-            self.pave.SetFillStyle(1001)
-            self.pave.SetFillColor(0)
-            self.pave.Draw()
-            self.latex.SetTextSize(0.05)
-            self.latex.DrawLatex(0.13,legendPosY,self.args['tag'])
-            legendPosY -= 0.06
+            self.latex.SetTextSize(0.055)
+            tag = self.latex.DrawLatex(legendPosX+0.01,legendPosY-height,self.args['tag'])
+            width = max(width,tag.GetYsize())
+            height += tag.GetYsize() + 0.015
+            firstLine = max(firstLine,tag.GetYsize())
         if self.args['subtag']:
-            self.pave2 = ROOT.TPave(0.12,legendPosY-0.02,width,legendPosY+0.03,0,'NDC')
-            self.pave2.SetFillStyle(1001)
-            self.pave2.SetFillColor(0)
-            self.pave2.Draw()
-            self.latex.SetTextSize(0.035)
-            self.latex.DrawLatex(0.13,legendPosY,self.args['subtag'])
-            legendPosY -= 0.02
+            self.latex.SetTextSize(0.04)
+            subtag = self.latex.DrawLatex(legendPosX+0.01,legendPosY-height,self.args['subtag'])
+            width = max(width,subtag.GetXsize())
+            height += subtag.GetYsize()
+            firstLine = max(firstLine,subtag.GetYsize())
+        self.pave = ROOT.TPave(legendPosX,legendPosY+firstLine,legendPosX+width,legendPosY-height,0,'NDC')
+        self.pave.SetFillStyle(1001)
+        self.pave.SetFillColor(0)
+        self.pave.Draw()
+        try:
+            tag.Draw()
+        except UnboundLocalError:
+            pass
+        try:
+            subtag.Draw()
+        except UnboundLocalError:
+            pass
         nlegentries = len(self.args['cases'])
-        self.legend = ROOT.TLegend(0.115,legendPosY-nlegentries*0.04,width,legendPosY)
+        self.legend = ROOT.TLegend(legendPosX,legendPosY-height-nlegentries*0.04,legendPosX+width,legendPosY-height)
         self.legend.SetFillStyle(1001)
         self.legend.SetFillColor(0)
         self.legend.SetTextFont(42)
-        self.legend.SetTextSize(0.033)
+        self.legend.SetTextSize(0.039)
         self.legend.SetTextAlign(13);
         self.legend.SetBorderSize(0)
+        self.legend.SetMargin(0.15)
         self.legend.Draw()
 
 
