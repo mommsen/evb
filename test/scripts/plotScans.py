@@ -43,7 +43,7 @@ class PlotScans:
         parser.add_argument("--hideRate",default=False,action="store_true",help="Hide the rate curves")
         parser.add_argument("--hideLineSpeed",default=False,action="store_true",help="Hide the line speed line")
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
-        parser.add_argument("-a","--app",default="RU0",help="Take values from given application [default: %(default)s]")
+        parser.add_argument("-a","--app",nargs="*",default=['RU0'],help="Take values from given application [default: %(default)s]")
         parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
         parser.add_argument('--colors',nargs="*",type=int,help="Give a list of custom colors to be used")
         parser.add_argument('--markers',nargs="*",type=int,help="Give a list of custom markers to be used")
@@ -74,7 +74,7 @@ class PlotScans:
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
         self.throughputPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
-        app = self.args['app'].replace('0','')
+        app = self.cases[0]['app'].replace('0','')
         titleY = "Throughput on "+app+" (MB/s)"
         titleYoffset = 1.4
         if self.args['totalThroughput']:
@@ -87,7 +87,7 @@ class PlotScans:
             range = [0,100,0,5900]
             title = "Throughput vs. Super-fragment Size"
             titleX = "Super-fragment Size (kB)"
-        elif 'BU' in self.args['app']:
+        elif 'BU' in app:
             range = [100,5000,0,10000]
             title = "Throughput vs. Event Size"
             titleX = "Event Size (kB)"
@@ -164,9 +164,9 @@ class PlotScans:
             self.ratePad.SetLogy()
         self.ratePad.Draw()
         self.ratePad.cd()
-        if 'BU' in self.args['app']:
+        app = self.cases[0]['app'].replace('0','')
+        if 'BU' in app and not self.args['totalThroughput']:
             ratemaxy = 20
-            app = self.args['app'].replace('0','')
             titleR = "Event Rate at "+app+" (kHz)"
             titleOffset = 1.1
         else:
@@ -197,7 +197,7 @@ class PlotScans:
 
     def createLineSpeed(self):
         self.throughputPad.cd()
-        if 'BU' in self.args['app']:
+        if 'BU' in self.cases[0]['app']:
             self.lineSpeed = ROOT.TLine(self.args['minx'],7000,self.args['maxx'],7000)
         else:
             self.lineSpeed = ROOT.TLine(self.args['minx'],5000,self.args['maxx'],5000)
@@ -208,7 +208,7 @@ class PlotScans:
 
     def createRequirementLine(self):
         self.ratePad.cd()
-        if 'BU' in self.args['app']:
+        if 'BU' in self.cases[0]['app']:
             rate = self.args['rate']/72
         else:
             rate = self.args['rate']
@@ -276,13 +276,13 @@ class PlotScans:
             subtag.Draw()
         except UnboundLocalError:
             pass
-        nlegentries = len(self.args['cases'])
-        self.legend = ROOT.TLegend(legendPosX,legendPosY-height-nlegentries*0.04,legendPosX+width,legendPosY-height)
+        nlegentries = len(self.cases)
+        self.legend = ROOT.TLegend(legendPosX,legendPosY-height-nlegentries*0.045,legendPosX+width,legendPosY-height)
         self.legend.SetFillStyle(1001)
         self.legend.SetFillColor(0)
         self.legend.SetTextFont(42)
         self.legend.SetTextSize(0.039)
-        self.legend.SetTextAlign(13);
+        self.legend.SetTextAlign(12);
         self.legend.SetBorderSize(0)
         self.legend.SetMargin(0.15)
         self.legend.Draw()
@@ -365,7 +365,7 @@ class PlotScans:
         return time.strftime("%d %b %Y",time.gmtime(maxTime))
 
 
-    def readCaseData(self,case):
+    def readCaseData(self,case,app):
         from numpy import mean,sqrt,square
         entry = {}
         entry['sizes'] = []
@@ -383,19 +383,16 @@ class PlotScans:
                 dataPoint = value['measurement']
                 if self.args['totalThroughput']:
                     app = 'BU0'
-                elif self.args['app'] in dataPoint[0]['sizes']:
-                    app = self.args['app']
-                else:
+                elif app not in dataPoint[0]['sizes']:
                     app = 'RU0'
-                    self.args['app'] = app
                 if self.args['plotMaxRU']:
                     maxThroughput = 0
                     for ru in list(k for k in dataPoint[0]['rates'].keys() if k.startswith('RU')):
                         throughput = mean(list(x['sizes'][ru]*x['rates'][ru]/1000000000. for x in dataPoint))
                         if throughput > maxThroughput:
                             maxThroughput = throughput
-                            self.args['app'] = ru
-                    print(value['fragSize'],self.args['app'],maxThroughput)
+                            app = ru
+                    print(value['fragSize'],app,maxThroughput)
                 if 'BU' in app or self.args['plotMaxRU'] or self.args['plotSuperFragmentSize']:
                     rawSizes = list(x['sizes'][app]/1000. for x in dataPoint)
                     sizes = list(x for x in rawSizes if x > 0)
@@ -409,15 +406,16 @@ class PlotScans:
                 else:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
-                rawRates = list(x['rates'][self.args['app']]/1000. for x in dataPoint)
+                if self.args['totalThroughput']:
+                    rawRates = list(x['rates']['RU0']/1000. for x in dataPoint)
+                    rawThroughputs = list(sum(x['sizes'][k]*x['rates'][k]/1000000000. for k in x['rates'].keys() if k.startswith(('EVM','RU'))) for x in dataPoint)
+                else:
+                    rawRates = list(x['rates'][app]/1000. for x in dataPoint)
+                    rawThroughputs = list(x['sizes'][app]*x['rates'][app]/1000000. for x in dataPoint)
                 rates = list(x for x in rawRates if x > 0)
                 averageRate = mean(rates)
                 entry['rates'].append(averageRate)
                 entry['rmsRates'].append(sqrt(mean(square(averageRate-rates))))
-                if self.args['totalThroughput']:
-                    rawThroughputs = list(sum(x['sizes'][k]*x['rates'][k]/1000000000. for k in x['rates'].keys() if k.startswith(('EVM','RU'))) for x in dataPoint)
-                else:
-                    rawThroughputs = list(x['sizes'][self.args['app']]*x['rates'][self.args['app']]/1000000. for x in dataPoint)
                 throughputs = list(x for x in rawThroughputs if x > 0)
                 averageThroughput = mean(throughputs)
                 entry['throughputs'].append(averageThroughput)
@@ -425,30 +423,31 @@ class PlotScans:
         # Sort the entries by size
         keys = ['sizes'] + [k for k in entry.keys() if k is not 'sizes']
         sortedEntries = zip(*sorted(zip(*[entry[k] for k in keys]), key=lambda pair: pair[0]))
-        return dict({'name':os.path.splitext(os.path.basename(case))[0]},**dict(zip(keys,sortedEntries)))
+        return dict({'name':os.path.splitext(os.path.basename(case))[0],'app':app},**dict(zip(keys,sortedEntries)))
 
 
     def readData(self):
         self.cases = []
         for case in self.args['cases']:
-            try:
-                self.cases.append( self.readCaseData(case) )
-            except IOError as e:
-                print(e)
-                self.args['cases'].remove(case)
+            for app in self.args['app']:
+                try:
+                    self.cases.append( self.readCaseData(case,app) )
+                except IOError as e:
+                    print(e)
+                    self.args['cases'].remove(case)
 
 
     def printTable(self):
         for n,case in enumerate(self.cases):
             print(47*"-")
-            print("Case: "+case['name']+" - "+self.args['app']+" - color:"+str(self.colors[n])+" - marker:"+str(self.markers[n]))
+            print("Case: "+case['name']+" - "+case['app']+" - color:"+str(self.colors[n])+" - marker:"+str(self.markers[n]))
             print(47*"-")
             if self.args['totalThroughput']:
                 sizeUnit = '(kB)'
                 througputUnit = '(GB/s)'
             else:
                 througputUnit = '(MB/s)'
-                if 'BU' in self.args['app']:
+                if 'BU' in case['app']:
                     sizeUnit = '(kB)'
                 else:
                     sizeUnit = '(B)'
