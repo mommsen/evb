@@ -208,7 +208,7 @@ class PlotScans:
 
     def createRequirementLine(self):
         self.ratePad.cd()
-        if 'BU' in self.cases[0]['app']:
+        if 'BU' in self.cases[0]['app'] and not self.args['totalThroughput']:
             rate = self.args['rate']/72
         else:
             rate = self.args['rate']
