@@ -60,7 +60,12 @@ class PlotScans:
         gStyle.SetOptStat(0)
         oname = self.args['outputName']
         if oname.endswith('.pdf') or oname.endswith('.png'): oname = oname[:-4]
-        self.canvas = ROOT.TCanvas(oname,"Plot",0,0,1024,768)
+        if self.args['showRelEventSize'] or self.args['showVertices']:
+            self.canvas = ROOT.TCanvas(oname,"Plot",0,0,1024,768)
+            self.topMargin = self.marginSize
+        else:
+            self.canvas = ROOT.TCanvas(oname,"Plot",0,0,1024,699)
+            self.topMargin = 0.02
 
 
     def createThroughputPad(self):
@@ -73,10 +78,10 @@ class PlotScans:
             self.throughputPad.SetLogy()
         # self.throughputPad.SetGridx()
         # self.throughputPad.SetGridy()
-        self.throughputPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
-        app = self.cases[0]['app'].replace('0','')
+        self.throughputPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.topMargin)
+        app = re.sub(r'[0-9]+$','',self.cases[0]['app'])
         titleY = "Throughput on "+app+" (MB/s)"
-        titleYoffset = 1.4
+        titleYoffset = 1.3
         if self.args['totalThroughput']:
             range = [100,6000,0,200]
             title = "Throughput vs. Event Size"
@@ -157,14 +162,14 @@ class PlotScans:
         self.ratePad.SetFillStyle(4000) ## transparent
         self.ratePad.SetFillColor(0)
         self.ratePad.SetFrameFillStyle(4000)
-        self.ratePad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
+        self.ratePad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.topMargin)
         if not self.args['nologx']:
             self.ratePad.SetLogx()
         if self.args['logy']:
             self.ratePad.SetLogy()
         self.ratePad.Draw()
         self.ratePad.cd()
-        app = self.cases[0]['app'].replace('0','')
+        app = re.sub(r'[0-9]+$','',self.cases[0]['app'])
         if 'BU' in app and not self.args['totalThroughput']:
             ratemaxy = 20
             titleR = "Event Rate at "+app+" (kHz)"
@@ -172,7 +177,7 @@ class PlotScans:
         else:
             ratemaxy = 380
             titleR = "Event Rate at EVM (kHz)"
-            titleOffset = 1.4
+            titleOffset = 1.3
         if not self.args['ratemaxy']:
             self.args['ratemaxy'] = ratemaxy
         if not self.args['titleR']:
@@ -192,7 +197,7 @@ class PlotScans:
         self.auxPad.SetFillStyle(4000) ## transparent
         self.auxPad.SetFillColor(0)
         self.auxPad.SetFrameFillStyle(4000)
-        self.auxPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.marginSize)
+        self.auxPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.topMargin)
         self.auxPad.Draw()
 
     def createLineSpeed(self):
@@ -209,7 +214,7 @@ class PlotScans:
     def createRequirementLine(self):
         self.ratePad.cd()
         if 'BU' in self.cases[0]['app'] and not self.args['totalThroughput']:
-            rate = self.args['rate']/72
+            rate = self.args['rate']/73
         else:
             rate = self.args['rate']
         self.rateRequired = ROOT.TLine(self.args['minx'],rate,self.args['maxx'],rate)
@@ -226,9 +231,9 @@ class PlotScans:
         #self.CMSpave.Draw()
         self.latex.SetTextFont(62)
         self.latex.SetTextSize(0.05)
-        self.latex.DrawLatex(0.617,0.83,"CMS")
+        self.latex.DrawLatex(0.617,0.944-self.topMargin,"CMS")
         self.latex.SetTextFont(52)
-        self.latex.DrawLatex(0.70,0.83,"Preliminary")
+        self.latex.DrawLatex(0.70,0.944-self.topMargin,"Preliminary")
 
 
     def createDate(self):
@@ -248,7 +253,7 @@ class PlotScans:
         self.throughputPad.cd()
         self.latex.SetTextFont(42)
         legendPosX = 0.125
-        legendPosY = 0.83
+        legendPosY = 0.944-self.topMargin
         width = 0.33
         height = 0
         firstLine = 0
