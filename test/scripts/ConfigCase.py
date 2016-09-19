@@ -134,7 +134,9 @@ class ConfigCase(TestCase):
             dataPoints.append( self.getDataPoint() )
             raw_input("Press Enter to stop...")
         else:
-            if not args['quick']:
+            if args['long']:
+                time.sleep(300)
+            elif not args['quick']:
                 time.sleep(60)
             for n in range(args['nbMeasurements']):
                 if args['quick']:
