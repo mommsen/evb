@@ -2,6 +2,7 @@
 
 import collections
 import datetime
+import gzip
 import os
 import re
 import subprocess
@@ -22,9 +23,13 @@ class CheckFBthroughput:
 
 
     def readConfigFile(self,configFile):
-        try:
+        if os.path.exists(configFile):
             ETroot = ET.parse(configFile).getroot()
-        except IOError as e:
+        elif os.path.exists(configFile+".gz"):
+            f = gzip.open(configFile+".gz") #gzip.open() doesn't support the context manager protocol needed for it to be used in a 'with' statement.
+            ETroot = ET.parse(f).getroot()
+            f.close()
+        else:
             print("Error reading configuratio file "+configFile+": "+e.msg())
             sys.exit(1)
         return ETroot
