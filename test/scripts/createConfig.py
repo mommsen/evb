@@ -35,7 +35,7 @@ class CreateConfig:
         #configFile = "/nfshome0/mommsen/daq2Test/daq2val/x86_64_slc6/daq2val/29110628/configuration.xml"
         configFile = "/tmp/"+time.strftime('%d%H%M%S')+".xml"
         javaCmd = ['java','-Doracle.net.tns_admin=/etc',
-                   '-jar',os.environ['EVB_TESTER_HOME']+'/scripts/configurator_1.6.0_new_workflow_java6.jar',
+                   '-jar','/nfshome0/rcms/centralRcmsServices/staticContent/daq2_configurator/pro/lib/configurator.jar',
                    '--properties',self.args['properties'],
                    '--batch',
                    '--buildDPSet',
