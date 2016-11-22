@@ -65,11 +65,11 @@ int main( int argc, const char* argv[] )
   ::sleep(testDuration);
 
   std::cout << "Stopping source thread..." << std::endl;
+  consuming = false;
   generating = false;
   sourceThread.join();
 
   std::cout << "Stopping sink thread..." << std::endl;
-  consuming = false;
   sinkThread.join();
 }
 
