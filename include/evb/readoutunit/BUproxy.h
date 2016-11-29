@@ -187,7 +187,6 @@ namespace evb {
         uint32_t i2oRate;
         double packingFactor;
         PerformanceMonitor perf;
-        CountsPerBU logicalCountPerBU;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
 
@@ -312,11 +311,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
       fragmentRequest->timeStampNS = eventRequest->timeStampNS;
       fragmentRequest->nbRequests = eventRequest->nbRequests;
       handleRequest(eventRequest, fragmentRequest);
-
-      {
-        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
-        requestMonitoring_.logicalCountPerBU[eventRequest->buTid] += eventRequest->nbRequests;
-      }
     }
 
     payload += eventRequest->msgSize;
@@ -761,11 +755,9 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 {
-
   {
     boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
     requestMonitoring_.perf.reset();
-    requestMonitoring_.logicalCountPerBU.clear();
   }
   {
     boost::mutex::scoped_lock dsl(dataMonitoringMutex_);

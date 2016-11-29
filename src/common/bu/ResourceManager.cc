@@ -262,8 +262,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
 
   if ( oldestLumiSection->second->nbIncompleteEvents == 0 )
   {
-    if ( lumiSectionAccounts_.size() > 1 // there are newer lumi sections
-         || !doProcessing_ )
+    if ( lumiSectionAccounts_.size() > 1 ) // there are newer lumi sections
     {
       lumiSectionAccount = oldestLumiSection->second;
       lumiSectionAccounts_.erase(oldestLumiSection);
@@ -710,10 +709,8 @@ uint16_t evb::bu::ResourceManager::getPriority()
   boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
   const float weight = (1-pow(1-ramDiskUsed_,2)) * evb::LOWEST_PRIORITY;
-  if ( blockedResources_ > 0 )
-    return round(weight);
-  else
-    return floor(weight);
+  const uint32_t priority = blockedResources_>0 ? round(weight) : floor(weight);
+  return std::max(priority,configuration_->minPriority.value_);
 }
 
 

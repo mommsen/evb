@@ -264,8 +264,7 @@ namespace evb {
         fragmentRequest->evbIds.reserve(fragmentRequest->nbRequests);
 
         superFragments.push_back(superFragment);
-        EvBid evbId = superFragment->getEvBid();
-        fragmentRequest->evbIds.push_back(evbId);
+        fragmentRequest->evbIds.push_back( superFragment->getEvBid() );
 
         uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
         const uint32_t maxTries = readoutUnit_->getConfiguration()->maxTriggerAgeMSec*10;
@@ -275,8 +274,7 @@ namespace evb {
           if ( input_->getNextAvailableSuperFragment(superFragment) )
           {
             superFragments.push_back(superFragment);
-            evbId = superFragment->getEvBid();
-            fragmentRequest->evbIds.push_back(evbId);
+            fragmentRequest->evbIds.push_back( superFragment->getEvBid() );
             --remainingRequests;
           }
           else
