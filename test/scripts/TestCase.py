@@ -417,7 +417,7 @@ class TestCase:
 
     def checkBU(self,eventSize,eventRate=100,instance=None):
         self.checkAppParam("eventSize","unsignedInt",eventSize,operator.eq,"BU",instance)
-        self.checkAppParam("nbEventsBuilt","unsignedLong",500,operator.ge,"BU",instance)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",5*eventRate,operator.ge,"BU",instance)
         self.checkAppParam("eventRate","unsignedInt",eventRate,operator.ge,"BU",instance)
 
 
