@@ -497,7 +497,7 @@ void evb::bu::RUproxy::getApplicationDescriptorForEVM()
     // Try to find instance number by assuming the first EVM found is the
     // one to be used.
 
-    std::set<xdaq::ApplicationDescriptor*> evmDescriptors;
+    std::set<const xdaq::ApplicationDescriptor*> evmDescriptors;
 
     try
     {
@@ -707,7 +707,7 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
   {
     try
     {
-      xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
+      const xdaq::ApplicationDescriptor* ru = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
       const std::string url = ru->getContextDescriptor()->getURL() + "/" + ru->getURN();
 
       const std::string label = (it->first == evm_.tid) ? "EVM" :

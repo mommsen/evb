@@ -101,7 +101,7 @@ namespace evb {
       typedef boost::shared_ptr<FrameFIFO> FrameFIFOPtr;
       struct BUconnection {
         const I2O_TID tid;
-        xdaq::ApplicationDescriptor* bu;
+        const xdaq::ApplicationDescriptor* bu;
         const FrameFIFOPtr frameFIFO;
         uint64_t throughput;
         uint32_t i2oRate;
@@ -415,7 +415,7 @@ cgicc::table evb::readoutunit::BUposter<ReadoutUnit>::getStatisticsPerBU() const
   for (typename BUconnections::const_iterator it = buConnections_.begin(), itEnd = buConnections_.end();
        it != itEnd; ++it)
   {
-    xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
+    const xdaq::ApplicationDescriptor* bu = i2o::utils::getAddressMap()->getApplicationDescriptor(it->first);
     const std::string url = bu->getContextDescriptor()->getURL() + "/" + bu->getURN();
     table.add(tr()
               .add(td()
