@@ -15,7 +15,7 @@ namespace evb {
    */
   struct ApplicationDescriptorAndTid
   {
-    xdaq::ApplicationDescriptor* descriptor;
+    const xdaq::ApplicationDescriptor* descriptor;
     I2O_TID tid;
 
     /**

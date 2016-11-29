@@ -69,7 +69,7 @@ namespace evb {
       {
         ruInstances.clear();
 
-        std::set<xdaq::ApplicationDescriptor*> ruDescriptors;
+        std::set<const xdaq::ApplicationDescriptor*> ruDescriptors;
 
         try
         {
@@ -83,7 +83,7 @@ namespace evb {
                         "Failed to get RU application descriptor", e);
         }
 
-        for (std::set<xdaq::ApplicationDescriptor*>::const_iterator
+        for (std::set<const xdaq::ApplicationDescriptor*>::const_iterator
                it=ruDescriptors.begin(), itEnd =ruDescriptors.end();
              it != itEnd; ++it)
         {
