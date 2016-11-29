@@ -83,7 +83,7 @@ namespace evb {
     uint32_t postMessage
     (
       toolbox::mem::Reference*,
-      xdaq::ApplicationDescriptor* destination
+      const xdaq::ApplicationDescriptor* destination
     );
 
     typedef boost::function<cgicc::div()> QueueContentFunction;
@@ -167,10 +167,10 @@ namespace evb {
 template<class Configuration,class StateMachine>
 evb::EvBApplication<Configuration,StateMachine>::EvBApplication
 (
-  xdaq::ApplicationStub* app,
+  xdaq::ApplicationStub* stub,
   const std::string& appIcon
 ) :
-  xdaq::Application(app),
+  xdaq::Application(stub),
   xgi::framework::UIManager(this),
   configuration_(new Configuration()),
   soapParameterExtractor_(this),
@@ -179,8 +179,8 @@ evb::EvBApplication<Configuration,StateMachine>::EvBApplication
   xmlClass_(getApplicationDescriptor()->getClassName()),
   instance_(getApplicationDescriptor()->getInstance())
 {
-  getApplicationDescriptor()->setAttribute("icon", appIcon);
-  getApplicationDescriptor()->setAttribute("icon16x16", appIcon);
+  stub->getDescriptor()->setAttribute("icon", appIcon);
+  stub->getDescriptor()->setAttribute("icon16x16", appIcon);
 }
 
 
@@ -809,7 +809,7 @@ template<class Configuration,class StateMachine>
 uint32_t evb::EvBApplication<Configuration,StateMachine>::postMessage
 (
   toolbox::mem::Reference* bufRef,
-  xdaq::ApplicationDescriptor* destination
+  const xdaq::ApplicationDescriptor* destination
 )
 {
   bool success = false;
