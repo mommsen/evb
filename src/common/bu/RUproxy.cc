@@ -570,6 +570,8 @@ uint32_t evb::bu::RUproxy::getLatestLumiSection()
 
 uint32_t evb::bu::RUproxy::getValueFromEVM(const std::string& url)
 {
+  boost::mutex::scoped_lock sl(curlMutex_);
+
   uint32_t value = 0;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
   const CURLcode result = curl_easy_perform(curl_);

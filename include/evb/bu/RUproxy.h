@@ -154,6 +154,7 @@ namespace evb {
       std::string evmURL_;
       CURL* curl_;
       std::string curlBuffer_;
+      mutable boost::mutex curlMutex_;
       float roundTripTimeSampling_;
 
       // Lookup table of data blocks, indexed by RU tid and BU resource id
