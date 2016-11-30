@@ -88,6 +88,8 @@ class TestCase:
             results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
             for r in results:
                 print(r.get(timeout=30))
+        self._pool.close()
+        self._pool.join()
         sys.stdout.flush()
         sys.stdout = self._origStdout
 
