@@ -38,12 +38,14 @@ int main( int argc, const char* argv[] )
   }
 
   {
-    #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 4
+    #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 6
     toolbox::math::DefaultRandomEngine randomNumberEngine( evb::getTimeStamp() );
     toolbox::math::CanonicalRandomEngine<double> canonicalRandomEngine(randomNumberEngine);
     toolbox::math::LogNormalDistribution<double> logNormalDistribution(fedSize,fedSize);
+    const std::string version = "new";
     #else
     toolbox::math::LogNormalGen logNormalGen(evb::getTimeStamp(),fedSize,fedSize);
+    const std::string version = "old";
     #endif
 
     uint32_t startTime = evb::getTimeStamp();
@@ -51,7 +53,7 @@ int main( int argc, const char* argv[] )
     for (uint32_t i=0; i < iterations; ++i)
     {
       uint32_t size = std::max((uint32_t)
-        #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 4
+        #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 6
         logNormalDistribution(canonicalRandomEngine)
         #else
         logNormalGen.getRawRandomSize()
@@ -62,7 +64,7 @@ int main( int argc, const char* argv[] )
       assert( size <= maxFedSize );
     }
     const uint32_t deltaT = evb::getTimeStamp() - startTime;
-    std::cout << "Time per iteration with new toolbox: " << deltaT/iterations << " ns" << std::endl;
+    std::cout << "Time per iteration with " << version << " toolbox: " << deltaT/iterations << " ns" << std::endl;
   }
 }
 
