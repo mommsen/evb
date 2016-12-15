@@ -37,6 +37,7 @@ Sources=\
 	CRCCalculator.cc \
 	DumpUtility.cc \
 	EvBidFactory.cc \
+	FragmentSize.cc \
 	FragmentTracker.cc \
 	I2OMessages.cc \
 	InfoSpaceItems.cc \
@@ -67,6 +68,7 @@ Sources=\
 TestExecutables = \
 	EvBid.cxx \
 	Fibonacci.cxx \
+	LogNormal.cxx \
 	OneToOneQueue.cxx \
 	OneToOneQueueWait.cxx
 

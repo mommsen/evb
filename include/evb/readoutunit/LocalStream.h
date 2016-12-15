@@ -5,12 +5,12 @@
 #include <string.h>
 
 #include "evb/Constants.h"
+#include "evb/FragmentSize.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "toolbox/lang/Class.h"
-#include "toolbox/math/random.h"
 #include "toolbox/task/Action.h"
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -62,12 +62,11 @@ namespace evb {
       void startGeneratorWorkLoop();
       bool generating(toolbox::task::WorkLoop*);
       void waitForNextTrigger();
-      uint32_t getFedSize() const;
 
       const boost::shared_ptr<Configuration> configuration_;
       toolbox::task::WorkLoop* generatingWorkLoop_;
       toolbox::task::ActionSignature* generatingAction_;
-      boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
+      boost::scoped_ptr<FragmentSize> fragmentSize_;
 
       volatile bool generatingActive_;
       uint32_t maxTriggerRate_;
@@ -104,9 +103,10 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
   if ( configuration_->useLogNormal )
-  {
-    logNormalGen_.reset( new toolbox::math::LogNormalGen(getTimeStamp(),configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev) );
-  }
+    fragmentSize_.reset( new FragmentSize(configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev,
+                                          configuration_->dummyFedSizeMin,configuration_->dummyFedSizeMax) );
+  else
+    fragmentSize_.reset( new FragmentSize(configuration_->dummyFedSize) );
 
   startGeneratorWorkLoop();
 }
@@ -156,7 +156,7 @@ bool evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::generating(toolbo
     do
     {
       waitForNextTrigger();
-      const uint32_t fedSize = getFedSize();
+      const uint32_t fedSize = fragmentSize_->get();
       fedFragment = this->fedFragmentFactory_.getDummyFragment(this->fedId_,this->isMasterStream_,fedSize,
                                                                configuration_->computeCRC);
       this->addFedFragment(fedFragment);
@@ -211,24 +211,6 @@ void evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::waitForNextTrigge
   }
   lastTime_ = now;
   --availableTriggers_;
-}
-
-
-template<class ReadoutUnit,class Configuration>
-uint32_t evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::getFedSize() const
-{
-  uint32_t fedSize;
-  if ( configuration_->useLogNormal )
-  {
-    fedSize = std::max((uint32_t)logNormalGen_->getRawRandomSize(), configuration_->dummyFedSizeMin.value_);
-    if ( configuration_->dummyFedSizeMax.value_ > 0 && fedSize > configuration_->dummyFedSizeMax.value_ )
-      fedSize = configuration_->dummyFedSizeMax;
-  }
-  else
-  {
-    fedSize = configuration_->dummyFedSize;
-  }
-  return fedSize & ~0x7;
 }
 
 

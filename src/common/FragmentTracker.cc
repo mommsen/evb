@@ -38,9 +38,9 @@ evb::FragmentTracker::FragmentTracker
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
   if (useLogNormal)
-  {
-    logNormalGen_.reset( new toolbox::math::LogNormalGen(getTimeStamp(),fedSize,fedSizeStdDev) );
-  }
+    fragmentSize_.reset( new FragmentSize(fedSize,fedSizeStdDev,minFedSize,maxFedSize) );
+  else
+    fragmentSize_.reset( new FragmentSize(fedSize) );
 }
 
 
@@ -59,7 +59,7 @@ uint32_t evb::FragmentTracker::startFragment(const EvBid& evbId)
   waitForNextTrigger();
 
   evbId_ = evbId;
-  currentFedSize_ = getFedSize();
+  currentFedSize_ = fragmentSize_->get();
   remainingFedSize_ = currentFedSize_;
 
   return currentFedSize_;
@@ -94,18 +94,6 @@ void evb::FragmentTracker::waitForNextTrigger()
   }
   lastTime_ = now;
   --availableTriggers_;
-}
-
-
-uint32_t evb::FragmentTracker::getFedSize() const
-{
-  uint32_t fedSize = fedSize_;
-  if ( logNormalGen_ )
-  {
-    fedSize = std::max((uint32_t)logNormalGen_->getRawRandomSize(), minFedSize_);
-    if ( maxFedSize_ > 0 && fedSize > maxFedSize_ ) fedSize = maxFedSize_;
-  }
-  return fedSize & ~0x7;
 }
 
 

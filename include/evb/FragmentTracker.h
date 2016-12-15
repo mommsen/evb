@@ -9,7 +9,7 @@
 
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
-#include "toolbox/math/random.h"
+#include "evb/FragmentSize.h"
 
 
 namespace evb {
@@ -63,9 +63,9 @@ namespace evb {
   private:
 
     void waitForNextTrigger();
-    uint32_t getFedSize() const;
 
     CRCCalculator crcCalculator_;
+    boost::scoped_ptr<FragmentSize> fragmentSize_;
 
     enum FedComponent
     {
@@ -80,7 +80,6 @@ namespace evb {
     const uint32_t maxFedSize_;
     uint32_t maxTriggerRate_;
     const bool computeCRC_;
-    boost::scoped_ptr<toolbox::math::LogNormalGen> logNormalGen_;
     uint16_t fedCRC_;
     FedComponent typeOfNextComponent_;
     uint32_t currentFedSize_;
