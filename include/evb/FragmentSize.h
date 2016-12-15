@@ -32,7 +32,9 @@ namespace evb { // namespace evb
     const uint32_t minFedSize_;
     const uint32_t maxFedSize_;
 
-    typedef boost::variate_generator< boost::mt19937,boost::lognormal_distribution<> > LogNormalGenerator;
+    typedef boost::rand48 RNG;
+    //typedef boost::mt19937 RNG;
+    typedef boost::variate_generator< RNG,boost::lognormal_distribution<> > LogNormalGenerator;
     boost::scoped_ptr<LogNormalGenerator> logNormalGenerator_;
 
   };

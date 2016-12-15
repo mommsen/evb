@@ -19,7 +19,7 @@ evb::FragmentSize::FragmentSize(
   minFedSize_(minFedSize),
   maxFedSize_(maxFedSize)
 {
-  boost::mt19937 rng( getTimeStamp() );
+  RNG rng( getTimeStamp() );
   boost::lognormal_distribution<> lnd(meanFedSize,stdDevFedSize);
   logNormalGenerator_.reset( new LogNormalGenerator(rng,lnd) );
 }
