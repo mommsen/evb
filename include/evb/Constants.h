@@ -2,10 +2,13 @@
 #define _evb_Constants_h_
 
 #include <algorithm>
+#include <arpa/inet.h>
 #include <iomanip>
 #include <iterator>
+#include <netdb.h>
 #include <sstream>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 
 
@@ -37,6 +40,36 @@ namespace evb {
     str.precision(precision);
     str << value;
     return str.str();
+  }
+
+  inline std::string resolveIPaddress(const std::string& hostname)
+  {
+    struct addrinfo hints,*addr;
+    char ipstr[INET6_ADDRSTRLEN];
+
+    memset(&hints,0,sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    const int errcode = getaddrinfo(hostname.c_str(), "", &hints, &addr);
+    if (errcode)
+    {
+      throw gai_strerror(errcode);
+    }
+
+    if (addr->ai_family == AF_INET)
+    {
+      inet_ntop(AF_INET,
+                &((struct sockaddr_in*)addr->ai_addr)->sin_addr,
+                ipstr, sizeof(ipstr));
+    }
+    else // AF_INET6
+    {
+      inet_ntop(AF_INET6,
+                &((struct sockaddr_in6*)addr->ai_addr)->sin6_addr,
+                ipstr, sizeof(ipstr));
+    }
+    return ipstr;
   }
 
 } // namespace evb

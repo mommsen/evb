@@ -5,6 +5,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "evb/Constants.h"
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
 #include "xdaq/ApplicationContext.h"
@@ -32,6 +33,28 @@ namespace evb {
         xdata::String hostname;
         xdata::UnsignedInteger32 port;
         xdata::Boolean active;
+        std::string ipAddress;
+
+        FerolSource() :
+          fedId(FED_COUNT+1),hostname(""),port(0),active(false),ipAddress("") {};
+
+        const std::string& getIPaddress()
+        {
+          if ( ipAddress.empty() )
+          {
+            try
+            {
+              ipAddress = resolveIPaddress(hostname);
+            }
+            catch(const char* error) {
+              std::ostringstream msg;
+              msg << "Failed to resolve hostname " << hostname.toString();
+              msg << " : " << error;
+              XCEPT_RAISE(exception::TCP,msg.str());
+            }
+          }
+          return ipAddress;
+        }
 
         void registerFields(xdata::Bag<FerolSource>* bag)
         {

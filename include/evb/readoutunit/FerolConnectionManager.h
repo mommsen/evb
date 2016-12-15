@@ -89,7 +89,6 @@ namespace evb {
 
       void createPipes();
       bool handlersIdle() const;
-      std::string getHostName(const std::string& ip);
 
       ReadoutUnit* readoutUnit_;
 
@@ -184,12 +183,10 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
   {
     boost::mutex::scoped_lock sl(mutex_);
 
-    const std::string peer = getHostName(pca.getPeerName());
-
     if ( !acceptConnections_ )
     {
       std::ostringstream msg;
-      msg << "Received a connection from " << peer << ":" << pca.getPort();
+      msg << "Received a connection from " << pca.getPeerName() << ":" << pca.getPort();
       msg << " while not accepting new connections";
       XCEPT_RAISE(exception::TCP,msg.str());
     }
@@ -198,20 +195,20 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
     if ( handler == pipeHandlers_.end() )
     {
       std::ostringstream msg;
-      msg << "Received a connection from " << peer << ":" << pca.getPort();
+      msg << "Received a connection from " << pca.getPeerName() << ":" << pca.getPort();
       msg << " on pipe '" <<  pca.getPipeIndex() << "' for which there is no handler";
       XCEPT_RAISE(exception::TCP,msg.str());
     }
 
     const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
-    typename Configuration::FerolSources::const_iterator it = configuration->ferolSources.begin();
-    const typename Configuration::FerolSources::const_iterator itEnd = configuration->ferolSources.end();
+    typename Configuration::FerolSources::iterator it = configuration->ferolSources.begin();
+    const typename Configuration::FerolSources::iterator itEnd = configuration->ferolSources.end();
     bool found = false;
 
     while ( it != itEnd && !found )
     {
-      if ( it->bag.hostname.value_ == peer && it->bag.port.value_ == pca.getPort() )
+      if ( it->bag.getIPaddress() == pca.getPeerName() && it->bag.port.value_ == pca.getPort() )
       {
         found = true;
 
@@ -227,7 +224,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
         handler->second->createStream(pca.getSID(),&it->bag);
 
         std::ostringstream msg;
-        msg << "Accepted connection from " << peer << ":" << pca.getPort();
+        msg << "Accepted connection from " << pca.getPeerName() << ":" << pca.getPort();
         msg << " with SID " << pca.getSID();
         msg << " and pipe index " << pca.getPipeIndex();
         msg << " corresponding to FED " << fedId;
@@ -242,7 +239,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
     if ( !found )
     {
       std::ostringstream msg;
-      msg << "Received an unexpected connection from " << peer << ":" << pca.getPort();
+      msg << "Received an unexpected connection from " << pca.getPeerName() << ":" << pca.getPort();
       XCEPT_RAISE(exception::Configuration,msg.str());
     }
   }
@@ -408,20 +405,6 @@ bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::handle
     if ( ! it->second->idle() ) return false;
   }
   return true;
-}
-
-
-template<class ReadoutUnit,class Configuration>
-std::string evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getHostName(const std::string& ip)
-{
-  char host[256];
-  char service[20];
-  sockaddr_in address;
-  memset(&address, 0, sizeof(address));
-  address.sin_family = AF_INET;
-  address.sin_addr.s_addr = inet_addr(ip.c_str());
-  getnameinfo((sockaddr*)&address, sizeof(address), host, sizeof(host), service, sizeof(service), 0);
-  return host;
 }
 
 
