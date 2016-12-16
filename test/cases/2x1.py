@@ -7,9 +7,9 @@ class case_2x1(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(2048)
+        self.checkEVM(6144)
         self.checkRU(24576)
-        self.checkBU(26624)
+        self.checkBU(30720)
         self.stopEvB()
         self.haltEvB()
 
@@ -17,7 +17,7 @@ class case_2x1(TestCase):
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,))
+             ('fedSourceIds','unsignedInt',(512,5,1))
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
