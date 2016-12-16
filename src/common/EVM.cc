@@ -143,8 +143,17 @@ namespace evb {
         }
       }
 
-      if ( masterStream_ == ferolStreams_.end() )
-        masterStream_ = ferolStreams_.begin();
+      // If no magic FED id has been found, pick the first available FED in fedSourceIds
+      xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = readoutUnit_->getConfiguration()->fedSourceIds.begin();
+      while ( masterStream_ == ferolStreams_.end() &&
+              it != readoutUnit_->getConfiguration()->fedSourceIds.end() )
+      {
+        masterStream_ = ferolStreams_.find(*it);
+        ++it;
+      }
+
+      // At this point the master stream must be defined
+      assert( masterStream_ != ferolStreams_.end() );
 
       masterStream_->second->useAsMaster();
 
