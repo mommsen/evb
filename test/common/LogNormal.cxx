@@ -1,10 +1,13 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <boost/math/distributions/lognormal.hpp>
+#include <boost/random.hpp>
+
 #include "evb/Constants.h"
 #include "evb/FragmentSize.h"
-#include "toolbox/version.h"
 #include "toolbox/math/random.h"
+#include "toolbox/math/random2.h"
 
 int main( int argc, const char* argv[] )
 {
@@ -25,6 +28,7 @@ int main( int argc, const char* argv[] )
 
   {
     evb::FragmentSize varSize(fedSize,fedSize,minFedSize,maxFedSize);
+
     uint32_t startTime = evb::getTimeStamp();
 
     for (uint32_t i=0; i < iterations; ++i)
@@ -34,37 +38,61 @@ int main( int argc, const char* argv[] )
       assert( size <= maxFedSize );
     }
     const uint32_t deltaT = evb::getTimeStamp() - startTime;
-    std::cout << "Time per iteration with boost: " << deltaT/iterations << " ns" << std::endl;
+    std::cout << "Time per iteration with FragmentSize: " << deltaT/iterations << " ns" << std::endl;
   }
 
   {
-    #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 6
-    toolbox::math::DefaultRandomEngine randomNumberEngine( evb::getTimeStamp() );
-    toolbox::math::CanonicalRandomEngine<double> canonicalRandomEngine(randomNumberEngine);
-    toolbox::math::LogNormalDistribution<double> logNormalDistribution(fedSize,fedSize);
-    const std::string version = "new";
-    #else
-    toolbox::math::LogNormalGen logNormalGen(evb::getTimeStamp(),fedSize,fedSize);
-    const std::string version = "old";
-    #endif
+    typedef boost::rand48 RNG;
+    //typedef boost::mt19937 RNG;
+    RNG rng( evb::getTimeStamp() );
+    boost::lognormal_distribution<> lnd(fedSize,fedSize);
+    boost::variate_generator< RNG,boost::lognormal_distribution<> > logNormalGenerator(rng,lnd);
 
     uint32_t startTime = evb::getTimeStamp();
 
     for (uint32_t i=0; i < iterations; ++i)
     {
-      uint32_t size = std::max((uint32_t)
-        #if TOOLBOX_VERSION_MAJOR >= 9 and TOOLBOX_VERSION_MINOR >= 6
-        logNormalDistribution(canonicalRandomEngine)
-        #else
-        logNormalGen.getRawRandomSize()
-        #endif
-        ,minFedSize);
+      uint32_t size = std::max(minFedSize,(uint32_t)logNormalGenerator());
       if ( maxFedSize > 0 && size > maxFedSize ) size = maxFedSize;
       assert( size >= minFedSize );
       assert( size <= maxFedSize );
     }
     const uint32_t deltaT = evb::getTimeStamp() - startTime;
-    std::cout << "Time per iteration with " << version << " toolbox: " << deltaT/iterations << " ns" << std::endl;
+    std::cout << "Time per iteration with boost: " << deltaT/iterations << " ns" << std::endl;
+  }
+
+  {
+    toolbox::math::LogNormalGen logNormalGen(evb::getTimeStamp(),fedSize,fedSize);
+
+    uint32_t startTime = evb::getTimeStamp();
+
+    for (uint32_t i=0; i < iterations; ++i)
+    {
+      uint32_t size = std::max(minFedSize,(uint32_t)logNormalGen.getRawRandomSize());
+      if ( maxFedSize > 0 && size > maxFedSize ) size = maxFedSize;
+      assert( size >= minFedSize );
+      assert( size <= maxFedSize );
+    }
+    const uint32_t deltaT = evb::getTimeStamp() - startTime;
+    std::cout << "Time per iteration with LogNormalGen: " << deltaT/iterations << " ns" << std::endl;
+  }
+
+  {
+    toolbox::math::DefaultRandomEngine randomNumberEngine( evb::getTimeStamp() );
+    toolbox::math::CanonicalRandomEngine<double> canonicalRandomEngine(randomNumberEngine);
+    toolbox::math::LogNormalRealDistribution<double> logNormalDistribution(fedSize,fedSize);
+
+    uint32_t startTime = evb::getTimeStamp();
+
+    for (uint32_t i=0; i < iterations; ++i)
+    {
+      uint32_t size = std::max(minFedSize,(uint32_t)logNormalDistribution(canonicalRandomEngine));
+      if ( maxFedSize > 0 && size > maxFedSize ) size = maxFedSize;
+      assert( size >= minFedSize );
+      assert( size <= maxFedSize );
+    }
+    const uint32_t deltaT = evb::getTimeStamp() - startTime;
+    std::cout << "Time per iteration with LogNormalRealDistribution: " << deltaT/iterations << " ns" << std::endl;
   }
 }
 

@@ -19,9 +19,13 @@ evb::FragmentSize::FragmentSize(
   minFedSize_(minFedSize),
   maxFedSize_(maxFedSize)
 {
+  #ifdef EVB_USE_RND_BOOST
   RNG rng( getTimeStamp() );
   boost::lognormal_distribution<> lnd(meanFedSize,stdDevFedSize);
   logNormalGenerator_.reset( new LogNormalGenerator(rng,lnd) );
+  #else
+  logNormalGenerator_.reset( new toolbox::math::LogNormalGen(getTimeStamp(),meanFedSize,stdDevFedSize) );
+  #endif
 }
 
 
@@ -29,7 +33,12 @@ uint32_t evb::FragmentSize::get() const
 {
   if ( logNormalGenerator_ )
   {
-    uint32_t fedSize = std::max((uint32_t)(*logNormalGenerator_)(), minFedSize_);
+    uint32_t fedSize = std::max(minFedSize_,(uint32_t)
+    #ifdef EVB_USE_RND_BOOST
+    (*logNormalGenerator_)());
+    #else
+    logNormalGenerator_->getRawRandomSize());
+    #endif
     if ( maxFedSize_ > 0 && fedSize > maxFedSize_ ) fedSize = maxFedSize_;
     return fedSize & ~0x7;
   }

@@ -1,9 +1,15 @@
 #ifndef _evb_FragmentSize_h_
 #define _evb_FragmentSize_h_
 
+#include <boost/scoped_ptr.hpp>
+
+//#define EVB_USE_RND_BOOST
+#ifdef EVB_USE_RND_BOOST
 #include <boost/math/distributions/lognormal.hpp>
 #include <boost/random.hpp>
-#include <boost/scoped_ptr.hpp>
+#else
+#include "toolbox/math/random.h"
+#endif
 
 
 namespace evb { // namespace evb
@@ -32,9 +38,13 @@ namespace evb { // namespace evb
     const uint32_t minFedSize_;
     const uint32_t maxFedSize_;
 
+    #ifdef EVB_USE_RND_BOOST
     typedef boost::rand48 RNG;
     //typedef boost::mt19937 RNG;
     typedef boost::variate_generator< RNG,boost::lognormal_distribution<> > LogNormalGenerator;
+    #else
+    typedef toolbox::math::LogNormalGen LogNormalGenerator;
+    #endif
     boost::scoped_ptr<LogNormalGenerator> logNormalGenerator_;
 
   };
