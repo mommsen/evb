@@ -7,11 +7,11 @@ if test ".$XDAQ_PLATFORM" != ".x86_64"; then
 fi
 checkos=`$XDAQ_ROOT/config/checkos.sh`
 export XDAQ_PLATFORM=$XDAQ_PLATFORM"_"$checkos
-export XDAQ_EVB=${HOME}/daq/trunk/${XDAQ_PLATFORM}
+export XDAQ_EVB=${HOME}/daq/baseline14/${XDAQ_PLATFORM}
 export LD_LIBRARY_PATH=${XDAQ_EVB}/lib:${LD_LIBRARY_PATH}
 
 # EvB tester suite
-export EVB_TESTER_HOME=${HOME}/daq/trunk/daq/evb/test
+export EVB_TESTER_HOME=${HOME}/daq/baseline14/daq/evb/test
 export EVB_SYMBOL_MAP=standaloneSymbolMap.txt
 export PATH=${PATH}:${EVB_TESTER_HOME}/scripts
 export PYTHONPATH=${EVB_TESTER_HOME}/scripts:${PYTHONPATH}
