@@ -129,7 +129,7 @@ class TestCase:
 
     def sendStateCmd(self,cmd,newState,app,instance=None):
         try:
-            if instance:
+            if instance is not None:
                 for application in self._config.applications[app]:
                     if str(instance) == application['instance']:
                         sendStateCmdToApp(cmd,newState,application)
