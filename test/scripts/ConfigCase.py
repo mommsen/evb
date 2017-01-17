@@ -160,7 +160,7 @@ class ConfigCase(TestCase):
                     self._origStdout.write("%dMB/s "%(self.getThroughputMB(dataPoints)))
                     self._origStdout.flush()
                 else:
-                    print("%3.2f:%dMB/s" % (relSize,self.getThroughputMB(dataPoints)))
+                    print("%3.2f:%dMB/s" % (fragSize,self.getThroughputMB(dataPoints)))
                 return dataPoints
             except (FailedState,StateException,ValueException) as e:
                 print(" failed: "+str(e))

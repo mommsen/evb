@@ -313,7 +313,7 @@ class ConfigFromFile(Configuration):
 
 
     def parsePolicy(self,policy):
-        if policy:
+        if policy is not None:
             for element in policy:
                 pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME:([A-Z_0-9]*)(.*)',element.attrib['pattern'])
                 if pattern:
