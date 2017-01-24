@@ -104,7 +104,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,ferolMode):
+    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,dropAtRU,ferolMode):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -180,6 +180,8 @@ class ConfigFromFile(Configuration):
                             raise Exception("The EVM must map to RU0, but maps to RU"+count)
                     if generateAtRU:
                         self.setLocalInput(app)
+                    if dropAtRU:
+                        self.dropInputData(app)
                     elif fixPorts:
                         self.fixFerolPorts(app)
                 context.applications.append(app)
@@ -280,6 +282,16 @@ class ConfigFromFile(Configuration):
             else:
                 newProp.append(prop)
         app.properties = newProp
+
+
+    def dropInputData(self,app):
+        if app.params['class'] in ('evb::EVM','evb::RU'):
+            newProp = []
+            for prop in app.properties:
+                if not prop[0] == 'dropInputData':
+                    newProp.append(prop)
+            newProp.append(('dropInputData','boolean','true'))
+            app.properties = newProp
 
 
     def setLocalInput(self,app):
