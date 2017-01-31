@@ -36,6 +36,7 @@ class RunScans(TestRunner):
         parser.add_argument("-o","--outputDir",default=self._evbTesterHome+'/log/',help="output directory [default: %(default)s]")
         parser.add_argument("--generateAtRU",action='store_true',help="ignore the FEROLs and generate data at the RU")
         parser.add_argument("--dropAtRU",action='store_true',help="drop data at the RU")
+        parser.add_argument("--dropAtSocket",action='store_true',help="drop data at pt::blit socket callback")
         parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
         parser.add_argument("--scaleFedSizesFromFile",help="scale the FED fragment sizes relative to the sizes in the given file")
         parser.add_argument("--calculateFedSizesFromFile",help="calculate the FED fragment sizes using the parameters in the given file")
@@ -133,7 +134,8 @@ class RunScans(TestRunner):
                     ferolMode = 'FEROL_MODE'
                 else:
                     ferolMode = 'FRL_MODE'
-                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],self.args['generateAtRU'],self.args['dropAtRU'],ferolMode)
+                config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
+                                            self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
                 configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors)
                 configCase.prepare(configName)
                 for fragSize in sizes:
