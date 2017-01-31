@@ -104,7 +104,7 @@ class Configuration():
 
 class ConfigFromFile(Configuration):
 
-    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,dropAtRU,ferolMode):
+    def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,dropAtRU,dropAtSocket,ferolMode):
         self.frlPorts = ('60500','60600')
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
@@ -181,7 +181,9 @@ class ConfigFromFile(Configuration):
                     if generateAtRU:
                         self.setLocalInput(app)
                     if dropAtRU:
-                        self.dropInputData(app)
+                        self.dropInputData(app,'dropInputData')
+                    if dropAtSocket:
+                        self.dropInputData(app,'dropAtSocket')
                     elif fixPorts:
                         self.fixFerolPorts(app)
                 context.applications.append(app)
@@ -284,13 +286,13 @@ class ConfigFromFile(Configuration):
         app.properties = newProp
 
 
-    def dropInputData(self,app):
+    def dropInputData(self,app,dropMode='dropInputData'):
         if app.params['class'] in ('evb::EVM','evb::RU'):
             newProp = []
             for prop in app.properties:
-                if not prop[0] == 'dropInputData':
+                if not prop[0] == dropMode:
                     newProp.append(prop)
-            newProp.append(('dropInputData','boolean','true'))
+            newProp.append((dropMode,'boolean','true'))
             app.properties = newProp
 
 

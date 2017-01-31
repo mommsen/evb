@@ -18,12 +18,13 @@ class ConfigCase(TestCase):
         TestCase.__del__(self)
 
 
-    def checkRate(self,dropAtRU):
+    def checkRate(self,dropAtRU,dropAtSocket):
         print("Checking if rate is >10 Hz:")
         try:
-            self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
-            self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
-            if not dropAtRU:
+            if not dropAtSocket:
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
+            if not dropAtRU and not dropAtSocket:
                 self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
             return
         except ValueException as e:
@@ -120,17 +121,17 @@ class ConfigCase(TestCase):
                     messengers.setParam("dummyFedSizeStdDev","unsignedInt",str(fedSizes[1]),**application)
 
 
-    def start(self,dropAtRU):
+    def start(self,dropAtRU,dropAtSocket):
         runNumber=time.strftime("%s",time.localtime())
         self.configureEvB(maxTries=30)
         self.enableEvB(maxTries=30,runNumber=runNumber)
-        self.checkRate(dropAtRU)
+        self.checkRate(dropAtRU,dropAtSocket)
 
 
     def doIt(self,fragSize,fragSizeRMS,args):
         dataPoints = []
         self.setFragmentSize(fragSize,fragSizeRMS)
-        self.start(args['dropAtRU'])
+        self.start(args['dropAtRU'],args['dropAtSocket'])
         if args['nbMeasurements'] == 0:
             dataPoints.append( self.getDataPoint() )
             raw_input("Press Enter to stop...")
