@@ -53,7 +53,10 @@ class TestRunner:
             os.mkdir(self.args['logDir'])
         except OSError:
             pass
-        self.doIt()
+        try:
+            self.doIt()
+        except KeyboardInterrupt:
+            pass
 
 
     def startLaunchers(self):

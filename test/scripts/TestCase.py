@@ -6,6 +6,7 @@ import operator
 import os
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -70,13 +71,19 @@ def sendStateCmdToApp(cmd,newState,app):
                                     " instead of target state "+str(newState)))
 
 
+# Work around hanging python pool when pressing ctrl-C
+# http://noswap.com/blog/python-multiprocessing-keyboardinterrupt
+def init_worker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
 class TestCase:
 
     def __init__(self,config,stdout):
         self._origStdout = sys.stdout
         sys.stdout = stdout
         self._config = config
-        self._pool = mp.Pool(processes=20)
+        self._pool = mp.Pool(20,init_worker)
 
 
     def __del__(self):
@@ -84,10 +91,6 @@ class TestCase:
             shutil.rmtree("/tmp/evb_test")
         except OSError:
             pass
-        if self._config:
-            results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
-            for r in results:
-                print(r.get(timeout=30))
         self._pool.close()
         self._pool.join()
         sys.stdout.flush()
