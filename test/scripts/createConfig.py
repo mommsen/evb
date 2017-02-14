@@ -97,6 +97,19 @@ class CreateConfig:
                                     prop.text = 'FEROL_AUTO_TRIGGER_MODE'
                                 #elif 'Event_Delay_ns' in prop.tag:
                                 #    prop.text = '1000'
+                if app.attrib['class'] == 'ferol40::Ferol40Controller':
+                    for child in app:
+                        if 'properties' in child.tag:
+                            for prop in child:
+                                if 'OperationMode' in prop.tag:
+                                    prop.text = 'FEROL40_MODE'
+                                elif 'Ferol40TriggerMode' in prop.tag:
+                                    prop.text = 'FEROL40_AUTO_TRIGGER_MODE'
+                                elif 'InputPorts' in prop.tag:
+                                    for item in prop:
+                                        for p in item:
+                                            if 'DataSource' in p.tag:
+                                                p.text = 'GENERATOR_SOURCE'
                 if app.attrib['class'] == 'evb::EVM':
                     for child in app:
                         if 'properties' in child.tag:
@@ -134,7 +147,7 @@ class CreateConfig:
         for context in config.getiterator(str(QN(xcns,'Context'))):
             for app in context.getiterator(str(QN(xcns,'Application'))):
                 hostType = None
-                if app.attrib['class'].startswith(('evb::test::DummyFEROL','ferol::')):
+                if app.attrib['class'].startswith(('evb::test::DummyFEROL','ferol::','ferol40::')):
                     hostType = 'FEROLCONTROLLER'+str(nFRL)
                     nFRL += 1
                 elif app.attrib['class'] == 'evb::EVM':

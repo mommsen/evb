@@ -191,7 +191,7 @@ class TestCase:
                     try:
                         messengers.setParam(paramName,paramType,paramValue,**application)
                     except messengers.SOAPexception as e:
-                        if application['app'] == 'ferol::FerolController':
+                        if application['app'] in ('ferol::FerolController','ferol40::Ferol40Controller'):
                             pass
                         else:
                             raise e

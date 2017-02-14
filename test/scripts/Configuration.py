@@ -28,7 +28,7 @@ class Configuration():
         for app in context.applications:
             appInfo['app'] = app.params['class']
             appInfo['instance'] = app.params['instance']
-            if app.params['class'].startswith(('evb::test::DummyFEROL','ferol::')):
+            if app.params['class'].startswith(('evb::test::DummyFEROL','ferol::','ferol40::')):
                 self.addAppInfoToApplications('FEROL',appInfo)
             elif app.params['class'] == 'evb::EVM':
                 self.addAppInfoToApplications('EVM',appInfo)

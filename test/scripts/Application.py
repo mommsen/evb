@@ -99,6 +99,10 @@ class Application:
             module = ET.Element(QN(ns,'Module'))
             module.text = "$XDAQ_ROOT/lib/libFerolController.so"
             context.append(module)
+        elif self.params['class'] == 'ferol40::Ferol40Controller':
+            module = ET.Element(QN(ns,'Module'))
+            module.text = "$XDAQ_ROOT/lib/libFerol40Controller.so"
+            context.append(module)
         elif self.params['class'].startswith('evb::'):
             module = ET.Element(QN(ns,'Module'))
             try:

@@ -73,52 +73,55 @@ class ConfigCase(TestCase):
         return False
 
 
-    def calculateFedSize(self,fedId,fragSize):
-        (a,b,c,rms) = self.fedSizeScaleFactors[fedId]
-        relSize = fragSize / ConfigCase.defaultFedSize
-        fedSize = a + b*relSize + c*relSize*relSize
-        fedSizeRMS = fedSize * rms
-        return (int(fedSize+4)&~0x7,int(fedSizeRMS+4)&~0x7)
-
-
-    def getFedSizes(self,fragSize,fragSizeRMS,application,isEVM):
-        if isEVM:
-            fedSizes = [1024,0]*2
-        else:
-            fedSizes = [fragSize,fragSizeRMS]*2
-
+    def calculateFedSize(self,fedId,fragSize,fragSizeRMS):
         if len(self.fedSizeScaleFactors):
-            for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
-                if app.params['class'] == 'ferol::FerolController' and app.params['instance'] == application['instance']:
-                    for prop in app.properties:
-                        try:
-                            if prop[0] == 'expectedFedId_0':
-                                fedSizes[0:1] = self.calculateFedSize(prop[2],fragSize)
-                            elif prop[0] == 'expectedFedId_1':
-                                fedSizes[2:3] = self.calculateFedSize(prop[2],fragSize)
-                        except KeyError:
-                            if prop[2] != '0xffffffff':
-                                print("Missing scale factor for FED id "+prop[2])
-        return fedSizes
+            try:
+                (a,b,c,rms) = self.fedSizeScaleFactors[fedId]
+                relSize = fragSize / ConfigCase.defaultFedSize
+                fedSize = a + b*relSize + c*relSize*relSize
+                fedSizeRMS = fedSize * rms
+                return (int(fedSize+4)&~0x7,int(fedSizeRMS+4)&~0x7)
+            except KeyError:
+                if fedId != '0xffffffff':
+                    print("Missing scale factor for FED id "+fedId)
+        return fragSize,fragSizeRMS
+
+
+    def getFedIdsForApp(self,application):
+        fedIds = []
+        for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
+            if app.params['class'] == 'ferol::FerolController' and app.params['instance'] == application['instance']:
+                fedIds = ['0xffffffff']*2
+                for prop in app.properties:
+                    for stream in range(2):
+                        if prop[0] == 'expectedFedId_'+str(stream):
+                            fedIds[stream] = prop[2]
+            elif app.params['class'] == 'ferol40::Ferol40Controller' and app.params['instance'] == application['instance']:
+                fedIds = ['0xffffffff']*4
+                for prop in app.properties:
+                    if prop[0] == 'InputPorts':
+                        for stream,item in enumerate(prop[2]):
+                            for p in item:
+                                if p[0] == 'expectedFedId':
+                                    fedIds[stream] = p[2]
+        return fedIds
 
 
     def setFragmentSize(self,fragSize,fragSizeRMS):
         try:
             for application in self._config.applications['FEROL']:
-                fedSizes = self.getFedSizes(fragSize,fragSizeRMS,application,self.sendsToEVM(application))
-                messengers.setParam("Event_Length_bytes_FED0","unsignedInt",str(fedSizes[0]),**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED0","unsignedInt",str(fedSizes[1]),**application)
-                messengers.setParam("Event_Length_bytes_FED1","unsignedInt",str(fedSizes[2]),**application)
-                messengers.setParam("Event_Length_Stdev_bytes_FED1","unsignedInt",str(fedSizes[3]),**application)
+                fedIds = self.getFedIdsForApp(application)
+                for stream,fedId in enumerate(fedIds):
+                    fedSize,fedSizeRMS = self.calculateFedSize(fedId,fragSize,fragSizeRMS)
+                    messengers.setParam("Event_Length_bytes_FED"+str(stream),"unsignedInt",str(fedSize),**application)
+                    messengers.setParam("Event_Length_Stdev_bytes_FED"+str(stream),"unsignedInt",str(fedSizeRMS),**application)
         except KeyError:
              for application in self._config.applications['EVM']:
-                    fedSizes = self.getFedSizes(fragSize,fragSizeRMS,application,True)
-                    messengers.setParam("dummyFedSize","unsignedInt",str(fedSizes[0]),**application)
-                    messengers.setParam("dummyFedSizeStdDev","unsignedInt",str(fedSizes[1]),**application)
+                    messengers.setParam("dummyFedSize","unsignedInt","1024",**application)
+                    messengers.setParam("dummyFedSizeStdDev","unsignedInt","0",**application)
              for application in self._config.applications['RU']:
-                    fedSizes = self.getFedSizes(fragSize,fragSizeRMS,application,False)
-                    messengers.setParam("dummyFedSize","unsignedInt",str(fedSizes[0]),**application)
-                    messengers.setParam("dummyFedSizeStdDev","unsignedInt",str(fedSizes[1]),**application)
+                    messengers.setParam("dummyFedSize","unsignedInt",str(fragSize),**application)
+                    messengers.setParam("dummyFedSizeStdDev","unsignedInt",str(fragSizeRMS),**application)
 
 
     def start(self,dropAtRU,dropAtSocket):
@@ -166,6 +169,7 @@ class ConfigCase(TestCase):
                 return dataPoints
             except (FailedState,StateException,ValueException) as e:
                 print(" failed: "+str(e))
+                #raw_input("Press Enter to retry...")
                 while tries < 10:
                     tries += 1
                     try:
