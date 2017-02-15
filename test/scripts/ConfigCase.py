@@ -66,13 +66,6 @@ class ConfigCase(TestCase):
         return int(size*rate/1000000)
 
 
-    def sendsToEVM(self,application):
-        for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
-            if app.params['class'] == 'ferol::FerolController' and app.params['instance'] == application['instance']:
-                return app.params['sendsToEVM']
-        return False
-
-
     def calculateFedSize(self,fedId,fragSize,fragSizeRMS):
         if len(self.fedSizeScaleFactors):
             try:
@@ -84,7 +77,10 @@ class ConfigCase(TestCase):
             except KeyError:
                 if fedId != '0xffffffff':
                     print("Missing scale factor for FED id "+fedId)
-        return fragSize,fragSizeRMS
+        if fedId == self._config.evmFedId:
+            return 1024,0
+        else:
+            return fragSize,fragSizeRMS
 
 
     def getFedIdsForApp(self,application):

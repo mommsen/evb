@@ -167,8 +167,6 @@ class ConfigFromFile(Configuration):
                 elif app.params['class'] == 'ferol::FerolController':
                     if fixPorts:
                         self.rewriteFerolProperties(app)
-                    else:
-                        self.setSendsToEVM(app)
                     self.setOperationMode(app,ferolMode)
                 elif app.params['class'].startswith('evb::'):
                     app.params['network'] = 'infini'
@@ -176,6 +174,7 @@ class ConfigFromFile(Configuration):
                     tid += 1
                     if app.params['class'] == 'evb::EVM':
                         context.role = 'EVM'
+                        self.evmFedId = self.getEvmFedId(app)
                         if count != '0':
                             raise Exception("The EVM must map to RU0, but maps to RU"+count)
                     if generateAtRU:
@@ -225,16 +224,6 @@ class ConfigFromFile(Configuration):
         return [name,type,value]
 
 
-    def setSendsToEVM(self,app):
-        evmHostName = self.symbolMap.getHostInfo('RU0')['frlHostname']
-        for prop in app.properties:
-            if prop[0] == 'DestinationIP':
-                if prop[2] == evmHostName:
-                    app.params['sendsToEVM'] = True
-                else:
-                    app.params['sendsToEVM'] = False
-
-
     def rewriteFerolProperties(self,app):
         newProp = []
         for prop in app.properties:
@@ -248,13 +237,6 @@ class ConfigFromFile(Configuration):
                 fedId1 = prop[2]
             elif prop[0] == 'slotNumber':
                 slotNumber = int(prop[2])
-            if prop[0] == 'DestinationIP':
-                destHostType = re.match(r'([A-Z0-9]*?)_FRL_HOST_NAME',prop[2]).group(1)
-                destHostInfo = self.symbolMap.getHostInfo(destHostType)
-                if destHostType == 'RU0':
-                    app.params['sendsToEVM'] = True
-                else:
-                    app.params['sendsToEVM'] = False
             elif '_PORT_' not in prop[0] and 'lightStop' not in prop[0]:
                 newProp.append(prop)
         newProp.append(('lightStop','boolean','true'))
@@ -274,6 +256,13 @@ class ConfigFromFile(Configuration):
             self.fedId2Port[fedId0] = self.frlPorts[1]
             self.fedId2Port[fedId1] = self.frlPorts[0]
         app.properties = newProp
+
+
+    def getEvmFedId(self,app):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'fedSourceIds':
+                return prop[2][0]
 
 
     def setOperationMode(self,app,ferolMode):
