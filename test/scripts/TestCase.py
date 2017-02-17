@@ -560,5 +560,5 @@ class TestCase:
     def prepare(self,testname,maxTries=10):
         self.startXDAQs(testname)
         self.sendCmdToExecutive()
-        self.waitForState(('Halted','uninitialized'),maxTries)
+        self.waitForState(('Halted','uninitialized','Initialized'),maxTries)
         self.startPt()
