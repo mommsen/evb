@@ -10,7 +10,7 @@ soap-env:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
 xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/">
+xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/">
 <soap-env:Header/>
 <soap-env:Body>%s</soap-env:Body>
 </soap-env:Envelope>
@@ -82,7 +82,20 @@ def sendCmdToApp(command,soapHostname,soapPort,launcherPort,app,instance):
 
 def setParam(paramName,paramType,paramValue,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
-    paramSet = """<xdaq:ParameterSet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct"><p:%(paramName)s xsi:type="xsd:%(paramType)s">%(paramValue)s</p:%(paramName)s></p:properties></xdaq:ParameterSet>""" % {'paramName':paramName,'paramType':paramType,'paramValue':str(paramValue),'app':app}
+    if isinstance(paramValue,(tuple,list)):
+        param = """<p:%(paramName)s xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[%(len)d]">""" % {'paramName':paramName,'len':len(paramValue)}
+        for pos,val in enumerate(paramValue):
+            if isinstance(val,(tuple,list)):
+                param += """<p:item soapenc:position="[%(pos)d]" xsi:type="soapenc:Struct">""" % {'pos':pos}
+                for item in val:
+                    param += """<p:%(paramName)s xsi:type="xsd:%(paramType)s">%(paramValue)s</p:%(paramName)s>""" % {'paramName':item[0],'paramType':item[1],'paramValue':str(item[2])}
+                param += """</p:item>"""
+            else:
+                param += """<p:item soapenc:position="[%(pos)d]" xsi:type="xsd:%(paramType)s">%(paramValue)s</p:item>""" % {'pos':pos,'paramType':paramType,'paramValue':str(val)}
+        param += """</p:%(paramName)s>""" % {'paramName':paramName}
+    else:
+        param = """<p:%(paramName)s xsi:type="xsd:%(paramType)s">%(paramValue)s</p:%(paramName)s>""" % {'paramName':paramName,'paramType':paramType,'paramValue':str(paramValue)}
+    paramSet = """<xdaq:ParameterSet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">%(param)s</p:properties></xdaq:ParameterSet>""" % {'app':app,'param':param}
     response = sendSoapMessage(soapHostname,soapPort,urn,paramSet)
     xdaqResponse = response.getElementsByTagName('xdaq:ParameterSetResponse')
     if len(xdaqResponse) != 1:
@@ -92,17 +105,48 @@ def setParam(paramName,paramType,paramValue,soapHostname,soapPort,launcherPort,a
 
 def getParam(paramName,paramType,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
-    paramGet = """<xdaq:ParameterGet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct"><p:%(paramName)s xsi:type="xsd:%(paramType)s"/></p:properties></xdaq:ParameterGet>""" % {'paramName':paramName,'paramType':paramType,'app':app}
+    if paramType == "Array":
+        param = """<p:%(paramName)s xsi:type="soapenc:Array" soapenc:arrayType="xsd:ur-type[]"/>""" % {'paramName':paramName}
+    else:
+        param = """<p:%(paramName)s xsi:type="xsd:%(paramType)s"/>""" % {'paramName':paramName,'paramType':paramType}
+    paramGet = """<xdaq:ParameterGet xmlns:xdaq=\"urn:xdaq-soap:3.0\"><p:properties xmlns:p="urn:xdaq-application:%(app)s" xsi:type="soapenc:Struct">%(param)s</p:properties></xdaq:ParameterGet>""" % {'app':app,'param':param}
     response = sendSoapMessage(soapHostname,soapPort,urn,paramGet)
+    #print response.toprettyxml()
     xdaqResponse = response.getElementsByTagName('p:'+paramName)
     if len(xdaqResponse) != 1:
         raise(SOAPexception("ParameterGetResponse response from "+app+str(instance)+" is missing "+paramName+" ("+paramType+"):\n"
                             +response.toprettyxml()))
-    value = xdaqResponse[0].firstChild.data
+    if not xdaqResponse[0].hasChildNodes():
+        if paramType == "Array":
+            return []
+        else:
+            return None
     try:
-        return int(value)
-    except ValueError:
-        return value
+        value = xdaqResponse[0].firstChild.data
+        try:
+            return int(value)
+        except ValueError:
+            return value
+    except AttributeError:
+        values = []
+        for node in xdaqResponse[0].childNodes:
+            try:
+                value = node.firstChild.data
+                try:
+                    values.append(int(value))
+                except ValueError:
+                    values.append(value)
+            except AttributeError:
+                val = []
+                for item in node.childNodes:
+                    type = item.attributes['xsi:type'].value[4:]
+                    value = item.firstChild.data
+                    try:
+                        val.append((item.localName,type,int(value)))
+                    except ValueError:
+                        val.append((item.localName,type,value))
+                values.append(val)
+        return values
 
 
 def readItem(device,offset,item,soapHostname,soapPort,launcherPort,app,instance):
@@ -122,3 +166,35 @@ def readItem(device,offset,item,soapHostname,soapPort,launcherPort,app,instance)
 
 def getStateName(soapHostname,soapPort,launcherPort,app,instance):
     return getParam("stateName","string",soapHostname,soapPort,launcherPort,app,instance)
+
+
+if __name__ == "__main__":
+    print getParam('eventCount','unsignedLong','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+
+    playbackDataFile = getParam('playbackDataFile','string','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    playbackDataFile += "test"
+    setParam('playbackDataFile','string',playbackDataFile,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    if playbackDataFile != getParam('playbackDataFile','string','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0'):
+        print("String setting failed!")
+
+    fedIds = getParam('fedSourceIds','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    newIds = []
+    for id in fedIds:
+        newIds.append(id+10)
+    setParam('fedSourceIds','unsignedInt',newIds,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    if newIds != getParam('fedSourceIds','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0'):
+        print("Array setting failed!")
+
+    sources = getParam('ferolSources','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    newSources = []
+    for source in sources:
+        items = []
+        for item in source:
+            if item[0] == 'fedId':
+                items.append((item[0],item[1],item[2]+10))
+            else:
+                items.append(item)
+        newSources.append(items)
+    setParam('ferolSources','Array',newSources,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    if newSources != getParam('ferolSources','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0'):
+        print("Tuple setting failed!")
