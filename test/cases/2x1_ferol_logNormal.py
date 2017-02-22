@@ -21,8 +21,7 @@ class case_2x1_ferol_logNormal(TestCase):
         for id in range(0,4):
             self._config.add( FEROL(symbolMap,evm,id,[
                 ('fedSize','unsignedInt','2048'),
-                ('fedSizeStdDev','unsignedInt','1024'),
-                ('useLogNormal','boolean','true')
+                ('fedSizeStdDev','unsignedInt','1024')
                 ]) )
 
         ru = RU(symbolMap,[
@@ -31,8 +30,7 @@ class case_2x1_ferol_logNormal(TestCase):
         for id in range(4,8):
             self._config.add( FEROL(symbolMap,ru,id,[
                 ('fedSize','unsignedInt','2048'),
-                ('fedSizeStdDev','unsignedInt','1024'),
-                ('useLogNormal','boolean','true')
+                ('fedSizeStdDev','unsignedInt','1024')
                 ]) )
 
         self._config.add( evm )

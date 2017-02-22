@@ -203,7 +203,6 @@ void evb::test::DummyFEROL::configure()
     configuration_->frameSize,
     configuration_->fedSize,
     configuration_->computeCRC,
-    configuration_->useLogNormal,
     configuration_->fedSizeStdDev,
     configuration_->minFedSize,
     configuration_->maxFedSize,

@@ -32,11 +32,13 @@ namespace evb {
         xdata::UnsignedInteger32 fedId;
         xdata::String hostname;
         xdata::UnsignedInteger32 port;
+        xdata::UnsignedInteger32 dummyFedSize;
+        xdata::UnsignedInteger32 dummyFedSizeStdDev;
         xdata::Boolean active;
         std::string ipAddress;
 
         FerolSource() :
-          fedId(FED_COUNT+1),hostname(""),port(0),active(false),ipAddress("") {};
+          fedId(FED_COUNT+1),hostname(""),port(0),dummyFedSize(2048),dummyFedSizeStdDev(0),active(false),ipAddress("") {};
 
         const std::string& getIPaddress()
         {
@@ -61,6 +63,8 @@ namespace evb {
           bag->addField("fedId",&fedId);
           bag->addField("hostname",&hostname);
           bag->addField("port",&port);
+          bag->addField("dummyFedSize",&dummyFedSize);
+          bag->addField("dummyFedSizeStdDev",&dummyFedSizeStdDev);
         }
       };
       typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
@@ -81,9 +85,6 @@ namespace evb {
       xdata::Boolean computeCRC;                             // If set to true, compute the CRC checksum of the dummy fragment
       xdata::Boolean usePlayback;                            // Playback data from a file (not implemented)
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
-      xdata::UnsignedInteger32 dummyFedSize;                 // Mean size in Bytes of the FED when running in Local mode
-      xdata::Boolean useLogNormal;                           // If set to true, use the log-normal generator for FED sizes
-      xdata::UnsignedInteger32 dummyFedSizeStdDev;           // Standard deviation of the FED sizes when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
@@ -117,9 +118,6 @@ namespace evb {
           computeCRC(true),
           usePlayback(false),
           playbackDataFile(""),
-          dummyFedSize(2048),
-          useLogNormal(false),
-          dummyFedSizeStdDev(0),
           dummyFedSizeMin(16), // minimum is 16 Bytes
           dummyFedSizeMax(0), // no limitation
           dummyScalFedSize(0),
@@ -156,9 +154,6 @@ namespace evb {
         params.add("computeCRC", &computeCRC);
         params.add("usePlayback", &usePlayback);
         params.add("playbackDataFile", &playbackDataFile);
-        params.add("dummyFedSize", &dummyFedSize);
-        params.add("useLogNormal", &useLogNormal);
-        params.add("dummyFedSizeStdDev", &dummyFedSizeStdDev);
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
         params.add("dummyScalFedSize", &dummyScalFedSize);

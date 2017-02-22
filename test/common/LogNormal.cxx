@@ -17,12 +17,12 @@ int main( int argc, const char* argv[] )
   const uint32_t iterations = 10000000;
 
   {
-    evb::FragmentSize fixedSize(fedSize);
+    evb::FragmentSize fixedSize(fedSize,0,minFedSize,maxFedSize);
     assert( fixedSize.get() == fedSize );
   }
 
   {
-    evb::FragmentSize fixedSize(2000);
+    evb::FragmentSize fixedSize(2000,0,minFedSize,maxFedSize);
     assert( fixedSize.get() == (2000 & ~0x7) );
   }
 

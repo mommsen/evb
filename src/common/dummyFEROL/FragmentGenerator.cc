@@ -32,7 +32,6 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   const uint32_t frameSize,
   const uint32_t fedSize,
   const bool computeCRC,
-  const bool useLogNormal,
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
@@ -100,7 +99,7 @@ void evb::test::dummyFEROL::FragmentGenerator::configure
   }
 
   fragmentTracker_.reset(
-    new FragmentTracker(fedId,fedSize,useLogNormal,fedSizeStdDev,minFedSize,maxFedSize,computeCRC)
+    new FragmentTracker(fedId,fedSize,fedSizeStdDev,minFedSize,maxFedSize,computeCRC)
   );
   fragmentTracker_->setMaxTriggerRate(maxTriggerRate);
 

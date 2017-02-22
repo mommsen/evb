@@ -286,13 +286,14 @@ class ConfigFromFile(Configuration):
 
 
     def setLocalInput(self,app):
-        newProp = []
-        for prop in app.properties:
-            if prop[0] == 'inputSource':
-                newProp.append(('inputSource','string','Local'))
-            elif prop[0] != 'ferolSources':
-                newProp.append(prop)
-        app.properties = newProp
+        if app.params['class'] in ('evb::EVM','evb::RU'):
+            newProp = [('computeCRC','boolean','true')]
+            for prop in app.properties:
+                if prop[0] == 'inputSource':
+                    newProp.append(('inputSource','string','Local'))
+                elif prop[0] not in ('ferolSources','computeCRC'):
+                    newProp.append(prop)
+            app.properties = newProp
 
 
     def fixFerolPorts(self,app):

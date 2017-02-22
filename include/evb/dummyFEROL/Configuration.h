@@ -24,11 +24,10 @@ namespace evb {
         xdata::UnsignedInteger32 destinationPort;
         xdata::UnsignedInteger32 fedId;
         xdata::UnsignedInteger32 fedSize;
-        xdata::Boolean computeCRC;
-        xdata::Boolean useLogNormal;
         xdata::UnsignedInteger32 fedSizeStdDev;
         xdata::UnsignedInteger32 minFedSize;
         xdata::UnsignedInteger32 maxFedSize;
+        xdata::Boolean computeCRC;
         xdata::Boolean usePlayback;
         xdata::String playbackDataFile;
         xdata::UnsignedInteger32 frameSize;
@@ -43,11 +42,10 @@ namespace evb {
             destinationPort(0),
             fedId(0),
             fedSize(2048),
-            computeCRC(true),
-            useLogNormal(false),
             fedSizeStdDev(0),
             minFedSize(16), // minimum to fit FED header and trailer
             maxFedSize(0), // no limitiation
+            computeCRC(true),
             usePlayback(false),
             playbackDataFile(""),
             frameSize(0x40000),
@@ -68,11 +66,10 @@ namespace evb {
           params.add("destinationPort", &destinationPort);
           params.add("fedId", &fedId);
           params.add("fedSize", &fedSize);
-          params.add("computeCRC", &computeCRC);
-          params.add("useLogNormal", &useLogNormal);
           params.add("fedSizeStdDev", &fedSizeStdDev);
           params.add("minFedSize", &minFedSize);
           params.add("maxFedSize", &maxFedSize);
+          params.add("computeCRC", &computeCRC);
           params.add("usePlayback", &usePlayback);
           params.add("playbackDataFile", &playbackDataFile);
           params.add("frameSize", &frameSize);

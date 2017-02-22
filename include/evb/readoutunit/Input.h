@@ -677,7 +677,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
           XCEPT_RAISE(exception::Configuration, msg.str());
         }
 
-        FerolStreamPtr ferolStream( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,fedId) );
+        FerolStreamPtr ferolStream( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,it->bag) );
         ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
       }
     }

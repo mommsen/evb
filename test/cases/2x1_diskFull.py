@@ -47,23 +47,17 @@ class case_2x1_diskFull(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        self._config.add( RU(symbolMap,[
+        self._config.add( RU(symbolMap,(
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(4)),
-             ('useLogNormal','boolean','true'),
-             ('dummyFedSize','unsignedInt','10000'),
-             ('dummyFedSizeStdDev','unsignedInt','1000'),
-             ('fakeLumiSectionDuration','unsignedInt','5')
-            ]) )
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(7,20)),
-             ('useLogNormal','boolean','true'),
-             ('dummyFedSize','unsignedInt','10000'),
-             ('dummyFedSizeStdDev','unsignedInt','1000')
-            ]) )
-        self._config.add( BU(symbolMap,[
+             ('fakeLumiSectionDuration','unsignedInt','5'))
+             + self.getFedParams(range(4),10000,1000)
+            ) )
+        self._config.add( RU(symbolMap,(
+             ('inputSource','string','Local'),)
+             + self.getFedParams(range(7,20),10000,1000)
+            ) )
+        self._config.add( BU(symbolMap,(
              ('lumiSectionTimeout','unsignedInt','10'),
              ('staleResourceTime','unsignedInt','0'),
              ('sleepTimeBlocked','unsignedInt','1')
-            ]) )
+            )) )

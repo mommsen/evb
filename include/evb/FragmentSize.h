@@ -21,8 +21,6 @@ namespace evb { // namespace evb
   {
   public:
 
-    FragmentSize(const uint32_t meanFedSize);
-
     FragmentSize(
       const uint32_t meanFedSize,
       const uint32_t stdDevFedSize,

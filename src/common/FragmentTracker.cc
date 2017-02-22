@@ -13,7 +13,6 @@ evb::FragmentTracker::FragmentTracker
 (
   const uint32_t fedId,
   const uint32_t fedSize,
-  const bool useLogNormal,
   const uint32_t fedSizeStdDev,
   const uint32_t minFedSize,
   const uint32_t maxFedSize,
@@ -37,10 +36,7 @@ evb::FragmentTracker::FragmentTracker
     msg << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << minFedSize << " Bytes";
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
-  if (useLogNormal)
-    fragmentSize_.reset( new FragmentSize(fedSize,fedSizeStdDev,minFedSize,maxFedSize) );
-  else
-    fragmentSize_.reset( new FragmentSize(fedSize) );
+  fragmentSize_.reset( new FragmentSize(fedSize,fedSizeStdDev,minFedSize,maxFedSize) );
 }
 
 

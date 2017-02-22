@@ -6,6 +6,7 @@
 
 #include "evb/Constants.h"
 #include "evb/FragmentSize.h"
+#include "evb/readoutunit/Configuration.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/ReadoutUnit.h"
@@ -31,7 +32,7 @@ namespace evb {
     {
     public:
 
-      LocalStream(ReadoutUnit*, const uint16_t fedId);
+      LocalStream(ReadoutUnit*, const typename Configuration::FerolSource&);
 
       ~LocalStream();
 
@@ -86,9 +87,9 @@ template<class ReadoutUnit,class Configuration>
 evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
 (
   ReadoutUnit* readoutUnit,
-  const uint16_t fedId
+  const typename Configuration::FerolSource& ferolSource
 ) :
-  FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
+  FerolStream<ReadoutUnit,Configuration>(readoutUnit,ferolSource.fedId),
   configuration_(readoutUnit->getConfiguration()),
   generatingActive_(false),
   maxTriggerRate_(0),
@@ -102,12 +103,8 @@ evb::readoutunit::LocalStream<ReadoutUnit,Configuration>::LocalStream
     msg << sizeof(fedh_t) + sizeof(fedt_t) << " Bytes instead of " << configuration_->dummyFedSizeMin << " Bytes";
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
-  if ( configuration_->useLogNormal )
-    fragmentSize_.reset( new FragmentSize(configuration_->dummyFedSize,configuration_->dummyFedSizeStdDev,
-                                          configuration_->dummyFedSizeMin,configuration_->dummyFedSizeMax) );
-  else
-    fragmentSize_.reset( new FragmentSize(configuration_->dummyFedSize) );
-
+  fragmentSize_.reset( new FragmentSize(ferolSource.dummyFedSize,ferolSource.dummyFedSizeStdDev,
+                                        configuration_->dummyFedSizeMin,configuration_->dummyFedSizeMax) );
   startGeneratorWorkLoop();
 }
 

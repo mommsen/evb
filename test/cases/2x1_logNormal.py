@@ -15,23 +15,17 @@ class case_2x1_logNormal(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        self._config.add( RU(symbolMap,[
+        self._config.add( RU(symbolMap,(
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',(512,)),
-             ('dummyFedSize','unsignedInt','2048'),
-             ('dummyFedSizeStdDev','unsignedInt','1024'),
              ('dummyFedSizeMin','unsignedInt','512'),
-             ('dummyFedSizeMax','unsignedInt','2048'),
-             ('useLogNormal','boolean','true')
-            ]) )
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(1,13)),
-             ('dummyFedSize','unsignedInt','2048'),
-             ('dummyFedSizeStdDev','unsignedInt','1024'),
-             ('useLogNormal','boolean','true')
-            ]) )
-        self._config.add( BU(symbolMap,[
+             ('dummyFedSizeMax','unsignedInt','2048'))
+             + self.getFedParams((512,),2048,1024)
+            ) )
+        self._config.add( RU(symbolMap,(
+             ('inputSource','string','Local'),)
+             + self.getFedParams(range(1,13),2048,1024)
+            ) )
+        self._config.add( BU(symbolMap,(
              ('dropEventData','boolean','true'),
              ('lumiSectionTimeout','unsignedInt','0')
-            ]) )
+            )) )

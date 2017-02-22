@@ -91,6 +91,10 @@ class TestCase:
             shutil.rmtree("/tmp/evb_test")
         except OSError:
             pass
+        if self._config:
+            results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+            for r in results:
+                print(r.get(timeout=30))
         self._pool.close()
         self._pool.join()
         sys.stdout.flush()
@@ -257,6 +261,19 @@ class TestCase:
 
         except KeyError:
             pass
+
+
+    def getFedParams(self,fedIds,dummyFedSize,dummyFedSizeDev=0):
+        fedSourceIds = []
+        ferolSources = []
+        for id in fedIds:
+            fedSourceIds.append(id)
+            ferolSources.append( (
+                ('fedId','unsignedInt',id),
+                ('dummyFedSize','unsignedInt',str(dummyFedSize)),
+                ('dummyFedSizeStdDev','unsignedInt',str(dummyFedSizeDev))
+                ) )
+        return ('fedSourceIds','unsignedInt',fedSourceIds),('ferolSources','Struct',ferolSources)
 
 
     def getFiles(self,regex,app,instance=None,dir="/tmp"):

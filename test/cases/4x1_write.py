@@ -39,27 +39,23 @@ class case_4x1_write(TestCase):
 
 
     def fillConfiguration(self,symbolMap):
-        self._config.add( RU(symbolMap,[
+        self._config.add( RU(symbolMap,(
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(0,16)),
-             ('dummyFedSize','unsignedInt','1024'),
-             ('fakeLumiSectionDuration','unsignedInt','5')
-            ]) )
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(16,32)),
-             ('dummyFedSize','unsignedInt','1024')
-            ]) )
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(32,48)),
-             ('dummyFedSize','unsignedInt','1024')
-            ]) )
-        self._config.add( RU(symbolMap,[
-             ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt',range(48,64)),
-             ('dummyFedSize','unsignedInt','1024')
-            ]) )
+             ('fakeLumiSectionDuration','unsignedInt','5'))
+             + self.getFedParams(range(0,16),1024)
+            ) )
+        self._config.add( RU(symbolMap,(
+             ('inputSource','string','Local'),)
+             + self.getFedParams(range(16,32),1024)
+            ) )
+        self._config.add( RU(symbolMap,(
+             ('inputSource','string','Local'),)
+             + self.getFedParams(range(32,48),1024)
+            ) )
+        self._config.add( RU(symbolMap,(
+             ('inputSource','string','Local'),)
+             + self.getFedParams(range(48,64),1024)
+            ) )
         self._config.add( BU(symbolMap,[
              ('lumiSectionTimeout','unsignedInt','6'),
              ('staleResourceTime','unsignedInt','0'),
