@@ -132,9 +132,21 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 }
 
 
-void evb::bu::EventBuilder::drain()
+bool evb::bu::EventBuilder::isEmpty() const
 {
-  while ( processesActive_.any() ) ::usleep(1000);
+  for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
+       it != itEnd; ++it)
+  {
+    if ( !it->second->empty() ) return false;
+  }
+
+  return processesActive_.none();
+}
+
+
+void evb::bu::EventBuilder::drain() const
+{
+  while ( !isEmpty() ) ::usleep(1000);
 }
 
 
@@ -285,7 +297,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 }
 
 
-inline void evb::bu::EventBuilder::buildEvent
+void evb::bu::EventBuilder::buildEvent
 (
   FragmentChainPtr& superFragments,
   PartialEvents& partialEvents,
@@ -361,7 +373,7 @@ inline void evb::bu::EventBuilder::buildEvent
 }
 
 
-inline evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::getEventPos
+evb::bu::EventBuilder::PartialEvents::iterator evb::bu::EventBuilder::getEventPos
 (
   PartialEvents& partialEvents,
   const EvBid& evbId,

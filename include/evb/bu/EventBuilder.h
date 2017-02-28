@@ -81,7 +81,7 @@ namespace evb {
       /**
        * Drain events
        */
-      void drain();
+      void drain() const;
 
       /**
        * Stop processing events
@@ -151,6 +151,7 @@ namespace evb {
       void buildEvent(FragmentChainPtr&, PartialEvents&, CompleteEvents&) const;
       PartialEvents::iterator getEventPos(PartialEvents&, const EvBid&, const msg::RUtids&, const uint16_t& buResourceId) const;
       uint32_t handleCompleteEvents(CompleteEvents&, StreamHandlerPtr&) const;
+      bool isEmpty() const;
 
       BU* bu_;
       boost::shared_ptr<DiskWriter> diskWriter_;

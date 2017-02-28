@@ -27,6 +27,7 @@ evb::evm::RUproxy::RUproxy
   msgPool_(evm->getMsgPool()),
   readoutMsgFIFO_(evm,"readoutMsgFIFO"),
   doProcessing_(false),
+  draining_(false),
   processingActive_(false),
   tid_(0),
   ruCount_(0)
@@ -73,28 +74,23 @@ void evb::evm::RUproxy::startProcessing()
   if ( participatingRUs_.empty() ) return;
 
   doProcessing_ = true;
+  draining_ = false;
 
   processRequestsWL_->submit(processRequestsAction_);
 }
 
 
-void evb::evm::RUproxy::drain() const
+void evb::evm::RUproxy::drain()
 {
-  while ( !isEmpty() ) ::usleep(1000);
-}
-
-
-bool evb::evm::RUproxy::isEmpty() const
-{
-  if ( readoutMsgFIFO_.empty() && !processingActive_ ) return true;
-
-  return false;
+  draining_ = true;
+  while ( !readoutMsgFIFO_.empty() || processingActive_ ) ::usleep(1000);
 }
 
 
 void evb::evm::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
+  draining_ = false;
   while ( processingActive_ ) ::usleep(1000);
 
   readoutMsgFIFO_.clear();
@@ -201,7 +197,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
         }
       }
       ::usleep(10);
-    } while ( getTimeStamp() < timeLimit );
+    } while ( getTimeStamp() < timeLimit && !draining_ );
 
     if ( rqstBufRef )
     {

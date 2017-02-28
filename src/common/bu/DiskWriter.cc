@@ -111,12 +111,6 @@ void evb::bu::DiskWriter::stopProcessing()
   doProcessing_ = false;
   while ( lumiAccountingActive_ || fileMoverActive_ ) ::usleep(1000);
 
-  if ( configuration_->dropEventData )
-  {
-    streamHandlers_.clear();
-    return;
-  }
-
   for (StreamHandlers::const_iterator it = streamHandlers_.begin(), itEnd = streamHandlers_.end();
        it != itEnd; ++it)
   {
@@ -140,15 +134,18 @@ void evb::bu::DiskWriter::stopProcessing()
     lumiStatistics_.clear();
   }
 
-  writeEoR();
-
   streamHandlers_.clear();
-  removeDir(runRawDataDir_);
 
-  if ( configuration_->deleteRawDataFiles )
+  if ( !configuration_->dropEventData )
   {
-    removeDir(runRawDataDir_.parent_path());
-    removeDir(runMetaDataDir_);
+    writeEoR();
+    removeDir(runRawDataDir_);
+
+    if ( configuration_->deleteRawDataFiles )
+    {
+      removeDir(runRawDataDir_.parent_path());
+      removeDir(runMetaDataDir_);
+    }
   }
 }
 

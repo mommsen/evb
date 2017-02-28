@@ -317,7 +317,7 @@ namespace evb {
         boost::mutex::scoped_lock sl(processesActiveMutex_);
         if ( processesActive_.any() ) return false;
       }
-      return readoutUnit_->getRUproxy()->isEmpty();
+      return true;
     }
 
 

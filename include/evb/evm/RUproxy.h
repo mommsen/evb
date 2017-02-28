@@ -84,17 +84,12 @@ namespace evb {
       /**
        * Drain events
        */
-      void drain() const;
+      void drain();
 
       /**
        * Stop processing events
        */
       void stopProcessing();
-
-      /**
-       * Return true if no work is being done
-       */
-      bool isEmpty() const;
 
       /**
        * Return the tids of RUs participating in the event building
@@ -129,6 +124,7 @@ namespace evb {
       toolbox::task::WorkLoop* processRequestsWL_;
       toolbox::task::ActionSignature* processRequestsAction_;
       volatile bool doProcessing_;
+      volatile bool draining_;
       volatile bool processingActive_;
 
       I2O_TID tid_;
