@@ -32,6 +32,7 @@ class Configuration():
                 self.addAppInfoToApplications('FEROL',appInfo)
             elif app.params['class'] == 'evb::EVM':
                 self.addAppInfoToApplications('EVM',appInfo)
+                self.evmFedId = self.getEvmFedId(app)
             elif app.params['class'] == 'evb::RU':
                 self.addAppInfoToApplications('RU',appInfo)
             elif app.params['class'] == 'evb::BU':
@@ -40,6 +41,13 @@ class Configuration():
                 self.ptUtcp.append( copy.deepcopy(appInfo) )
             elif app.params['class'] == 'pt::ibv::Application':
                 self.ptIBV.append( copy.deepcopy(appInfo) )
+
+
+    def getEvmFedId(self,app):
+        newProp = []
+        for prop in app.properties:
+            if prop[0] == 'fedSourceIds':
+                return prop[2][0]
 
 
     def addAppInfoToApplications(self,role,appInfo):
@@ -256,13 +264,6 @@ class ConfigFromFile(Configuration):
             self.fedId2Port[fedId0] = self.frlPorts[1]
             self.fedId2Port[fedId1] = self.frlPorts[0]
         app.properties = newProp
-
-
-    def getEvmFedId(self,app):
-        newProp = []
-        for prop in app.properties:
-            if prop[0] == 'fedSourceIds':
-                return prop[2][0]
 
 
     def setOperationMode(self,app,ferolMode):

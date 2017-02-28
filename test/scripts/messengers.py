@@ -172,7 +172,10 @@ if __name__ == "__main__":
     print getParam('eventCount','unsignedLong','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
 
     playbackDataFile = getParam('playbackDataFile','string','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
-    playbackDataFile += "test"
+    if playbackDataFile:
+        playbackDataFile += "_test"
+    else:
+        playbackDataFile = "test"
     setParam('playbackDataFile','string',playbackDataFile,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
     if playbackDataFile != getParam('playbackDataFile','string','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0'):
         print("String setting failed!")
@@ -198,3 +201,13 @@ if __name__ == "__main__":
     setParam('ferolSources','Array',newSources,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
     if newSources != getParam('ferolSources','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0'):
         print("Tuple setting failed!")
+
+    sources = getParam('ferolSources','Array','kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
+    newSources = []
+    for source in sources:
+        items = []
+        for item in source:
+            if item[0] == 'dummyFedSize':
+                items.append((item[0],item[1],'1056'))
+        newSources.append(items)
+    setParam('ferolSources','Array',newSources,'kvm-s3562-1-ip151-39.cms','65440','','evb::EVM','0')
