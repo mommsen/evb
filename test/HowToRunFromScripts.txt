@@ -6,7 +6,7 @@ RCMS. However, it is also possible to run it without RCMS using
 scripts provided within this package. There are 2 use cases: to run
 stand-alone functionality tests of the EvB code and to measure the
 performance of the event builder. This howto shall document how this
-is done. All paths are given relative to the location of this how-to
+is done. All paths are given relative to the location of this howto
 document.
 
 
@@ -126,8 +126,9 @@ different fragment sizes using e.g.:
       scanned. Alternatively, you can also specify --long, which uses
       more points, or you can specify a list of sizes with
       --sizes 2048 2560 4096 8192 12288 16384.
-      Note that the fragment sizes are only applied to the RUs. The
-      FED size for the EVM is always fixed at 1024 Bytes.
+      Note that the fragment sizes are only applied to FEDs connecting
+      to the RUs. The FED size for the first FED connected to the EVM
+      is always fixed at 1024 Bytes.
 
 
     By default, a new dat file is created when you re-run the same
@@ -138,8 +139,8 @@ different fragment sizes using e.g.:
     existing file. This is useful if either the scan failed at a
     certain point, or if you scanned with the '--short' option and
     would like to scan the additional points contained in the '--long'
-    option. There is a shorthand '--compl' which will scan the missing
-    sizes.
+    option. There is a shorthand '--compl' which will scan the
+    sizes contained in the long, but not in short option.
 
 
 
@@ -152,19 +153,21 @@ debugging purposes, you can use the following command:
     In this mode, we don't care about the results. Therefore, the
     outputDir is set to the scratch directory $logDir. In addition,
     only one fragment size (4096 Bytes) is used.
-    '--nbMeasurements 0' is a backdoor to actually inhibit the
-    scan. In this case, the script waits for the return being pressed
-    before proceeding. It is possible to specify multiple sizes in
-    which case the script reconfigures the system for the next
-    fragment size and waits again on the return key. If all sizes have
-    been tried, the system is teared down. Note that it might be
-    useful to run with '--verbose' option in which case you get all
-    output also on the terminal.
+    '--nbMeasurements 0' is a backdoor to inhibit the scan. In this
+    case, the script waits for the return being pressed before
+    proceeding. It is possible to specify multiple sizes in which case
+    the script reconfigures the system for the next fragment size and
+    waits again on the return key. If all sizes have been tried, the
+    system is teared down. Note that it might be useful to run with
+    '--verbose' option in which case you get all output also on the
+    terminal.
     In case you want to drop the data at the callback of pt::blit,
     i.e. inhibit any super-fragment building, you can specify
     '--dropAtSocket'. In this case no rate or throughput is visible on
     the hyperdaq pages of the RU, and the measurments will be 0
-    regardless if data is actually flowing or not.
+    regardless if data is actually flowing or not. The option
+    '--dropAtRU' activates the logic to drop the super-fragments after
+    they have been built on the RU, i.e. the RUs run independently.
 
 
 
