@@ -317,8 +317,6 @@ void evb::bu::EventBuilder::buildEvent
   msg::RUtids ruTids;
   firstDataBlockMsg->getRUtids(ruTids);
 
-  PartialEvents::iterator eventPos = getEventPos(partialEvents,evbIds[superFragmentCount],ruTids,firstDataBlockMsg->buResourceId);
-
   do
   {
     toolbox::mem::Reference* nextRef = bufRef->getNextReference();
@@ -330,15 +328,18 @@ void evb::bu::EventBuilder::buildEvent
     unsigned char* payload = (unsigned char*)bufRef->getDataLocation() + dataBlockMsg->headerSize;
     uint32_t remainingBufferSize = bufRef->getDataSize() - dataBlockMsg->headerSize;
 
-    while ( remainingBufferSize > 0 && nbSuperFragments != superFragmentCount )
+    while ( remainingBufferSize > 0 && superFragmentCount < nbSuperFragments )
     {
       const msg::SuperFragment* superFragmentMsg = (msg::SuperFragment*)payload;
+      const PartialEvents::iterator eventPos = getEventPos(partialEvents,evbIds[superFragmentCount],ruTids,dataBlockMsg->buResourceId);
 
       if ( eventPos->second->appendSuperFragment(ruTid,
                                                  bufRef->duplicate(),
                                                  payload) )
       {
         // the super fragment is complete
+        ++superFragmentCount;
+
         if ( eventPos->second->isComplete() )
         {
           // the event is complete, too
@@ -346,9 +347,6 @@ void evb::bu::EventBuilder::buildEvent
           completeEvents.insert(CompleteEvents::value_type(lumiSection,eventPos->second));
           partialEvents.erase(eventPos);
         }
-
-        ++superFragmentCount;
-        eventPos = getEventPos(partialEvents,evbIds[superFragmentCount],ruTids,dataBlockMsg->buResourceId);
       }
 
       const uint32_t size = superFragmentMsg->headerSize + superFragmentMsg->partSize;
