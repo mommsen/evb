@@ -1,0 +1,234 @@
+How to Run from Scripts
+=======================
+
+The event builder (EvB) is normally run and controller by
+RCMS. However, it is also possible to run it without RCMS using
+scripts provided within this package. There are 2 use cases: to run
+stand-alone functionality tests of the EvB code and to measure the
+performance of the event builder. This howto shall document how this
+is done. All paths are given relative to the location of this how-to
+document.
+
+
+Environment settings
+--------------------
+The following environment variables need to be set before any scripts
+can be run. A sample setting can be found in 'setenv.sh'.
+
+- XDAQ_ROOT has to be set to the install location of the XDAQ release
+  (typically /opt/xdaq).
+- XDAQ_EVB can be set to a different path. If it is set, libevb.so is
+  taken from this path. This is useful if you want to use a locally
+  compiled version of the EvB.
+- EVB_TESTER_HOME has to be set to the path of the EvB test directory,
+  i.e. the directory where this file resides. This directory must be
+  writeable to the user running the scripts.
+- EVB_SYMBOL_MAP is the default name of the symbol map used for the
+  stand-alone functionality tests (see below)
+- PATH and PYTHONPATH have to contain the scripts directory,
+  i.e. ${EVB_TESTER_HOME}/scripts
+
+
+Stand-alone functionality tests
+-------------------------------
+TBD
+
+
+Performance measurements
+------------------------
+Peformance measurements are using a local XML file containing the full
+configuration and a corresponding symbol-map file containig the names
+of the machines used in the configuration. These files need to be
+created before any measurement can be run.
+
+Creating configurations:
+
+First you need to create or identify a FBset in the hwdb which
+represents the setup to be tested. The scripts will switch the
+generation mode to a free-running configuration indepenent of the
+settings in the FBset. I.e. you can also use a FBset which has been
+created for running with GTPe. However, the scripts do not allow for
+masking any FEDs. Therefore, the FBset should contain only the FEDs
+and FEDbuilders which shall be used for the measurements. If this is
+not possible, you can edit the local XML file later (see below.)
+
+Once you have a suitable FBset, you can create the files needed for
+running with scripts with e.g.:
+
+    createConfig.py /daq2/eq_170224test/test/fb_PixelUpgradeFBs \
+      /DAQ2_Official/StandAlone/StandAlone_40g_infini_dropAtBU \
+      16 cdaq/20170227/pixelFB
+
+    There are 4 mandory parameters:
+    - FBset (/daq2/eq_170224test/test/fb_PixelUpgradeFBs)
+    - Software template containing the parameters
+      (/DAQ2_Official/StandAlone/StandAlone_40g_infini_dropAtBU)
+    - Number of BUs in the configuration (16)
+    - Local output directory relative to the execution directory
+      (cdaq/20170227/pixelFB)
+
+    In addition, you can specify the following options
+    --properties to use an alternative properties file to connect to
+      the relevant DB (default is CONFIGURATOR.properties in your home
+      directory)
+    --useBlacklist to omit any hosts on the latest blacklist, or
+    --hostList with a file as argument in which case only hosts in the
+      file will be used. Note that this file has to contain at least
+      one FU for each BU as otherwise the BU is blacklisted because it
+      has no available FUs. This is also true regardless of data being
+      dropped at the BU or not.
+    --userSettings allows you to override exported template settings
+      with parameters from the file given as argument
+    --daqval changes the relevant parameters to generate a
+      configuration suitable for daq2val instead of cDAQ
+
+If createConfig.py runs successfully, you will find 3 files in the
+output directory:
+- pixelFB.xml which contains the full configuration. The file name
+  corresponds to the last directory of the output directory. If
+  needed, this file can be edited to make any necessary changes
+  (e.g. remove some FEDs or FEDbuilders)
+- symbolMap.txt has the mapping of symbolic names to actual
+  hostnames. Note that the XML file uses a mixture of symbolic names
+  and real hostnames. Therefore, if you need to change hosts after the
+  fact, you have to change them in both files.
+- setup.info is a text file giving a short summary of the
+  configuration. This file is not used by the scripts.
+
+In order to save disk space, you can manually gzip the XML file. The
+scripts will uncompress the XML file internally in this case.
+
+
+Running configurations:
+
+Once you have a configuration, you can use it to run a scan over
+different fragment sizes using e.g.:
+
+    runScans.py cdaq/20170227/pixelFB --outputDir $outputDir \
+      --logDir $logDir --ferolMode --short
+
+    The only mandatory parameter is the path to the directory which
+    contains the configuration. However, it is useful to specify
+    additional parameters:
+    --outputDir gives the path relative to the execution directory
+      where the results of the scan are stored. You'll find there 2
+      files: a txt file which contains summary output from the scan
+      including the configuration snippets as sent to the
+      applications, and a dat file which contains the raw
+      measurements. This file can be used to plot the results
+      (see below.)
+    --logDir should point to a directory with enough quota
+      (e.g. /globalscratch/$USER) as it will contain the detailled
+      debug output of all XDAQ processes.
+    --ferolMode should be used by default to generate the data on the
+      FEROLs. Otherwise, events are generated on the FRL.
+    --short is a shorthand for specifying the fragment sizes to be
+      scanned. Alternatively, you can also specify --long, which uses
+      more points, or you can specify a list of sizes with
+      --sizes 2048 2560 4096 8192 12288 16384.
+      Note that the fragment sizes are only applied to the RUs. The
+      FED size for the EVM is always fixed at 1024 Bytes.
+
+
+    By default, a new dat file is created when you re-run the same
+    configuration with the same outputDir. The previous dat file is
+    saved into a directory using the timestamp of the previous
+    file. If you want to scan additional sizes, you can specify
+    '--append', in which case the new measurements are appended to the
+    existing file. This is useful if either the scan failed at a
+    certain point, or if you scanned with the '--short' option and
+    would like to scan the additional points contained in the '--long'
+    option. There is a shorthand '--compl' which will scan the missing
+    sizes.
+
+
+
+If you want to test the configuration or setup the system for
+debugging purposes, you can use the following command:
+
+    runScans.py cdaq/20170227/pixelFB --outputDir $logDir \
+      --logDir $logDir --ferolMode --nbMeasurements 0 --sizes 4096
+
+    In this mode, we don't care about the results. Therefore, the
+    outputDir is set to the scratch directory $logDir. In addition,
+    only one fragment size (4096 Bytes) is used.
+    '--nbMeasurements 0' is a backdoor to actually inhibit the
+    scan. In this case, the script waits for the return being pressed
+    before proceeding. It is possible to specify multiple sizes in
+    which case the script reconfigures the system for the next
+    fragment size and waits again on the return key. If all sizes have
+    been tried, the system is teared down. Note that it might be
+    useful to run with '--verbose' option in which case you get all
+    output also on the terminal.
+    In case you want to drop the data at the callback of pt::blit,
+    i.e. inhibit any super-fragment building, you can specify
+    '--dropAtSocket'. In this case no rate or throughput is visible on
+    the hyperdaq pages of the RU, and the measurments will be 0
+    regardless if data is actually flowing or not.
+
+
+
+Sometimes it is useful to run from a modified XML file with a
+different name, but using the same configuration directory, e.g. if
+you want to scan different parameters. In this case, you need to start
+and stop the launchers seperatly:
+
+    runTests.py --symbolMap cdaq/20170227/pixelFB/symbolMap.txt \
+      --launchers start --logDir $logDir
+    runScans.py cdaq/20170227/pixelFB/myModifiedConfig.xml \
+      --symbolMap cdaq/20170227/pixelFB/symbolMap.txt \
+      --outputDir $outputDir --logDir $logDir --ferolMode --short
+    runTests.py --symbolMap cdaq/20170227/pixelFB/symbolMap.txt \
+      --launchers stop
+
+
+
+The simple scans described above used an identical fragment size for
+all FEDs. It is also possible to run a configuration using
+parameterized FED sizes. The FED sizes are parametrized with a
+polynom 2nd order a+bx+cx^2. The parameters need to be specified in a
+csv file which lists for each FED id the following parameters:
+   fedId,a,b,c,rms
+The rms for the log-normal distribution is specified relative to the
+fragment size. The fragment size is set to 2048 Bytes for any FED id
+which is not specified in this file. The EVM FED size will be set to
+1024 Bytes unless the FED id feeding the EVM is found in the parameter
+file. When running with parameterized FED sizes, it is more natural to
+specify the relative fragment sizes x in above formula instead of
+absolute values. The full command to a full scan looks like:
+
+    runScans.py cdaq/20170131/ppFedBuilder --ferolMode \
+      --calculateFedSizesFromFile fedSizes_run276870_Andre_rms.csv \
+      -o $outDir --logDir $logDir \
+      --relsize 1.0 1.25 1.5 2.0 2.5 0 0.25 0.5 0.75 3.0 3.5 4.0
+
+
+
+Plotting results:
+
+You need a pyROOT installation for plotting any of the results. The
+easiest way to do it is to copy the dat files to your local machine
+which has a ROOT installation. The script is called 'plotScans.py' and
+takes one or more dat files as argument. A typical command looks like
+
+    plotScans.py \
+      ../20170215/1s1fx1x2.dat \
+      1s1f40x1x2.dat \
+      --legend \
+      "1 Ferol (stream 0)" \
+      "1 Ferol40 (stream 0)" \
+      -o dataConcentrator_1streams.pdf \
+      --subtag "1 stream #Rightarrow 1 RU #Rightarrow 2 BUs"
+
+
+    plotScans.py \
+      ../20160910/ppFedBuilder_splitTracker_doubleAlloc/ppFedBuilder_splitTracker.dat \
+      ../20170112/ppFedBuilder_splitTracker/ppFedBuilder_splitTracker.dat \
+      ppFedBuilder_splitTracker/ppFedBuilder_splitTracker.dat \
+      --legend \
+      'CHEP' \
+      'XDAQ13' \
+      'XDAQ14' \
+      -o ppFedBuilder_splitTracker.pdf \
+      --tag '78+1 RUs #Rightarrow 73 BUs' --subtag "Real FED distribution and sizes" \
+      --totalThroughput --minx 620 --maxx 2580 --maxy 320 --ratemax 280 --nologx
