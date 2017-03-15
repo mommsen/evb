@@ -315,8 +315,14 @@ class TestCase:
             messengers.sendCmdToApp(command='Enable',**application)
         for application in self._config.ptIBV:
             messengers.sendCmdToApp(command='connect',**application)
-        if len(self._config.ptIBV) > 10:
-            sleep(15)
+        for application in self._config.ptIBV:
+            count = 0
+            while messengers.getStateName(**application) != 'Enabled':
+                sleep(1)
+                count += 1
+                if count > 120:
+                    raise(StateException("Failed to connect pt::ibv for "+str(application)))
+
 
     def configureEvB(self,maxTries=10):
         sys.stdout.write("Configuring EvB")
