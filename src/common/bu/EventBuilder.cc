@@ -154,7 +154,7 @@ void evb::bu::EventBuilder::stopProcessing()
 {
   doProcessing_ = false;
 
-  drain();
+  while ( processesActive_.any() ) ::usleep(1000);
 
   for (SuperFragmentFIFOs::const_iterator it = superFragmentFIFOs_.begin(), itEnd = superFragmentFIFOs_.end();
        it != itEnd; ++it)
