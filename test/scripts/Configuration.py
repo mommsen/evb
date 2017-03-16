@@ -102,6 +102,7 @@ class Configuration():
         configCmd.append( self.getPartition(key) )
         XMLtools.indent(configCmd)
         configString = ET.tostring(configCmd)
+        configString = self.symbolMap.parse(configString)
 
         print("******** "+key[0]+":"+key[1]+" ********")
         print(configString)
@@ -113,7 +114,7 @@ class Configuration():
 class ConfigFromFile(Configuration):
 
     def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,dropAtRU,dropAtSocket,ferolMode):
-        self.frlPorts = ('60500','60600')
+        self.frlPorts = ['60500','60600']
         self.fedId2Port = {}
         Configuration.__init__(self,symbolMap)
 
@@ -148,9 +149,13 @@ class ConfigFromFile(Configuration):
                 self.parsePolicy(context.policy)
 
             maxbulksize="0x10000"
+            portNb=0
             for endpoint in c.findall(QN(self.xcns,'Endpoint').text): ## all 'Endpoint's of this context
                 if endpoint.attrib['protocol'] == "btcp":
                     maxbulksize = endpoint.attrib['maxbulksize']
+                    if not fixPorts:
+                        self.frlPorts[portNb] = endpoint.attrib['port']
+                        portNb += 1
 
             for application in c.findall(QN(self.xcns,'Application').text): ## all 'Application's of this context
                 if generateAtRU and application.attrib['class'] == "pt::blit::Application":
@@ -320,17 +325,17 @@ class ConfigFromFile(Configuration):
     def parsePolicy(self,policy):
         if policy is not None:
             for element in policy:
-                pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME:([A-Z_0-9]*)(.*)',element.attrib['pattern'])
+                pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME([:()/\/])([A-Z_0-9]*)(.*)',element.attrib['pattern'])
                 if pattern:
                     hostInfo = self.symbolMap.getHostInfo( pattern.group(2) )
-                    if len(pattern.group(3)) > 0:
-                        if 'FRL_PORT' in pattern.group(3):
+                    if len(pattern.group(4)) > 0:
+                        if 'FRL_PORT' in pattern.group(4):
                             port = 0
                         else:
                             port = 1
-                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+self.frlPorts[port]+pattern.group(4)
+                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+pattern.group(3)+self.frlPorts[port]+pattern.group(5)
                     else:
-                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+":"+pattern.group(4)
+                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+pattern.group(3)+pattern.group(5)
 
 
     def urlToHostAndNumber(self,url):

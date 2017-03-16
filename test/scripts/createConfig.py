@@ -26,7 +26,7 @@ class CreateConfig:
         symbolMap = self.getSymbolMap(config)
         self.createDir(self.args['output'])
         self.writeSymbolMap(symbolMap,self.args['output'])
-        self.writeConfig(config,self.args['output'])
+        self.writeConfig(symbolMap,config,self.args['output'])
         self.writeInfo(self.args['output'])
 
 
@@ -205,11 +205,14 @@ class CreateConfig:
                 symbolMapFile.write("%s %s\n" % (key,symbolMap[key]))
 
 
-    def writeConfig(self,config,outputDir):
+    def writeConfig(self,symbolMap,config,outputDir):
         configName = os.path.split(outputDir)[1]
         XMLtools.indent(config)
         with open(outputDir+'/'+configName+'.xml','w') as configFile:
-            configFile.write( ET.tostring(config) )
+            configString = ET.tostring(config)
+            for alias,hostname in symbolMap.items():
+                configString = configString.replace(hostname,alias)
+            configFile.write(configString)
 
 
     def writeInfo(self,outputDir):
