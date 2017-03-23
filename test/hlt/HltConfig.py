@@ -106,7 +106,7 @@ process.source = cms.Source( "FedRawDataInputSource",
 )
 
 process.PoolDBESSource = cms.ESSource( "PoolDBESSource",
-    globaltag = cms.string( "80X_dataRun2_HLT_v4" ),
+    globaltag = cms.string( "90X_dataRun2_HLT_v1" ),
     RefreshEachRun = cms.untracked.bool( True ),
     snapshotTime = cms.string( "" ),
     toGet = cms.VPSet(
@@ -223,7 +223,7 @@ process.PrescaleService = cms.Service( "PrescaleService",
         prescales = cms.vuint32( 0, 10434, 0, 20868 )
       )
     ),
-    lvl1DefaultLabel = cms.string( "4GBs" ),
+    lvl1DefaultLabel = cms.string( "2GBs" ),
     lvl1Labels = cms.vstring(
       '4GBs_noDQM',
       '4GBs',
@@ -367,8 +367,12 @@ process.hltL1GtObjectMap = cms.EDProducer( "L1GlobalTrigger",
     BstLengthBytes = cms.int32( -1 )
 )
 process.ExceptionGenerator2 = cms.EDAnalyzer( "ExceptionGenerator",
-    defaultAction = cms.untracked.int32( 0 ),
-    defaultQualifier = cms.untracked.int32( 0 )
+    defaultAction = cms.untracked.int32(0),
+    defaultQualifier = cms.untracked.int32(0)#,
+    #defaultAction = cms.untracked.int32(15),
+    #defaultQualifier = cms.untracked.int32(45)#,
+    #secondQualifier = cms.untracked.double(5),
+    #thirdQualifier = cms.untracked.double(0.5)
 )
 process.hltPrepDQM = cms.EDFilter( "HLTPrescaler",
     L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
