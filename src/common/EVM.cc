@@ -202,6 +202,14 @@ namespace evb {
         nextBU_ = pos; //make sure the nextBU points to a valid location
       }
 
+      if ( eventRequest->priority > evb::LOWEST_PRIORITY || eventRequest->priority < 0 )
+      {
+        std::ostringstream msg;
+        msg << "Received an event request with an invalid priority of " << eventRequest->priority;
+        msg << " from BU TID " << eventRequest->buTid;
+        XCEPT_RAISE(exception::I2O, msg.str());
+      }
+
       pos->second[eventRequest->priority]->enqWait(fragmentRequest);
     }
 

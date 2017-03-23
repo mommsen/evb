@@ -708,9 +708,16 @@ uint16_t evb::bu::ResourceManager::getPriority()
 {
   boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
 
-  const float weight = (1-pow(1-ramDiskUsed_,2)) * evb::LOWEST_PRIORITY;
-  const uint32_t priority = blockedResources_>0 ? round(weight) : floor(weight);
-  return std::max(priority,configuration_->minPriority.value_);
+  if ( ramDiskUsed_ < 0.0 ) // invalid
+  {
+    return evb::LOWEST_PRIORITY;
+  }
+  else
+  {
+    const float weight = (1-pow(1-ramDiskUsed_,2)) * evb::LOWEST_PRIORITY;
+    const uint32_t priority = blockedResources_>0 ? round(weight) : floor(weight);
+    return std::max(priority,configuration_->minPriority.value_);
+  }
 }
 
 

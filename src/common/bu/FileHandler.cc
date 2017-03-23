@@ -45,12 +45,20 @@ evb::bu::FileHandler::~FileHandler()
 void evb::bu::FileHandler::writeEvent(const EventPtr& event)
 {
   const EventInfoPtr& eventInfo = event->getEventInfo();
-  write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
+  size_t bytesWritten = write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
   const DataLocations& locs = event->getDataLocations();
-  writev(fileDescriptor_,&locs[0],locs.size());
+  bytesWritten += writev(fileDescriptor_,&locs[0],locs.size());
 
-  fileSize_ += sizeof(EventInfo) + eventInfo->eventSize();
+  if ( bytesWritten != sizeof(EventInfo) + eventInfo->eventSize() )
+  {
+    std::ostringstream msg;
+    msg << "Failed to completely write event " << event->getEvBid();
+    msg << " into " << rawFileName_;
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
+  }
+
+  fileSize_ += bytesWritten;
 }
 
 

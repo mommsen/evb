@@ -10,7 +10,6 @@
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
-#include "evb/bu/DiskUsage.h"
 #include "evb/bu/ResourceManager.h"
 #include "evb/bu/RUproxy.h"
 #include "evb/Exception.h"
@@ -487,12 +486,19 @@ void evb::bu::DiskWriter::createDir(const boost::filesystem::path& path) const
 
 void evb::bu::DiskWriter::removeDir(const boost::filesystem::path& path) const
 {
-  if ( boost::filesystem::exists(path) &&
-       ( ! boost::filesystem::remove_all(path) ) )
+  if ( boost::filesystem::exists(path) )
   {
-    std::ostringstream msg;
-    msg << "Failed to remove directory " << path.string();
-    XCEPT_RAISE(exception::DiskWriting, msg.str());
+    try
+    {
+      boost::filesystem::remove_all(path);
+    }
+    catch(boost::filesystem::filesystem_error& e)
+    {
+      std::ostringstream msg;
+      msg << "Failed to remove directory " << path.string();
+      msg << ": " << e.what();
+      XCEPT_RAISE(exception::DiskWriting, msg.str());
+    }
   }
 }
 

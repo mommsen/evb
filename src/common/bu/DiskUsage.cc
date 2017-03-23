@@ -147,7 +147,14 @@ void evb::bu::DiskUsage::deleteRawFiles()
 
         if ( it->path().extension() == ".raw" )
         {
-          boost::filesystem::remove(*it);
+          try
+          {
+            boost::filesystem::remove(*it);
+          }
+          catch(boost::filesystem::filesystem_error)
+          {
+            //don't care
+          }
         }
         ++it;
       }
