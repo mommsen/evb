@@ -146,7 +146,7 @@ class ConfigFromFile(Configuration):
             if useNuma:
                 polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
                 context.policy = c.find(QN(polns,'policy').text)
-                self.parsePolicy(context.policy)
+                #self.parsePolicy(context.policy)
 
             maxbulksize="0x10000"
             portNb=0

@@ -30,8 +30,7 @@ class CheckFBthroughput:
             ETroot = ET.parse(f).getroot()
             f.close()
         else:
-            print("Error reading configuratio file "+configFile+": "+e.msg())
-            sys.exit(1)
+            raise IOError(configFile+"(.gz) does not exist")
         return ETroot
 
 

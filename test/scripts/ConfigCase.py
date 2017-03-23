@@ -80,7 +80,7 @@ class ConfigCase(TestCase):
         if fedId == self._config.evmFedId:
             return 1024,0
         else:
-            return fragSize,fragSizeRMS
+            return int(fragSize),int(fragSizeRMS)
 
 
     def setFragmentSizes(self,fragSize,fragSizeRMS):
@@ -163,6 +163,8 @@ class ConfigCase(TestCase):
                     self._origStdout.flush()
                 else:
                     print("%3.2f:%dMB/s" % (fragSize,self.getThroughputMB(dataPoints)))
+                if args['long']:
+                    time.sleep(60)
                 return dataPoints
             except (FailedState,StateException,ValueException) as e:
                 print(" failed: "+str(e))
