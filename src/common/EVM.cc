@@ -300,6 +300,10 @@ namespace evb {
             ++tries;
           }
         }
+        {
+          boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+          --requestMonitoring_.activeRequests;
+        }
       }
       catch(exception::HaltRequested)
       {

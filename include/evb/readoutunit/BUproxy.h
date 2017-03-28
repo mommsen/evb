@@ -186,6 +186,7 @@ namespace evb {
         uint32_t requestRate;
         uint32_t i2oRate;
         double packingFactor;
+        int32_t activeRequests;
         PerformanceMonitor perf;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
@@ -294,6 +295,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
 
   uint32_t nbDiscards = 0;
   uint32_t nbRequests = 0;
+  uint32_t nbRequestMsg = 0;
   unsigned char* payload = (unsigned char*)&readoutMsg->requests[0];
 
   for (uint32_t i = 0; i < readoutMsg->nbRequests; ++i)
@@ -305,6 +307,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
     if ( eventRequest->nbRequests > 0 )
     {
       nbRequests += eventRequest->nbRequests;
+      ++nbRequestMsg;
       FragmentRequestPtr fragmentRequest( new FragmentRequest );
       fragmentRequest->buTid = eventRequest->buTid;
       fragmentRequest->buResourceId = eventRequest->buResourceId;
@@ -329,6 +332,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
     requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
     requestMonitoring_.perf.logicalCount += nbRequests;
     ++requestMonitoring_.perf.i2oCount;
+    requestMonitoring_.activeRequests += nbRequestMsg;
   }
 
   bufRef->release();
@@ -621,6 +625,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
      fragmentRequestFIFOs_.clear();
      nextBU_ = fragmentRequestFIFOs_.begin();
   }
+  {
+    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    requestMonitoring_.activeRequests = 0;
+  }
 
   if ( readoutUnit_->getConfiguration()->numberOfPreallocatedBlocks.value_ > 0 )
   {
@@ -702,25 +710,6 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
-  uint32_t requests = 0;
-  {
-    boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
-
-    for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
-         it != fragmentRequestFIFOs_.end(); ++it)
-    {
-      for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
-      {
-        requests += it->second[priority]->elements();
-      }
-    }
-  }
-  {
-    boost::mutex::scoped_lock sl(processingRequestMutex_);
-    requests += fragmentRequestFIFO_.elements();
-  }
-  activeRequests_ = requests;
-
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
@@ -730,6 +719,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     requestMonitoring_.i2oRate = requestMonitoring_.perf.i2oRate(deltaT);
     requestMonitoring_.packingFactor = requestMonitoring_.perf.packingFactor();
     requestRate_ = requestMonitoring_.i2oRate;
+    activeRequests_ = std::max(0,requestMonitoring_.activeRequests);
     requestMonitoring_.perf.reset();
   }
   {

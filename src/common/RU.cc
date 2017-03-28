@@ -49,6 +49,10 @@ namespace evb {
             input_->getSuperFragmentWithEvBid(evbId, superFragment);
             superFragments.push_back(superFragment);
           }
+          {
+            boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+            --requestMonitoring_.activeRequests;
+          }
 
           return true;
         }
