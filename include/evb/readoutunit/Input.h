@@ -541,6 +541,24 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 {
   {
+    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+
+    const double deltaT = superFragmentMonitor_.perf.deltaT();
+    superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
+    superFragmentMonitor_.throughput = superFragmentMonitor_.perf.throughput(deltaT);
+    const uint32_t eventSize = superFragmentMonitor_.perf.size();
+    superFragmentMonitor_.eventSize = eventSize;
+    superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    superFragmentMonitor_.perf.reset();
+
+    lastEventNumber_ = superFragmentMonitor_.lastEventNumber;
+    eventRate_ = superFragmentMonitor_.rate;
+    superFragmentSize_ = superFragmentMonitor_.eventSize;
+    superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
+    eventCount_ = superFragmentMonitor_.eventCount;
+  }
+
+  {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
     fedIdsWithoutFragments_.clear();
@@ -579,24 +597,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
       }
     }
     incompleteSuperFragmentCount_ = maxElements;
-  }
 
-  {
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
-
-    const double deltaT = superFragmentMonitor_.perf.deltaT();
-    superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
-    superFragmentMonitor_.throughput = superFragmentMonitor_.perf.throughput(deltaT);
-    const uint32_t eventSize = superFragmentMonitor_.perf.size();
-    superFragmentMonitor_.eventSize = eventSize;
-    superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
-    superFragmentMonitor_.perf.reset();
-
-    lastEventNumber_ = superFragmentMonitor_.lastEventNumber;
-    eventRate_ = superFragmentMonitor_.rate;
-    superFragmentSize_ = superFragmentMonitor_.eventSize;
-    superFragmentSizeStdDev_ = superFragmentMonitor_.eventSizeStdDev;
-    eventCount_ = superFragmentMonitor_.eventCount;
+    if ( eventRate_ > 0U || incompleteSuperFragmentCount_ == 0U )
+      fedIdsWithoutFragments_.clear();
   }
 }
 

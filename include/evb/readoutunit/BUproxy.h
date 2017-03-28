@@ -702,23 +702,25 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::appendMonitoringItems(InfoSpaceItem
 template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
+  uint32_t requests = 0;
   {
     boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
 
-    activeRequests_ = fragmentRequestFIFO_.elements();
     for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
          it != fragmentRequestFIFOs_.end(); ++it)
     {
       for ( uint16_t priority = 0; priority <= evb::LOWEST_PRIORITY; ++priority)
       {
-        activeRequests_.value_ += it->second[priority]->elements();
+        requests += it->second[priority]->elements();
       }
     }
   }
   {
-    boost::mutex::scoped_lock sl(processingRequestMutex_, boost::try_to_lock);
-    if ( ! sl ) ++activeRequests_.value_;
+    boost::mutex::scoped_lock sl(processingRequestMutex_);
+    requests += fragmentRequestFIFO_.elements();
   }
+  activeRequests_ = requests;
+
   {
     boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
