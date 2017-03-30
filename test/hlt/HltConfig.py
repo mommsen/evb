@@ -223,7 +223,7 @@ process.PrescaleService = cms.Service( "PrescaleService",
         prescales = cms.vuint32( 0, 10434, 0, 20868 )
       )
     ),
-    lvl1DefaultLabel = cms.string( "2GBs" ),
+    lvl1DefaultLabel = cms.string( "4GBs" ),
     lvl1Labels = cms.vstring(
       '4GBs_noDQM',
       '4GBs',
