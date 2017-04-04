@@ -27,7 +27,7 @@ void source()
   uint32_t counter = 0;
   while ( generating )
   {
-    queue.enqWait(counter);
+    queue.enqWait(counter,generating);
     ++counter;
   }
   std::cout << "Enqueued " << counter << " elements" << std::endl;
@@ -40,15 +40,18 @@ void sink()
 
   while ( consuming || !queue.empty() )
   {
-    queue.deqWait(counter);
+    queue.deqWait(counter,consuming);
 
-    if ( counter != expected )
+    if ( consuming )
     {
-      std::ostringstream oss;
-      oss << "Dequeued " << counter << " while expecting " << expected;
-      throw( oss.str() );
+      if ( counter != expected )
+      {
+        std::ostringstream oss;
+        oss << "Dequeued " << counter << " while expecting " << expected;
+        throw( oss.str() );
+      }
+      ++expected;
     }
-    ++expected;
   }
   std::cout << "Dequeued " << expected << " elements" << std::endl;
 }
@@ -65,12 +68,22 @@ int main( int argc, const char* argv[] )
   ::sleep(testDuration);
 
   std::cout << "Stopping source thread..." << std::endl;
-  consuming = false;
   generating = false;
   sourceThread.join();
 
   std::cout << "Stopping sink thread..." << std::endl;
+  consuming = false;
   sinkThread.join();
+
+  std::cout << "Starting source thread only..." << std::endl;
+  generating = true;
+  boost::thread sourceOnlyThread(source);
+
+  while ( ! queue.full() ) ::sleep(1);
+
+  std::cout << "Stopping source thread..." << std::endl;
+  generating = false;
+  sourceOnlyThread.join();
 }
 
 

@@ -136,7 +136,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::addBuffer(SocketBufferPtr& socketBuffer)
 {
   if ( this->doProcessing_ )
-    socketBufferFIFO_.enqWait(socketBuffer);
+    socketBufferFIFO_.enqWait(socketBuffer,this->doProcessing_);
 }
 
 

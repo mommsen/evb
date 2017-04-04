@@ -50,6 +50,13 @@ namespace evb {
     void enqWait(const T&);
 
     /**
+     * Enqueue the element.
+     * If the queue is full wait until it becomes non-full
+     * or until the condition becomes false.
+     */
+    void enqWait(const T&, volatile bool& condition);
+
+    /**
      * Dequeue an element.
      * Return false if no element can be dequeued.
      */
@@ -60,6 +67,13 @@ namespace evb {
      * If the queue is empty wait until is has become non-empty.
      */
     void deqWait(T&);
+
+    /**
+     * Dequeue an element.
+     * If the queue is empty wait until is has become non-empty
+     * or until the condition becomes false.
+     */
+    void deqWait(T&, volatile bool& condition);
 
     /**
      * Return the number of elements in the queue.
@@ -264,7 +278,14 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::enqWait(const T& element)
   {
-    while ( ! enq(element) ) ::usleep(10);
+    while ( !enq(element) ) ::usleep(10);
+  }
+
+
+  template <class T>
+  void OneToOneQueue<T>::enqWait(const T& element, volatile bool& condition)
+  {
+    while ( !enq(element) && condition ) ::usleep(10);
   }
 
 
@@ -285,7 +306,14 @@ namespace evb {
   template <class T>
   void OneToOneQueue<T>::deqWait(T& element)
   {
-    while ( ! deq(element) ) ::usleep(10);
+    while ( !deq(element) ) ::usleep(10);
+  }
+
+
+  template <class T>
+  void OneToOneQueue<T>::deqWait(T& element, volatile bool& condition)
+  {
+    while ( !deq(element) && condition ) ::usleep(10);
   }
 
 

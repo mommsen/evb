@@ -300,7 +300,7 @@ void evb::readoutunit::BUposter<ReadoutUnit>::sendFrame(const I2O_TID tid, toolb
     pos = buConnections_.insert(pos, typename BUconnections::value_type(tid,buConnection));
   }
 
-  pos->second->frameFIFO->enqWait(bufRef);
+  pos->second->frameFIFO->enqWait(bufRef,doProcessing_);
 }
 
 
