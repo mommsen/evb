@@ -402,47 +402,54 @@ uint32_t evb::bu::EventBuilder::handleCompleteEvents
   CompleteEvents::iterator pos = completeEvents.begin();
   uint32_t nbEventsMissingData = 0;
 
-  while ( pos != completeEvents.end() && pos->first == oldestIncompleteLumiSection )
+  while ( pos != completeEvents.end() )
   {
-    const EventPtr& event = pos->second;
+    if ( pos->first == oldestIncompleteLumiSection )
+    {
+      const EventPtr& event = pos->second;
 
-    try
-    {
-      event->checkEvent();
-    }
-    catch(exception::DataCorruption& e)
-    {
-      resourceManager_->eventCompleted(event);
-      resourceManager_->discardEvent(event);
-      completeEvents.erase(pos++);
-      throw; // rethrow the exception such that it can be handled outside of critical section
-    }
-    catch(exception::CRCerror& e)
-    {
+      try
+      {
+        event->checkEvent();
+      }
+      catch(exception::DataCorruption& e)
+      {
+        resourceManager_->eventCompleted(event);
+        resourceManager_->discardEvent(event);
+        completeEvents.erase(pos++);
+        throw; // rethrow the exception such that it can be handled outside of critical section
+      }
+      catch(exception::CRCerror& e)
+      {
+        resourceManager_->eventCompleted(event);
+        streamHandler->writeEvent(event);
+        resourceManager_->discardEvent(event);
+        completeEvents.erase(pos++);
+        throw; // rethrow the exception such that it can be handled outside of critical section
+      }
+
+      if ( event->isMissingData() )
+        ++nbEventsMissingData;
+
+      if ( writeNextEventsToFile_ > 0 )
+      {
+        boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+        if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
+        {
+          event->dumpEventToFile("Requested by user");
+          --writeNextEventsToFile_;
+        }
+      }
+
       resourceManager_->eventCompleted(event);
       streamHandler->writeEvent(event);
       resourceManager_->discardEvent(event);
       completeEvents.erase(pos++);
-      throw; // rethrow the exception such that it can be handled outside of critical section
     }
-
-    if ( event->isMissingData() )
-      ++nbEventsMissingData;
-
-    if ( writeNextEventsToFile_ > 0 )
+    else
     {
-      boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
-      if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
-      {
-        event->dumpEventToFile("Requested by user");
-        --writeNextEventsToFile_;
-      }
+      ++pos;
     }
-
-    resourceManager_->eventCompleted(event);
-    streamHandler->writeEvent(event);
-    resourceManager_->discardEvent(event);
-    completeEvents.erase(pos++);
   }
 
   return nbEventsMissingData;
