@@ -153,7 +153,7 @@ TestLibraryDirs = \
         $(XDAQ2RC_LIB_PREFIX) \
         $(XOAP_LIB_PREFIX)
 
-UserCCFlags = -O3 -funroll-loops -Werror #-std=c++0x
+UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
