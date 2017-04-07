@@ -67,6 +67,7 @@ Sources=\
 
 TestExecutables = \
 	EvBid.cxx \
+	GetIPaddress.cxx \
 	Fibonacci.cxx \
 	LogNormal.cxx \
 	OneToOneQueue.cxx \
