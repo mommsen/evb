@@ -137,8 +137,10 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             thread.kill()
             thread.join()
             return "Killed XDAQ process on port "+str(port)
-        else:
+        elif thread._process:
             return "XDAQ process on port "+str(port)+" has already died: "+str(thread._process.returncode)
+        else:
+            return "XDAQ process on port "+str(port)+" does not exist"
 
 
     def stopXDAQ(self,port,args):
