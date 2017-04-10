@@ -97,24 +97,27 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
 
         if ( dataBlockMsg->blockNb == 1 ) //only the first block contains the EvBid
         {
-          const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
-          const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
-
-          if ( index.ruTid == evm_.tid )
-          {
-            fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
-          }
-          else
-          {
-            fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
-          }
-
-          fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
-          countsPerRuPos->second.logicalCount += nbSuperFragments;
-
           const uint64_t now = getTimeStamp();
           const uint64_t deltaT = now>dataBlockMsg->timeStampNS ? now-dataBlockMsg->timeStampNS : 0;
           countsPerRuPos->second.roundTripTime = (roundTripTimeSampling_*deltaT) + (1-roundTripTimeSampling_)*countsPerRuPos->second.roundTripTime;
+
+          const uint32_t nbSuperFragments = dataBlockMsg->nbSuperFragments;
+          if ( nbSuperFragments > 1 )
+          {
+            const uint32_t lastEventNumber = dataBlockMsg->evbIds[nbSuperFragments-1].eventNumber();
+
+            if ( index.ruTid == evm_.tid )
+            {
+              fragmentMonitoring_.lastEventNumberFromEVM = lastEventNumber;
+            }
+            else
+            {
+              fragmentMonitoring_.lastEventNumberFromRUs = lastEventNumber;
+            }
+
+            fragmentMonitoring_.perf.logicalCount += nbSuperFragments;
+            countsPerRuPos->second.logicalCount += nbSuperFragments;
+          }
         }
       }
 
@@ -195,7 +198,6 @@ void evb::bu::RUproxy::stopProcessing()
 {
   doProcessing_ = false;
   while ( requestFragmentsActive_ ) ::usleep(1000);
-  sendRequests();
 }
 
 
@@ -225,8 +227,6 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
 {
   if ( ! doProcessing_ ) return false;
 
-  ::usleep(1000000/configuration_->maxRequestRate);
-
   requestFragmentsActive_ = true;
 
   try
@@ -254,6 +254,8 @@ bool evb::bu::RUproxy::requestFragments(toolbox::task::WorkLoop*)
   }
 
   requestFragmentsActive_ = false;
+
+  ::usleep(1000000/configuration_->maxRequestRate);
 
   return doProcessing_;
 }

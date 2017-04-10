@@ -41,8 +41,8 @@ evb::bu::ResourceManager::ResourceManager
   queuedLS_(0),
   queuedLSonFUs_(-1),
   fuOutBwMB_(0),
-  requestEvents_(true),
-  stopRequested_(false),
+  requestEvents_(false),
+  pauseRequested_(false),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
@@ -438,7 +438,7 @@ float evb::bu::ResourceManager::getAvailableResources()
     fusStale_ = pt.get<int>("stale_resources");
     fuOutBwMB_ = pt.get<double>("activeRunLSBWMB");
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
-    stopRequested_ = pt.get<bool>("bu_stop_requests_flag");
+    pauseRequested_ = pt.get<bool>("bu_stop_requests_flag");
 
     resourcesFromFUs = (fusHLT_ == 0) ? 0 :
       std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
@@ -723,9 +723,6 @@ uint16_t evb::bu::ResourceManager::getPriority()
 
 void evb::bu::ResourceManager::changeStatesBasedOnResources()
 {
-  if ( stopRequested_ )
-    bu_->getStateMachine()->processFSMEvent( StopRequests() );
-
   bool allFUsQuarantined;
   bool allFUsStale;
   bool fusInCloud;
@@ -736,25 +733,11 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
     fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
   }
 
-  if ( allFUsQuarantined )
-  {
-    XCEPT_RAISE(exception::FFF, "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them.");
-  }
 
   if ( allFUsStale )
-  {
-    if ( ++allFUsStaleDetected_ >= configuration_->maxTriesFUsStale )
-    {
-      std::ostringstream msg;
-      msg << "All FUs in the appliance are reporting a stale file handle since more than ";
-      msg << allFUsStaleDetected_ << " seconds";
-      XCEPT_RAISE(exception::FFF, msg.str());
-    }
-  }
+    ++allFUsStaleDetected_;
   else
-  {
     allFUsStaleDetected_ = 0;
-  }
 
   uint32_t outstandingRequests;
   {
@@ -762,7 +745,22 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
-  if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
+  if ( pauseRequested_ )
+  {
+    bu_->getStateMachine()->processFSMEvent( Pause() );
+  }
+  else if ( allFUsQuarantined )
+  {
+    XCEPT_RAISE(exception::FFF, "All FU cores in the appliance are quarantined, i.e. HLT is failing on all of them.");
+  }
+  else if ( allFUsStaleDetected_ >= configuration_->maxTriesFUsStale )
+  {
+    std::ostringstream msg;
+    msg << "All FUs in the appliance are reporting a stale file handle since more than ";
+    msg << allFUsStaleDetected_ << " seconds";
+    XCEPT_RAISE(exception::FFF, msg.str());
+  }
+  else if ( blockedResources_ == 0U || outstandingRequests > configuration_->numberOfBuilders )
   {
     bu_->getStateMachine()->processFSMEvent( Release() );
   }

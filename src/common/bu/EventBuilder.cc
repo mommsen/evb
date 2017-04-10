@@ -53,7 +53,9 @@ void evb::bu::EventBuilder::addSuperFragment
   FragmentChainPtr& superFragments
 )
 {
-  superFragmentFIFOs_[builderId]->enqWait(superFragments);
+  const SuperFragmentFIFOs::const_iterator pos = superFragmentFIFOs_.find(builderId);
+  if ( pos != superFragmentFIFOs_.end() )
+    pos->second->enqWait(superFragments);
 }
 
 

@@ -220,22 +220,42 @@ namespace evb {
       // Assure that each BU gets a request served when the lumi section changes.
       // Start with the lowest priority queue to eventually
       // unblock any old requests sent with lower priortity.
+      // In case that there was no event request during the last lumisection,
+      // return all requests to the BU without assigning any events.
 
+      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
       boost::unique_lock<boost::shared_mutex> ul(fragmentRequestFIFOsMutex_);
 
       for ( FragmentRequestFIFOs::iterator it = fragmentRequestFIFOs_.begin(), itEnd = fragmentRequestFIFOs_.end();
             it != itEnd; ++it )
       {
         FragmentRequestPtr fragmentRequest;
-        for ( uint16_t p = evb::LOWEST_PRIORITY; p > 0; --p )
+
+        if ( requestMonitoring_.buTimestamps[it->first] < lastLumiTransition_ ) // BU is stale
         {
-          if ( it->second[p]->deq(fragmentRequest) )
+          SuperFragments superFragments;
+          for ( uint16_t p = 0; p <= evb::LOWEST_PRIORITY; ++p )
           {
-            it->second[0]->enqWait(fragmentRequest);
-            break;
+            while ( it->second[p]->deq(fragmentRequest) )
+            {
+              sendData(fragmentRequest,superFragments);
+            }
+          }
+        }
+        else
+        {
+          for ( uint16_t p = evb::LOWEST_PRIORITY; p > 0; --p )
+          {
+            if ( it->second[p]->deq(fragmentRequest) )
+            {
+              it->second[0]->enqWait(fragmentRequest);
+              break;
+            }
           }
         }
       }
+
+      lastLumiTransition_ = getTimeStamp();
     }
 
 

@@ -179,7 +179,9 @@ namespace evb {
       FragmentRequestFIFOs fragmentRequestFIFOs_;
       mutable boost::shared_mutex fragmentRequestFIFOsMutex_;
 
-      typedef std::map<I2O_TID,uint64_t> CountsPerBU;
+      uint64_t lastLumiTransition_;
+
+      typedef std::map<I2O_TID,uint64_t> BUtimestamps;
       struct RequestMonitoring
       {
         uint64_t throughput;
@@ -188,6 +190,7 @@ namespace evb {
         double packingFactor;
         int32_t activeRequests;
         PerformanceMonitor perf;
+        BUtimestamps buTimestamps;
       } requestMonitoring_;
       mutable boost::mutex requestMonitoringMutex_;
 
@@ -228,7 +231,8 @@ tid_(0),
 msgPool_(readoutUnit->getMsgPool()),
 doProcessing_(false),
 nbActiveProcesses_(0),
-fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO")
+fragmentRequestFIFO_(readoutUnit,"fragmentRequestFIFO"),
+lastLumiTransition_(0)
 {
   resetMonitoringCounters();
   startProcessingWorkLoop();
@@ -314,6 +318,10 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
       fragmentRequest->timeStampNS = eventRequest->timeStampNS;
       fragmentRequest->nbRequests = eventRequest->nbRequests;
       handleRequest(eventRequest, fragmentRequest);
+      {
+        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+        requestMonitoring_.buTimestamps[eventRequest->buTid] = eventRequest->timeStampNS;
+      }
     }
 
     payload += eventRequest->msgSize;
@@ -415,8 +423,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
   uint32_t blockNb = 1;
   const uint16_t nbSuperFragments = superFragments.size();
   assert( nbSuperFragments == fragmentRequest->evbIds.size() );
-  assert( nbSuperFragments > 0 );
-  const uint16_t nbRUtids = fragmentRequest->ruTids.size();
+  const uint16_t nbRUtids = (nbSuperFragments>0)?fragmentRequest->ruTids.size():0;
 
   toolbox::mem::Reference* head = getNextBlock(blockNb);
   toolbox::mem::Reference* tail = head;
@@ -503,8 +510,11 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
       size_t size = nbSuperFragments*sizeof(EvBid);
       memcpy(payload,&fragmentRequest->evbIds[0],size);
       payload += size;
-      lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments-1].eventNumber();
-      lastLumiSectionToBUs = fragmentRequest->evbIds[nbSuperFragments-1].lumiSection();
+      if ( nbSuperFragments > 0 )
+      {
+        lastEventNumberToBUs = fragmentRequest->evbIds[nbSuperFragments-1].eventNumber();
+        lastLumiSectionToBUs = fragmentRequest->evbIds[nbSuperFragments-1].lumiSection();
+      }
 
       size = nbRUtids*sizeof(I2O_TID);
       memcpy(payload,&fragmentRequest->ruTids[0],size);
@@ -528,7 +538,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
     if ( lastLumiSectionToBUs > dataMonitoring_.lastLumiSectionToBUs )
     {
       dataMonitoring_.lastLumiSectionToBUs = lastLumiSectionToBUs;
-      lumiTransition = true;
+      lumiTransition = (lastLumiSectionToBUs > 1);
     }
 
     dataMonitoring_.lastEventNumberToBUs = lastEventNumberToBUs;
@@ -750,6 +760,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
   {
     boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
     requestMonitoring_.perf.reset();
+    requestMonitoring_.buTimestamps.clear();
   }
   {
     boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
@@ -840,7 +851,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   }
 
   {
-    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
 
     table table;
     table.set("title",getHelpTextForBuRequests());
@@ -860,30 +871,30 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
               .add(td("Events requested/I2O"))
               .add(td(doubleToString(requestMonitoring_.packingFactor,1))));
     div.add(table);
+  }
 
+  {
+    boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
+
+    if ( fragmentRequestFIFOs_.empty() )
     {
-      boost::shared_lock<boost::shared_mutex> sl(fragmentRequestFIFOsMutex_);
-
-      if ( fragmentRequestFIFOs_.empty() )
+      div.add(fragmentRequestFIFO_.getHtmlSnipped());
+    }
+    else
+    {
+      for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
+           it != fragmentRequestFIFOs_.end(); ++it)
       {
-        div.add(fragmentRequestFIFO_.getHtmlSnipped());
-      }
-      else
-      {
-        for (FragmentRequestFIFOs::const_iterator it = fragmentRequestFIFOs_.begin();
-             it != fragmentRequestFIFOs_.end(); ++it)
+        uint16_t priority = 0;
+        while ( priority <= evb::LOWEST_PRIORITY &&
+                it->second[priority]->empty() )
         {
-          uint16_t priority = 0;
-          while ( priority <= evb::LOWEST_PRIORITY &&
-                  it->second[priority]->empty() )
-          {
-            ++priority;
-          }
-          if ( priority > evb::LOWEST_PRIORITY )
-            div.add(it->second[0]->getHtmlSnipped());
-          else
-            div.add(it->second[priority]->getHtmlSnipped());
+          ++priority;
         }
+        if ( priority > evb::LOWEST_PRIORITY )
+          div.add(it->second[0]->getHtmlSnipped());
+        else
+          div.add(it->second[priority]->getHtmlSnipped());
       }
     }
   }

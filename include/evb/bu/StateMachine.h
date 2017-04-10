@@ -33,7 +33,7 @@ namespace evb {
     class Block: public boost::statechart::event<Block> {};
     class Misted: public boost::statechart::event<Misted> {};
     class Clouded: public boost::statechart::event<Clouded> {};
-    class StopRequests: public boost::statechart::event<StopRequests> {};
+    class Pause: public boost::statechart::event<Pause> {};
 
 
     ///////////////////////

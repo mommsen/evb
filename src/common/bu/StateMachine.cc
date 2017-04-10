@@ -89,8 +89,21 @@ void evb::bu::Configuring::exitAction()
 void evb::bu::Ready::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
-  stateMachine.resourceManager()->requestEvents(true);
   stateMachine.notifyRCMS("Ready");
+}
+
+
+void evb::bu::Active::entryAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.resourceManager()->requestEvents(true);
+}
+
+
+void evb::bu::Active::exitAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.resourceManager()->requestEvents(false);
 }
 
 
@@ -111,8 +124,8 @@ void evb::bu::Running::exitAction()
   outermost_context_type& stateMachine = outermost_context();
 
   stateMachine.ruProxy()->stopProcessing();
-  stateMachine.eventBuilder()->stopProcessing();
   stateMachine.resourceManager()->stopProcessing();
+  stateMachine.eventBuilder()->stopProcessing();
   stateMachine.diskWriter()->stopProcessing();
 }
 
@@ -171,11 +184,17 @@ void evb::bu::Draining::exitAction()
 }
 
 
-void evb::bu::Stopped::entryAction()
+void evb::bu::Paused::entryAction()
 {
   outermost_context_type& stateMachine = outermost_context();
   stateMachine.resourceManager()->requestEvents(false);
-  stateMachine.notifyRCMS("Stopped");
+}
+
+
+void evb::bu::Paused::exitAction()
+{
+  outermost_context_type& stateMachine = outermost_context();
+  stateMachine.resourceManager()->requestEvents(true);
 }
 
 

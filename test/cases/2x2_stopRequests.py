@@ -21,11 +21,15 @@ class case_2x2_stopRequests(TestCase):
         self.writeResourceSummary(testDir+"/BU1",runNumber,stopRequested=True)
         time.sleep(15)
         self.checkAppState("Enabled","BU",0)
-        self.checkAppState("Stopped","BU",1)
+        self.checkAppState("Paused","BU",1)
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624,instance=0)
+        nbEventsBuiltBU1 = int(self.getAppParam('nbEventsBuilt','unsignedLong','BU',1)['BU1'])
         self.stopEvB()
+        nbEventsBuiltBU1afterStop = int(self.getAppParam('nbEventsBuilt','unsignedLong','BU',1)['BU1'])
+        if nbEventsBuiltBU1 != nbEventsBuiltBU1afterStop:
+            raise ValueException("BU1 built another "+str(nbEventsBuiltBU1afterStop-nbEventsBuiltBU1)+" events after being stopped")
         for instance in range(2):
             buDir = testDir+"/BU"+str(instance)
             self.checkBuDir(buDir,runNumber,eventSize=26648,buInstance=instance)
@@ -34,13 +38,14 @@ class case_2x2_stopRequests(TestCase):
         try:
             self.enableEvB(sleepTime=2,runNumber=runNumber)
         except StateException:
-            self.checkAppState("Stopped","BU",1)
+            self.checkAppState("Paused","BU",1)
         else:
             raise StateException("EvB should not be Enabled")
         time.sleep(15)
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624,instance=0)
+        self.checkAppParam("nbEventsBuilt","unsignedLong",0,operator.eq,"BU",1)
         self.stopEvB()
         for instance in range(2):
             buDir = testDir+"/BU"+str(instance)

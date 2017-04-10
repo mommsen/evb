@@ -2,6 +2,7 @@
 #define _evb_bu_States_h_
 
 #include <boost/statechart/custom_reaction.hpp>
+#include <boost/statechart/deep_history.hpp>
 #include <boost/statechart/event.hpp>
 #include <boost/statechart/in_state_reaction.hpp>
 #include <boost/statechart/state.hpp>
@@ -46,7 +47,7 @@ namespace evb {
     class Blocked;
     class Mist;
     class Cloud;
-    class Stopped;
+    class Paused;
 
 
     ///////////////////
@@ -67,7 +68,7 @@ namespace evb {
       boost::statechart::in_state_reaction<Block>,
       boost::statechart::in_state_reaction<Misted>,
       boost::statechart::in_state_reaction<Clouded>,
-      boost::statechart::in_state_reaction<StopRequests>
+      boost::statechart::in_state_reaction<Pause>
       > reactions;
 
       Outermost(my_context c) : my_state("Outermost", c)
@@ -159,6 +160,9 @@ namespace evb {
       virtual ~Active()
       { safeExitAction(); }
 
+      virtual void entryAction();
+      virtual void exitAction();
+
     };
 
 
@@ -239,7 +243,9 @@ namespace evb {
     /**
      * The Processing state. Initial state of the outer-state Running.
      */
-    class Processing: public EvBState<Processing,Running,Enabled>
+    class Processing: public EvBState<Processing,Running,
+                                      boost::mpl::list< boost::statechart::deep_history<Enabled> >,
+                                      boost::statechart::has_deep_history>
     {
 
     public:
@@ -251,7 +257,7 @@ namespace evb {
       boost::statechart::transition<Block,Blocked>,
       boost::statechart::transition<Misted,Mist>,
       boost::statechart::transition<Clouded,Cloud>,
-      boost::statechart::transition<StopRequests,Stopped>
+      boost::statechart::transition<Pause,Paused>
       > reactions;
 
       Processing(my_context c) : my_state("Processing", c)
@@ -307,9 +313,6 @@ namespace evb {
       virtual ~Enabled()
       { safeExitAction(); }
 
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Enabled"); }
-
     };
 
 
@@ -329,9 +332,6 @@ namespace evb {
       { safeEntryAction(); }
       virtual ~Throttled()
       { safeExitAction(); }
-
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Throttled"); }
 
     };
 
@@ -353,9 +353,6 @@ namespace evb {
       virtual ~Blocked()
       { safeExitAction(); }
 
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Blocked"); }
-
     };
 
 
@@ -375,9 +372,6 @@ namespace evb {
       { safeEntryAction(); }
       virtual ~Mist()
       { safeExitAction(); }
-
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Mist"); }
 
     };
 
@@ -399,35 +393,28 @@ namespace evb {
       virtual ~Cloud()
       { safeExitAction(); }
 
-      virtual void entryAction()
-      { outermost_context().notifyRCMS("Cloud"); }
-
     };
 
 
     /**
-     * The Stopped state of the outer-state Processing.
+     * The Paused state of the outer-state Processing.
      */
-    class Stopped: public EvBState<Stopped,Processing>
+    class Paused: public EvBState<Paused,Processing>
     {
 
     public:
 
       typedef boost::mpl::list<
-      boost::statechart::in_state_reaction<Release>,
-      boost::statechart::in_state_reaction<Throttle>,
-      boost::statechart::in_state_reaction<Block>,
-      boost::statechart::in_state_reaction<Misted>,
-      boost::statechart::in_state_reaction<Clouded>,
-      boost::statechart::in_state_reaction<StopRequests>
+      boost::statechart::in_state_reaction<Paused>
       > reactions;
 
-      Stopped(my_context c) : my_state("Stopped", c)
+      Paused(my_context c) : my_state("Paused", c)
       { safeEntryAction(); }
-      virtual ~Stopped()
+      virtual ~Paused()
       { safeExitAction(); }
 
       virtual void entryAction();
+      virtual void exitAction();
 
     };
 
