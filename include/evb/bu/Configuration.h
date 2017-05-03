@@ -56,6 +56,7 @@ namespace evb {
       xdata::Boolean calculateCRC32c;                      // If set to true, a CRC32c checksum of data blob of each event is calculated
       xdata::Boolean deleteRawDataFiles;                   // If true, delete raw data files when the high-water mark is reached
       xdata::Boolean ignoreResourceSummary;                // If true, ignore the resource_summary file from hltd
+      xdata::Boolean closeOldRuns;                         // If true, create empty EoR files in any old run directories without EoR files
       xdata::Boolean usePriorities;                        // If true, prioritize the event requests to the EVM
       xdata::UnsignedInteger32 minPriority;                // Minimum priority for requesting events
       xdata::UnsignedInteger32 maxEventsPerFile;           // Maximum number of events written into one file
@@ -102,6 +103,7 @@ namespace evb {
           calculateCRC32c(true),
           deleteRawDataFiles(false),
           ignoreResourceSummary(false),
+          closeOldRuns(true),
           usePriorities(true),
           minPriority(0),
           maxEventsPerFile(400),
@@ -155,6 +157,7 @@ namespace evb {
         params.add("calculateCRC32c", &calculateCRC32c);
         params.add("deleteRawDataFiles", &deleteRawDataFiles);
         params.add("ignoreResourceSummary", &ignoreResourceSummary);
+        params.add("closeOldRuns", &closeOldRuns);
         params.add("usePriorities", &usePriorities);
         params.add("minPriority", &minPriority);
         params.add("maxEventsPerFile", &maxEventsPerFile);

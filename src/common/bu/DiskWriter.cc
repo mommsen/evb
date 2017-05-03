@@ -55,7 +55,9 @@ evb::bu::StreamHandlerPtr evb::bu::DiskWriter::getStreamHandler(const uint16_t b
 
 void evb::bu::DiskWriter::startProcessing(const uint32_t runNumber)
 {
-  closeAnyOldRuns();
+  if ( configuration_->closeOldRuns )
+    closeAnyOldRuns();
+
   resetMonitoringCounters();
   runNumber_ = runNumber;
 
