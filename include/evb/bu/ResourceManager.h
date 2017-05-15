@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <stdint.h>
+#include <string>
 #include <time.h>
 
 #include <boost/filesystem/convenience.hpp>
@@ -24,6 +25,7 @@
 #include "toolbox/task/WaitingWorkLoop.h"
 #include "xdata/Double.h"
 #include "xdata/Integer32.h"
+#include "xdata/String.h"
 #include "xdata/UnsignedInteger32.h"
 #include "xdata/UnsignedInteger64.h"
 #include "xgi/Output.h"
@@ -187,13 +189,13 @@ namespace evb {
       void configureResources();
       void configureResourceSummary();
       void configureDiskUsageMonitors();
-      float getAvailableResources();
+      float getAvailableResources(std::string& statusMsg);
       float getOverThreshold();
       void updateDiskUsages();
       void handleResourceSummaryFailure(const std::string& msg);
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
-      void updateResources(const float availableResources);
+      void updateResources(const float availableResources, std::string& statusMsg);
       uint16_t getPriority();
       void changeStatesBasedOnResources();
 
@@ -260,6 +262,9 @@ namespace evb {
       } eventMonitoring_;
       mutable boost::mutex eventMonitoringMutex_;
 
+      std::string statusMessage_;
+      mutable boost::mutex statusMessageMutex_;
+
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger64 nbEventsBuilt_;
       xdata::UnsignedInteger32 eventRate_;
@@ -281,6 +286,7 @@ namespace evb {
       xdata::Integer32 queuedLumiSectionsOnFUs_;
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
+      xdata::String statusMsg_;
 
       friend std::ostream& operator<<(std::ostream&,const BuilderResources::const_iterator);
     };

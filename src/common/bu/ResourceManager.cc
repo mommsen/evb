@@ -43,6 +43,8 @@ evb::bu::ResourceManager::ResourceManager
   fuOutBwMB_(0),
   requestEvents_(false),
   pauseRequested_(false),
+  resourceSummaryFailureAlreadyNotified_(false),
+  resourceLimitiationAlreadyNotified_(false),
   oldestIncompleteLumiSection_(0),
   doProcessing_(false)
 {
@@ -407,7 +409,7 @@ void evb::bu::ResourceManager::stopProcessing()
 }
 
 
-float evb::bu::ResourceManager::getAvailableResources()
+float evb::bu::ResourceManager::getAvailableResources(std::string& statusMsg)
 {
   boost::mutex::scoped_lock sl(resourceSummaryMutex_);
 
@@ -418,14 +420,14 @@ float evb::bu::ResourceManager::getAvailableResources()
        (std::time(0) - lastWriteTime) > configuration_->staleResourceTime )
   {
     std::ostringstream msg;
-    msg << resourceSummary_ << " has not been updated in the last ";
+    msg << resourceSummary_.string() << " has not been updated in the last ";
     msg << configuration_->staleResourceTime << "s";
     handleResourceSummaryFailure(msg.str());
+    statusMsg = "Blocking requests because " + resourceSummary_.string() + " is stale";
     return 0;
   }
 
   uint32_t lsLatency = 0;
-  float resourcesFromFUs = 0;
   try
   {
     boost::mutex::scoped_lock sl(lsLatencyMutex_);
@@ -439,9 +441,6 @@ float evb::bu::ResourceManager::getAvailableResources()
     fuOutBwMB_ = pt.get<double>("activeRunLSBWMB");
     queuedLSonFUs_ = pt.get<int>("activeRunNumQueuedLS");
     pauseRequested_ = pt.get<bool>("bu_stop_requests_flag");
-
-    resourcesFromFUs = (fusHLT_ == 0) ? 0 :
-      std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
 
     const uint32_t activeFURun = pt.get<int>("activeFURun");
     const uint32_t activeRunCMSSWMaxLS = std::max(0,pt.get<int>("activeRunCMSSWMaxLS"));
@@ -463,59 +462,79 @@ float evb::bu::ResourceManager::getAvailableResources()
     msg << "Failed to parse " << resourceSummary_.string() << ": ";
     msg << e.what();
     handleResourceSummaryFailure(msg.str());
+    statusMsg = "Blocking requests because " + resourceSummary_.string() + " cannot be parsed";
     return 0;
   }
   resourceSummaryFailureAlreadyNotified_ = false;
 
+  if ( fusHLT_ == 0 )
+  {
+    if ( fusQuarantined_ > 0 )
+      statusMsg = "Blocking requests because all FU slots are quarantined";
+    else if ( fusStale_ > 0 )
+      statusMsg = "Blocking requests because all FU slots are stale";
+    else
+      statusMsg = "Blocking requests because there are no FU slots available";
+    return 0;
+  }
+
   if ( lsLatency > configuration_->lumiSectionLatencyHigh.value_ )
   {
-    if ( ! resourceLimitiationAlreadyNotified_ )
-    {
-      std::ostringstream msg;
-      msg << "There are " << lsLatency << " LS queued for the FUs which is more than the allowed latency of "
-        << configuration_->lumiSectionLatencyHigh.value_ << " LS";
-      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
-      resourceLimitiationAlreadyNotified_ = true;
-    }
+    std::ostringstream msg;
+    msg << "Blocking requests because there are " << lsLatency << " LS queued for the FUs which is more than the allowed latency of "
+      << configuration_->lumiSectionLatencyHigh.value_ << " LS";
+    statusMsg = msg.str();
     return 0;
   }
 
   if ( fuOutBwMB_ > configuration_->fuOutputBandwidthHigh.value_ )
   {
-    if ( ! resourceLimitiationAlreadyNotified_ )
-    {
-      std::ostringstream msg;
-      msg << "The output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is higher than the high water mark of "
-        << configuration_->fuOutputBandwidthHigh.value_ << " MB/s";
-      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
-      resourceLimitiationAlreadyNotified_ = true;
-    }
+    std::ostringstream msg;
+    msg << "Blocking requests because the output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is higher than the high water mark of "
+      << configuration_->fuOutputBandwidthHigh.value_ << " MB/s";
+    statusMsg = msg.str();
     return 0;
   }
 
   if ( queuedLSonFUs_ > static_cast<int32_t>(configuration_->maxFuLumiSectionLatency.value_) )
   {
-    if ( ! resourceLimitiationAlreadyNotified_ )
-    {
-      std::ostringstream msg;
-      msg << "There are " << queuedLSonFUs_ << " LS queued on FUs which is more than the allowed latency of "
-        << configuration_->maxFuLumiSectionLatency.value_ << " LS";
-      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
-      resourceLimitiationAlreadyNotified_ = true;
-    }
+    std::ostringstream msg;
+    msg << "Blocking requests because there are " << queuedLSonFUs_ << " LS queued on FUs which is more than the allowed latency of "
+      << configuration_->maxFuLumiSectionLatency.value_ << " LS";
+    statusMsg = msg.str();
     return 0;
+  }
+
+  float resourcesFromFUs = std::max(1.0, fusHLT_ * configuration_->resourcesPerCore);
+
+  if ( resourcesFromFUs < static_cast<float>(nbResources_) )
+  {
+    std::ostringstream msg;
+    msg << "Throttling requests because there are only " << fusHLT_ << " FU slots available";
+    if ( fusQuarantined_ > 0 || fusStale_ > 0 )
+    {
+      msg << ". In addition, there are ";
+      if ( fusQuarantined_ > 0 )
+        msg << fusQuarantined_ << " quarantined";
+      if ( fusQuarantined_ > 0 && fusStale_ > 0 )
+        msg << ", and ";
+      if ( fusStale_ > 0 )
+        msg << fusStale_ << " stale";
+      msg << " FU slots";
+    }
+    statusMsg = msg.str();
   }
 
   if ( fuOutBwMB_ > configuration_->fuOutputBandwidthLow.value_ )
   {
-    if ( ! resourceLimitiationAlreadyNotified_ )
-    {
-      std::ostringstream msg;
-      msg << "Throttling requests as the output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is above the low water mark of "
-        << configuration_->fuOutputBandwidthLow.value_ << " MB/s";
-      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
-      resourceLimitiationAlreadyNotified_ = true;
-    }
+    std::ostringstream msg;
+    if ( statusMsg.empty() )
+      msg << "Throttling requests because";
+    else
+      msg << ", and";
+    msg << " the output throughput from the FUs is " << fuOutBwMB_ << " MB/s, which is above the low water mark of "
+      << configuration_->fuOutputBandwidthLow.value_ << " MB/s";
+    statusMsg += msg.str();
 
     const float throttle = 1 - ( (fuOutBwMB_ - configuration_->fuOutputBandwidthLow) /
                                  (configuration_->fuOutputBandwidthHigh - configuration_->fuOutputBandwidthLow) );
@@ -524,14 +543,14 @@ float evb::bu::ResourceManager::getAvailableResources()
 
   if ( lsLatency > configuration_->lumiSectionLatencyLow.value_ )
   {
-    if ( ! resourceLimitiationAlreadyNotified_ )
-    {
-      std::ostringstream msg;
-      msg << "Throttling requests as there are " << lsLatency << " LS queued for FUs which is above the low water mark of "
-        << configuration_->lumiSectionLatencyLow.value_ << " LS";
-      LOG4CPLUS_WARN(bu_->getApplicationLogger(), msg.str());
-      resourceLimitiationAlreadyNotified_ = true;
-    }
+    std::ostringstream msg;
+    if ( statusMsg.empty() )
+      msg << "Throttling requests because";
+    else
+      msg << ", and";
+    msg << " there are " << lsLatency << " LS queued for FUs which is above the low water mark of "
+      << configuration_->lumiSectionLatencyLow.value_ << " LS";
+    statusMsg += msg.str();
 
     const float throttle = 1 - ( static_cast<float>(lsLatency - configuration_->lumiSectionLatencyLow) /
                                  (configuration_->lumiSectionLatencyHigh - configuration_->lumiSectionLatencyLow) );
@@ -539,14 +558,9 @@ float evb::bu::ResourceManager::getAvailableResources()
   }
 
   if ( resourcesFromFUs >= static_cast<float>(nbResources_) )
-  {
-    resourceLimitiationAlreadyNotified_ = false;
     return nbResources_;
-  }
   else
-  {
     return resourcesFromFUs;
-  }
 }
 
 
@@ -622,11 +636,13 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 {
   try
   {
-    const float availableResources = getAvailableResources();
+    std::string statusMsg;
+
+    const float availableResources = getAvailableResources(statusMsg);
 
     if ( doProcessing_ )
     {
-      updateResources(availableResources);
+      updateResources(availableResources,statusMsg);
       changeStatesBasedOnResources();
 
       if ( configuration_->usePriorities )
@@ -635,19 +651,46 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
         currentPriority_ = getPriority();
       }
     }
+    {
+      boost::mutex::scoped_lock sl(statusMessageMutex_);
+
+      statusMessage_ = statusMsg;
+
+      if ( statusMsg.empty() )
+      {
+        resourceLimitiationAlreadyNotified_ = false;
+      }
+      else if ( ! resourceLimitiationAlreadyNotified_ )
+      {
+        LOG4CPLUS_WARN(bu_->getApplicationLogger(), statusMsg);
+        resourceLimitiationAlreadyNotified_ = true;
+      }
+    }
   }
   catch(xcept::Exception &e)
   {
+    {
+      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      statusMessage_ = e.message();
+    }
     bu_->getStateMachine()->processFSMEvent( Fail(e) );
   }
   catch(std::exception& e)
   {
+    {
+      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      statusMessage_ = e.what();
+    }
     XCEPT_DECLARE(exception::FFF,
                   sentinelException, e.what());
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
   catch(...)
   {
+    {
+      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      statusMessage_ = "Failed for unknown reason";
+    }
     XCEPT_DECLARE(exception::FFF,
                   sentinelException, "unkown exception");
     bu_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
@@ -659,7 +702,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 }
 
 
-void evb::bu::ResourceManager::updateResources(const float availableResources)
+void evb::bu::ResourceManager::updateResources(const float availableResources, std::string& statusMsg)
 {
   uint32_t resourcesToBlock;
   const float overThreshold = getOverThreshold();
@@ -667,11 +710,26 @@ void evb::bu::ResourceManager::updateResources(const float availableResources)
   if ( overThreshold >= 1 )
   {
     resourcesToBlock = nbResources_;
+    statusMsg = "Blocking requests because RAMdisk is full";
   }
   else
   {
     const uint32_t usableResources = round( (1-overThreshold) * availableResources );
     resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
+
+    if ( usableResources < availableResources )
+    {
+      if ( statusMsg.empty() )
+        statusMsg = "Throttling because";
+      else
+        statusMsg += ", and";
+      std::ostringstream msg;
+      msg.setf(std::ios::fixed);
+      msg.precision(1);
+      msg << " RAMdisk is " << overThreshold*100 << "% over the safe disk-usage threshold of ";
+      msg << configuration_->rawDataLowWaterMark << "%";
+      statusMsg += msg.str();
+    }
   }
 
   {
@@ -804,6 +862,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   queuedLumiSectionsOnFUs_ = -1;
   ramDiskSizeInGB_ = 0;
   ramDiskUsed_ = 0;
+  statusMsg_ = "";
 
   items.add("nbEventsInBU", &nbEventsInBU_);
   items.add("nbEventsBuilt", &nbEventsBuilt_);
@@ -826,6 +885,7 @@ void evb::bu::ResourceManager::appendMonitoringItems(InfoSpaceItems& items)
   items.add("queuedLumiSectionsOnFUs", &queuedLumiSectionsOnFUs_);
   items.add("ramDiskSizeInGB", &ramDiskSizeInGB_);
   items.add("ramDiskUsed", &ramDiskUsed_);
+  items.add("statusMsg", &statusMsg_);
 }
 
 
@@ -879,6 +939,13 @@ void evb::bu::ResourceManager::updateMonitoringItems()
       else
         ++nbUsedResources_;
     }
+  }
+  {
+    boost::mutex::scoped_lock sl(statusMessageMutex_);
+    if ( statusMessage_.empty() )
+      statusMsg_ = "Building events at full speed";
+    else
+      statusMsg_ = statusMessage_;
   }
 }
 
@@ -1142,6 +1209,11 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     resources.add(resourceFIFO_.getHtmlSnipped());
 
     div.add(resources);
+  }
+
+  {
+    boost::mutex::scoped_lock sl(statusMessageMutex_);
+    div.add(p(statusMessage_));
   }
 
   {
