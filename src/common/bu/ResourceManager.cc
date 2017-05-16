@@ -717,7 +717,7 @@ void evb::bu::ResourceManager::updateResources(const float availableResources, s
     const uint32_t usableResources = round( (1-overThreshold) * availableResources );
     resourcesToBlock = nbResources_ < usableResources ? 0 : nbResources_ - usableResources;
 
-    if ( usableResources < availableResources )
+    if ( usableResources < round(availableResources) )
     {
       if ( statusMsg.empty() )
         statusMsg = "Throttling because";
@@ -725,9 +725,9 @@ void evb::bu::ResourceManager::updateResources(const float availableResources, s
         statusMsg += ", and";
       std::ostringstream msg;
       msg.setf(std::ios::fixed);
-      msg.precision(1);
+      msg.precision(0);
       msg << " RAMdisk is " << overThreshold*100 << "% over the safe disk-usage threshold of ";
-      msg << configuration_->rawDataLowWaterMark << "%";
+      msg << configuration_->rawDataLowWaterMark*100 << "%";
       statusMsg += msg.str();
     }
   }
