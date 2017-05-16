@@ -112,6 +112,20 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 
   if ( dataBlockMsg->blockNb == 1 ) //only the first block contains the EvBid
   {
+    if ( dataBlockMsg->nbSuperFragments == 0 ) // this resource is returned w/o any data
+    {
+      pos->second.builderId = -1;
+      {
+        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        --eventMonitoring_.outstandingRequests;
+      }
+      {
+        boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+        resourceFIFO_.enqWait(pos);
+      }
+      return -1;
+    }
+
     if ( pos->second.evbIdList.empty() )
     {
       // first answer defines the EvBids handled by this resource
@@ -248,9 +262,15 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
     return true;
   }
 
-  if ( blockedResources_ == nbResources_ )
+  uint32_t outstandingRequests;
   {
-    // do not expire any lumi section if all resources are blocked
+    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
+  }
+
+  if ( outstandingRequests > 0 )
+  {
+    // do not expire any lumi section if there are outstanding requests
     const time_t now = time(0);
     for ( LumiSectionAccounts::const_iterator it = lumiSectionAccounts_.begin(), itEnd = lumiSectionAccounts_.end();
           it != itEnd; ++it)
@@ -258,8 +278,6 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
       if ( now > it->second->startTime )
         it->second->startTime = now;
     }
-
-    return false;
   }
 
   if ( oldestLumiSection->second->nbIncompleteEvents == 0 )
