@@ -189,13 +189,13 @@ namespace evb {
       void configureResources();
       void configureResourceSummary();
       void configureDiskUsageMonitors();
-      float getAvailableResources(std::string& statusMsg);
+      float getAvailableResources(std::string& statusMsg, std::string& statusKeys);
       float getOverThreshold();
       void updateDiskUsages();
       void handleResourceSummaryFailure(const std::string& msg);
       void startResourceMonitorWorkLoop();
       bool resourceMonitor(toolbox::task::WorkLoop*);
-      void updateResources(const float availableResources, std::string& statusMsg);
+      void updateResources(const float availableResources, std::string& statusMsg, std::string& statusKeys);
       uint16_t getPriority();
       void changeStatesBasedOnResources();
 
@@ -263,6 +263,7 @@ namespace evb {
       mutable boost::mutex eventMonitoringMutex_;
 
       std::string statusMessage_;
+      std::string statusKeys_;
       mutable boost::mutex statusMessageMutex_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
@@ -287,6 +288,7 @@ namespace evb {
       xdata::Double ramDiskSizeInGB_;
       xdata::Double ramDiskUsed_;
       xdata::String statusMsg_;
+      xdata::String statusKeywords_;
 
       friend std::ostream& operator<<(std::ostream&,const BuilderResources::const_iterator);
     };
