@@ -546,9 +546,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     const double deltaT = superFragmentMonitor_.perf.deltaT();
     superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
     superFragmentMonitor_.throughput = superFragmentMonitor_.perf.throughput(deltaT);
-    const uint32_t eventSize = superFragmentMonitor_.perf.size();
-    superFragmentMonitor_.eventSize = eventSize;
-    superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    if ( superFragmentMonitor_.rate > 0 )
+    {
+      superFragmentMonitor_.eventSize = superFragmentMonitor_.perf.size();
+      superFragmentMonitor_.eventSizeStdDev = superFragmentMonitor_.perf.sizeStdDev();
+    }
     superFragmentMonitor_.perf.reset();
 
     lastEventNumber_ = superFragmentMonitor_.lastEventNumber;

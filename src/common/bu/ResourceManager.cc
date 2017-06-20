@@ -968,8 +968,13 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     nbEventsBuilt_ = eventMonitoring_.nbEventsBuilt;
     eventRate_ = eventMonitoring_.perf.logicalRate(deltaT);
     throughput_ = eventMonitoring_.perf.throughput(deltaT);
-    eventSize_ = eventMonitoring_.perf.size();
-    eventSizeStdDev_ = eventMonitoring_.perf.sizeStdDev();
+    if ( eventRate_ > 0U )
+    {
+      eventMonitoring_.eventSize = eventMonitoring_.perf.size();
+      eventMonitoring_.eventSizeStdDev = eventMonitoring_.perf.sizeStdDev();
+    }
+    eventSize_ = eventMonitoring_.eventSize;
+    eventSizeStdDev_ = eventMonitoring_.eventSizeStdDev;
     priority_ = currentPriority_;
 
     eventMonitoring_.perf.reset();
@@ -1018,6 +1023,8 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
     eventMonitoring_.nbEventsInBU = 0;
     eventMonitoring_.nbEventsBuilt = 0;
+    eventMonitoring_.eventSize = 0;
+    eventMonitoring_.eventSizeStdDev = 0;
     eventMonitoring_.perf.reset();
   }
 }
@@ -1190,7 +1197,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
       std::ostringstream str;
       str.setf(std::ios::fixed);
       str.precision(1);
-      str << eventSize_.value_ / 1e3 << " +/- " << eventSizeStdDev_.value_ / 1e3;
+      str << eventMonitoring_.eventSize / 1e3 << " +/- " << eventMonitoring_.eventSizeStdDev / 1e3;
       table.add(tr()
                 .add(td("event size (kB)"))
                 .add(td(str.str())));

@@ -436,10 +436,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
     const double deltaT = inputMonitor_.perf.deltaT();
     inputMonitor_.rate = inputMonitor_.perf.logicalRate(deltaT);
     inputMonitor_.throughput = inputMonitor_.perf.throughput(deltaT);
-    const uint32_t eventSize = inputMonitor_.perf.size();
-    if ( eventSize > 0 )
+    if ( inputMonitor_.rate > 0 )
     {
-      inputMonitor_.eventSize = eventSize;
+      inputMonitor_.eventSize = inputMonitor_.perf.size();
       inputMonitor_.eventSizeStdDev = inputMonitor_.perf.sizeStdDev();
     }
     inputMonitor_.perf.reset();
@@ -450,10 +449,9 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 
     const double deltaT = socketMonitor_.perf.deltaT();
     socketMonitor_.rate = socketMonitor_.perf.logicalRate(deltaT);
-    const uint32_t usedBufferSize = socketMonitor_.perf.size();
-    if ( usedBufferSize > 0 )
+    if ( socketMonitor_.rate > 0 )
     {
-      socketMonitor_.usedBufferSize = usedBufferSize;
+      socketMonitor_.usedBufferSize = socketMonitor_.perf.size();
       socketMonitor_.usedBufferSizeStdDev = socketMonitor_.perf.sizeStdDev();
     }
     socketMonitor_.perf.reset();

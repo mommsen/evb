@@ -257,6 +257,8 @@ namespace evb {
       {
         uint64_t nbEventsBuilt;
         uint32_t nbEventsInBU;
+        uint32_t eventSize;
+        uint32_t eventSizeStdDev;
         int32_t outstandingRequests;
         PerformanceMonitor perf;
       } eventMonitoring_;
