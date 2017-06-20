@@ -998,10 +998,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   }
   {
     boost::mutex::scoped_lock sl(statusMessageMutex_);
-    if ( statusMessage_.empty() )
-      statusMsg_ = "Building events at full speed";
-    else
-      statusMsg_ = statusMessage_;
+    statusMsg_ = statusMessage_;
     statusKeywords_ = statusKeys_;
   }
 }
