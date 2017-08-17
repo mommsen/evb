@@ -106,7 +106,7 @@ process.source = cms.Source( "FedRawDataInputSource",
 )
 
 process.PoolDBESSource = cms.ESSource( "PoolDBESSource",
-    globaltag = cms.string( "90X_dataRun2_HLT_v1" ),
+    globaltag = cms.string( "92X_dataRun2_HLT_v4" ),
     RefreshEachRun = cms.untracked.bool( True ),
     snapshotTime = cms.string( "" ),
     toGet = cms.VPSet(
@@ -124,7 +124,7 @@ process.PoolDBESSource = cms.ESSource( "PoolDBESSource",
       connectionRetrialPeriod = cms.untracked.int32( 10 )
     ),
     RefreshAlways = cms.untracked.bool( False ),
-    connect = cms.string( "frontier://(proxyurl=http://localhost:3128)(serverurl=http://localhost:8000/FrontierOnProd)(serverurl=http://localhost:8000/FrontierOnProd)(retrieve-ziplevel=0)/CMS_CONDITIONS" ),
+    connect = cms.string( "frontier://FrontierProd/CMS_CONDITIONS" ),
     ReconnectEachRun = cms.untracked.bool( False ),
     RefreshOpenIOVs = cms.untracked.bool( False ),
     DumpStat = cms.untracked.bool( False )
@@ -334,10 +334,11 @@ process.DQMFileSaver = cms.EDAnalyzer( "DQMFileSaver",
     dirName = cms.untracked.string( "." ),
     fileFormat = cms.untracked.string( "PB" )
 )
-process.TriggerJSONMonitoring = cms.EDAnalyzer( "TriggerJSONMonitoring",
-    triggerResults = cms.InputTag( 'TriggerResults','','HLT' ),
-    L1Results = cms.InputTag( "hltGtDigis" )
+
+process.hltHLTriggerJSONMonitoring = cms.EDAnalyzer( "HLTriggerJSONMonitoring",
+    triggerResults = cms.InputTag( 'TriggerResults','','HLT' )
 )
+
 process.hltGtDigis = cms.EDProducer( "L1GlobalTriggerRawToDigi",
     DaqGtFedId = cms.untracked.int32( 813 ),
     Verbosity = cms.untracked.int32( 0 ),
@@ -619,7 +620,7 @@ process.epALCAPHISYM = cms.EndPath( process.hltOutputALCAPHISYM )
 process.epALCAP0 = cms.EndPath( process.hltOutputALCAP0 )
 process.epALCAELECTRON = cms.EndPath( process.hltOutputALCAELECTRON )
 process.pDQMhisto = cms.Path( process.DQMFileSaver )
-process.json = cms.EndPath( process.TriggerJSONMonitoring )
+process.json = cms.EndPath( process.hltHLTriggerJSONMonitoring )
 process.L1Gt = cms.Path( process.hltGtDigis + process.hltL1GtObjectMap )
 process.epDQM = cms.EndPath( process.hltOutputDQM )
 process.epDQMEventDisplay = cms.EndPath( process.hltOutputDQMEventDisplay )
