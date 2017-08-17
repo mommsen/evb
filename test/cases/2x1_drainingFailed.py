@@ -19,7 +19,7 @@ class case_2x1_drainingFailed(TestCase):
         self.waitForAppState('Ready','FEROL',id)
         print("done")
         time.sleep(5)
-        self.checkEVM(0,0)
+        self.checkEVM(8192,0)
         sys.stdout.write("Stopping EVM")
         sys.stdout.flush()
         self.stop('EVM')
