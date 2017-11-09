@@ -165,6 +165,11 @@ namespace evb {
       uint32_t getSuperFragmentSize() const;
 
       /**
+       * Return a HTML status page on the DIP status
+       */
+      cgicc::div getHtmlSnippedForDipStatus() const;
+
+      /**
        * Return the readout unit associated with this input
        */
       ReadoutUnit* getReadoutUnit() const
@@ -187,6 +192,7 @@ namespace evb {
       uint32_t getLumiSectionFromGTPe(const DataLocations&) const;
 
       ReadoutUnit* readoutUnit_;
+      MetaDataRetrieverPtr metaDataRetriever_;
 
       FerolStreams ferolStreams_;
       mutable boost::shared_mutex ferolStreamsMutex_;
@@ -658,6 +664,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     XCEPT_RAISE(exception::Configuration, "The block size must be a multiple of 64-bits");
   }
 
+  // This may take a while. Thus, do not call subscribeToDip while holding ferolStreamsMutex_
+  if ( std::find(configuration->fedSourceIds.begin(),configuration->fedSourceIds.end(),xdata::UnsignedInteger32(SOFT_FED_ID)) != configuration->fedSourceIds.end() && !metaDataRetriever_ )
+    metaDataRetriever_.reset( new MetaDataRetriever(readoutUnit_->getApplicationLogger(),readoutUnit_->getIdentifier(),configuration->dipNodes) );
+
   {
     boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
 
@@ -682,8 +692,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
           XCEPT_RAISE(exception::Configuration, msg.str());
         }
 
-        FerolStreamPtr ferolStream( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,it->bag) );
-        ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
+        if ( fedId != SOFT_FED_ID )
+        {
+          FerolStreamPtr ferolStream( new LocalStream<ReadoutUnit,Configuration>(readoutUnit_,it->bag) );
+          ferolStreams_.insert( typename FerolStreams::value_type(fedId,ferolStream) );
+        }
       }
     }
     else
@@ -693,10 +706,10 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     setMasterStream();
 
-    if ( configuration->dummyScalFedSize.value_ > 0 )
+    if ( metaDataRetriever_ )
     {
-      const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,configuration->scalFedId) );
-      ferolStreams_.insert( typename FerolStreams::value_type(configuration->scalFedId,scalerStream ) );
+      const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,metaDataRetriever_) );
+      ferolStreams_.insert( typename FerolStreams::value_type(SOFT_FED_ID,scalerStream ) );
     }
 
     if ( configuration->dropInputData )
@@ -854,6 +867,26 @@ cgicc::table evb::readoutunit::Input<ReadoutUnit,Configuration>::getFedTable() c
   }
 
   return fedTable;
+}
+
+
+template<class ReadoutUnit,class Configuration>
+cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnippedForDipStatus() const
+{
+  using namespace cgicc;
+
+  cgicc::div div;
+
+  if ( metaDataRetriever_ )
+  {
+    div.add( metaDataRetriever_->dipStatusTable() );
+  }
+  else
+  {
+    div.add(p("No meta-data is retrieved from DIP"));
+  }
+
+  return div;
 }
 
 

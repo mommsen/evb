@@ -5,11 +5,16 @@
 #include <string.h>
 #include <vector>
 
+#include <boost/lexical_cast.hpp>
+
+#include "cgicc/HTMLClasses.h"
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
+#include "evb/readoutunit/MetaDataRetriever.h"
 #include "evb/readoutunit/ReadoutUnit.h"
+#include "evb/readoutunit/Scalers.h"
 #include "evb/readoutunit/SuperFragment.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
@@ -36,10 +41,11 @@ namespace evb {
 
     template<class ReadoutUnit, class Configuration>
     class ScalerStream : public FerolStream<ReadoutUnit,Configuration>, public toolbox::lang::Class
+
     {
     public:
 
-      ScalerStream(ReadoutUnit*, const uint16_t fedId);
+      ScalerStream(ReadoutUnit*,MetaDataRetrieverPtr);
 
       ~ScalerStream();
 
@@ -53,6 +59,17 @@ namespace evb {
        */
       virtual void startProcessing(const uint32_t runNumber);
 
+      /**
+       * Return a CGI table row with statistics for this FED
+       */
+      virtual cgicc::tr getFedTableRow() const;
+
+      /**
+       * Return the content of the fragment FIFO as HTML snipped
+       */
+      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const
+      { return cgicc::div(); }
+
 
     private:
 
@@ -60,21 +77,17 @@ namespace evb {
       void startRequestWorkLoop();
       void getFedFragment(const EvBid&, FedFragmentPtr&);
       bool scalerRequest(toolbox::task::WorkLoop*);
-      void requestLastestData();
 
-      uint32_t dummyScalFedSize_;
-      uint32_t currentLumiSection_;
-      volatile bool dataIsValid_;
+      toolbox::mem::Reference* currentDataBufRef_;
+      toolbox::mem::Reference* nextDataBufRef_;
+      mutable boost::mutex dataMutex_;
 
       toolbox::mem::Pool* fragmentPool_;
       toolbox::task::WorkLoop* scalerRequestWorkLoop_;
       toolbox::task::ActionSignature* scalerRequestAction_;
 
+      MetaDataRetrieverPtr metaDataRetriever_;
       CRCCalculator crcCalculator_;
-
-      typedef std::vector<char> Buffer;
-      Buffer dataForNextLumiSection_;
-      Buffer dataForCurrentLumiSection_;
 
     };
 
@@ -89,12 +102,12 @@ template<class ReadoutUnit,class Configuration>
 evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
 (
   ReadoutUnit* readoutUnit,
-  const uint16_t fedId
+  MetaDataRetrieverPtr metaDataRetriever
 ) :
-  FerolStream<ReadoutUnit,Configuration>(readoutUnit,fedId),
-  dummyScalFedSize_(readoutUnit->getConfiguration()->dummyScalFedSize),
-  currentLumiSection_(0),
-  dataIsValid_(false)
+  FerolStream<ReadoutUnit,Configuration>(readoutUnit,SOFT_FED_ID),
+  currentDataBufRef_(0),
+  nextDataBufRef_(0),
+  metaDataRetriever_(metaDataRetriever)
 {
   createScalerPool();
   startRequestWorkLoop();
@@ -160,34 +173,58 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startRequestWork
 }
 
 
+
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(toolbox::task::WorkLoop* wl)
 {
   if ( ! this->doProcessing_ ) return false;
 
-  requestLastestData();
+  toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
+    getFrame(fragmentPool_,Scalers::dataSize);
+  bufRef->setDataSize(Scalers::dataSize);
+  unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+  Scalers::Data* data = (Scalers::Data*)payload;
 
-  while ( this->doProcessing_ && dataIsValid_) ::sleep(1);
-
-  return this->doProcessing_;
-}
-
-
-template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::requestLastestData()
-{
-  if ( dataForNextLumiSection_.size() < dummyScalFedSize_ )
+  if ( nextDataBufRef_ )
   {
-    dataForNextLumiSection_.resize(dummyScalFedSize_);
+    // preserve the data from the previous iteration
+    memcpy(payload,nextDataBufRef_->getDataLocation(),Scalers::dataSize);
+  }
+  else
+  {
+    memset(payload,0,Scalers::dataSize);
   }
 
-  // Simulate some dummy data changing every LS
-  if ( currentLumiSection_ % 2 )
-    memset(&dataForNextLumiSection_[0],0xef,dummyScalFedSize_);
-  else
-    memset(&dataForNextLumiSection_[0],0xa5,dummyScalFedSize_);
+  bool newData = false;
 
-  dataIsValid_ = true;
+  do {
+    newData |= metaDataRetriever_->fillLuminosity(data->luminosity);
+    newData |= metaDataRetriever_->fillBeamSpot(data->beamSpot);
+    newData |= metaDataRetriever_->fillHighVoltageStatus(data->highVoltageReady);
+    newData |= metaDataRetriever_->fillMagnetCurrent(data->magnetCurrent);
+
+    if ( newData )
+    {
+      data->timeStamp = getTimeStamp();
+
+      boost::mutex::scoped_lock sl(dataMutex_);
+
+      if ( nextDataBufRef_ ) nextDataBufRef_->release();
+      nextDataBufRef_ = bufRef;
+      return true;
+    }
+    else
+    {
+      ::sleep(1);
+    }
+
+  } while ( this->doProcessing_ );
+
+  bufRef->release();
+  if ( nextDataBufRef_ ) nextDataBufRef_->release();
+  nextDataBufRef_ = 0;
+
+  return false;
 }
 
 
@@ -196,11 +233,19 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragmen
 {
   const EvBid& evbId = superFragment->getEvBid();
 
-  if ( evbId.lumiSection() > currentLumiSection_ )
+  if ( currentDataBufRef_ != nextDataBufRef_ )
   {
-    dataForCurrentLumiSection_.swap(dataForNextLumiSection_);
-    currentLumiSection_ = evbId.lumiSection();
-    dataIsValid_ = false;
+    boost::mutex::scoped_lock sl(dataMutex_);
+
+    if ( currentDataBufRef_ ) currentDataBufRef_->release();
+    currentDataBufRef_ = nextDataBufRef_->duplicate();
+  }
+
+  if ( ! currentDataBufRef_ )
+  {
+    XCEPT_DECLARE(exception::SCAL,
+                  sentinelException, "Cannot retrieve any scaler information");
+    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
   FedFragmentPtr fedFragment;
@@ -221,8 +266,9 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
 {
   const uint32_t eventNumber = evbId.eventNumber();
   const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
-  const uint32_t dataSize = dataForCurrentLumiSection_.size();
+  const uint32_t dataSize = currentDataBufRef_->getDataSize();
   const uint32_t fedSize = dataSize + sizeof(fedh_t) + sizeof(fedt_t);
+  const unsigned char* dataPos = (unsigned char*)currentDataBufRef_->getDataLocation();
 
   if ( (fedSize & 0x7) != 0 )
   {
@@ -266,7 +312,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
     }
 
     const uint32_t length = std::min(dataSize-dataOffset,ferolPayloadSize-dataLength);
-    memcpy(payload,&dataForCurrentLumiSection_[0]+dataOffset,length);
+    memcpy(payload,dataPos+dataOffset,length);
     dataOffset += length;
     payload += length;
     dataLength += length;
@@ -292,7 +338,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
     ferolHeader->set_data_length(dataLength);
   }
 
-  assert( dataOffset == dataForCurrentLumiSection_.size() );
+  assert( dataOffset == dataSize );
 
   fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_,evbId,bufRef);
 }
@@ -303,12 +349,39 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startProcessing(
 {
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
 
-  if ( dummyScalFedSize_ == 0 ) return;
+  if ( currentDataBufRef_ )
+  {
+    currentDataBufRef_->release();
+    currentDataBufRef_ = 0;
+  }
 
-  dataIsValid_ = false;
   scalerRequestWorkLoop_->submit(scalerRequestAction_);
+}
 
-  while ( !dataIsValid_ ) ::usleep(1000);
+
+template<class ReadoutUnit,class Configuration>
+cgicc::tr evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedTableRow() const
+{
+  using namespace cgicc;
+  const std::string fedId = boost::lexical_cast<std::string>(this->fedId_);
+
+  tr row;
+  row.add(td(fedId));
+  row.add(td()
+          .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
+               .set("onclick","dumpFragments("+fedId+",1);")));
+  {
+    boost::mutex::scoped_lock sl(this->inputMonitorMutex_);
+
+    row.add(td(boost::lexical_cast<std::string>(this->inputMonitor_.lastEventNumber)));
+    row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(this->inputMonitor_.eventSize))
+               +" +/- "+boost::lexical_cast<std::string>(static_cast<uint32_t>(this->inputMonitor_.eventSizeStdDev))));
+    row.add(td(doubleToString(this->inputMonitor_.throughput / 1e6,1)));
+  }
+
+  row.add(metaDataRetriever_->getDipStatus( this->readoutUnit_->getURN().toString() ));
+
+  return row;
 }
 
 

@@ -88,6 +88,7 @@ namespace evb {
       void eventCountForLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
       void getLatestLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
       void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+      void displayDipStatusTable(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
 
       xdata::UnsignedInteger32 eventsInRU_;
       xdata::UnsignedInteger32 eventRate_;
@@ -260,6 +261,11 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::bindNonDefa
     &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFragmentsToFile,
     "writeNextFragmentsToFile"
   );
+
+  xgi::framework::deferredbind(this, this,
+                               &evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::displayDipStatusTable,
+                               "dipStatus"
+  );
 }
 
 
@@ -322,6 +328,28 @@ throw (xgi::exception::Exception)
     const uint32_t ls = xgi::Utils::getFormElement(cgi, "ls")->getIntegerValue();
     *out << input_->getEventCountForLumiSection(ls);
   }
+}
+
+
+template<class Unit,class Configuration,class StateMachine>
+void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::displayDipStatusTable
+(
+  xgi::Input  *in,
+  xgi::Output *out
+)
+throw (xgi::exception::Exception)
+{
+  using namespace cgicc;
+  table layoutTable;
+
+  layoutTable.set("class","xdaq-evb-layout");
+  layoutTable.add(tr()
+                  .add(td(this->getWebPageBanner())));
+  layoutTable.add(tr()
+                  .add(td(input_->getHtmlSnippedForDipStatus())));
+
+  *out << this->getWebPageHeader();
+  *out << layoutTable;
 }
 
 

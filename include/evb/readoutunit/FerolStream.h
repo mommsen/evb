@@ -122,12 +122,12 @@ namespace evb {
       /**
        * Return a CGI table row with statistics for this FED
        */
-      cgicc::tr getFedTableRow() const;
+      virtual cgicc::tr getFedTableRow() const;
 
       /**
        * Return the content of the fragment FIFO as HTML snipped
        */
-      cgicc::div getHtmlSnippedForFragmentFIFO() const
+      virtual cgicc::div getHtmlSnippedForFragmentFIFO() const
       { return fragmentFIFO_.getHtmlSnipped(); }
 
 
@@ -166,6 +166,9 @@ namespace evb {
       typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
       FragmentFIFO fragmentFIFO_;
 
+      InputMonitor inputMonitor_;
+      mutable boost::mutex inputMonitorMutex_;
+
 
     private:
 
@@ -173,9 +176,6 @@ namespace evb {
 
       FedFragmentPtr firstFragmentAfterResync_;
       uint16_t writeNextFragments_;
-
-      InputMonitor inputMonitor_;
-      mutable boost::mutex inputMonitorMutex_;
 
     };
 

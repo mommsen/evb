@@ -87,8 +87,7 @@ namespace evb {
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
       xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
-      xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
-      xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
+      xdata::String dipNodes;                                // Comma-separated list of DIP nodes
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
@@ -120,8 +119,7 @@ namespace evb {
           playbackDataFile(""),
           dummyFedSizeMin(16), // minimum is 16 Bytes
           dummyFedSizeMax(0), // no limitation
-          dummyScalFedSize(0),
-          scalFedId(999),
+          dipNodes("cmsdimns1.cern.ch,cmsdimns2.cern.ch"),
           fragmentPoolSize(200000000),
           checkBxId(true),
           tolerateCorruptedEvents(false),
@@ -156,8 +154,7 @@ namespace evb {
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
-        params.add("dummyScalFedSize", &dummyScalFedSize);
-        params.add("scalFedId", &scalFedId);
+        params.add("dipNodes", &dipNodes);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("ferolSources", &ferolSources);

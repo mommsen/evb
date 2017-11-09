@@ -43,6 +43,7 @@ Sources=\
 	InfoSpaceItems.cc \
 	readoutunit/DummyFragment.cc \
 	readoutunit/FedFragment.cc \
+	readoutunit/MetaDataRetriever.cc \
 	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \
@@ -66,6 +67,7 @@ Sources=\
 	dummyFEROL/StateMachine.cc
 
 TestExecutables = \
+	Dip.cxx \
 	EvBid.cxx \
 	GetIPaddress.cxx \
 	Fibonacci.cxx \
@@ -106,6 +108,7 @@ TestLibraries = \
 	boost_thread-mt \
 	cgicc \
 	config \
+	dip \
 	evb \
 	executive \
 	interfaceshared \
@@ -152,15 +155,16 @@ TestLibraryDirs = \
         $(XERCES_LIB_PREFIX) \
         $(XGI_LIB_PREFIX) \
         $(XDAQ2RC_LIB_PREFIX) \
-        $(XOAP_LIB_PREFIX)
+        $(XOAP_LIB_PREFIX) \
+	/opt/dip/lib64
 
 UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl
-DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX) $(PTBLIT_LIB_PREFIX)
+DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl dip
+DependentLibraryDirs += /usr/lib64 /opt/dip/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX) $(PTBLIT_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library
