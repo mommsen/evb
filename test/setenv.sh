@@ -1,13 +1,7 @@
 # XDAQ
 export XDAQ_ROOT=/opt/xdaq
 
-export XDAQ_PLATFORM=`uname -m`
-if test ".$XDAQ_PLATFORM" != ".x86_64"; then
-    export XDAQ_PLATFORM=x86
-fi
-checkos=`$XDAQ_ROOT/config/checkos.sh`
-export XDAQ_PLATFORM=$XDAQ_PLATFORM"_"$checkos
-export XDAQ_EVB=${HOME}/daq/baseline14/${XDAQ_PLATFORM}
+export XDAQ_EVB=${HOME}/daq/baseline14
 export LD_LIBRARY_PATH=${XDAQ_EVB}/lib:${LD_LIBRARY_PATH}
 
 # EvB tester suite
