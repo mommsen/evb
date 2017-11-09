@@ -20,7 +20,7 @@ class case_2x1_multiFEDs(TestCase):
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt', (3,9,65,78,124,154,255,854,957,1022,1111,1227))
+             ('fedSourceIds','unsignedInt', (3,9,65,78,124,154,255,854,957,985,1111,1227))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),
