@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include "evb/Constants.h"
 #include "evb/FragmentSize.h"
 #include "evb/readoutunit/Configuration.h"

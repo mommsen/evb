@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_BUposter_h_
 #define _evb_readoutunit_BUposter_h_
 
+#include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>

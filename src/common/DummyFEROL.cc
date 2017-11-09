@@ -22,6 +22,8 @@
 #include <pthread.h>
 #include <sys/socket.h>
 
+#include <boost/lexical_cast.hpp>
+
 
 evb::test::DummyFEROL::DummyFEROL(xdaq::ApplicationStub* app) :
   EvBApplication<dummyFEROL::Configuration,dummyFEROL::StateMachine>(app,"/evb/images/ferol64x64.gif"),

@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
 
 #include "evb/BU.h"
