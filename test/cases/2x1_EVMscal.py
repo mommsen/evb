@@ -6,9 +6,9 @@ class case_2x1_EVMscal(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(6264)
+        self.checkEVM(6280)
         self.checkRU(24576)
-        self.checkBU(30840)
+        self.checkBU(30856)
         self.stopEvB()
         self.haltEvB()
 

@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "dip/Dip.h"
 #include "dip/DipData.h"
 #include "dip/DipQuality.h"
@@ -43,9 +45,9 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_PIXEL/CMS_PIXEL_FPIX/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESP/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESM/state",false) );
+  dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",false) );
 
   subscribeToDip();
 }
@@ -117,7 +119,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
     {
       boost::mutex::scoped_lock sl(luminosityMutex_);
 
-      lastLuminosity_.valid = true;
+      lastLuminosity_.timeStamp = dipData.extractDipTime().getAsMillis();
       lastLuminosity_.lumiSection = dipData.extractInt("LumiSection");
       lastLuminosity_.lumiNibble = dipData.extractInt("LumiNibble");;
       lastLuminosity_.instLumi = dipData.extractFloat("InstLumi");
@@ -130,8 +132,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
     {
       boost::mutex::scoped_lock sl(beamSpotMutex_);
 
-      lastBeamSpot_.valid = true;
-
+      lastBeamSpot_.timeStamp = dipData.extractDipTime().getAsMillis();
       lastBeamSpot_.x = dipData.extractFloat("x");
       lastBeamSpot_.y = dipData.extractFloat("y");
       lastBeamSpot_.z = dipData.extractFloat("z");
@@ -156,23 +157,26 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(magnetCurrentMutex_);
+      boost::mutex::scoped_lock sl(dcsMutex_);
 
-      lastMagnetCurrent_ = dipData.extractFloat(0);
-      std::cout << "*** " << lastMagnetCurrent_ << std::endl;
+      lastDCS_.magnetCurrent = dipData.extractFloat();
     }
   }
   else
   {
-    uint16_t pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic(topicName)) - dipTopics_.begin();
+    const uint16_t pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic(topicName)) - dipTopics_.begin();
     if ( pos < dipTopics_.size() && dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      const std::string state = dipData.extractString();
-      const bool ready = ( state.find("READY") != std::string::npos ||
-                           state.find("ON") != std::string::npos );
+      boost::mutex::scoped_lock sl(dcsMutex_);
 
-      boost::mutex::scoped_lock sl(highVoltageReadyMutex_);
-      lastHighVoltageReady_.set(pos,ready);
+      const std::string state = dipData.extractString();
+
+      if ( state.find("READY") != std::string::npos || state.find("ON") != std::string::npos )
+        lastDCS_.highVoltageReady |= (1 << pos);
+      else
+        lastDCS_.highVoltageReady &= ~(1 << pos);
+
+      lastDCS_.timeStamp = dipData.extractDipTime().getAsMillis();
     }
   }
 }
@@ -182,7 +186,7 @@ bool evb::readoutunit::MetaDataRetriever::fillLuminosity(Scalers::Luminosity& lu
 {
   boost::mutex::scoped_lock sl(luminosityMutex_);
 
-  if ( lastLuminosity_.valid && lastLuminosity_ != luminosity )
+  if ( lastLuminosity_.timeStamp > 0 && lastLuminosity_ != luminosity )
   {
     luminosity = lastLuminosity_;
     return true;
@@ -196,7 +200,7 @@ bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(Scalers::BeamSpot& beamSp
 {
   boost::mutex::scoped_lock sl(beamSpotMutex_);
 
-  if ( lastBeamSpot_.valid && lastBeamSpot_ != beamSpot )
+  if ( lastBeamSpot_.timeStamp > 0 && lastBeamSpot_ != beamSpot )
   {
     beamSpot = lastBeamSpot_;
     return true;
@@ -206,29 +210,13 @@ bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(Scalers::BeamSpot& beamSp
 }
 
 
-bool evb::readoutunit::MetaDataRetriever::fillHighVoltageStatus(uint16_t& highVoltageReady)
+bool evb::readoutunit::MetaDataRetriever::fillDCS(Scalers::DCS& dcs)
 {
-  boost::mutex::scoped_lock sl(highVoltageReadyMutex_);
+  boost::mutex::scoped_lock sl(dcsMutex_);
 
-  const uint16_t oldReady = lastHighVoltageReady_.to_ulong();
-
-  if ( highVoltageReady != oldReady )
+  if ( lastDCS_.timeStamp > 0 && lastDCS_ != dcs )
   {
-    highVoltageReady = oldReady;
-    return true;
-  }
-
-  return false;
-}
-
-
-bool evb::readoutunit::MetaDataRetriever::fillMagnetCurrent(float& magnetCurrent)
-{
-  boost::mutex::scoped_lock sl(magnetCurrentMutex_);
-
-  if ( lastMagnetCurrent_ != magnetCurrent )
-  {
-    magnetCurrent = lastMagnetCurrent_;
+    dcs = lastDCS_;
     return true;
   }
 
@@ -269,14 +257,50 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
 
   table.add(tr()
             .add(th("DIP topic"))
-            .add(th("subscribed")));
+            .add(th("value")));
 
-  for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
-        it != itEnd; ++it)
+  for (uint16_t pos = 0; pos < dipTopics_.size(); ++pos)
   {
-    table.add(tr()
-              .add(td(it->first))
-              .add(td(it->second?"true":"false")));
+    const std::string topic = dipTopics_[pos].first;
+
+    if ( dipTopics_[pos].second )
+    {
+      std::ostringstream valueStr;
+
+      if ( topic == "dip/CMS/BRIL/Luminosity" )
+      {
+        boost::mutex::scoped_lock sl(luminosityMutex_);
+        valueStr << lastLuminosity_;
+      }
+      else if ( topic == "dip/CMS/Tracker/BeamSpot" )
+      {
+        boost::mutex::scoped_lock sl(dcsMutex_);
+        valueStr << lastBeamSpot_;
+      }
+      else if ( topic == "dip/CMS/MCS/Current" )
+      {
+        boost::mutex::scoped_lock sl(dcsMutex_);
+        valueStr << lastDCS_.magnetCurrent << " A";
+      }
+      else
+      {
+        boost::mutex::scoped_lock sl(dcsMutex_);
+        if ( lastDCS_.highVoltageReady & (1 << pos) )
+          valueStr << "READY";
+        else
+          valueStr << "OFF";
+      }
+
+      table.add(tr()
+                .add(td(topic))
+                .add(td(valueStr.str())));
+    }
+    else
+    {
+      table.add(tr().set("style","background-color: #ff9380")
+                .add(td(topic))
+                .add(td("unavailable")));
+    }
   }
 
   return table;

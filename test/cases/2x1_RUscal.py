@@ -7,8 +7,8 @@ class case_2x1_RUscal(TestCase):
         self.configureEvB()
         self.enableEvB()
         self.checkEVM(6144)
-        self.checkRU(8312)
-        self.checkBU(14456)
+        self.checkRU(8328)
+        self.checkBU(14472)
         self.stopEvB()
         self.haltEvB()
 

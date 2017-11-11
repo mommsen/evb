@@ -2,8 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <boost/scoped_ptr.hpp>
+#include <unistd.h>
 
 #include "dip/Dip.h"
 #include "dip/DipData.h"
@@ -43,6 +42,13 @@ public:
           << "\t" << dipData.extractFloat("InstLumi")
           << "\t" << dipData.extractFloat("AvgPileUp")
           << std::endl;
+      }
+    }
+    else if ( topicName == "dip/CMS/MCS/Current" )
+    {
+      if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
+      {
+        std::cout << dipData.extractFloat() << std::endl;
       }
     }
   }
@@ -85,6 +91,7 @@ private:
   void subscribeToDip()
   {
     dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/BRIL/Luminosity",this);
+    //dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/MCS/Current",this);
   }
 
   DipFactory* dipFactory_;

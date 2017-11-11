@@ -8,8 +8,8 @@ class case_3x1_scal(TestCase):
         self.enableEvB()
         self.checkEVM(6144)
         self.checkRU(24576,1)
-        self.checkRU(120,2)
-        self.checkBU(30840)
+        self.checkRU(136,2)
+        self.checkBU(30856)
         self.stopEvB()
         self.haltEvB()
 

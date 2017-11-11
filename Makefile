@@ -44,6 +44,7 @@ Sources=\
 	readoutunit/DummyFragment.cc \
 	readoutunit/FedFragment.cc \
 	readoutunit/MetaDataRetriever.cc \
+	readoutunit/Scalers.cc \
 	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \

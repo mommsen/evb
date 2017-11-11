@@ -1,7 +1,6 @@
 #ifndef _evb_readoutunit_MetaDataRetriever_h_
 #define _evb_readoutunit_MetaDataRetriever_h_
 
-#include <bitset>
 #include <stdint.h>
 #include <string.h>
 #include <utility>
@@ -38,8 +37,7 @@ namespace evb {
 
       bool fillLuminosity(Scalers::Luminosity&);
       bool fillBeamSpot(Scalers::BeamSpot&);
-      bool fillHighVoltageStatus(uint16_t&);
-      bool fillMagnetCurrent(float&);
+      bool fillDCS(Scalers::DCS&);
 
       // DIP listener callbacks
       void handleMessage(DipSubscription*, DipData&);
@@ -80,11 +78,8 @@ namespace evb {
       Scalers::BeamSpot lastBeamSpot_;
       mutable boost::mutex beamSpotMutex_;
 
-      float lastMagnetCurrent_;
-      mutable boost::mutex magnetCurrentMutex_;
-
-      std::bitset<32> lastHighVoltageReady_;
-      mutable boost::mutex highVoltageReadyMutex_;
+      Scalers::DCS lastDCS_;
+      mutable boost::mutex dcsMutex_;
 
     };
 

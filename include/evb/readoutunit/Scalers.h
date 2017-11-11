@@ -1,32 +1,27 @@
 #ifndef _evb_readoutunit_Scalers_h_
 #define _evb_readoutunit_Scalers_h_
 
+#include <sstream>
 #include <stdint.h>
 
 namespace Scalers
 {
   struct Luminosity
   {
+    uint64_t timeStamp;
     float instLumi;
     float avgPileUp;
     uint16_t lumiSection;
     uint16_t lumiNibble;
-    bool valid;
 
-    Luminosity() : valid(false) {};
+    Luminosity();
 
-    bool operator!=(const Luminosity& other)
-    {
-      return (valid != other.valid ||
-              lumiSection != other.lumiSection ||
-              lumiNibble != other.lumiNibble ||
-              instLumi != other.instLumi ||
-              avgPileUp != other.avgPileUp);
-    }
+    bool operator!=(const Luminosity& other) const;
   };
 
   struct BeamSpot
   {
+    uint64_t timeStamp;
     float x;
     float y;
     float z;
@@ -43,53 +38,51 @@ namespace Scalers
     float err_width_x;
     float err_width_y;
     float err_sigma_z;
-    bool valid;
 
-    BeamSpot() : valid(false) {};
+    BeamSpot();
 
-    bool operator!=(const BeamSpot& other)
-    {
-      return (valid != other.valid ||
-              x != other.x ||
-              y != other.y ||
-              z != other.z ||
-              dxdz != other.dxdz ||
-              dydz != other.dydz ||
-              err_x != other.err_x ||
-              err_y != other.err_y ||
-              err_z != other.err_z ||
-              err_dxdz != other.err_dxdz ||
-              err_dydz != other.err_dydz ||
-              width_x != other.width_x ||
-              width_y != other.width_y ||
-              sigma_z != other.sigma_z ||
-              err_width_x != other.err_width_x ||
-              err_width_y != other.err_width_y ||
-              err_sigma_z != other.err_sigma_z);
-    }
+    bool operator!=(const BeamSpot& other) const;
+  };
+
+  struct DCS
+  {
+    uint64_t timeStamp;
+    float magnetCurrent;
+    uint32_t highVoltageReady;
+
+    DCS();
+
+    bool operator!=(const DCS& other) const;
   };
 
   struct Data
   {
-    uint64_t timeStamp;
     Luminosity luminosity;
     BeamSpot beamSpot;
-    uint16_t highVoltageReady;
-    float magnetCurrent;
+    DCS dcs;
+    uint8_t version;
 
-    Data() : highVoltageReady(0),magnetCurrent(-1) {};
+    Data();
 
-    bool operator!=(const Data& other)
-    {
-      return (luminosity != other.luminosity ||
-              beamSpot != other.beamSpot ||
-              highVoltageReady != other.highVoltageReady ||
-              magnetCurrent != other.magnetCurrent);
-    }
-
+    bool operator!=(const Data& other);
   };
 
   const size_t dataSize = sizeof(Data);
-}
+
+} //namespace Scalers
+
+std::ostream& operator<<(std::ostream&, const Scalers::Luminosity&);
+std::ostream& operator<<(std::ostream&, const Scalers::BeamSpot&);
+std::ostream& operator<<(std::ostream&, const Scalers::DCS&);
+std::ostream& operator<<(std::ostream&, const Scalers::Data&);
 
 #endif // _evb_readoutunit_Scalers_h_
+
+
+
+/// emacs configuration
+/// Local Variables: -
+/// mode: c++ -
+/// c-basic-offset: 2 -
+/// indent-tabs-mode: nil -
+/// End: -

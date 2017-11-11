@@ -200,13 +200,10 @@ bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(to
   do {
     newData |= metaDataRetriever_->fillLuminosity(data->luminosity);
     newData |= metaDataRetriever_->fillBeamSpot(data->beamSpot);
-    newData |= metaDataRetriever_->fillHighVoltageStatus(data->highVoltageReady);
-    newData |= metaDataRetriever_->fillMagnetCurrent(data->magnetCurrent);
+    newData |= metaDataRetriever_->fillDCS(data->dcs);
 
     if ( newData )
     {
-      data->timeStamp = getTimeStamp();
-
       boost::mutex::scoped_lock sl(dataMutex_);
 
       if ( nextDataBufRef_ ) nextDataBufRef_->release();
