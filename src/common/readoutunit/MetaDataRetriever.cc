@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <sstream>
 
 #include "dip/Dip.h"
@@ -293,7 +294,7 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
       else if ( topic == "dip/CMS/MCS/Current" )
       {
         boost::mutex::scoped_lock sl(dcsMutex_);
-        valueStr << lastDCS_.magnetCurrent << " A";
+        valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
       }
       else
       {

@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <time.h>
 
 #include "evb/readoutunit/MetaData.h"
@@ -126,7 +127,7 @@ std::ostream& operator<<(std::ostream& s, const MetaData::DCS& dcs)
 
   s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
   s << "highVoltageReady: " << dcs.highVoltageReady << std::endl;
-  s << "magnetCurrent:    " << dcs.magnetCurrent << " A" << std::endl;
+  s << "magnetCurrent:    " << std::fixed << std::setprecision(3) << dcs.magnetCurrent << " A" << std::endl;
 
   return s;
 }
