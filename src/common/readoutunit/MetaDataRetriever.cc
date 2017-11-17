@@ -224,6 +224,19 @@ bool evb::readoutunit::MetaDataRetriever::fillDCS(Scalers::DCS& dcs)
 }
 
 
+bool evb::readoutunit::MetaDataRetriever::fillData(unsigned char* payload)
+{
+  Scalers::Data* data = (Scalers::Data*)payload;
+  data->version = Scalers::version;
+
+  return (
+    fillLuminosity(data->luminosity) ||
+    fillBeamSpot(data->beamSpot) ||
+    fillDCS(data->dcs)
+  );
+}
+
+
 cgicc::td evb::readoutunit::MetaDataRetriever::getDipStatus(const std::string& urn) const
 {
   using namespace cgicc;

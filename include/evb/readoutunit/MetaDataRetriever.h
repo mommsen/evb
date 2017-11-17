@@ -35,9 +35,7 @@ namespace evb {
       MetaDataRetriever(log4cplus::Logger&, const std::string& identifier, const std::string& dipNodes);
       ~MetaDataRetriever();
 
-      bool fillLuminosity(Scalers::Luminosity&);
-      bool fillBeamSpot(Scalers::BeamSpot&);
-      bool fillDCS(Scalers::DCS&);
+      bool fillData(unsigned char*);
 
       // DIP listener callbacks
       void handleMessage(DipSubscription*, DipData&);
@@ -52,6 +50,9 @@ namespace evb {
     private:
 
       void subscribeToDip();
+      bool fillLuminosity(Scalers::Luminosity&);
+      bool fillBeamSpot(Scalers::BeamSpot&);
+      bool fillDCS(Scalers::DCS&);
 
       log4cplus::Logger& logger_;
 

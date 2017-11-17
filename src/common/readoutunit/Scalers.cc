@@ -107,16 +107,16 @@ std::ostream& operator<<(std::ostream& s, const Scalers::BeamSpot& beamSpot)
 
 Scalers::DCS::DCS() :
   timeStamp(0),
-  magnetCurrent(-1),
-  highVoltageReady(0)
+  highVoltageReady(0),
+  magnetCurrent(-1)
 {};
 
 
 bool Scalers::DCS::operator!=(const Scalers::DCS& other) const
 {
   return (timeStamp != other.timeStamp ||
-          magnetCurrent != other.magnetCurrent ||
-          highVoltageReady != other.highVoltageReady);
+          highVoltageReady != other.highVoltageReady ||
+          magnetCurrent != other.magnetCurrent);
 }
 
 
@@ -125,15 +125,15 @@ std::ostream& operator<<(std::ostream& s, const Scalers::DCS& dcs)
   time_t ts = dcs.timeStamp / 1000.;
 
   s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
-  s << "magnetCurrent:    " << dcs.magnetCurrent << " A" << std::endl;
   s << "highVoltageReady: " << dcs.highVoltageReady << std::endl;
+  s << "magnetCurrent:    " << dcs.magnetCurrent << " A" << std::endl;
 
   return s;
 }
 
 
 Scalers::Data::Data() :
-  version(1)
+  version(Scalers::version)
 {};
 
 

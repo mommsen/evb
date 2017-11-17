@@ -47,8 +47,8 @@ namespace Scalers
   struct DCS
   {
     uint64_t timeStamp;
-    float magnetCurrent;
     uint32_t highVoltageReady;
+    float magnetCurrent;
 
     DCS();
 
@@ -57,16 +57,17 @@ namespace Scalers
 
   struct Data
   {
+    uint8_t version;
     Luminosity luminosity;
     BeamSpot beamSpot;
     DCS dcs;
-    uint8_t version;
 
     Data();
 
     bool operator!=(const Data& other);
   };
 
+  const uint8_t version = 1;
   const size_t dataSize = sizeof(Data);
 
 } //namespace Scalers

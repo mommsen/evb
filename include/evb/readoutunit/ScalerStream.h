@@ -183,7 +183,6 @@ bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(to
     getFrame(fragmentPool_,Scalers::dataSize);
   bufRef->setDataSize(Scalers::dataSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  Scalers::Data* data = (Scalers::Data*)payload;
 
   if ( nextDataBufRef_ )
   {
@@ -195,14 +194,8 @@ bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(to
     memset(payload,0,Scalers::dataSize);
   }
 
-  bool newData = false;
-
   do {
-    newData |= metaDataRetriever_->fillLuminosity(data->luminosity);
-    newData |= metaDataRetriever_->fillBeamSpot(data->beamSpot);
-    newData |= metaDataRetriever_->fillDCS(data->dcs);
-
-    if ( newData )
+    if ( metaDataRetriever_->fillData(payload) )
     {
       boost::mutex::scoped_lock sl(dataMutex_);
 
@@ -212,7 +205,7 @@ bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(to
     }
     else
     {
-      ::sleep(1);
+      ::usleep(1000);
     }
 
   } while ( this->doProcessing_ );
