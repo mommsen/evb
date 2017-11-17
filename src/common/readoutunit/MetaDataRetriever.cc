@@ -19,7 +19,7 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipFactory_->setDNSNode( dipNodes.c_str() );
 
   // Attention: DCS HV values have to come first and in the order of the HV bits
-  // defined in Scalers::Data::highVoltageReady
+  // defined in MetaData::Data::highVoltageReady
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BP/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BM/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EP/state",false) );
@@ -182,7 +182,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
 }
 
 
-bool evb::readoutunit::MetaDataRetriever::fillLuminosity(Scalers::Luminosity& luminosity)
+bool evb::readoutunit::MetaDataRetriever::fillLuminosity(MetaData::Luminosity& luminosity)
 {
   boost::mutex::scoped_lock sl(luminosityMutex_);
 
@@ -196,7 +196,7 @@ bool evb::readoutunit::MetaDataRetriever::fillLuminosity(Scalers::Luminosity& lu
 }
 
 
-bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(Scalers::BeamSpot& beamSpot)
+bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(MetaData::BeamSpot& beamSpot)
 {
   boost::mutex::scoped_lock sl(beamSpotMutex_);
 
@@ -210,7 +210,7 @@ bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(Scalers::BeamSpot& beamSp
 }
 
 
-bool evb::readoutunit::MetaDataRetriever::fillDCS(Scalers::DCS& dcs)
+bool evb::readoutunit::MetaDataRetriever::fillDCS(MetaData::DCS& dcs)
 {
   boost::mutex::scoped_lock sl(dcsMutex_);
 
@@ -226,8 +226,8 @@ bool evb::readoutunit::MetaDataRetriever::fillDCS(Scalers::DCS& dcs)
 
 bool evb::readoutunit::MetaDataRetriever::fillData(unsigned char* payload)
 {
-  Scalers::Data* data = (Scalers::Data*)payload;
-  data->version = Scalers::version;
+  MetaData::Data* data = (MetaData::Data*)payload;
+  data->version = MetaData::version;
 
   return (
     fillLuminosity(data->luminosity) ||

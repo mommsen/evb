@@ -1,5 +1,5 @@
-#ifndef _evb_readoutunit_ScalerStream_h_
-#define _evb_readoutunit_ScalerStream_h_
+#ifndef _evb_readoutunit_MetaDataStream_h_
+#define _evb_readoutunit_MetaDataStream_h_
 
 #include <stdint.h>
 #include <string.h>
@@ -12,9 +12,9 @@
 #include "evb/EvBid.h"
 #include "evb/readoutunit/FedFragment.h"
 #include "evb/readoutunit/FerolStream.h"
+#include "evb/readoutunit/MetaData.h"
 #include "evb/readoutunit/MetaDataRetriever.h"
 #include "evb/readoutunit/ReadoutUnit.h"
-#include "evb/readoutunit/Scalers.h"
 #include "evb/readoutunit/SuperFragment.h"
 #include "interface/shared/fed_header.h"
 #include "interface/shared/fed_trailer.h"
@@ -40,14 +40,14 @@ namespace evb {
     */
 
     template<class ReadoutUnit, class Configuration>
-    class ScalerStream : public FerolStream<ReadoutUnit,Configuration>, public toolbox::lang::Class
+    class MetaDataStream : public FerolStream<ReadoutUnit,Configuration>, public toolbox::lang::Class
 
     {
     public:
 
-      ScalerStream(ReadoutUnit*,MetaDataRetrieverPtr);
+      MetaDataStream(ReadoutUnit*,MetaDataRetrieverPtr);
 
-      ~ScalerStream();
+      ~MetaDataStream();
 
       /**
        * Append the next FED fragment to the super fragment
@@ -73,18 +73,18 @@ namespace evb {
 
     private:
 
-      void createScalerPool();
+      void createMetaDataPool();
       void startRequestWorkLoop();
       void getFedFragment(const EvBid&, FedFragmentPtr&);
-      bool scalerRequest(toolbox::task::WorkLoop*);
+      bool metaDataRequest(toolbox::task::WorkLoop*);
 
       toolbox::mem::Reference* currentDataBufRef_;
       toolbox::mem::Reference* nextDataBufRef_;
       mutable boost::mutex dataMutex_;
 
       toolbox::mem::Pool* fragmentPool_;
-      toolbox::task::WorkLoop* scalerRequestWorkLoop_;
-      toolbox::task::ActionSignature* scalerRequestAction_;
+      toolbox::task::WorkLoop* metaDataRequestWorkLoop_;
+      toolbox::task::ActionSignature* metaDataRequestAction_;
 
       MetaDataRetrieverPtr metaDataRetriever_;
       CRCCalculator crcCalculator_;
@@ -99,7 +99,7 @@ namespace evb {
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class ReadoutUnit,class Configuration>
-evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
+evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::MetaDataStream
 (
   ReadoutUnit* readoutUnit,
   MetaDataRetrieverPtr metaDataRetriever
@@ -109,23 +109,23 @@ evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::ScalerStream
   nextDataBufRef_(0),
   metaDataRetriever_(metaDataRetriever)
 {
-  createScalerPool();
+  createMetaDataPool();
   startRequestWorkLoop();
 }
 
 
 template<class ReadoutUnit,class Configuration>
-evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::~ScalerStream()
+evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::~MetaDataStream()
 {
-  if ( scalerRequestWorkLoop_ && scalerRequestWorkLoop_->isActive() )
-    scalerRequestWorkLoop_->cancel();
+  if ( metaDataRequestWorkLoop_ && metaDataRequestWorkLoop_->isActive() )
+    metaDataRequestWorkLoop_->cancel();
 }
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::createScalerPool()
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::createMetaDataPool()
 {
-  toolbox::net::URN urn("toolbox-mem-pool", this->readoutUnit_->getIdentifier("scalerFragmentPool"));
+  toolbox::net::URN urn("toolbox-mem-pool", this->readoutUnit_->getIdentifier("metaDataFragmentPool"));
 
   try
   {
@@ -144,30 +144,30 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::createScalerPool
   catch(toolbox::mem::exception::Exception& e)
   {
     XCEPT_RETHROW(exception::OutOfMemory,
-                  "Failed to create memory pool for scaler fragments", e);
+                  "Failed to create memory pool for metaData fragments", e);
   }
 }
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startRequestWorkLoop()
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::startRequestWorkLoop()
 {
   try
   {
-    scalerRequestWorkLoop_ =
-      toolbox::task::getWorkLoopFactory()->getWorkLoop(this->readoutUnit_->getIdentifier("scalerRequest"), "waiting");
+    metaDataRequestWorkLoop_ =
+      toolbox::task::getWorkLoopFactory()->getWorkLoop(this->readoutUnit_->getIdentifier("metaDataRequest"), "waiting");
 
-    if ( !scalerRequestWorkLoop_->isActive() )
-      scalerRequestWorkLoop_->activate();
+    if ( !metaDataRequestWorkLoop_->isActive() )
+      metaDataRequestWorkLoop_->activate();
 
-    scalerRequestAction_ =
+    metaDataRequestAction_ =
       toolbox::task::bind(this,
-                          &evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest,
-                          this->readoutUnit_->getIdentifier("scalerRequestAction"));
+                          &evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataRequest,
+                          this->readoutUnit_->getIdentifier("metaDataRequestAction"));
   }
   catch(xcept::Exception& e)
   {
-    std::string msg = "Failed to start scaler request workloop";
+    std::string msg = "Failed to start metaData request workloop";
     XCEPT_RETHROW(exception::WorkLoop, msg, e);
   }
 }
@@ -175,23 +175,23 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startRequestWork
 
 
 template<class ReadoutUnit,class Configuration>
-bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(toolbox::task::WorkLoop* wl)
+bool evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataRequest(toolbox::task::WorkLoop* wl)
 {
   if ( ! this->doProcessing_ ) return false;
 
   toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
-    getFrame(fragmentPool_,Scalers::dataSize);
-  bufRef->setDataSize(Scalers::dataSize);
+    getFrame(fragmentPool_,MetaData::dataSize);
+  bufRef->setDataSize(MetaData::dataSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
 
   if ( nextDataBufRef_ )
   {
     // preserve the data from the previous iteration
-    memcpy(payload,nextDataBufRef_->getDataLocation(),Scalers::dataSize);
+    memcpy(payload,nextDataBufRef_->getDataLocation(),MetaData::dataSize);
   }
   else
   {
-    memset(payload,0,Scalers::dataSize);
+    memset(payload,0,MetaData::dataSize);
   }
 
   do {
@@ -219,7 +219,7 @@ bool evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::scalerRequest(to
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
   const EvBid& evbId = superFragment->getEvBid();
 
@@ -234,7 +234,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragmen
   if ( ! currentDataBufRef_ )
   {
     XCEPT_DECLARE(exception::SCAL,
-                  sentinelException, "Cannot retrieve any scaler information");
+                  sentinelException, "Cannot retrieve any metaData information");
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
@@ -248,7 +248,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::appendFedFragmen
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedFragment
 (
   const EvBid& evbId,
   FedFragmentPtr& fedFragment
@@ -335,7 +335,7 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedFragment
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::startProcessing(const uint32_t runNumber)
 {
   FerolStream<ReadoutUnit,Configuration>::startProcessing(runNumber);
 
@@ -345,12 +345,12 @@ void evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::startProcessing(
     currentDataBufRef_ = 0;
   }
 
-  scalerRequestWorkLoop_->submit(scalerRequestAction_);
+  metaDataRequestWorkLoop_->submit(metaDataRequestAction_);
 }
 
 
 template<class ReadoutUnit,class Configuration>
-cgicc::tr evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedTableRow() const
+cgicc::tr evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedTableRow() const
 {
   using namespace cgicc;
   const std::string fedId = boost::lexical_cast<std::string>(this->fedId_);
@@ -375,7 +375,7 @@ cgicc::tr evb::readoutunit::ScalerStream<ReadoutUnit,Configuration>::getFedTable
 }
 
 
-#endif // _evb_readoutunit_ScalerStream_h_
+#endif // _evb_readoutunit_MetaDataStream_h_
 
 
 /// emacs configuration

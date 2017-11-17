@@ -43,8 +43,8 @@ Sources=\
 	InfoSpaceItems.cc \
 	readoutunit/DummyFragment.cc \
 	readoutunit/FedFragment.cc \
+	readoutunit/MetaData.cc \
 	readoutunit/MetaDataRetriever.cc \
-	readoutunit/Scalers.cc \
 	readoutunit/SuperFragment.cc \
 	EVM.cc \
 	evm/RUproxy.cc \

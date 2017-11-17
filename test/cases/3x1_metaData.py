@@ -1,7 +1,7 @@
 from TestCase import TestCase
 from Context import RU,BU
 
-class case_3x1_scal(TestCase):
+class case_3x1_metaData(TestCase):
 
     def runTest(self):
         self.configureEvB()

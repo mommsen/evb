@@ -1,10 +1,10 @@
-#ifndef _evb_readoutunit_Scalers_h_
-#define _evb_readoutunit_Scalers_h_
+#ifndef _evb_readoutunit_MetaData_h_
+#define _evb_readoutunit_MetaData_h_
 
 #include <sstream>
 #include <stdint.h>
 
-namespace Scalers
+namespace MetaData
 {
   struct Luminosity
   {
@@ -70,14 +70,14 @@ namespace Scalers
   const uint8_t version = 1;
   const size_t dataSize = sizeof(Data);
 
-} //namespace Scalers
+} //namespace MetaData
 
-std::ostream& operator<<(std::ostream&, const Scalers::Luminosity&);
-std::ostream& operator<<(std::ostream&, const Scalers::BeamSpot&);
-std::ostream& operator<<(std::ostream&, const Scalers::DCS&);
-std::ostream& operator<<(std::ostream&, const Scalers::Data&);
+std::ostream& operator<<(std::ostream&, const MetaData::Luminosity&);
+std::ostream& operator<<(std::ostream&, const MetaData::BeamSpot&);
+std::ostream& operator<<(std::ostream&, const MetaData::DCS&);
+std::ostream& operator<<(std::ostream&, const MetaData::Data&);
 
-#endif // _evb_readoutunit_Scalers_h_
+#endif // _evb_readoutunit_MetaData_h_
 
 
 

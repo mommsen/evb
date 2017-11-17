@@ -1,9 +1,9 @@
 #include <time.h>
 
-#include "evb/readoutunit/Scalers.h"
+#include "evb/readoutunit/MetaData.h"
 
 
-Scalers::Luminosity::Luminosity() :
+MetaData::Luminosity::Luminosity() :
   timeStamp(0),
   instLumi(-1),
   avgPileUp(-1),
@@ -12,7 +12,7 @@ Scalers::Luminosity::Luminosity() :
 {};
 
 
-bool Scalers::Luminosity::operator!=(const Scalers::Luminosity& other) const
+bool MetaData::Luminosity::operator!=(const MetaData::Luminosity& other) const
 {
   return (timeStamp != other.timeStamp ||
           lumiSection != other.lumiSection ||
@@ -22,7 +22,7 @@ bool Scalers::Luminosity::operator!=(const Scalers::Luminosity& other) const
 }
 
 
-std::ostream& operator<<(std::ostream& s, const Scalers::Luminosity& luminosity)
+std::ostream& operator<<(std::ostream& s, const MetaData::Luminosity& luminosity)
 {
   time_t ts = luminosity.timeStamp / 1000.;
 
@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& s, const Scalers::Luminosity& luminosity)
 }
 
 
-Scalers::BeamSpot::BeamSpot() :
+MetaData::BeamSpot::BeamSpot() :
   timeStamp(0),
   x(0),
   y(0),
@@ -57,7 +57,7 @@ Scalers::BeamSpot::BeamSpot() :
 {};
 
 
-bool Scalers::BeamSpot::operator!=(const Scalers::BeamSpot& other) const
+bool MetaData::BeamSpot::operator!=(const MetaData::BeamSpot& other) const
 {
   return (timeStamp != other.timeStamp ||
           x != other.x ||
@@ -79,7 +79,7 @@ bool Scalers::BeamSpot::operator!=(const Scalers::BeamSpot& other) const
 }
 
 
-std::ostream& operator<<(std::ostream& s, const Scalers::BeamSpot& beamSpot)
+std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
 {
   time_t ts = beamSpot.timeStamp / 1000.;
 
@@ -105,14 +105,14 @@ std::ostream& operator<<(std::ostream& s, const Scalers::BeamSpot& beamSpot)
 }
 
 
-Scalers::DCS::DCS() :
+MetaData::DCS::DCS() :
   timeStamp(0),
   highVoltageReady(0),
   magnetCurrent(-1)
 {};
 
 
-bool Scalers::DCS::operator!=(const Scalers::DCS& other) const
+bool MetaData::DCS::operator!=(const MetaData::DCS& other) const
 {
   return (timeStamp != other.timeStamp ||
           highVoltageReady != other.highVoltageReady ||
@@ -120,7 +120,7 @@ bool Scalers::DCS::operator!=(const Scalers::DCS& other) const
 }
 
 
-std::ostream& operator<<(std::ostream& s, const Scalers::DCS& dcs)
+std::ostream& operator<<(std::ostream& s, const MetaData::DCS& dcs)
 {
   time_t ts = dcs.timeStamp / 1000.;
 
@@ -132,12 +132,12 @@ std::ostream& operator<<(std::ostream& s, const Scalers::DCS& dcs)
 }
 
 
-Scalers::Data::Data() :
-  version(Scalers::version)
+MetaData::Data::Data() :
+  version(MetaData::version)
 {};
 
 
-bool Scalers::Data::operator!=(const Scalers::Data& other)
+bool MetaData::Data::operator!=(const MetaData::Data& other)
 {
   return (luminosity != other.luminosity ||
           beamSpot != other.beamSpot ||
@@ -145,7 +145,7 @@ bool Scalers::Data::operator!=(const Scalers::Data& other)
 }
 
 
-std::ostream& operator<<(std::ostream& s, const Scalers::Data& data)
+std::ostream& operator<<(std::ostream& s, const MetaData::Data& data)
 {
   s << "version:          " << data.version << std::endl;
   s << data.luminosity << std::endl;

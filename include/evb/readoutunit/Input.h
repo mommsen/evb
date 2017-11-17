@@ -29,7 +29,7 @@
 #include "evb/PerformanceMonitor.h"
 #include "evb/readoutunit/FerolStream.h"
 #include "evb/readoutunit/LocalStream.h"
-#include "evb/readoutunit/ScalerStream.h"
+#include "evb/readoutunit/MetaDataStream.h"
 #include "evb/readoutunit/InputMonitor.h"
 #include "evb/readoutunit/StateMachine.h"
 #include "interface/shared/ferol_header.h"
@@ -708,8 +708,8 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 
     if ( metaDataRetriever_ )
     {
-      const FerolStreamPtr scalerStream( new ScalerStream<ReadoutUnit,Configuration>(readoutUnit_,metaDataRetriever_) );
-      ferolStreams_.insert( typename FerolStreams::value_type(SOFT_FED_ID,scalerStream ) );
+      const FerolStreamPtr metaDataStream( new MetaDataStream<ReadoutUnit,Configuration>(readoutUnit_,metaDataRetriever_) );
+      ferolStreams_.insert( typename FerolStreams::value_type(SOFT_FED_ID,metaDataStream ) );
     }
 
     if ( configuration->dropInputData )

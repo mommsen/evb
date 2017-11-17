@@ -1,7 +1,7 @@
 from TestCase import TestCase
 from Context import FEROL,RU,BU
 
-class case_2x1_RUscal(TestCase):
+class case_2x1_RUmetaData(TestCase):
 
     def runTest(self):
         self.configureEvB()

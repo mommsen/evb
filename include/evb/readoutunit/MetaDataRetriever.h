@@ -16,7 +16,7 @@
 #include "dip/DipSubscriptionListener.h"
 
 #include "cgicc/HTMLClasses.h"
-#include "evb/readoutunit/Scalers.h"
+#include "evb/readoutunit/MetaData.h"
 #include "log4cplus/logger.h"
 
 
@@ -50,9 +50,9 @@ namespace evb {
     private:
 
       void subscribeToDip();
-      bool fillLuminosity(Scalers::Luminosity&);
-      bool fillBeamSpot(Scalers::BeamSpot&);
-      bool fillDCS(Scalers::DCS&);
+      bool fillLuminosity(MetaData::Luminosity&);
+      bool fillBeamSpot(MetaData::BeamSpot&);
+      bool fillDCS(MetaData::DCS&);
 
       log4cplus::Logger& logger_;
 
@@ -73,13 +73,13 @@ namespace evb {
       typedef std::vector<DipTopic> DipTopics;
       DipTopics dipTopics_;
 
-      Scalers::Luminosity lastLuminosity_;
+      MetaData::Luminosity lastLuminosity_;
       mutable boost::mutex luminosityMutex_;
 
-      Scalers::BeamSpot lastBeamSpot_;
+      MetaData::BeamSpot lastBeamSpot_;
       mutable boost::mutex beamSpotMutex_;
 
-      Scalers::DCS lastDCS_;
+      MetaData::DCS lastDCS_;
       mutable boost::mutex dcsMutex_;
 
     };

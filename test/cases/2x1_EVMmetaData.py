@@ -1,7 +1,7 @@
 from TestCase import TestCase
 from Context import RU,BU
 
-class case_2x1_EVMscal(TestCase):
+class case_2x1_EVMmetaData(TestCase):
 
     def runTest(self):
         self.configureEvB()
