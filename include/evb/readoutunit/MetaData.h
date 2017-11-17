@@ -9,10 +9,10 @@ namespace MetaData
   struct Luminosity
   {
     uint64_t timeStamp;
-    float instLumi;
-    float avgPileUp;
     uint16_t lumiSection;
     uint16_t lumiNibble;
+    float instLumi;
+    float avgPileUp;
 
     Luminosity();
 

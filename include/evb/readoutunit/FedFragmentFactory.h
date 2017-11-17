@@ -168,8 +168,8 @@ evb::readoutunit::FedFragmentPtr evb::readoutunit::FedFragmentFactory<ReadoutUni
                     readoutUnit_->getSubSystem(),
                     evbIdFactory_,
                     readoutUnit_->getConfiguration()->checkCRC,
-                    fedErrors_.fedErrors,
-                    fedErrors_.crcErrors
+                    &(fedErrors_.fedErrors),
+                    &(fedErrors_.crcErrors)
     )
   );
 }
@@ -193,8 +193,8 @@ evb::readoutunit::FedFragmentFactory<ReadoutUnit>::getDummyFragment
                       readoutUnit_->getSubSystem(),
                       evbIdFactory_,
                       readoutUnit_->getConfiguration()->checkCRC,
-                      fedErrors_.fedErrors,
-                      fedErrors_.crcErrors
+                      &(fedErrors_.fedErrors),
+                      &(fedErrors_.crcErrors)
     )
   );
 }

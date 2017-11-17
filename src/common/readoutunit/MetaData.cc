@@ -5,10 +5,10 @@
 
 MetaData::Luminosity::Luminosity() :
   timeStamp(0),
-  instLumi(-1),
-  avgPileUp(-1),
   lumiSection(0),
-  lumiNibble(0)
+  lumiNibble(0),
+  instLumi(-1),
+  avgPileUp(-1)
 {};
 
 

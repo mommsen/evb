@@ -75,7 +75,7 @@ namespace evb {
 
       void createMetaDataPool();
       void startRequestWorkLoop();
-      void getFedFragment(const EvBid&, FedFragmentPtr&);
+      toolbox::mem::Reference* getFedFragment(const uint32_t eventNumber);
       bool metaDataRequest(toolbox::task::WorkLoop*);
 
       toolbox::mem::Reference* currentDataBufRef_;
@@ -88,6 +88,7 @@ namespace evb {
 
       MetaDataRetrieverPtr metaDataRetriever_;
       CRCCalculator crcCalculator_;
+      const std::string subSystem_;
 
     };
 
@@ -107,7 +108,8 @@ evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::MetaDataStream
   FerolStream<ReadoutUnit,Configuration>(readoutUnit,SOFT_FED_ID),
   currentDataBufRef_(0),
   nextDataBufRef_(0),
-  metaDataRetriever_(metaDataRetriever)
+  metaDataRetriever_(metaDataRetriever),
+  subSystem_("DAQ")
 {
   createMetaDataPool();
   startRequestWorkLoop();
@@ -221,8 +223,6 @@ bool evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataReques
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragment(SuperFragmentPtr& superFragment)
 {
-  const EvBid& evbId = superFragment->getEvBid();
-
   if ( currentDataBufRef_ != nextDataBufRef_ )
   {
     boost::mutex::scoped_lock sl(dataMutex_);
@@ -238,8 +238,18 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragm
     this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
-  FedFragmentPtr fedFragment;
-  getFedFragment(evbId,fedFragment);
+  const EvBid& evbId = superFragment->getEvBid();
+
+  toolbox::mem::Reference* bufRef = getFedFragment( evbId.eventNumber() );
+
+  FedFragmentPtr fedFragment(
+    new FedFragment(this->fedId_,
+                    false,
+                    subSystem_,
+                    evbId,
+                    bufRef)
+  );
+
   this->updateInputMonitor(fedFragment);
   this->maybeDumpFragmentToFile(fedFragment);
 
@@ -248,14 +258,11 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragm
 
 
 template<class ReadoutUnit,class Configuration>
-void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedFragment
+toolbox::mem::Reference* evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedFragment
 (
-  const EvBid& evbId,
-  FedFragmentPtr& fedFragment
+  const uint32_t eventNumber
 )
 {
-  const uint32_t eventNumber = evbId.eventNumber();
-  const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
   const uint32_t dataSize = currentDataBufRef_->getDataSize();
   const uint32_t fedSize = dataSize + sizeof(fedh_t) + sizeof(fedt_t);
   const unsigned char* dataPos = (unsigned char*)currentDataBufRef_->getDataLocation();
@@ -267,70 +274,25 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedFragment
     XCEPT_RAISE(exception::Configuration, msg.str());
   }
 
-  // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
-  const uint16_t ferolBlocks = (fedSize + ferolPayloadSize - 1)/ferolPayloadSize;
-  assert(ferolBlocks < 2048);
-  const uint32_t ferolSize = fedSize + ferolBlocks*sizeof(ferolh_t);
-  uint32_t dataOffset = 0;
-  uint16_t crc(0xffff);
-
   toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
-    getFrame(fragmentPool_,ferolSize);
+    getFrame(fragmentPool_,fedSize);
 
-  bufRef->setDataSize(ferolSize);
+  bufRef->setDataSize(fedSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
-  memset(payload, 0, ferolSize);
 
-  for (uint16_t packetNumber = 0; packetNumber < ferolBlocks; ++packetNumber)
-  {
-    ferolh_t* ferolHeader = (ferolh_t*)payload;
-    ferolHeader->set_signature();
-    ferolHeader->set_fed_id(this->fedId_);
-    ferolHeader->set_event_number(eventNumber);
-    ferolHeader->set_packet_number(packetNumber);
-    payload += sizeof(ferolh_t);
-    uint32_t dataLength = 0;
+  fedh_t* fedHeader = (fedh_t*)payload;
+  fedHeader->sourceid = this->fedId_ << FED_SOID_SHIFT;
+  fedHeader->eventid = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber;
 
-    if (packetNumber == 0)
-    {
-      ferolHeader->set_first_packet();
-      fedh_t* fedHeader = (fedh_t*)payload;
-      fedHeader->sourceid = this->fedId_ << FED_SOID_SHIFT;
-      fedHeader->eventid  = (FED_SLINK_START_MARKER << FED_HCTRLID_SHIFT) | eventNumber;
-      payload += sizeof(fedh_t);
-      dataLength += sizeof(fedh_t);
-    }
+  memcpy(payload+sizeof(fedh_t),dataPos,dataSize);
 
-    const uint32_t length = std::min(dataSize-dataOffset,ferolPayloadSize-dataLength);
-    memcpy(payload,dataPos+dataOffset,length);
-    dataOffset += length;
-    payload += length;
-    dataLength += length;
+  fedt_t* fedTrailer = (fedt_t*)(payload + sizeof(fedh_t) + dataSize);
+  fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) | (fedSize>>3);
+  fedTrailer->conscheck = (FED_CRCS_MASK | 0xC004);
+  const uint16_t crc = crcCalculator_.compute(payload,fedSize);
+  fedTrailer->conscheck |= (crc << FED_CRCS_SHIFT);
 
-    if (packetNumber == ferolBlocks-1)
-    {
-      ferolHeader->set_last_packet();
-      fedt_t* fedTrailer = (fedt_t*)payload;
-      payload += sizeof(fedt_t);
-      dataLength += sizeof(fedt_t);
-
-      fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) | (fedSize>>3);
-      fedTrailer->conscheck &= ~(FED_CRCS_MASK | 0xC004);
-      crcCalculator_.compute(crc,payload-dataLength,dataLength);
-      fedTrailer->conscheck |= (crc << FED_CRCS_SHIFT);
-    }
-    else
-    {
-      crcCalculator_.compute(crc,payload-dataLength,dataLength);
-    }
-
-    assert( dataLength <= ferolPayloadSize );
-    ferolHeader->set_data_length(dataLength);
-  }
-
-  assert( dataOffset == dataSize );
-
-  fedFragment = this->fedFragmentFactory_.getFedFragment(this->fedId_,this->isMasterStream_,evbId,bufRef);
+  return bufRef;
 }
 
 
