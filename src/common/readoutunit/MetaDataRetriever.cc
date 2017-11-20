@@ -138,21 +138,21 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
       lastBeamSpot_.x = dipData.extractFloat("x");
       lastBeamSpot_.y = dipData.extractFloat("y");
       lastBeamSpot_.z = dipData.extractFloat("z");
-      lastBeamSpot_.width_x = dipData.extractFloat("width_x");
-      lastBeamSpot_.width_y = dipData.extractFloat("width_y");
-      lastBeamSpot_.sigma_z = dipData.extractFloat("sigma_z");
+      lastBeamSpot_.widthX = dipData.extractFloat("width_x");
+      lastBeamSpot_.widthY = dipData.extractFloat("width_y");
+      lastBeamSpot_.sigmaZ = dipData.extractFloat("sigma_z");
 
-      lastBeamSpot_.err_x = dipData.extractFloat("err_x");
-      lastBeamSpot_.err_y = dipData.extractFloat("err_y");
-      lastBeamSpot_.err_z = dipData.extractFloat("err_z");
-      lastBeamSpot_.err_width_x = dipData.extractFloat("err_width_x");
-      lastBeamSpot_.err_width_y = dipData.extractFloat("err_width_y");
-      lastBeamSpot_.err_sigma_z = dipData.extractFloat("err_sigma_z");
+      lastBeamSpot_.errX = dipData.extractFloat("err_x");
+      lastBeamSpot_.errY = dipData.extractFloat("err_y");
+      lastBeamSpot_.errX = dipData.extractFloat("err_z");
+      lastBeamSpot_.errWidthX = dipData.extractFloat("err_width_x");
+      lastBeamSpot_.errWidthY = dipData.extractFloat("err_width_y");
+      lastBeamSpot_.errSigmaZ = dipData.extractFloat("err_sigma_z");
 
       lastBeamSpot_.dxdz = dipData.extractFloat("dxdz");
       lastBeamSpot_.dydz = dipData.extractFloat("dydz");
-      lastBeamSpot_.err_dxdz = dipData.extractFloat("err_dxdz");
-      lastBeamSpot_.err_dydz = dipData.extractFloat("err_dydz");
+      lastBeamSpot_.errDxdz = dipData.extractFloat("err_dxdz");
+      lastBeamSpot_.errDydz = dipData.extractFloat("err_dydz");
     }
   }
   else if ( topicName == "dip/CMS/MCS/Current" )

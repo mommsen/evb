@@ -44,17 +44,17 @@ MetaData::BeamSpot::BeamSpot() :
   z(0),
   dxdz(0),
   dydz(0),
-  err_x(0),
-  err_y(0),
-  err_z(0),
-  err_dxdz(0),
-  err_dydz(0),
-  width_x(0),
-  width_y(0),
-  sigma_z(0),
-  err_width_x(0),
-  err_width_y(0),
-  err_sigma_z(0)
+  errX(0),
+  errY(0),
+  errZ(0),
+  errDxdz(0),
+  errDydz(0),
+  widthX(0),
+  widthY(0),
+  sigmaZ(0),
+  errWidthX(0),
+  errWidthY(0),
+  errSigmaZ(0)
 {};
 
 
@@ -66,17 +66,17 @@ bool MetaData::BeamSpot::operator!=(const MetaData::BeamSpot& other) const
           z != other.z ||
           dxdz != other.dxdz ||
           dydz != other.dydz ||
-          err_x != other.err_x ||
-          err_y != other.err_y ||
-          err_z != other.err_z ||
-          err_dxdz != other.err_dxdz ||
-          err_dydz != other.err_dydz ||
-          width_x != other.width_x ||
-          width_y != other.width_y ||
-          sigma_z != other.sigma_z ||
-          err_width_x != other.err_width_x ||
-          err_width_y != other.err_width_y ||
-          err_sigma_z != other.err_sigma_z);
+          errX != other.errX ||
+          errY != other.errY ||
+          errZ != other.errZ ||
+          errDxdz != other.errDxdz ||
+          errDydz != other.errDydz ||
+          widthX != other.widthX ||
+          widthY != other.widthY ||
+          sigmaZ != other.sigmaZ ||
+          errWidthX != other.errWidthX ||
+          errWidthY != other.errWidthY ||
+          errSigmaZ != other.errSigmaZ);
 }
 
 
@@ -84,23 +84,23 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
 {
   time_t ts = beamSpot.timeStamp / 1000.;
 
-  s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
-  s << "x:                " << beamSpot.x << std::endl;
-  s << "y:                " << beamSpot.y << std::endl;
-  s << "z:                " << beamSpot.z << std::endl;
-  s << "dxdz:             " << beamSpot.dxdz << std::endl;
-  s << "dydz:	          " << beamSpot.dydz << std::endl;
-  s << "err_x:            " << beamSpot.err_x << std::endl;
-  s << "err_y:            " << beamSpot.err_y << std::endl;
-  s << "err_z:            " << beamSpot.err_z << std::endl;
-  s << "err_dxdz:         " << beamSpot.err_dxdz << std::endl;
-  s << "err_dydz:         " << beamSpot.err_dydz << std::endl;
-  s << "width_x:          " << beamSpot.width_x << std::endl;
-  s << "width_y:          " << beamSpot.width_y << std::endl;
-  s << "sigma_z:          " << beamSpot.sigma_z << std::endl;
-  s << "err_width_x:      " << beamSpot.err_width_x << std::endl;
-  s << "err_width_y:      " << beamSpot.err_width_y << std::endl;
-  s << "err_sigma_z:      " << beamSpot.err_sigma_z << std::endl;
+  s << "timeStamp:         " << asctime(localtime(&ts)) << std::endl;
+  s << "x:                 " << beamSpot.x << std::endl;
+  s << "y:                 " << beamSpot.y << std::endl;
+  s << "z:                 " << beamSpot.z << std::endl;
+  s << "dxdz:              " << beamSpot.dxdz << std::endl;
+  s << "dydz:	           " << beamSpot.dydz << std::endl;
+  s << "err of x:          " << beamSpot.errX << std::endl;
+  s << "err of y:          " << beamSpot.errX << std::endl;
+  s << "err of z:          " << beamSpot.errZ << std::endl;
+  s << "err of dxdz:       " << beamSpot.errDxdz << std::endl;
+  s << "err of dydz:       " << beamSpot.errDydz << std::endl;
+  s << "width in x:        " << beamSpot.widthX << std::endl;
+  s << "width in y:        " << beamSpot.widthY << std::endl;
+  s << "sigma z:           " << beamSpot.sigmaZ << std::endl;
+  s << "err of width in x: " << beamSpot.errWidthX << std::endl;
+  s << "err of width in y  " << beamSpot.errWidthY << std::endl;
+  s << "err of sigma z:    " << beamSpot.errSigmaZ << std::endl;
 
   return s;
 }

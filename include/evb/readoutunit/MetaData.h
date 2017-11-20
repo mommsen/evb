@@ -27,17 +27,17 @@ namespace MetaData
     float z;
     float dxdz;
     float dydz;
-    float err_x;
-    float err_y;
-    float err_z;
-    float err_dxdz;
-    float err_dydz;
-    float width_x;
-    float width_y;
-    float sigma_z;
-    float err_width_x;
-    float err_width_y;
-    float err_sigma_z;
+    float errX;
+    float errY;
+    float errZ;
+    float errDxdz;
+    float errDydz;
+    float widthX;
+    float widthY;
+    float sigmaZ;
+    float errWidthX;
+    float errWidthY;
+    float errSigmaZ;
 
     BeamSpot();
 
