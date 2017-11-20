@@ -47,6 +47,7 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESP/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESM/state",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",false) );
+  dipTopics_.push_back( DipTopic("dip/CMS/MCS/Field",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",false) );
 
@@ -161,6 +162,15 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
       boost::mutex::scoped_lock sl(dcsMutex_);
 
       lastDCS_.magnetCurrent = dipData.extractFloat();
+    }
+  }
+  else if ( topicName == "dip/CMS/MCS/Field" )
+  {
+    if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
+    {
+      boost::mutex::scoped_lock sl(dcsMutex_);
+
+      lastDCS_.magneticField = dipData.extractFloat();
     }
   }
   else
@@ -295,6 +305,11 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
       {
         boost::mutex::scoped_lock sl(dcsMutex_);
         valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
+      }
+      else if ( topic == "dip/CMS/MCS/Field" )
+      {
+        boost::mutex::scoped_lock sl(dcsMutex_);
+        valueStr << std::fixed << std::setprecision(3) << lastDCS_.magneticField << " T";
       }
       else
       {

@@ -8,8 +8,8 @@ class case_3x1_metaData(TestCase):
         self.enableEvB()
         self.checkEVM(6144)
         self.checkRU(24576,1)
-        self.checkRU(136,2)
-        self.checkBU(30856)
+        self.checkRU(144,2)
+        self.checkBU(30864)
         self.stopEvB()
         self.haltEvB()
 
