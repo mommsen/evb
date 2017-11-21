@@ -161,6 +161,8 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
     {
       boost::mutex::scoped_lock sl(dcsMutex_);
 
+      const uint64_t dipTime = dipData.extractDipTime().getAsMillis();
+      lastDCS_.timeStamp = std::max(lastDCS_.timeStamp,dipTime);
       lastDCS_.magnetCurrent = dipData.extractFloat();
     }
   }
@@ -170,6 +172,8 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
     {
       boost::mutex::scoped_lock sl(dcsMutex_);
 
+      const uint64_t dipTime = dipData.extractDipTime().getAsMillis();
+      lastDCS_.timeStamp = std::max(lastDCS_.timeStamp,dipTime);
       lastDCS_.magneticField = dipData.extractFloat();
     }
   }
@@ -187,7 +191,8 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
       else
         lastDCS_.highVoltageReady &= ~(1 << pos);
 
-      lastDCS_.timeStamp = dipData.extractDipTime().getAsMillis();
+      const uint64_t dipTime = dipData.extractDipTime().getAsMillis();
+      lastDCS_.timeStamp = std::max(lastDCS_.timeStamp,dipTime);
     }
   }
 }
