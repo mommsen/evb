@@ -288,9 +288,9 @@ toolbox::mem::Reference* evb::readoutunit::MetaDataStream<ReadoutUnit,Configurat
 
   fedt_t* fedTrailer = (fedt_t*)(payload + sizeof(fedh_t) + dataSize);
   fedTrailer->eventsize = (FED_SLINK_END_MARKER << FED_HCTRLID_SHIFT) | (fedSize>>3);
-  fedTrailer->conscheck = (FED_CRCS_MASK | 0xC004);
+  fedTrailer->conscheck = 0;
   const uint16_t crc = crcCalculator_.compute(payload,fedSize);
-  fedTrailer->conscheck |= (crc << FED_CRCS_SHIFT);
+  fedTrailer->conscheck = (crc << FED_CRCS_SHIFT);
 
   return bufRef;
 }

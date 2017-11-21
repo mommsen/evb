@@ -1,3 +1,5 @@
+import operator
+
 from TestCase import TestCase
 from Context import RU,BU
 
@@ -9,6 +11,8 @@ class case_2x1_EVMmetaData(TestCase):
         self.checkEVM(6288)
         self.checkRU(24576)
         self.checkBU(30864)
+        self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
+        self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',0,operator.eq,"BU")
         self.stopEvB()
         self.haltEvB()
 

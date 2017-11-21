@@ -1,3 +1,5 @@
+import operator
+
 from TestCase import TestCase
 from Context import FEROL,RU,BU
 
@@ -9,6 +11,8 @@ class case_2x1_RUmetaData(TestCase):
         self.checkEVM(6144)
         self.checkRU(8336)
         self.checkBU(14480)
+        self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
+        self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',0,operator.eq,"BU")
         self.stopEvB()
         self.haltEvB()
 

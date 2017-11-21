@@ -1,3 +1,5 @@
+import operator
+
 from TestCase import TestCase
 from Context import RU,BU
 
@@ -10,6 +12,8 @@ class case_3x1_metaData(TestCase):
         self.checkRU(24576,1)
         self.checkRU(144,2)
         self.checkBU(30864)
+        self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
+        self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',0,operator.eq,"BU")
         self.stopEvB()
         self.haltEvB()
 
