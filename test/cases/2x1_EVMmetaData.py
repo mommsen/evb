@@ -8,9 +8,9 @@ class case_2x1_EVMmetaData(TestCase):
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(6288)
+        self.checkEVM(6280)
         self.checkRU(24576)
-        self.checkBU(30864)
+        self.checkBU(30856)
         self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
         self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',0,operator.eq,"BU")
         self.stopEvB()

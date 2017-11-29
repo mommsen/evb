@@ -30,8 +30,14 @@ std::ostream& operator<<(std::ostream& s, const MetaData::Luminosity& luminosity
   s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
   s << "lumiSection:      " << luminosity.lumiSection << std::endl;
   s << "lumiNibble:       " << luminosity.lumiNibble << std::endl;
+
+  std::streamsize ss = s.precision();
+  s.setf(std::ios::fixed);
+  s.precision(2);
   s << "instLumi:         " << luminosity.instLumi << std::endl;
   s << "avgPileUp:        " << luminosity.avgPileUp << std::endl;
+  s.unsetf(std::ios::fixed);
+  s.precision(ss);
 
   return s;
 }
@@ -85,6 +91,10 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
   time_t ts = beamSpot.timeStamp / 1000.;
 
   s << "timeStamp:         " << asctime(localtime(&ts)) << std::endl;
+
+  std::streamsize ss = s.precision();
+  s.setf(std::ios::fixed);
+  s.precision(6);
   s << "x:                 " << beamSpot.x << std::endl;
   s << "y:                 " << beamSpot.y << std::endl;
   s << "z:                 " << beamSpot.z << std::endl;
@@ -101,6 +111,8 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
   s << "err of width in x: " << beamSpot.errWidthX << std::endl;
   s << "err of width in y  " << beamSpot.errWidthY << std::endl;
   s << "err of sigma z:    " << beamSpot.errSigmaZ << std::endl;
+  s.unsetf(std::ios::fixed);
+  s.precision(ss);
 
   return s;
 }
@@ -109,8 +121,7 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
 MetaData::DCS::DCS() :
   timeStamp(0),
   highVoltageReady(0),
-  magnetCurrent(-1),
-  magneticField(-1)
+  magnetCurrent(-1)
 {};
 
 
@@ -118,8 +129,7 @@ bool MetaData::DCS::operator!=(const MetaData::DCS& other) const
 {
   return (timeStamp != other.timeStamp ||
           highVoltageReady != other.highVoltageReady ||
-          magnetCurrent != other.magnetCurrent ||
-          magneticField != other.magneticField);
+          magnetCurrent != other.magnetCurrent);
 }
 
 
@@ -129,8 +139,13 @@ std::ostream& operator<<(std::ostream& s, const MetaData::DCS& dcs)
 
   s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
   s << "highVoltageReady: " << dcs.highVoltageReady << std::endl;
-  s << "magnetCurrent:    " << std::fixed << std::setprecision(3) << dcs.magnetCurrent << " A" << std::endl;
-  s << "magneticField:    " << std::fixed << std::setprecision(3) << dcs.magneticField << " A" << std::endl;
+
+  std::streamsize ss = s.precision();
+  s.setf(std::ios::fixed);
+  s.precision(3);
+  s << "magnetCurrent:    " << dcs.magnetCurrent << " A" << std::endl;
+  s.unsetf(std::ios::fixed);
+  s.precision(ss);
 
   return s;
 }

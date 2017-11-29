@@ -49,7 +49,6 @@ namespace MetaData
     uint64_t timeStamp;
     uint32_t highVoltageReady;
     float magnetCurrent;
-    float magneticField;
 
     DCS();
 
