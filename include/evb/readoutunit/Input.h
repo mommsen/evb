@@ -665,8 +665,14 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
   }
 
   // This may take a while. Thus, do not call subscribeToDip while holding ferolStreamsMutex_
-  if ( std::find(configuration->fedSourceIds.begin(),configuration->fedSourceIds.end(),xdata::UnsignedInteger32(SOFT_FED_ID)) != configuration->fedSourceIds.end() && !metaDataRetriever_ )
-    metaDataRetriever_.reset( new MetaDataRetriever(readoutUnit_->getApplicationLogger(),readoutUnit_->getIdentifier(),configuration->dipNodes) );
+  if ( std::find(configuration->fedSourceIds.begin(),configuration->fedSourceIds.end(),xdata::UnsignedInteger32(SOFT_FED_ID)) != configuration->fedSourceIds.end()
+       || configuration->createSoftFed1022 )
+  {
+    if ( ! metaDataRetriever_ )
+      metaDataRetriever_.reset( new MetaDataRetriever(readoutUnit_->getApplicationLogger(),readoutUnit_->getIdentifier(),configuration->dipNodes) );
+
+    metaDataRetriever_->subscribeToDip();
+  }
 
   {
     boost::unique_lock<boost::shared_mutex> ul(ferolStreamsMutex_);
