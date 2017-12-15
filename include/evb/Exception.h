@@ -61,9 +61,9 @@ XCEPT_DEFINE_EXCEPTION(evb, I2O)
 XCEPT_DEFINE_EXCEPTION(evb, TCP)
 
 /**
- * Exception raised if the SCAL information cannot be retrieved
+ * Exception raised if the meta data cannot be retrieved
  */
-XCEPT_DEFINE_EXCEPTION(evb, SCAL)
+XCEPT_DEFINE_EXCEPTION(evb, METADATA)
 
 /**
  * Exception raised by the EVM if the TCDS information cannot be extracted

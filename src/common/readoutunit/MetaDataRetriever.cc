@@ -49,8 +49,6 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",false) );
   dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",false) );
-
-  subscribeToDip();
 }
 
 
@@ -91,7 +89,7 @@ void evb::readoutunit::MetaDataRetriever::disconnected(DipSubscription* subscrip
 {
   std::ostringstream msg;
   msg << "Disconnected from " << subscription->getTopicName() << ": " << message;
-  LOG4CPLUS_WARN(logger_, msg.str());
+  LOG4CPLUS_ERROR(logger_, msg.str());
 
   const DipTopics::iterator pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic( subscription->getTopicName() ));
   if ( pos != dipTopics_.end() )
@@ -241,24 +239,37 @@ bool evb::readoutunit::MetaDataRetriever::fillData(unsigned char* payload)
 }
 
 
+bool evb::readoutunit::MetaDataRetriever::missingSubscriptions() const
+{
+  for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
+        it != itEnd; ++it)
+  {
+    if ( ! it->second ) return true;
+  }
+  return false;
+}
+
+
+void evb::readoutunit::MetaDataRetriever::addListOfSubscriptions(std::ostringstream& msg, const bool missingOnly)
+{
+  for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
+        it != itEnd; ++it)
+  {
+    if ( missingOnly && !it->second )
+      msg << " " << it->first;
+    else
+      msg << " " << it->first;
+  }
+}
+
+
 cgicc::td evb::readoutunit::MetaDataRetriever::getDipStatus(const std::string& urn) const
 {
   using namespace cgicc;
 
-  bool missingSubscriptions = false;
-
-  for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
-        it != itEnd; ++it)
-  {
-    if ( ! it->second )
-    {
-      missingSubscriptions = true;
-    }
-  }
-
   td status;
   status.set("colspan","6").set("style","text-align:center");
-  status.add(a(std::string("soft FED ") + (missingSubscriptions?"missing DIP subscriptions":"subscribed to DIP"))
+  status.add(a(std::string("soft FED ") + (missingSubscriptions()?"missing DIP subscriptions":"subscribed to DIP"))
              .set("href","/"+urn+"/dipStatus").set("target","_blank"));
 
   return status;

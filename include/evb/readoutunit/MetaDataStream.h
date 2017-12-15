@@ -75,6 +75,7 @@ namespace evb {
 
       void createMetaDataPool();
       void startRequestWorkLoop();
+      void fillInitialData();
       toolbox::mem::Reference* getFedFragment(const uint32_t eventNumber);
       bool metaDataRequest(toolbox::task::WorkLoop*);
 
@@ -177,24 +178,50 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::startRequestWo
 
 
 template<class ReadoutUnit,class Configuration>
+void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::fillInitialData()
+{
+  boost::mutex::scoped_lock sl(dataMutex_);
+
+  nextDataBufRef_ = toolbox::mem::getMemoryPoolFactory()->
+    getFrame(fragmentPool_,MetaData::dataSize);
+  nextDataBufRef_->setDataSize(MetaData::dataSize);
+  unsigned char* payload = (unsigned char*)nextDataBufRef_->getDataLocation();
+  memset(payload,0,MetaData::dataSize);
+
+  if ( ! metaDataRetriever_->fillData(payload) )
+  {
+    XCEPT_RAISE(exception::METADATA, "Cannot retrieve any meta data from DIP");
+  }
+
+  if ( metaDataRetriever_->missingSubscriptions() )
+  {
+    std::ostringstream msg;
+    msg << "Missing subscriptions from DIP:";
+
+    metaDataRetriever_->addListOfSubscriptions(msg,true);
+
+    LOG4CPLUS_ERROR(this->readoutUnit_->getApplicationLogger(), msg.str());
+
+    XCEPT_DECLARE(exception::METADATA, sentinelException, msg.str());
+    this->readoutUnit_->notifyQualified("error", sentinelException);
+  }
+}
+
+
+template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataRequest(toolbox::task::WorkLoop* wl)
 {
   if ( ! this->doProcessing_ ) return false;
+
+  metaDataRetriever_->subscribeToDip();
 
   toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
     getFrame(fragmentPool_,MetaData::dataSize);
   bufRef->setDataSize(MetaData::dataSize);
   unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
 
-  if ( nextDataBufRef_ )
-  {
-    // preserve the data from the previous iteration
-    memcpy(payload,nextDataBufRef_->getDataLocation(),MetaData::dataSize);
-  }
-  else
-  {
-    memset(payload,0,MetaData::dataSize);
-  }
+  // preserve the data from the previous iteration
+  memcpy(payload,nextDataBufRef_->getDataLocation(),MetaData::dataSize);
 
   do {
     if ( metaDataRetriever_->fillData(payload) )
@@ -229,13 +256,6 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragm
 
     if ( currentDataBufRef_ ) currentDataBufRef_->release();
     currentDataBufRef_ = nextDataBufRef_->duplicate();
-  }
-
-  if ( ! currentDataBufRef_ )
-  {
-    XCEPT_DECLARE(exception::SCAL,
-                  sentinelException, "Cannot retrieve any metaData information");
-    this->readoutUnit_->getStateMachine()->processFSMEvent( Fail(sentinelException) );
   }
 
   const EvBid& evbId = superFragment->getEvBid();
@@ -306,6 +326,8 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::startProcessin
     currentDataBufRef_->release();
     currentDataBufRef_ = 0;
   }
+
+  fillInitialData();
 
   metaDataRequestWorkLoop_->submit(metaDataRequestAction_);
 }

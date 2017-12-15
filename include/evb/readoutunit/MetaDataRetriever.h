@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_MetaDataRetriever_h_
 #define _evb_readoutunit_MetaDataRetriever_h_
 
+#include <sstream>
 #include <stdint.h>
 #include <string.h>
 #include <utility>
@@ -43,13 +44,16 @@ namespace evb {
       void connected(DipSubscription*);
       void handleException(DipSubscription*, DipException&);
 
+      void subscribeToDip();
+      bool missingSubscriptions() const;
+      void addListOfSubscriptions(std::ostringstream&, const bool missingOnly = false);
+
       cgicc::td getDipStatus(const std::string& urn) const;
       cgicc::table dipStatusTable() const;
 
 
     private:
 
-      void subscribeToDip();
       bool fillLuminosity(MetaData::Luminosity&);
       bool fillBeamSpot(MetaData::BeamSpot&);
       bool fillDCS(MetaData::DCS&);
