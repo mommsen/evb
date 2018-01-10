@@ -87,11 +87,11 @@ namespace evb {
       xdata::String playbackDataFile;                        // Path to the file used for data playback (not implemented)
       xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
-      xdata::UnsignedInteger32 dummyScalFedSize;             // Size in Bytes of the dummy SCAL. 0 disables it.
-      xdata::UnsignedInteger32 scalFedId;                    // The FED id for the scaler information
+      xdata::String dipNodes;                                // Comma-separated list of DIP nodes
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
+      xdata::Boolean createSoftFed1022;                      // Creats softFED 1022 using the meta data from DIP
       xdata::Boolean checkBxId;                              // Check if the BX ids match when building super fragments
       xdata::Boolean tolerateCorruptedEvents;                // Tolerate corrupted FED data (excluding CRC errors)
       xdata::Boolean tolerateOutOfSequenceEvents;            // Tolerate events out of sequence
@@ -120,9 +120,9 @@ namespace evb {
           playbackDataFile(""),
           dummyFedSizeMin(16), // minimum is 16 Bytes
           dummyFedSizeMax(0), // no limitation
-          dummyScalFedSize(0),
-          scalFedId(999),
+          dipNodes("cmsdimns1.cern.ch,cmsdimns2.cern.ch"),
           fragmentPoolSize(200000000),
+          createSoftFed1022(false),
           checkBxId(true),
           tolerateCorruptedEvents(false),
           tolerateOutOfSequenceEvents(false),
@@ -156,11 +156,11 @@ namespace evb {
         params.add("playbackDataFile", &playbackDataFile);
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
-        params.add("dummyScalFedSize", &dummyScalFedSize);
-        params.add("scalFedId", &scalFedId);
+        params.add("dipNodes", &dipNodes);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("ferolSources", &ferolSources);
+        params.add("createSoftFed1022", &createSoftFed1022);
         params.add("checkBxId", &checkBxId);
         params.add("tolerateCorruptedEvents", &tolerateCorruptedEvents);
         params.add("tolerateOutOfSequenceEvents", &tolerateOutOfSequenceEvents);

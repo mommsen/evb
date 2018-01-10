@@ -14,8 +14,8 @@ evb::readoutunit::FedFragment::FedFragment
   const std::string& subSystem,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
-  uint32_t& fedErrorCount,
-  uint32_t& crcErrors
+  uint32_t* fedErrorCount,
+  uint32_t* crcErrors
 )
   : typeOfNextComponent_(FEROL_HEADER),
     fedId_(fedId),
@@ -33,6 +33,35 @@ evb::readoutunit::FedFragment::FedFragment
     hasCRCerror_(false),hasFEDerror_(false),
     bufRef_(0),copyOffset_(0)
 {}
+
+
+evb::readoutunit::FedFragment::FedFragment
+(
+  const uint16_t fedId,
+  const bool isMasterFed,
+  const std::string& subSystem,
+  const EvBid& evbId,
+  toolbox::mem::Reference* bufRef
+)
+  : fedId_(fedId),
+    bxId_(evbId.bxId()),
+    eventNumber_(evbId.eventNumber()),
+    fedSize_(bufRef->getDataSize()),
+    evbId_(evbId),
+    isComplete_(true),
+    checkCRC_(0),
+    isMasterFed_(isMasterFed),
+    subSystem_(subSystem),
+    isCorrupted_(false),isOutOfSequence_(false),
+    hasCRCerror_(false),hasFEDerror_(false),
+    bufRef_(bufRef),copyOffset_(0)
+{
+  iovec dataLocation;
+  dataLocation.iov_base = (void*)(bufRef->getDataLocation());
+  dataLocation.iov_len = fedSize_;
+  dataLocations_.push_back(dataLocation);
+  copyIterator_ = dataLocations_.begin();
+}
 
 
 evb::readoutunit::FedFragment::~FedFragment()
@@ -547,17 +576,17 @@ void evb::readoutunit::FedFragment::reportErrors() const
     msg << errorMsg_;
     XCEPT_RAISE(exception::EventOutOfSequence, msg.str());
   }
-  else if ( hasCRCerror_ && evb::isFibonacci( ++crcErrors_ ) )
+  else if ( hasCRCerror_ && evb::isFibonacci( ++(*crcErrors_) ) )
   {
     std::ostringstream msg;
-    msg << "Received " << crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << " (" << subSystem_ << "): ";
+    msg << "Received " << *crcErrors_ << " events with wrong CRC checksum from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::CRCerror, msg.str());
   }
-  else if ( hasFEDerror_ && evb::isFibonacci( ++fedErrorCount_ ) )
+  else if ( hasFEDerror_ && evb::isFibonacci( ++(*fedErrorCount_) ) )
   {
     std::ostringstream msg;
-    msg << "Received " << fedErrorCount_ << " bad events from FED " << fedId_ << " (" << subSystem_ << "): ";
+    msg << "Received " << *fedErrorCount_ << " bad events from FED " << fedId_ << " (" << subSystem_ << "): ";
     msg << errorMsg_;
     XCEPT_RAISE(exception::FEDerror, msg.str());
   }

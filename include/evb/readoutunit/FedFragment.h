@@ -38,9 +38,19 @@ namespace evb {
         const std::string& subSystem,
         const EvBidFactoryPtr&,
         const uint32_t checkCRC,
-        uint32_t& fedErrorCount,
-        uint32_t& crcErrors
+        uint32_t* fedErrorCount,
+        uint32_t* crcErrors
       );
+
+      FedFragment
+      (
+        const uint16_t fedId,
+        const bool isMasterFed,
+        const std::string& subSystem,
+        const EvBid&,
+        toolbox::mem::Reference*
+      );
+
       ~FedFragment();
 
       bool append(const EvBid&, toolbox::mem::Reference*);
@@ -96,8 +106,8 @@ namespace evb {
       void reportErrors() const;
 
       const uint32_t checkCRC_;
-      uint32_t& fedErrorCount_;
-      uint32_t& crcErrors_;
+      uint32_t* fedErrorCount_;
+      uint32_t* crcErrors_;
       const bool isMasterFed_;
       const std::string& subSystem_;
       std::string errorMsg_;

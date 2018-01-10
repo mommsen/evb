@@ -11,8 +11,8 @@ evb::readoutunit::DummyFragment::DummyFragment
   const std::string& subSystem,
   const EvBidFactoryPtr& evbIdFactory,
   const uint32_t checkCRC,
-  uint32_t& fedErrorCount,
-  uint32_t& crcErrors
+  uint32_t* fedErrorCount,
+  uint32_t* crcErrors
 )
   : FedFragment(fedId,isMasterFed,subSystem,evbIdFactory,checkCRC,fedErrorCount,crcErrors),
     remainingFedSize_(fedSize),

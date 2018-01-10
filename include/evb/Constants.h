@@ -16,6 +16,7 @@ namespace evb {
 
   const uint16_t GTPe_FED_ID         =     814; //0x32e
   const uint16_t TCDS_FED_ID         =    1024;
+  const uint16_t SOFT_FED_ID         =    1022;
   const uint32_t ORBITS_PER_LS       = 0x40000; //2^18 orbits
   const uint16_t FED_COUNT           =    4096;
   const uint16_t FEROL_BLOCK_SIZE    =    4096;

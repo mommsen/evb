@@ -1,26 +1,30 @@
+import operator
+
 from TestCase import TestCase
 from Context import RU,BU
 
-
-class case_2x1_multiFEDs(TestCase):
+class case_2x1_EVMmetaData(TestCase):
 
     def runTest(self):
         self.configureEvB()
         self.enableEvB()
-        self.checkEVM(12288)
+        self.checkEVM(6280)
         self.checkRU(24576)
-        self.checkBU(36864)
+        self.checkBU(30856)
+        self.checkAppParam('nbCorruptedEvents','unsignedLong',0,operator.eq,"BU")
+        self.checkAppParam('nbEventsWithCRCerrors','unsignedLong',0,operator.eq,"BU")
+        self.stopEvB()
         self.haltEvB()
 
 
     def fillConfiguration(self,symbolMap):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt', (12,55,512,689,789,800))
+             ('fedSourceIds','unsignedInt',(512,25,17,1022))
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
-             ('fedSourceIds','unsignedInt', (3,9,65,78,124,154,255,854,957,985,1111,1227))
+             ('fedSourceIds','unsignedInt',range(1,13))
             ]) )
         self._config.add( BU(symbolMap,[
              ('dropEventData','boolean','true'),

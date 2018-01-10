@@ -31,8 +31,8 @@ namespace evb {
         const std::string& subSystem,
         const EvBidFactoryPtr&,
         const uint32_t checkCRC,
-        uint32_t& fedErrorCount,
-        uint32_t& crcErrors
+        uint32_t* fedErrorCount,
+        uint32_t* crcErrors
       );
       ~DummyFragment();
 

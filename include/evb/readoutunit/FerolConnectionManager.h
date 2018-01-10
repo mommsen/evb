@@ -337,7 +337,8 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
   for ( xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = configuration->fedSourceIds.begin(), itEnd = configuration->fedSourceIds.end();
         it != itEnd; ++it )
   {
-    fedIds.insert(it->value_);
+    if ( it->value_ != SOFT_FED_ID )
+      fedIds.insert(it->value_);
   }
 
   const uint16_t maxTries = configuration->ferolConnectTimeOut*1000;
