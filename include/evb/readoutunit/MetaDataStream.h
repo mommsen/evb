@@ -188,10 +188,7 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::fillInitialDat
   unsigned char* payload = (unsigned char*)nextDataBufRef_->getDataLocation();
   memset(payload,0,MetaData::dataSize);
 
-  if ( ! metaDataRetriever_->fillData(payload) )
-  {
-    XCEPT_RAISE(exception::METADATA, "Cannot retrieve any meta data from DIP");
-  }
+  metaDataRetriever_->fillData(payload);
 
   if ( metaDataRetriever_->missingSubscriptions() )
   {
