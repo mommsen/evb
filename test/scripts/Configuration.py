@@ -61,7 +61,7 @@ class Configuration():
             return True
         if self.contexts[myKey].role == 'EVM' and self.contexts[otherKey].role in ('RU','BU'):
             return True
-        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role == 'BU':
+        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role in ('EVM','BU'):
             return True
         if self.contexts[myKey].role == 'BU' and self.contexts[otherKey].role == 'EVM':
             return True
