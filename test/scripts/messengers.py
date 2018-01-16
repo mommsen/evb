@@ -36,7 +36,7 @@ def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None,testname=""):
         s.close()
         return ''.join(response)
     except socket.error as e:
-        return "Failed to conact launcher: "+e.strerror
+        return "Failed to contact launcher: "+e.strerror
 
 
 def webPing(soapHostname,soapPort):
