@@ -13,10 +13,12 @@ import SocketServer
 
 class xdaqThread(threading.Thread):
 
-    def __init__(self,xdaqPort,logFile,useNuma):
+    def __init__(self,xdaqPort,logFile,useNuma, logLevel):
         threading.Thread.__init__(self)
         self.logFile = logFile
         self._process = None
+        self.logLevel = logLevel
+
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
         os.environ["LD_LIBRARY_PATH"] = xdaqRoot+"/lib"
@@ -32,11 +34,16 @@ class xdaqThread(threading.Thread):
 
 
     def run(self):
+        
+        command = list(self._xdaqCommand)
+        if self.logLevel is not None:
+            command.append("-l" + self.logLevel)
+
         if self.logFile:
             with open(self.logFile,"w",0) as logfile:
-                self._process = subprocess.Popen(self._xdaqCommand,stdout=logfile,stderr=subprocess.STDOUT,close_fds=True)
+                self._process = subprocess.Popen(command,stdout=logfile,stderr=subprocess.STDOUT,close_fds=True)
         else:
-            self._process = subprocess.Popen(self._xdaqCommand)
+            self._process = subprocess.Popen(command)
         self._process.wait()
 
 
@@ -52,6 +59,9 @@ class TCPServer(SocketServer.TCPServer):
         self.logDir = logDir
         self.useNuma = useNuma
 
+        # log level to be used for the XDAQ process
+        self.logLevel = None
+
 
 class xdaqLauncher(SocketServer.BaseRequestHandler):
 
@@ -66,7 +76,8 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             "startXDAQ":self.startXDAQ,
             "stopXDAQ":self.stopXDAQ,
             "stopLauncher":self.stopLauncher,
-            "getFiles":self.getFiles
+            "getFiles":self.getFiles,
+            "setLogLevel": self.setLogLevel,
             }
         args = None
 
@@ -122,7 +133,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             return
         self.cleanTempFiles()
         try:
-            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma)
+            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma, self.server.logLevel)
             thread.start()
         except KeyError:
             self.request.sendall("Please specify XDAQ_ROOT")
@@ -175,6 +186,11 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             self.request.sendall("Please specify a directory")
             return
         self.request.sendall( str(os.listdir(dir)) )
+
+    def setLogLevel(self, port, level):
+        # sets the XDAQ log level for the given application
+        # this must be called before starting the XDAQ process in question
+        self.server.logLevel = level
 
 
 if __name__ == "__main__":
