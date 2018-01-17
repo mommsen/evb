@@ -110,6 +110,10 @@ class Application:
             except KeyError:
                 module.text = "$XDAQ_ROOT/lib/libevb.so"
             context.append(module)
+            if self.hasSoftFed1022():
+                module = ET.Element(QN(ns,'Module'))
+                module.text = "/opt/dip/lib64/libdip.so"
+                context.append(module)
 
 
     def addTargetElement(self,protocol,ns):
@@ -209,6 +213,21 @@ class Application:
                     return param[2]
             except KeyError:
                 pass
+
+
+    def hasSoftFed1022(self):
+        for param in self.properties:
+            try:
+                if param[0] == 'createSoftFed1022':
+                    if 'true' == param[2].lower():
+                        return True
+                elif param[0] == 'fedSourceIds':
+                    for fedId in param[2]:
+                        if '1022' == str(fedId):
+                            return True
+            except KeyError:
+                pass
+        return False
 
 
 if __name__ == "__main__":

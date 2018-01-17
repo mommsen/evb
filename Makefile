@@ -164,8 +164,8 @@ UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations
 
 # These libraries can be platform specific and
 # potentially need conditional processing
-DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl dip
-DependentLibraryDirs += /usr/lib64 /opt/dip/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX) $(PTBLIT_LIB_PREFIX)
+DependentLibraries = interfaceshared xdaq2rc ptblit boost_regex boost_filesystem boost_thread-mt boost_system curl
+DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_PREFIX) $(PTBLIT_LIB_PREFIX)
 
 #
 # Compile the source files and create a shared library

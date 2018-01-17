@@ -19,7 +19,6 @@ public:
 
   Listener()
   {
-    //setDipNS();
     dipFactory_ = Dip::create("dipTest_evb-unittests");
     dipFactory_->setDNSNode("cmsdimns1.cern.ch,cmsdimns2.cern.ch");
     subscribeToDip();
@@ -65,33 +64,10 @@ public:
 
 private:
 
-  void setDipNS()
-  {
-    char line [1024];
-    FILE *fptr = fopen("/nfshome0/mommsen/tmp/server.conf","r");
-    if ( fptr != NULL )
-    {
-      if ( fgets(line,sizeof(line)-1,fptr) )
-      {
-        int ii = strlen(line);
-        printf("DIPNS set to %s", line);
-        if ( ii > 0 )
-        {
-          line[ii-1] = '\0';
-          if ( line[ii-2] < 32 ) { line[ii-2] = '\0';}
-          setenv("DIPNS",line,1);
-          setenv("DIM_DNS_NODE",line,1);
-          setenv("DIM_DNS_PORT","2506",1);
-        }
-      }
-      fclose(fptr);
-    }
-  }
-
   void subscribeToDip()
   {
-    dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/BRIL/Luminosity",this);
-    //dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/MCS/Current",this);
+    //dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/BRIL/Luminosity",this);
+    dipSubcription_ = dipFactory_->createDipSubscription("dip/CMS/MCS/Current",this);
   }
 
   DipFactory* dipFactory_;
