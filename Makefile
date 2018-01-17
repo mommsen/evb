@@ -67,7 +67,7 @@ Sources=\
 	dummyFEROL/FragmentGenerator.cc \
 	dummyFEROL/StateMachine.cc
 
-TestExecutables = \
+UnitTests = \
 	Dip.cxx \
 	EvBid.cxx \
 	GetIPaddress.cxx \
@@ -171,22 +171,16 @@ DependentLibraryDirs += /usr/lib64 $(INTERFACE_SHARED_LIB_PREFIX) $(XDAQ2RC_LIB_
 # Compile the source files and create a shared library
 #
 DynamicLibrary=evb
-TestDynamicLibrary=evbtest
-
-TestDynamicLibraryName = $(TestDynamicLibrary:%=$(PackageLibDir)/$(LibraryPrefix)%$(DynamicSuffix))
 
 all: _all test install
 
 test: _all
 	@make tests
 
-testinstall: test
-	$(Copy) -p $(TestDynamicLibraryName)* $(LibInstallDir)/
-
 clean: _cleanall
 	@make testsclean
 
-install: _installall testinstall
+install: _installall
 
 include $(XDAQ_ROOT)/config/Makefile.rules
 include $(XDAQ_ROOT)/config/mfRPM.rules
