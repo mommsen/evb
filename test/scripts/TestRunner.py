@@ -37,6 +37,16 @@ class TestRunner:
             print("Please specify the test directory to be used in the environment veriable EVB_TESTER_HOME")
             sys.exit(2)
 
+        # the launcher script to be executed on the remote host
+        # check whether it exists (assuming a cluster wide file system) 
+        # or not before attempting to launch it on the remote hosts
+        self._launcherScript = self._evbTesterHome + "/scripts/xdaqLauncher.py"
+        if not os.path.exists(self._launcherScript):
+            print("Could not find xdaq launcher script " + self._launcherScript + ".")
+            print("Does the environment variable EVB_TESTER_HOME point to the correct directory ?")
+            sys.exit(2)
+
+
 
     def addOptions(self,parser):
         parser.add_argument("-v","--verbose",action='store_true',help="print log info also to stdout")
@@ -60,7 +70,8 @@ class TestRunner:
 
 
     def startLaunchers(self):
-        launcherCmd = "cd /tmp && rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+self._evbTesterHome+"/scripts/xdaqLauncher.py "
+        
+        launcherCmd = "cd /tmp && rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+ self._launcherScript + " "
         if not self.args['verbose']:
             launcherCmd += "--logDir "+self.args['logDir']+" "
         if self.args['numa']:
