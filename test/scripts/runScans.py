@@ -40,6 +40,7 @@ class RunScans(TestRunner):
         parser.add_argument("--ferolMode",action='store_true',help="generate data on FEROL instead of FRL")
         parser.add_argument("--scaleFedSizesFromFile",help="scale the FED fragment sizes relative to the sizes in the given file")
         parser.add_argument("--calculateFedSizesFromFile",help="calculate the FED fragment sizes using the parameters in the given file")
+        parser.add_argument("--logLevel", type = str, default = None, help="set XDAQ log level")
 
 
     def fillFedSizeScalesFromFile(self):
@@ -137,6 +138,7 @@ class RunScans(TestRunner):
                 config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
                                             self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
                 configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors)
+                configCase.setXdaqLogLevel(self.args['logLevel'])
                 configCase.prepare(configName)
                 for fragSize in sizes:
                     fragSizeRMS = int(fragSize * self.args['rms'])

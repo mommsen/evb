@@ -33,8 +33,12 @@ class FileException(Exception):
     pass
 
 
-def startXDAQ(context,testname):
+def startXDAQ(context,testname, logLevel):
     ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
+
+    if logLevel is not None:
+        messengers.sendCmdToLauncher("setLogLevel",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],logLevel)
+
     ret += messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname)
     return ret
 
@@ -84,6 +88,7 @@ class TestCase:
         sys.stdout = stdout
         self._config = config
         self._pool = mp.Pool(20,init_worker)
+        self._xdaqLogLevel = None
 
 
     def __del__(self):
@@ -101,10 +106,13 @@ class TestCase:
         sys.stdout = self._origStdout
 
 
+    def setXdaqLogLevel(self, newLevel):
+        self._xdaqLogLevel = newLevel
+
     def startXDAQs(self,testname):
         try:
             for context in self._config.contexts.values():
-                results = [self._pool.apply_async(startXDAQ, args=(c,testname)) for c in self._config.contexts.values()]
+                results = [self._pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
             for r in results:
                 try:
                     print(r.get(timeout=30))
