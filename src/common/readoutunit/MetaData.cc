@@ -27,15 +27,15 @@ std::ostream& operator<<(std::ostream& s, const MetaData::Luminosity& luminosity
 {
   time_t ts = luminosity.timeStamp / 1000.;
 
-  s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
-  s << "lumiSection:      " << luminosity.lumiSection << std::endl;
-  s << "lumiNibble:       " << luminosity.lumiNibble << std::endl;
+  s << "timeStamp         " << asctime(localtime(&ts)) << std::endl;
+  s << "lumiSection       " << luminosity.lumiSection << std::endl;
+  s << "lumiNibble        " << luminosity.lumiNibble << std::endl;
 
   std::streamsize ss = s.precision();
   s.setf(std::ios::fixed);
   s.precision(2);
-  s << "instLumi:         " << luminosity.instLumi << std::endl;
-  s << "avgPileUp:        " << luminosity.avgPileUp << std::endl;
+  s << "instLumi          " << luminosity.instLumi << std::endl;
+  s << "avgPileUp         " << luminosity.avgPileUp << std::endl;
   s.unsetf(std::ios::fixed);
   s.precision(ss);
 
@@ -90,27 +90,27 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
 {
   time_t ts = beamSpot.timeStamp / 1000.;
 
-  s << "timeStamp:         " << asctime(localtime(&ts)) << std::endl;
+  s << "timeStamp         " << asctime(localtime(&ts)) << std::endl;
 
   std::streamsize ss = s.precision();
   s.setf(std::ios::fixed);
   s.precision(6);
-  s << "x:                 " << beamSpot.x << std::endl;
-  s << "y:                 " << beamSpot.y << std::endl;
-  s << "z:                 " << beamSpot.z << std::endl;
-  s << "dxdz:              " << beamSpot.dxdz << std::endl;
-  s << "dydz:	           " << beamSpot.dydz << std::endl;
-  s << "err of x:          " << beamSpot.errX << std::endl;
-  s << "err of y:          " << beamSpot.errX << std::endl;
-  s << "err of z:          " << beamSpot.errZ << std::endl;
-  s << "err of dxdz:       " << beamSpot.errDxdz << std::endl;
-  s << "err of dydz:       " << beamSpot.errDydz << std::endl;
-  s << "width in x:        " << beamSpot.widthX << std::endl;
-  s << "width in y:        " << beamSpot.widthY << std::endl;
-  s << "sigma z:           " << beamSpot.sigmaZ << std::endl;
-  s << "err of width in x: " << beamSpot.errWidthX << std::endl;
-  s << "err of width in y  " << beamSpot.errWidthY << std::endl;
-  s << "err of sigma z:    " << beamSpot.errSigmaZ << std::endl;
+  s << "x                 " << beamSpot.x << std::endl;
+  s << "y                 " << beamSpot.y << std::endl;
+  s << "z                 " << beamSpot.z << std::endl;
+  s << "dxdz              " << beamSpot.dxdz << std::endl;
+  s << "dydz	          " << beamSpot.dydz << std::endl;
+  s << "err of x          " << beamSpot.errX << std::endl;
+  s << "err of y          " << beamSpot.errX << std::endl;
+  s << "err of z          " << beamSpot.errZ << std::endl;
+  s << "err of dxdz       " << beamSpot.errDxdz << std::endl;
+  s << "err of dydz       " << beamSpot.errDydz << std::endl;
+  s << "width in x        " << beamSpot.widthX << std::endl;
+  s << "width in y        " << beamSpot.widthY << std::endl;
+  s << "sigma z           " << beamSpot.sigmaZ << std::endl;
+  s << "err of width in x " << beamSpot.errWidthX << std::endl;
+  s << "err of width in y " << beamSpot.errWidthY << std::endl;
+  s << "err of sigma z    " << beamSpot.errSigmaZ << std::endl;
   s.unsetf(std::ios::fixed);
   s.precision(ss);
 
@@ -137,15 +137,60 @@ std::ostream& operator<<(std::ostream& s, const MetaData::DCS& dcs)
 {
   time_t ts = dcs.timeStamp / 1000.;
 
-  s << "timeStamp:        " << asctime(localtime(&ts)) << std::endl;
-  s << "highVoltageReady: " << dcs.highVoltageReady << std::endl;
+  s << "timeStamp        " << asctime(localtime(&ts)) << std::endl;
+  s << "highVoltageReady 0x" << std::hex << dcs.highVoltageReady << std::dec << std::endl;
 
   std::streamsize ss = s.precision();
   s.setf(std::ios::fixed);
   s.precision(3);
-  s << "magnetCurrent:    " << dcs.magnetCurrent << " A" << std::endl;
+  s << "magnetCurrent    " << dcs.magnetCurrent << " A" << std::endl;
   s.unsetf(std::ios::fixed);
   s.precision(ss);
+
+  return s;
+}
+
+
+MetaData::CTPPS::CTPPS() :
+  timeStamp(0),
+  status(0)
+{};
+
+
+const char MetaData::CTPPS::ctppsRP[rpCount][16] = {
+  "RP_45_210_FR_BT","RP_45_210_FR_HR","RP_45_210_FR_TP",
+  "RP_45_220_C1"   ,"RP_45_220_FR_BT","RP_45_220_FR_HR",
+  "RP_45_220_FR_TP","RP_45_220_NR_BT","RP_45_220_NR_TP",
+  "RP_56_210_FR_BT","RP_56_210_FR_HR","RP_56_210_FR_TP",
+  "RP_56_220_C1"   ,"RP_56_220_FR_BT","RP_56_220_FR_HR",
+  "RP_56_220_FR_TP","RP_56_220_NR_BT","RP_56_220_NR_TP"
+};
+
+
+bool MetaData::CTPPS::operator!=(const MetaData::CTPPS& other) const
+{
+  return (timeStamp != other.timeStamp ||
+          status != other.status);
+}
+
+
+std::ostream& operator<<(std::ostream& s, const MetaData::CTPPS& ctpps)
+{
+  time_t ts = ctpps.timeStamp / 1000.;
+  s << std::setw(18) << std::left << "timeStamp" << asctime(localtime(&ts)) << std::endl;
+
+  for (uint8_t i = 0; i < MetaData::CTPPS::rpCount; ++i)
+  {
+    s << std::setw(18) << std::left << MetaData::CTPPS::ctppsRP[i];
+    switch((ctpps.status >> (i*2)) & 0x3)
+    {
+      case 0: s << "not used"; break;
+      case 1: s << "bad"; break;
+      case 2: s << "warning"; break;
+      case 3: s << "ok"; break;
+    }
+    s << std::endl;
+  }
 
   return s;
 }
@@ -160,7 +205,8 @@ bool MetaData::Data::operator!=(const MetaData::Data& other)
 {
   return (luminosity != other.luminosity ||
           beamSpot != other.beamSpot ||
-          dcs != dcs);
+          dcs != dcs ||
+          ctpps != other.ctpps);
 }
 
 
@@ -170,6 +216,7 @@ std::ostream& operator<<(std::ostream& s, const MetaData::Data& data)
   s << data.luminosity << std::endl;
   s << data.beamSpot << std::endl;
   s << data.dcs << std::endl;
+  s << data.ctpps << std::endl;
 
   return s;
 }

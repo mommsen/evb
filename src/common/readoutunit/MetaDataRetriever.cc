@@ -20,7 +20,7 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipFactory_->setDNSNode( dipNodes.c_str() );
 
   // Attention: DCS HV values have to come first and in the order of the HV bits
-  // defined in MetaData::Data::highVoltageReady
+  // defined in DataFormats::OnlineMetaData::DCSRecord::Partition in CMSSW
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BP/state",unavailable) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BM/state",unavailable) );
   dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EP/state",unavailable) );
@@ -49,6 +49,7 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",unavailable) );
   dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",unavailable) );
   dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/CTPPS/detectorFSM",unavailable) );
 }
 
 
@@ -154,6 +155,22 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
       lastBeamSpot_.errDydz = dipData.extractFloat("err_dydz");
     }
   }
+  else if ( topicName == "dip/CMS/CTPPS/detectorFSM" )
+  {
+    if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
+    {
+      boost::mutex::scoped_lock sl(ctppsMutex_);
+
+      lastCTPPS_.timeStamp = dipData.extractDipTime().getAsMillis();
+      lastCTPPS_.status = 0;
+
+      for (uint8_t i = 0; i < MetaData::CTPPS::rpCount; ++i)
+      {
+        uint64_t status = dipData.extractInt(MetaData::CTPPS::ctppsRP[i]);
+        lastCTPPS_.status |= (status & 0x3) << (i*2);
+      }
+    }
+  }
   else if ( topicName == "dip/CMS/MCS/Current" )
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
@@ -214,6 +231,20 @@ bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(MetaData::BeamSpot& beamS
 }
 
 
+bool evb::readoutunit::MetaDataRetriever::fillCTPPS(MetaData::CTPPS& CTPPS)
+{
+  boost::mutex::scoped_lock sl(ctppsMutex_);
+
+  if ( lastCTPPS_.timeStamp > 0 && lastCTPPS_ != CTPPS )
+  {
+    CTPPS = lastCTPPS_;
+    return true;
+  }
+
+  return false;
+}
+
+
 bool evb::readoutunit::MetaDataRetriever::fillDCS(MetaData::DCS& dcs)
 {
   boost::mutex::scoped_lock sl(dcsMutex_);
@@ -236,6 +267,7 @@ bool evb::readoutunit::MetaDataRetriever::fillData(unsigned char* payload)
   return (
     fillLuminosity(data->luminosity) ||
     fillBeamSpot(data->beamSpot) ||
+    fillCTPPS(data->ctpps) ||
     fillDCS(data->dcs)
   );
 }
@@ -313,6 +345,11 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
         {
           boost::mutex::scoped_lock sl(dcsMutex_);
           valueStr << lastBeamSpot_;
+        }
+        else if ( topic == "dip/CMS/CTPPS/detectorFSM" )
+        {
+          boost::mutex::scoped_lock sl(ctppsMutex_);
+          valueStr << lastCTPPS_;
         }
         else if ( topic == "dip/CMS/MCS/Current" )
         {
