@@ -56,6 +56,7 @@ namespace evb {
 
       bool fillLuminosity(MetaData::Luminosity&);
       bool fillBeamSpot(MetaData::BeamSpot&);
+      bool fillCTPPS(MetaData::CTPPS&);
       bool fillDCS(MetaData::DCS&);
 
       log4cplus::Logger& logger_;
@@ -83,9 +84,11 @@ namespace evb {
       MetaData::BeamSpot lastBeamSpot_;
       mutable boost::mutex beamSpotMutex_;
 
+      MetaData::CTPPS lastCTPPS_;
+      mutable boost::mutex ctppsMutex_;
+
       MetaData::DCS lastDCS_;
       mutable boost::mutex dcsMutex_;
-
     };
 
     typedef boost::shared_ptr<MetaDataRetriever> MetaDataRetrieverPtr;
