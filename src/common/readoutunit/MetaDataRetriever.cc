@@ -15,7 +15,7 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
   const std::string& dipNodes
 ) :
   logger_(logger),
-  dipFactory_(Dip::create( identifier.c_str() ))
+  dipFactory_(Dip::create())
 {
   dipFactory_->setDNSNode( dipNodes.c_str() );
 
@@ -255,10 +255,15 @@ void evb::readoutunit::MetaDataRetriever::addListOfSubscriptions(std::ostringstr
   for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
         it != itEnd; ++it)
   {
-    if ( missingOnly && !it->second )
-      msg << " " << it->first;
+    if ( missingOnly )
+    {
+      if (!it->second)
+        msg << " " << it->first;
+    }
     else
+    {
       msg << " " << it->first;
+    }
   }
 }
 
