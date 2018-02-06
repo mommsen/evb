@@ -166,6 +166,11 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
 
       for (uint8_t i = 0; i < MetaData::CTPPS::rpCount; ++i)
       {
+        // encode CT-PPS status in 2 bits:
+        // 0: not used
+        // 1: bad
+        // 2: warning
+        // 3: ok
         uint64_t status = dipData.extractInt(MetaData::CTPPS::ctppsRP[i]);
         lastCTPPS_.status |= (status & 0x3) << (i*2);
       }
