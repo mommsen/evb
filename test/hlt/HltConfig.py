@@ -369,9 +369,9 @@ process.hltL1GtObjectMap = cms.EDProducer( "L1GlobalTrigger",
 )
 process.ExceptionGenerator2 = cms.EDAnalyzer( "ExceptionGenerator",
     defaultAction = cms.untracked.int32(0),
-    defaultQualifier = cms.untracked.int32(0)#,
+    defaultQualifier = cms.untracked.int32(0)
     #defaultAction = cms.untracked.int32(15),
-    #defaultQualifier = cms.untracked.int32(45)#,
+    #defaultQualifier = cms.untracked.int32(30),
     #secondQualifier = cms.untracked.double(5),
     #thirdQualifier = cms.untracked.double(0.5)
 )
