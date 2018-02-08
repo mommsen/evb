@@ -13,11 +13,14 @@ import SocketServer
 
 class xdaqThread(threading.Thread):
 
-    def __init__(self,xdaqPort,logFile,useNuma, logLevel):
+    def __init__(self,xdaqPort,logFile,useNuma, logLevel, dummyXdaq):
         threading.Thread.__init__(self)
         self.logFile = logFile
         self._process = None
         self.logLevel = logLevel
+
+        # if True, start the dummy xdaq script instead of xdaq.exe
+        self.dummyXdaq = dummyXdaq
 
         xdaqRoot = os.environ["XDAQ_ROOT"]
         os.environ["XDAQ_DOCUMENT_ROOT"] = xdaqRoot+"/htdocs"
@@ -30,8 +33,20 @@ class xdaqThread(threading.Thread):
             elif 'bu-' in hostname:
                 numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
 
-        self._xdaqCommand = numaCtl + [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
-
+        if self.dummyXdaq:
+            # launch dummyXdaq.py (during development) 
+            
+            # get the absolute directory of the file where this code is in
+            dummy_xdaq_path = os.path.abspath(os.path.dirname(__file__))
+            
+            self._xdaqCommand = [ "/usr/bin/python", 
+                                  os.path.join(dummy_xdaq_path, "dummyXdaq.py"),
+                                  "-p" + str(xdaqPort)
+                                  ]
+        else:
+            # launch the real xdaq.exe
+            self._xdaqCommand = numaCtl + [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
+                
 
     def run(self):
         
@@ -53,7 +68,7 @@ class xdaqThread(threading.Thread):
 
 
 class TCPServer(SocketServer.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, logDir, useNuma):
+    def __init__(self, server_address, RequestHandlerClass, logDir, useNuma, dummyXdaq):
         SocketServer.TCPServer.allow_reuse_address = True
         SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
         self.logDir = logDir
@@ -61,6 +76,9 @@ class TCPServer(SocketServer.TCPServer):
 
         # log level to be used for the XDAQ process
         self.logLevel = None
+
+        # if True, use dummyXdaq.py instead of xdaq.exe
+        self.dummyXdaq = dummyXdaq
 
 
 class xdaqLauncher(SocketServer.BaseRequestHandler):
@@ -133,7 +151,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             return
         self.cleanTempFiles()
         try:
-            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma, self.server.logLevel)
+            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma, self.server.logLevel, self.server.dummyXdaq)
             thread.start()
         except KeyError:
             self.request.sendall("Please specify XDAQ_ROOT")
@@ -198,6 +216,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-l","--logDir",help="redirect stdout and stderr to log file")
     parser.add_argument("-n","--useNuma",action='store_true',help="use numactl to start xdaq.exe")
+    parser.add_argument("--dummyXdaq",default = False, action='store_true', help="run dummyXdaq.py instead of xdaq.exe (useful for development)")
     parser.add_argument("port",type=int)
     args = vars( parser.parse_args() )
     hostname = socket.gethostbyaddr(socket.gethostname())[0]
@@ -205,5 +224,5 @@ if __name__ == "__main__":
         useNuma = True
     else:
         useNuma = False
-    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'], useNuma=useNuma)
+    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'], useNuma=useNuma, dummyXdaq = args['dummyXdaq'])
     server.serve_forever()
