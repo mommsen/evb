@@ -79,8 +79,15 @@ class TestRunner:
         for launcher in self._symbolMap.launchers:
             if self.args['verbose']:
                 print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
-            subprocess.Popen(["ssh","-x","-n",launcher[0],launcherCmd+str(launcher[1])])
+            subprocess.Popen(["ssh",
 
+                              # avoid ssh waiting for confirmation of unknown host key
+                              # but keep keys learned this way in a separate file
+                              # similar to what wassh does by default
+                              "-o","UserKnownHostsFile=" + os.path.expanduser("~/.evbtest_known_hosts"),
+                              "-o","StrictHostKeyChecking=no",
+
+                              "-x","-n",launcher[0],launcherCmd+str(launcher[1])])
 
     def stopLaunchers(self):
         for launcher in self._symbolMap.launchers:
