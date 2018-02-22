@@ -99,7 +99,7 @@ std::ostream& operator<<(std::ostream& s, const MetaData::BeamSpot& beamSpot)
   s << "y                 " << beamSpot.y << std::endl;
   s << "z                 " << beamSpot.z << std::endl;
   s << "dxdz              " << beamSpot.dxdz << std::endl;
-  s << "dydz	          " << beamSpot.dydz << std::endl;
+  s << "dydz              " << beamSpot.dydz << std::endl;
   s << "err of x          " << beamSpot.errX << std::endl;
   s << "err of y          " << beamSpot.errX << std::endl;
   s << "err of z          " << beamSpot.errZ << std::endl;
