@@ -44,7 +44,7 @@ namespace evb {
       void connected(DipSubscription*);
       void handleException(DipSubscription*, DipException&);
 
-      void subscribeToDip();
+      void subscribeToDip(const std::string& maskedDipTopics);
       bool missingSubscriptions() const;
       void addListOfSubscriptions(std::ostringstream&, const bool missingOnly = false);
 
@@ -64,7 +64,8 @@ namespace evb {
       typedef std::vector<DipSubscription*> DipSubscriptions;
       DipSubscriptions dipSubscriptions_;
 
-      typedef std::pair<std::string,bool> DipTopic;
+      enum DipStatus { unavailable,okay,masked };
+      typedef std::pair<std::string,DipStatus> DipTopic;
       struct isTopic
       {
         isTopic(const std::string& topic) : topic_(topic) {};

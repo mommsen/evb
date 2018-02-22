@@ -122,6 +122,9 @@ evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::~MetaDataStream()
 {
   if ( metaDataRequestWorkLoop_ && metaDataRequestWorkLoop_->isActive() )
     metaDataRequestWorkLoop_->cancel();
+
+  if ( nextDataBufRef_ ) nextDataBufRef_->release();
+  nextDataBufRef_ = 0;
 }
 
 
@@ -210,7 +213,7 @@ bool evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataReques
 {
   if ( ! this->doProcessing_ ) return false;
 
-  metaDataRetriever_->subscribeToDip();
+  metaDataRetriever_->subscribeToDip( this->readoutUnit_->getConfiguration()->maskedDipTopics );
 
   toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->
     getFrame(fragmentPool_,MetaData::dataSize);

@@ -21,34 +21,34 @@ evb::readoutunit::MetaDataRetriever::MetaDataRetriever(
 
   // Attention: DCS HV values have to come first and in the order of the HV bits
   // defined in MetaData::Data::highVoltageReady
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBa/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBb/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBc/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HF/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HO/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_RPC/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DT0/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DTP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DTM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_CSC/CMS_CSCP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_CSC/CMS_CSCM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_CASTOR/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_ZDC/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TIB_TID/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TOB/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TECP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TECM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_PIXEL/CMS_PIXEL_BPIX/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_PIXEL/CMS_PIXEL_FPIX/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESP/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESM/state",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",false) );
-  dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",false) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_BM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_EM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBa/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBb/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HEHBc/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HF/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_HO/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_RPC/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DT0/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DTP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_DT/CMS_DT_DTM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_CSC/CMS_CSCP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_CSC/CMS_CSCM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_CASTOR/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_HCAL/CMS_HCAL_ZDC/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TIB_TID/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TOB/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TECP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_TRACKER/CMS_TRACKER_TECM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_PIXEL/CMS_PIXEL_BPIX/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_PIXEL/CMS_PIXEL_FPIX/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESP/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/DCS/CMS_ECAL/CMS_ECAL_ESM/state",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/MCS/Current",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/BRIL/Luminosity",unavailable) );
+  dipTopics_.push_back( DipTopic("dip/CMS/Tracker/BeamSpot",unavailable) );
 }
 
 
@@ -62,12 +62,14 @@ evb::readoutunit::MetaDataRetriever::~MetaDataRetriever()
 }
 
 
-void evb::readoutunit::MetaDataRetriever::subscribeToDip()
+void evb::readoutunit::MetaDataRetriever::subscribeToDip(const std::string& maskedDipTopics)
 {
-  for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
+  for ( DipTopics::iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
         it != itEnd; ++it )
   {
-    if ( ! it->second )
+    if ( maskedDipTopics.find(it->first) != std::string::npos )
+      it->second = masked;
+    else if ( it->second != okay )
       dipSubscriptions_.push_back( dipFactory_->createDipSubscription(it->first.c_str(),this) );
   }
 }
@@ -81,7 +83,7 @@ void evb::readoutunit::MetaDataRetriever::connected(DipSubscription* subscriptio
 
   const DipTopics::iterator pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic( subscription->getTopicName() ));
   if ( pos != dipTopics_.end() )
-    pos->second = true;
+    pos->second = okay;
 }
 
 
@@ -93,7 +95,7 @@ void evb::readoutunit::MetaDataRetriever::disconnected(DipSubscription* subscrip
 
   const DipTopics::iterator pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic( subscription->getTopicName() ));
   if ( pos != dipTopics_.end() )
-    pos->second = false;
+    pos->second = unavailable;
 }
 
 
@@ -105,7 +107,7 @@ void evb::readoutunit::MetaDataRetriever::handleException(DipSubscription* subsc
 
   const DipTopics::iterator pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic( subscription->getTopicName() ));
   if ( pos != dipTopics_.end() )
-    pos->second = false;
+    pos->second = unavailable;
 }
 
 
@@ -244,7 +246,7 @@ bool evb::readoutunit::MetaDataRetriever::missingSubscriptions() const
   for ( DipTopics::const_iterator it = dipTopics_.begin(), itEnd = dipTopics_.end();
         it != itEnd; ++it)
   {
-    if ( ! it->second ) return true;
+    if ( it->second == unavailable ) return true;
   }
   return false;
 }
@@ -257,7 +259,7 @@ void evb::readoutunit::MetaDataRetriever::addListOfSubscriptions(std::ostringstr
   {
     if ( missingOnly )
     {
-      if (!it->second)
+      if ( it->second == unavailable )
         msg << " " << it->first;
     }
     else
@@ -296,43 +298,55 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
   {
     const std::string topic = dipTopics_[pos].first;
 
-    if ( dipTopics_[pos].second )
+    switch ( dipTopics_[pos].second )
     {
-      std::ostringstream valueStr;
+      case okay :
+      {
+        std::ostringstream valueStr;
 
-      if ( topic == "dip/CMS/BRIL/Luminosity" )
-      {
-        boost::mutex::scoped_lock sl(luminosityMutex_);
-        valueStr << lastLuminosity_;
-      }
-      else if ( topic == "dip/CMS/Tracker/BeamSpot" )
-      {
-        boost::mutex::scoped_lock sl(dcsMutex_);
-        valueStr << lastBeamSpot_;
-      }
-      else if ( topic == "dip/CMS/MCS/Current" )
-      {
-        boost::mutex::scoped_lock sl(dcsMutex_);
-        valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
-      }
-      else
-      {
-        boost::mutex::scoped_lock sl(dcsMutex_);
-        if ( lastDCS_.highVoltageReady & (1 << pos) )
-          valueStr << "READY";
+        if ( topic == "dip/CMS/BRIL/Luminosity" )
+        {
+          boost::mutex::scoped_lock sl(luminosityMutex_);
+          valueStr << lastLuminosity_;
+        }
+        else if ( topic == "dip/CMS/Tracker/BeamSpot" )
+        {
+          boost::mutex::scoped_lock sl(dcsMutex_);
+          valueStr << lastBeamSpot_;
+        }
+        else if ( topic == "dip/CMS/MCS/Current" )
+        {
+          boost::mutex::scoped_lock sl(dcsMutex_);
+          valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
+        }
         else
-          valueStr << "OFF";
-      }
+        {
+          boost::mutex::scoped_lock sl(dcsMutex_);
+          if ( lastDCS_.highVoltageReady & (1 << pos) )
+            valueStr << "READY";
+          else
+            valueStr << "OFF";
+        }
 
-      table.add(tr()
-                .add(td(topic))
-                .add(td(valueStr.str())));
-    }
-    else
-    {
-      table.add(tr().set("style","background-color: #ff9380")
-                .add(td(topic))
-                .add(td("unavailable")));
+        table.add(tr()
+                  .add(td(topic))
+                  .add(td(valueStr.str())));
+        break;
+      }
+      case unavailable:
+      {
+        table.add(tr().set("style","background-color: #ff9380")
+                  .add(td(topic))
+                  .add(td("unavailable")));
+        break;
+      }
+      case masked:
+      {
+        table.add(tr().set("style","color: #c1c1c1")
+                  .add(td(topic))
+                  .add(td("masked")));
+        break;
+      }
     }
   }
 

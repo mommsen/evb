@@ -88,6 +88,7 @@ namespace evb {
       xdata::UnsignedInteger32 dummyFedSizeMin;              // Minimum size of the FED data when using the log-normal distrubution
       xdata::UnsignedInteger32 dummyFedSizeMax;              // Maximum size of the FED data when using the log-normal distrubution
       xdata::String dipNodes;                                // Comma-separated list of DIP nodes
+      xdata::String maskedDipTopics;                         // DIP topics which will not be considered
       xdata::UnsignedInteger32 fragmentPoolSize;             // Size of the toolbox::mem::Pool in Bytes used for dummy events
       xdata::Vector<xdata::UnsignedInteger32> fedSourceIds;  // Vector of activ FED ids
       FerolSources ferolSources;                             // Vector of FEROL sources
@@ -121,6 +122,7 @@ namespace evb {
           dummyFedSizeMin(16), // minimum is 16 Bytes
           dummyFedSizeMax(0), // no limitation
           dipNodes("cmsdimns1.cern.ch,cmsdimns2.cern.ch"),
+          maskedDipTopics(""),
           fragmentPoolSize(200000000),
           createSoftFed1022(false),
           checkBxId(true),
@@ -157,6 +159,7 @@ namespace evb {
         params.add("dummyFedSizeMin", &dummyFedSizeMin);
         params.add("dummyFedSizeMax", &dummyFedSizeMax);
         params.add("dipNodes", &dipNodes);
+        params.add("maskedDipTopics", &maskedDipTopics);
         params.add("fragmentPoolSize", &fragmentPoolSize);
         params.add("fedSourceIds", &fedSourceIds);
         params.add("ferolSources", &ferolSources);

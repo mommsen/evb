@@ -21,7 +21,8 @@ class case_2x1_metaData(TestCase):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('fedSourceIds','unsignedInt',(512,25,17)),
-             ('createSoftFed1022','boolean','true')
+             ('createSoftFed1022','boolean','true'),
+             ('maskedDipTopics','string','dip/CMS/DCS/CMS_HCAL/CMS_HCAL_CASTOR/state,dip/CMS/DCS/CMS_HCAL/CMS_HCAL_ZDC/state')
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),

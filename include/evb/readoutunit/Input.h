@@ -671,7 +671,11 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
     if ( ! metaDataRetriever_ )
       metaDataRetriever_.reset( new MetaDataRetriever(readoutUnit_->getApplicationLogger(),readoutUnit_->getIdentifier(),configuration->dipNodes) );
 
-    metaDataRetriever_->subscribeToDip();
+    metaDataRetriever_->subscribeToDip( configuration->maskedDipTopics );
+  }
+  else
+  {
+    metaDataRetriever_.reset();
   }
 
   {
