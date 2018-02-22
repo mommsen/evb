@@ -53,7 +53,7 @@ class TestRunner:
         parser.add_argument("--numa",action='store_false',help="do not use NUMA settings")
         parser.add_argument("-l","--launchers",choices=('start','stop'),help="start/stop xdaqLaunchers")
         parser.add_argument("--logDir",default=self._evbTesterHome+'/log/',help="log directory [default: %(default)s]")
-
+        parser.add_argument("--dummyXdaq", action = 'store_true', default = False, help="run dummyXdaq.py instead of xdaq.exe (useful for development)")
 
     def run(self,args):
         self.args = vars(args)
@@ -76,6 +76,10 @@ class TestRunner:
             launcherCmd += "--logDir "+self.args['logDir']+" "
         if self.args['numa']:
             launcherCmd += "--useNuma "
+
+        if self.args['dummyXdaq']:
+            launcherCmd += "--dummyXdaq "
+
         for launcher in self._symbolMap.launchers:
             if self.args['verbose']:
                 print("Starting launcher on "+launcher[0]+":"+str(launcher[1]))
