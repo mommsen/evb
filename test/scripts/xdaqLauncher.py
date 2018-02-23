@@ -160,13 +160,17 @@ class xdaqLauncher:
             self.request.sendall(response)
 
 
-    def stopLauncher(self,port,args):
+    def stopLauncher(self):
         response = ""
         for port in xdaqLauncher.threads.keys():
             response += self.killProcess(port)+"\n"
         response += "Terminating launcher"
-        self.request.sendall(response)
-        threading.Thread(target = self.server.shutdown).start()
+
+        # tell the XML rpc server to stop serving requests
+        if not self.xmlrpc_server is None:
+            self.xmlrpc_server.stop = True
+
+        return response
 
 
     def getFiles(self,port,dir):
@@ -203,6 +207,10 @@ if __name__ == "__main__":
     server.server_activate()
 
     launcher = xdaqLauncher(logDir = args['logDir'], useNuma = useNuma, dummyXdaq = args['dummyXdaq'])
+
+    # add the server to the xdaqLauncher object
+    # so that it can set the stop flag
+    launcher.xmlrpc_server = server
 
     # for the moment we prefer to register methods individually
     # rather than calling register_instance() which registers

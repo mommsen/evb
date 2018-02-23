@@ -97,4 +97,7 @@ class TestRunner:
         for launcher in self._symbolMap.launchers:
             if self.args['verbose']:
                 print("Stopping launcher on "+launcher[0]+":"+str(launcher[1]))
-            messengers.sendCmdToLauncher("stopLauncher",launcher[0],launcher[1])
+
+            import xmlrpclib
+            server = xmlrpclib.ServerProxy("http://%s:%s" % (launcher[0],launcher[1]))
+            server.stopLauncher()
