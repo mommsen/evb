@@ -131,7 +131,7 @@ namespace evb {
         boost::scoped_ptr<FragmentTracker> fragmentTracker_;
         typedef std::vector<toolbox::mem::Reference*> PlaybackData;
         PlaybackData playbackData_;
-        PlaybackData::const_iterator playbackDataPos_;
+        PlaybackData::const_reverse_iterator playbackDataPos_;
       };
 
     } } } //namespace evb::test::dummyFEROL

@@ -14,6 +14,7 @@
 #include "xcept/tools.h"
 
 #include <assert.h>
+#include <fstream>
 #include <math.h>
 #include <sstream>
 
@@ -118,17 +119,93 @@ void evb::test::dummyFEROL::FragmentGenerator::setMaxTriggerRate(const uint32_t 
 
 void evb::test::dummyFEROL::FragmentGenerator::cacheData(const std::string& playbackDataFile)
 {
-  toolbox::mem::Reference* bufRef = 0;
-  uint32_t dummy = 0;
-  fillData(bufRef,dummy,dummy,dummy,dummy,dummy,dummy,dummy);
-  playbackData_.push_back(bufRef);
-  playbackDataPos_ = playbackData_.begin();
+  std::ifstream is(playbackDataFile.c_str(), std::ifstream::binary);
+
+  if (is) {
+    // get length of file:
+    is.seekg(0, is.end);
+    int fileLength = is.tellg();
+    is.seekg(0, is.beg);
+
+    char* buffer = new char[fileLength];
+    is.read(buffer,fileLength);
+
+    assert( is.gcount() == fileLength );
+
+    is.close();
+
+    while ( fileLength > 0 )
+    {
+      fedt_t* fedTrailer =  (fedt_t*)(&buffer[fileLength-sizeof(fedt_t)]);
+      assert( FED_TCTRLID_EXTRACT(fedTrailer->eventsize) == FED_SLINK_END_MARKER );
+
+      uint32_t remainingFedSize = FED_EVSZ_EXTRACT(fedTrailer->eventsize)<<3;
+      fileLength -= remainingFedSize;
+
+      fedh_t* fedHeader = (fedh_t*)(&buffer[fileLength]);
+      assert( FED_HCTRLID_EXTRACT(fedHeader->eventid) == FED_SLINK_START_MARKER );
+
+      // ceil(x/y) can be expressed as (x+y-1)/y for positive integers
+      const uint32_t ferolPayloadSize = FEROL_BLOCK_SIZE - sizeof(ferolh_t);
+      const uint16_t ferolBlocks = (remainingFedSize + ferolPayloadSize - 1)/ferolPayloadSize;
+      const uint32_t fragmentSize = remainingFedSize + ferolBlocks*sizeof(ferolh_t);
+
+      toolbox::mem::Reference* bufRef = toolbox::mem::getMemoryPoolFactory()->getFrame(fragmentPool_,fragmentSize);
+      bufRef->setDataSize(fragmentSize);
+      unsigned char* payload = (unsigned char*)bufRef->getDataLocation();
+      memset(payload,0,fragmentSize);
+
+      for (uint16_t packetNumber = 0; packetNumber < ferolBlocks; ++packetNumber)
+      {
+        assert( (remainingFedSize & 0x7) == 0 ); //must be a multiple of 8 Bytes
+        uint32_t length;
+
+        ferolh_t* ferolHeader = (ferolh_t*)payload;
+        ferolHeader->set_signature();
+        ferolHeader->set_packet_number(packetNumber);
+        ferolHeader->set_fed_id( FED_SOID_EXTRACT(fedHeader->sourceid) );
+        ferolHeader->set_event_number( FED_LVL1_EXTRACT(fedHeader->eventid) );
+
+        if (packetNumber == 0)
+          ferolHeader->set_first_packet();
+
+        if ( remainingFedSize > ferolPayloadSize )
+        {
+          length = ferolPayloadSize;
+        }
+        else
+        {
+          length = remainingFedSize;
+          ferolHeader->set_last_packet();
+        }
+
+        ferolHeader->set_data_length(length);
+
+        remainingFedSize -= length;
+        payload += sizeof(ferolh_t);
+
+        memcpy(payload,&buffer[fileLength+packetNumber*ferolPayloadSize],length);
+
+        payload += length;
+      }
+
+      playbackData_.push_back(bufRef);
+
+    }
+
+    delete[] buffer;
+  }
+
+  playbackDataPos_ = playbackData_.rbegin();
+
+  //std::cout << "**** Cached " << playbackData_.size() << " events" << std::endl;
+
 }
 
 
 void evb::test::dummyFEROL::FragmentGenerator::reset()
 {
-  playbackDataPos_ = playbackData_.begin();
+  playbackDataPos_ = playbackData_.rbegin();
   evbIdFactory_.reset(0);
   fragmentTracker_->startRun();
   evbId_ = evbIdFactory_.getEvBid();
@@ -155,14 +232,11 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
 {
   if ( usePlayback_ )
   {
-    // bufRef = clone(*playbackDataPos_);
-    // if ( bufRef == 0 ) return false;
-
     if ( (*playbackDataPos_)->getBuffer()->getRefCounter() > 1024 ) return false;
     bufRef = (*playbackDataPos_)->duplicate();
 
-    if ( ++playbackDataPos_ == playbackData_.end() )
-      playbackDataPos_ = playbackData_.begin();
+    if ( ++playbackDataPos_ == playbackData_.rend() )
+      playbackDataPos_ = playbackData_.rbegin();
     return true;
   }
   else
