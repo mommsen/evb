@@ -177,10 +177,10 @@ class xdaqLauncher:
             raise Exception("Please specify a directory")
         return str(os.listdir(dir))
 
-    def setLogLevel(self, port, level):
+    def setLogLevel(self, level):
         # sets the XDAQ log level for the given application
         # this must be called before starting the XDAQ process in question
-        self.server.logLevel = level
+        self.logLevel = level
 
 
 if __name__ == "__main__":

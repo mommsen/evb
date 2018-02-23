@@ -38,8 +38,10 @@ import xmlrpclib
 def startXDAQ(context,testname,logLevel):
     ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
 
+    server = xmlrpclib.ServerProxy("http://%s:%s" % (context.hostinfo['soapHostname'],context.hostinfo['launcherPort']))
+
     if logLevel is not None:
-        messengers.sendCmdToLauncher("setLogLevel",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],logLevel)
+        server.setLogLevel(context.hostinfo['soapPort'],logLevel)
 
     ret += messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname)
     return ret
