@@ -110,24 +110,21 @@ class xdaqLauncher:
 
 
     def startXDAQ(self,port,testname):
-        if self.server.logDir and testname is None:
-            self.request.sendall("Please specify a testname")
-            return
+
+        if self.logDir and testname is None:
+            raise Exception("Please specify a testname")
         if port is None:
-            self.request.sendall("Please specify a port number")
-            return
+            raise Exception("Please specify a port number")
         if port in xdaqLauncher.threads and xdaqLauncher.threads[port].is_alive():
-            self.request.sendall("There is already a XDAQ process running on port "+str(port))
-            return
+            raise Exception("There is already a XDAQ process running on port "+str(port))
         self.cleanTempFiles()
         try:
-            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma, self.server.logLevel, self.server.dummyXdaq)
+            thread = xdaqThread(port,self.getLogFile(testname),self.useNuma, self.logLevel, self.dummyXdaq)
             thread.start()
         except KeyError:
-            self.request.sendall("Please specify XDAQ_ROOT")
-            return
+            raise Exception("Please specify XDAQ_ROOT")
         xdaqLauncher.threads[port] = thread
-        self.request.sendall("Started XDAQ on port "+str(port))
+        return "Started XDAQ on port "+str(port)
 
 
     def killProcess(self,port):

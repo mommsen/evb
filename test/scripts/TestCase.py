@@ -43,7 +43,7 @@ def startXDAQ(context,testname,logLevel):
     if logLevel is not None:
         server.setLogLevel(context.hostinfo['soapPort'],logLevel)
 
-    ret += messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname)
+    ret += server.startXDAQ(context.hostinfo['soapPort'],testname)
     return ret
 
 
@@ -126,7 +126,7 @@ class TestCase:
 
     def startXDAQs(self,testname):
         try:
-            results = [self._pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
+            results = [self._xmlrpc_pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
             for r in results:
                 try:
                     print(r.get(timeout=30))
