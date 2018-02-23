@@ -174,9 +174,8 @@ class xdaqLauncher:
 
     def getFiles(self,port,dir):
         if dir is None:
-            self.request.sendall("Please specify a directory")
-            return
-        self.request.sendall( str(os.listdir(dir)) )
+            raise Exception("Please specify a directory")
+        return str(os.listdir(dir))
 
     def setLogLevel(self, port, level):
         # sets the XDAQ log level for the given application

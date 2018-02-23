@@ -301,7 +301,9 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
-                    files.extend( eval(messengers.sendCmdToLauncher("getFiles",application['soapHostname'],application['launcherPort'],application['soapPort'],dir)) )
+                    server = xmlrpclib.ServerProxy("http://%s:%s" % (application['soapHostname'],application['launcherPort']))
+
+                    files.extend( eval(server.getFiles(application['soapPort'],dir)) )
         except KeyError:
             pass
         return [f for f in files if re.search(regex,f)]
