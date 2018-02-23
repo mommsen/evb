@@ -10,7 +10,16 @@ import sys
 import threading
 import SocketServer
 
+from SimpleXMLRPCServer import SimpleXMLRPCServer
 
+class ExitableServer(SimpleXMLRPCServer):
+    # an XMLRPC server which can exit
+    
+    def serve_forever(self):
+        self.stop = False
+        while not self.stop:
+            self.handle_request()
+            
 class xdaqThread(threading.Thread):
 
     def __init__(self,xdaqPort,logFile,useNuma, logLevel, dummyXdaq):
