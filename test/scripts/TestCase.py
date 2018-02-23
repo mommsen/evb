@@ -33,7 +33,7 @@ class FileException(Exception):
     pass
 
 
-def startXDAQ(context,testname, logLevel):
+def startXDAQ(context,testname,logLevel):
     ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
 
     if logLevel is not None:
@@ -111,8 +111,7 @@ class TestCase:
 
     def startXDAQs(self,testname):
         try:
-            for context in self._config.contexts.values():
-                results = [self._pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
+            results = [self._pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
             for r in results:
                 try:
                     print(r.get(timeout=30))
