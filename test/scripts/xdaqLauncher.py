@@ -142,7 +142,7 @@ class xdaqLauncher:
             return "XDAQ process on port "+str(port)+" does not exist"
 
 
-    def stopXDAQ(self,port,args):
+    def stopXDAQ(self,port):
         response = ""
         self.cleanTempFiles()
         if port is None:
@@ -152,12 +152,11 @@ class xdaqLauncher:
             try:
                 response = self.killProcess(port)
             except KeyError:
-                self.request.sendall("There is no XDAQ processes on port "+str(port))
-                return
+                raise Exception("There is no XDAQ processes on port "+str(port))
         if response == "":
-            self.request.sendall("There are no running XDAQ processes")
+            return "There are no running XDAQ processes"
         else:
-            self.request.sendall(response)
+            return response
 
 
     def stopLauncher(self):

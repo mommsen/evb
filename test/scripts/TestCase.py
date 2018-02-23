@@ -33,6 +33,8 @@ class FileException(Exception):
     pass
 
 
+import xmlrpclib
+
 def startXDAQ(context,testname,logLevel):
     ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
 
@@ -45,7 +47,10 @@ def startXDAQ(context,testname,logLevel):
 
 def stopXDAQ(context):
     ret = "Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
-    ret += messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'])
+
+    server = xmlrpclib.ServerProxy("http://%s:%s" % (context.hostinfo['soapHostname'],context.hostinfo['launcherPort']))
+
+    ret += server.stopXDAQ(context.hostinfo['soapPort'])
     return ret
 
 
@@ -105,7 +110,7 @@ class TestCase:
         except OSError:
             pass
         if self._config:
-            results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+            results = [self._xmlrpc_pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
             for r in results:
                 print(r.get(timeout=30))
         self._pool.close()
