@@ -88,6 +88,14 @@ class TestCase:
         sys.stdout = stdout
         self._config = config
         self._pool = mp.Pool(20,init_worker)
+
+        # standard multiprocessing pool does not work well with exceptions
+        # over xmlrpc, so we use a pool based on threads (instead of procecesses)
+        # for xmlrpc operations (we are mostly waiting for IO so this should 
+        # not be a problem for performance)
+        from multiprocessing.pool import ThreadPool
+        self._xmlrpc_pool = ThreadPool(20)
+
         self._xdaqLogLevel = None
 
 
