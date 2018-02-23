@@ -93,40 +93,6 @@ class xdaqLauncher:
         # if True, use dummyXdaq.py instead of xdaq.exe
         self.dummyXdaq = dummyXdaq
 
-    def handle(self):
-        commands = {
-            "startXDAQ":self.startXDAQ,
-            "stopXDAQ":self.stopXDAQ,
-            "stopLauncher":self.stopLauncher,
-            "getFiles":self.getFiles,
-            "setLogLevel": self.setLogLevel,
-            }
-        args = None
-
-        # self.request is the TCP socket connected to the client
-        data = self.request.recv(1024).strip()
-        #print("Received '"+data+"' from "+self.client_address[0])
-        sys.stdout.flush()
-        try:
-            (command,portStr) = data.split(':',2)
-            try:
-                (portStr,args) = portStr.split(' ',2)
-            except ValueError:
-                pass
-            try:
-                port = int(portStr)
-            except (TypeError,ValueError):
-                self.request.sendall("Received an invalid port number: '"+portStr+"'")
-                return
-        except ValueError:
-            command = data
-            port = None
-        try:
-            commands[command](port,args)
-        except KeyError:
-            self.request.sendall("Received unknown command '"+command+"'")
-
-
     def cleanTempFiles(self):
         try:
             for file in glob.glob("/tmp/dump_*txt"):
@@ -237,6 +203,18 @@ if __name__ == "__main__":
     server.server_activate()
 
     launcher = xdaqLauncher(logDir = args['logDir'], useNuma = useNuma, dummyXdaq = args['dummyXdaq'])
+
+    # for the moment we prefer to register methods individually
+    # rather than calling register_instance() which registers
+    # all methods of xdaqLauncher
+
+    for command in [ "startXDAQ",
+                     "stopXDAQ",
+                     "stopLauncher",
+                     "getFiles",
+                     "setLogLevel",
+                     ]:
+        server.register_function(getattr(launcher, command))
 
     # start serving requests
     server.serve_forever()
