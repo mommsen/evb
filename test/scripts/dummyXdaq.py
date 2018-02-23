@@ -262,6 +262,11 @@ if __name__ == '__main__':
     def factory(socket, peer_addr, tcp_server):
         return DummyHandler(socket, peer_addr, tcp_server, options.debug)
 
-    server = SocketServer.TCPServer((hostname, options.port), factory)
+    server = SocketServer.TCPServer((hostname, options.port), factory,
+                                    bind_and_activate = False)
+    server.allow_reuse_address = True
+    server.server_bind()
+    server.server_activate()
+
     server.serve_forever()
 
