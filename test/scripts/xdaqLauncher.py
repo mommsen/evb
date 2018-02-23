@@ -76,10 +76,14 @@ class xdaqThread(threading.Thread):
             self._process.kill()
 
 
-class TCPServer(SocketServer.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, logDir, useNuma, dummyXdaq):
-        SocketServer.TCPServer.allow_reuse_address = True
-        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
+class xdaqLauncher:
+
+    threads = {}
+
+    def __init__(self, logDir, useNuma, dummyXdaq):
+
+        self.xmlrpc_server = None
+
         self.logDir = logDir
         self.useNuma = useNuma
 
@@ -88,15 +92,6 @@ class TCPServer(SocketServer.TCPServer):
 
         # if True, use dummyXdaq.py instead of xdaq.exe
         self.dummyXdaq = dummyXdaq
-
-
-class xdaqLauncher(SocketServer.BaseRequestHandler):
-
-    threads = {}
-
-    def __init__(self, request, client_address, server):
-        SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
-
 
     def handle(self):
         commands = {
@@ -233,5 +228,15 @@ if __name__ == "__main__":
         useNuma = True
     else:
         useNuma = False
-    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'], useNuma=useNuma, dummyXdaq = args['dummyXdaq'])
+
+    server = ExitableServer((hostname,args['port']), 
+                            bind_and_activate = False,
+                            logRequests = False)
+    server.allow_reuse_address = True
+    server.server_bind()
+    server.server_activate()
+
+    launcher = xdaqLauncher(logDir = args['logDir'], useNuma = useNuma, dummyXdaq = args['dummyXdaq'])
+
+    # start serving requests
     server.serve_forever()
