@@ -103,8 +103,8 @@ class xdaqLauncher:
 
 
     def getLogFile(self,testname):
-        if self.server.logDir:
-            return self.server.logDir+"/"+testname+"-"+socket.gethostname()+".log"
+        if self.logDir:
+            return self.logDir+"/"+testname+"-"+socket.gethostname()+".log"
         else:
             return None
 
