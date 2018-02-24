@@ -499,11 +499,11 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
     {
       offset = 8 - overflow;
       memcpy(&buffer[overflow],(uint8_t*)it->iov_base,offset);
-      crcCalculator_.compute(crc,&buffer[0],8);
+      crcCalculator_.crc32c(crc,&buffer[0],8);
     }
     const uint32_t remainingSize = it->iov_len - offset;
     overflow = remainingSize % 8;
-    crcCalculator_.compute(crc,(uint8_t*)it->iov_base+offset,remainingSize-overflow);
+    crcCalculator_.crc32c(crc,(uint8_t*)it->iov_base+offset,remainingSize-overflow);
     if ( overflow > 0 )
     {
       memcpy(&buffer[0],(uint8_t*)it->iov_base+offset+remainingSize-overflow,overflow);
@@ -515,13 +515,13 @@ void evb::readoutunit::FedFragment::checkCRC(fedt_t* fedTrailer)
   const uint16_t trailerCRC = FED_CRCS_EXTRACT(origConscheck);
   if ( trailerCRC != crc )
   {
-    hasCRCerror_ = true;
-    std::ostringstream msg;
-    if ( ! errorMsg_.empty() )
-      msg << ". ";
-    msg << "The CRC in the FED trailer claims 0x" << std::hex << trailerCRC;
-    msg << ", but recalculation gives 0x" << crc;
-    errorMsg_ += msg.str();
+  //   hasCRCerror_ = true;
+  //   std::ostringstream msg;
+  //   if ( ! errorMsg_.empty() )
+  //     msg << ". ";
+  //   msg << "The CRC in the FED trailer claims 0x" << std::hex << trailerCRC;
+  //   msg << ", but recalculation gives 0x" << crc;
+  //   errorMsg_ += msg.str();
   }
 }
 
