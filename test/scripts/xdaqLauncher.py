@@ -82,7 +82,7 @@ class xdaqLauncher:
 
     def __init__(self, logDir, useNuma, dummyXdaq):
 
-        self.xmlrpc_server = None
+        self.xmlrpcServer = None
 
         self.logDir = logDir
         self.useNuma = useNuma
@@ -163,8 +163,8 @@ class xdaqLauncher:
         response += "Terminating launcher"
 
         # tell the XML rpc server to stop serving requests
-        if not self.xmlrpc_server is None:
-            self.xmlrpc_server.stop = True
+        if not self.xmlrpcServer is None:
+            self.xmlrpcServer.stop = True
 
         return response
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     # add the server to the xdaqLauncher object
     # so that it can set the stop flag
-    launcher.xmlrpc_server = server
+    launcher.xmlrpcServer = server
 
     # for the moment we prefer to register methods individually
     # rather than calling register_instance() which registers
