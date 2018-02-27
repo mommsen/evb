@@ -101,7 +101,7 @@ class TestCase:
         # for xmlrpc operations (we are mostly waiting for IO so this should 
         # not be a problem for performance)
         from multiprocessing.pool import ThreadPool
-        self._xmlrpc_pool = ThreadPool(20)
+        self._xmlrpcPool = ThreadPool(20)
 
         self._xdaqLogLevel = None
 
@@ -112,7 +112,7 @@ class TestCase:
         except OSError:
             pass
         if self._config:
-            results = [self._xmlrpc_pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+            results = [self._xmlrpcPool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
             for r in results:
                 print(r.get(timeout=30))
         self._pool.close()
@@ -126,7 +126,7 @@ class TestCase:
 
     def startXDAQs(self,testname):
         try:
-            results = [self._xmlrpc_pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
+            results = [self._xmlrpcPool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
             for r in results:
                 try:
                     print(r.get(timeout=30))
