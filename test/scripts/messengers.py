@@ -20,25 +20,6 @@ class SOAPexception(Exception):
     pass
 
 
-def sendCmdToLauncher(cmd,soapHostname,launcherPort,soapPort=None,testname=""):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((soapHostname,int(launcherPort)))
-        if soapPort is None:
-            s.send(cmd+" "+testname)
-        else:
-            s.send(cmd+':'+soapPort+" "+testname)
-        response = []
-        while True:
-            reply = s.recv(1024)
-            if not reply: break
-            response.append(reply)
-        s.close()
-        return ''.join(response)
-    except socket.error as e:
-        return "Failed to contact launcher: "+e.strerror
-
-
 def webPing(soapHostname,soapPort):
     code = None
     try:

@@ -33,19 +33,26 @@ class FileException(Exception):
     pass
 
 
+import xmlrpclib
+
 def startXDAQ(context,testname,logLevel):
     ret = "Starting XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
 
-    if logLevel is not None:
-        messengers.sendCmdToLauncher("setLogLevel",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],logLevel)
+    server = xmlrpclib.ServerProxy("http://%s:%s" % (context.hostinfo['soapHostname'],context.hostinfo['launcherPort']))
 
-    ret += messengers.sendCmdToLauncher("startXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'],testname)
+    if logLevel is not None:
+        server.setLogLevel(context.hostinfo['soapPort'],logLevel)
+
+    ret += server.startXDAQ(context.hostinfo['soapPort'],testname)
     return ret
 
 
 def stopXDAQ(context):
     ret = "Stopping XDAQ on "+context.hostinfo['soapHostname']+":"+str(context.hostinfo['launcherPort'])+"\n"
-    ret += messengers.sendCmdToLauncher("stopXDAQ",context.hostinfo['soapHostname'],context.hostinfo['launcherPort'],context.hostinfo['soapPort'])
+
+    server = xmlrpclib.ServerProxy("http://%s:%s" % (context.hostinfo['soapHostname'],context.hostinfo['launcherPort']))
+
+    ret += server.stopXDAQ(context.hostinfo['soapPort'])
     return ret
 
 
@@ -88,6 +95,14 @@ class TestCase:
         sys.stdout = stdout
         self._config = config
         self._pool = mp.Pool(20,init_worker)
+
+        # standard multiprocessing pool does not work well with exceptions
+        # over xmlrpc, so we use a pool based on threads (instead of procecesses)
+        # for xmlrpc operations (we are mostly waiting for IO so this should 
+        # not be a problem for performance)
+        from multiprocessing.pool import ThreadPool
+        self._xmlrpcPool = ThreadPool(20)
+
         self._xdaqLogLevel = None
 
 
@@ -97,7 +112,7 @@ class TestCase:
         except OSError:
             pass
         if self._config:
-            results = [self._pool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+            results = [self._xmlrpcPool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
             for r in results:
                 print(r.get(timeout=30))
         self._pool.close()
@@ -111,7 +126,7 @@ class TestCase:
 
     def startXDAQs(self,testname):
         try:
-            results = [self._pool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
+            results = [self._xmlrpcPool.apply_async(startXDAQ, args=(c,testname, self._xdaqLogLevel)) for c in self._config.contexts.values()]
             for r in results:
                 try:
                     print(r.get(timeout=30))
@@ -288,7 +303,9 @@ class TestCase:
         try:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
-                    files.extend( eval(messengers.sendCmdToLauncher("getFiles",application['soapHostname'],application['launcherPort'],application['soapPort'],dir)) )
+                    server = xmlrpclib.ServerProxy("http://%s:%s" % (application['soapHostname'],application['launcherPort']))
+
+                    files.extend( eval(server.getFiles(application['soapPort'],dir)) )
         except KeyError:
             pass
         return [f for f in files if re.search(regex,f)]

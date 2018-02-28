@@ -10,7 +10,16 @@ import sys
 import threading
 import SocketServer
 
+from SimpleXMLRPCServer import SimpleXMLRPCServer
 
+class ExitableServer(SimpleXMLRPCServer):
+    # an XMLRPC server which can exit
+    
+    def serve_forever(self):
+        self.stop = False
+        while not self.stop:
+            self.handle_request()
+            
 class xdaqThread(threading.Thread):
 
     def __init__(self,xdaqPort,logFile,useNuma, logLevel, dummyXdaq):
@@ -67,10 +76,14 @@ class xdaqThread(threading.Thread):
             self._process.kill()
 
 
-class TCPServer(SocketServer.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, logDir, useNuma, dummyXdaq):
-        SocketServer.TCPServer.allow_reuse_address = True
-        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
+class xdaqLauncher:
+
+    threads = {}
+
+    def __init__(self, logDir, useNuma, dummyXdaq):
+
+        self.xmlrpcServer = None
+
         self.logDir = logDir
         self.useNuma = useNuma
 
@@ -79,49 +92,6 @@ class TCPServer(SocketServer.TCPServer):
 
         # if True, use dummyXdaq.py instead of xdaq.exe
         self.dummyXdaq = dummyXdaq
-
-
-class xdaqLauncher(SocketServer.BaseRequestHandler):
-
-    threads = {}
-
-    def __init__(self, request, client_address, server):
-        SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
-
-
-    def handle(self):
-        commands = {
-            "startXDAQ":self.startXDAQ,
-            "stopXDAQ":self.stopXDAQ,
-            "stopLauncher":self.stopLauncher,
-            "getFiles":self.getFiles,
-            "setLogLevel": self.setLogLevel,
-            }
-        args = None
-
-        # self.request is the TCP socket connected to the client
-        data = self.request.recv(1024).strip()
-        #print("Received '"+data+"' from "+self.client_address[0])
-        sys.stdout.flush()
-        try:
-            (command,portStr) = data.split(':',2)
-            try:
-                (portStr,args) = portStr.split(' ',2)
-            except ValueError:
-                pass
-            try:
-                port = int(portStr)
-            except (TypeError,ValueError):
-                self.request.sendall("Received an invalid port number: '"+portStr+"'")
-                return
-        except ValueError:
-            command = data
-            port = None
-        try:
-            commands[command](port,args)
-        except KeyError:
-            self.request.sendall("Received unknown command '"+command+"'")
-
 
     def cleanTempFiles(self):
         try:
@@ -133,31 +103,28 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
 
 
     def getLogFile(self,testname):
-        if self.server.logDir:
-            return self.server.logDir+"/"+testname+"-"+socket.gethostname()+".log"
+        if self.logDir:
+            return self.logDir+"/"+testname+"-"+socket.gethostname()+".log"
         else:
             return None
 
 
     def startXDAQ(self,port,testname):
-        if self.server.logDir and testname is None:
-            self.request.sendall("Please specify a testname")
-            return
+
+        if self.logDir and testname is None:
+            raise Exception("Please specify a testname")
         if port is None:
-            self.request.sendall("Please specify a port number")
-            return
+            raise Exception("Please specify a port number")
         if port in xdaqLauncher.threads and xdaqLauncher.threads[port].is_alive():
-            self.request.sendall("There is already a XDAQ process running on port "+str(port))
-            return
+            raise Exception("There is already a XDAQ process running on port "+str(port))
         self.cleanTempFiles()
         try:
-            thread = xdaqThread(port,self.getLogFile(testname),self.server.useNuma, self.server.logLevel, self.server.dummyXdaq)
+            thread = xdaqThread(port,self.getLogFile(testname),self.useNuma, self.logLevel, self.dummyXdaq)
             thread.start()
         except KeyError:
-            self.request.sendall("Please specify XDAQ_ROOT")
-            return
+            raise Exception("Please specify XDAQ_ROOT")
         xdaqLauncher.threads[port] = thread
-        self.request.sendall("Started XDAQ on port "+str(port))
+        return "Started XDAQ on port "+str(port)
 
 
     def killProcess(self,port):
@@ -172,7 +139,7 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             return "XDAQ process on port "+str(port)+" does not exist"
 
 
-    def stopXDAQ(self,port,args):
+    def stopXDAQ(self,port):
         response = ""
         self.cleanTempFiles()
         if port is None:
@@ -182,33 +149,35 @@ class xdaqLauncher(SocketServer.BaseRequestHandler):
             try:
                 response = self.killProcess(port)
             except KeyError:
-                self.request.sendall("There is no XDAQ processes on port "+str(port))
-                return
+                raise Exception("There is no XDAQ processes on port "+str(port))
         if response == "":
-            self.request.sendall("There are no running XDAQ processes")
+            return "There are no running XDAQ processes"
         else:
-            self.request.sendall(response)
+            return response
 
 
-    def stopLauncher(self,port,args):
+    def stopLauncher(self):
         response = ""
         for port in xdaqLauncher.threads.keys():
             response += self.killProcess(port)+"\n"
         response += "Terminating launcher"
-        self.request.sendall(response)
-        threading.Thread(target = self.server.shutdown).start()
+
+        # tell the XML rpc server to stop serving requests
+        if not self.xmlrpcServer is None:
+            self.xmlrpcServer.stop = True
+
+        return response
 
 
     def getFiles(self,port,dir):
         if dir is None:
-            self.request.sendall("Please specify a directory")
-            return
-        self.request.sendall( str(os.listdir(dir)) )
+            raise Exception("Please specify a directory")
+        return str(os.listdir(dir))
 
-    def setLogLevel(self, port, level):
+    def setLogLevel(self, level):
         # sets the XDAQ log level for the given application
         # this must be called before starting the XDAQ process in question
-        self.server.logLevel = level
+        self.logLevel = level
 
 
 if __name__ == "__main__":
@@ -224,5 +193,31 @@ if __name__ == "__main__":
         useNuma = True
     else:
         useNuma = False
-    server = TCPServer((hostname,args['port']), xdaqLauncher, logDir=args['logDir'], useNuma=useNuma, dummyXdaq = args['dummyXdaq'])
+
+    server = ExitableServer((hostname,args['port']), 
+                            bind_and_activate = False,
+                            logRequests = False)
+    server.allow_reuse_address = True
+    server.server_bind()
+    server.server_activate()
+
+    launcher = xdaqLauncher(logDir = args['logDir'], useNuma = useNuma, dummyXdaq = args['dummyXdaq'])
+
+    # add the server to the xdaqLauncher object
+    # so that it can set the stop flag
+    launcher.xmlrpcServer = server
+
+    # for the moment we prefer to register methods individually
+    # rather than calling register_instance() which registers
+    # all methods of xdaqLauncher
+
+    for command in [ "startXDAQ",
+                     "stopXDAQ",
+                     "stopLauncher",
+                     "getFiles",
+                     "setLogLevel",
+                     ]:
+        server.register_function(getattr(launcher, command))
+
+    # start serving requests
     server.serve_forever()

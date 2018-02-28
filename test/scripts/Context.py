@@ -159,6 +159,12 @@ class BU(Context):
         self.applications.append(app)
 
 
+def resetInstanceNumbers():
+    # resets all instance numbers of the above classes
+    # (these are class wide / static variables)
+    FEROL.instance = 0
+    RU.instance = 0
+    BU.instance = 0
 
 if __name__ == "__main__":
     os.environ["EVB_SYMBOL_MAP"] = 'standaloneSymbolMap.txt'

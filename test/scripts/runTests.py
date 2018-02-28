@@ -10,6 +10,7 @@ from Configuration import Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from TestCase import TestCase
+import Context
 
 
 class RunTests(TestRunner):
@@ -84,6 +85,8 @@ class RunTests(TestRunner):
 
 
     def runTest(self,test,stdout):
+        Context.resetInstanceNumbers()
+
         try:
             testModule = __import__(test,fromlist=test)
             testCase = getattr(testModule,'case_'+test)
