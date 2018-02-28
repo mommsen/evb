@@ -44,6 +44,19 @@ namespace MetaData
     bool operator!=(const BeamSpot& other) const;
   };
 
+  struct CTPPS
+  {
+    uint64_t timeStamp;
+    uint64_t status;
+
+    CTPPS();
+
+    bool operator!=(const CTPPS& other) const;
+
+    static const uint8_t rpCount = 18;
+    static const char ctppsRP[rpCount][16];
+  };
+
   struct DCS
   {
     uint64_t timeStamp;
@@ -60,6 +73,7 @@ namespace MetaData
     uint8_t version;
     Luminosity luminosity;
     BeamSpot beamSpot;
+    CTPPS ctpps;
     DCS dcs;
 
     Data();
@@ -67,13 +81,14 @@ namespace MetaData
     bool operator!=(const Data& other);
   };
 
-  const uint8_t version = 1;
+  const uint8_t version = 2;
   const size_t dataSize = sizeof(Data);
 
 } //namespace MetaData
 
 std::ostream& operator<<(std::ostream&, const MetaData::Luminosity&);
 std::ostream& operator<<(std::ostream&, const MetaData::BeamSpot&);
+std::ostream& operator<<(std::ostream&, const MetaData::CTPPS&);
 std::ostream& operator<<(std::ostream&, const MetaData::DCS&);
 std::ostream& operator<<(std::ostream&, const MetaData::Data&);
 
