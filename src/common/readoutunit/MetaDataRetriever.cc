@@ -334,40 +334,47 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
     {
       case okay :
       {
-        std::ostringstream valueStr;
+        tr row;
+        row.add(td(topic));
 
         if ( topic == "dip/CMS/BRIL/Luminosity" )
         {
           boost::mutex::scoped_lock sl(luminosityMutex_);
+          std::ostringstream valueStr;
           valueStr << lastLuminosity_;
+          row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/Tracker/BeamSpot" )
         {
           boost::mutex::scoped_lock sl(dcsMutex_);
+          std::ostringstream valueStr;
           valueStr << lastBeamSpot_;
+          row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/CTPPS/detectorFSM" )
         {
           boost::mutex::scoped_lock sl(ctppsMutex_);
+          std::ostringstream valueStr;
           valueStr << lastCTPPS_;
+          row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/MCS/Current" )
         {
           boost::mutex::scoped_lock sl(dcsMutex_);
+          std::ostringstream valueStr;
           valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
+          row.add(td(valueStr.str()));
         }
         else
         {
           boost::mutex::scoped_lock sl(dcsMutex_);
           if ( lastDCS_.highVoltageReady & (1 << pos) )
-            valueStr << "READY";
+            row.add(td("READY"));
           else
-            valueStr << "OFF";
+            row.add(td("OFF"));
         }
 
-        table.add(tr()
-                  .add(td(topic))
-                  .add(td(valueStr.str())));
+        table.add(row);
         break;
       }
       case unavailable:
