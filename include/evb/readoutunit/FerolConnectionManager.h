@@ -341,8 +341,8 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
       fedIds.insert(it->value_);
   }
 
-  const uint16_t maxTries = configuration->ferolConnectTimeOut*1000;
-  uint16_t tries = 0;
+  const uint64_t maxTries = configuration->ferolConnectTimeOut*1000;
+  uint64_t tries = 0;
 
   do
   {

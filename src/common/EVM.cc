@@ -304,8 +304,8 @@ namespace evb {
         fragmentRequest->evbIds.push_back( superFragment->getEvBid() );
 
         uint32_t remainingRequests = fragmentRequest->nbRequests - 1;
-        const uint32_t maxTries = readoutUnit_->getConfiguration()->maxTriggerAgeMSec*10;
-        uint32_t tries = 0;
+        const uint64_t maxTries = readoutUnit_->getConfiguration()->maxTriggerAgeMSec*10;
+        uint64_t tries = 0;
         while ( remainingRequests > 0 && tries < maxTries )
         {
           if ( input_->getNextAvailableSuperFragment(superFragment) )
