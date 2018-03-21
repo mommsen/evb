@@ -91,8 +91,9 @@ namespace evb {
                      uint32_t& skipNbEvents,
                      uint32_t& duplicateNbEvents,
                      uint32_t& corruptNbEvents,
-                     uint32_t& nbCRCerrors,
-                     uint32_t& nbBXerrors);
+                     uint32_t& nbBXerrors,
+                     uint32_t& nbFedCRCerrors,
+                     uint32_t& nbSlinkCRCerrors);
 
         /**
          * Set maximum rate for generating fragments
@@ -114,8 +115,9 @@ namespace evb {
                       uint32_t& skipNbEvents,
                       uint32_t& duplicateNbEvents,
                       uint32_t& corruptNbEvents,
-                      uint32_t& nbCRCerrors,
-                      uint32_t& nbBXerrors);
+                      uint32_t& nbBXerrors,
+                      uint32_t& nbFedCRCerrors,
+                      uint32_t& nbSlinkCRCerrors);
         toolbox::mem::Reference* clone(toolbox::mem::Reference*) const;
 
         EvBid evbId_;

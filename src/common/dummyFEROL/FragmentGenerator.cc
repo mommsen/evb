@@ -226,8 +226,9 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
-  uint32_t& nbCRCerrors,
-  uint32_t& nbBXerrors
+  uint32_t& nbBXerrors,
+  uint32_t& nbFedCRCerrors,
+  uint32_t& nbSlinkCRCerrors
 )
 {
   if ( usePlayback_ )
@@ -241,7 +242,9 @@ bool evb::test::dummyFEROL::FragmentGenerator::getData
   }
   else
   {
-    return fillData(bufRef,stopAtEventNumber,lastEventNumber,skipNbEvents,duplicateNbEvents,corruptNbEvents,nbCRCerrors,nbBXerrors);
+    return fillData(bufRef,stopAtEventNumber,lastEventNumber,skipNbEvents,
+                    duplicateNbEvents,corruptNbEvents,nbBXerrors,
+                    nbFedCRCerrors,nbSlinkCRCerrors);
   }
 }
 
@@ -254,8 +257,9 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
   uint32_t& skipNbEvents,
   uint32_t& duplicateNbEvents,
   uint32_t& corruptNbEvents,
-  uint32_t& nbCRCerrors,
-  uint32_t& nbBXerrors
+  uint32_t& nbBXerrors,
+  uint32_t& nbFedCRCerrors,
+  uint32_t& nbSlinkCRCerrors
 )
 {
   for ( uint32_t i = 0; i < skipNbEvents; ++i )
@@ -317,12 +321,11 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
 
       if (packetNumber == 0)
       {
-        if ( nbCRCerrors > 0 )
+        if ( nbFedCRCerrors > 0 || nbSlinkCRCerrors > 0 )
         {
           unsigned char* payload = frame +
             ( filledBytes / 2 );
           *payload ^= 0x1;
-          --nbCRCerrors;
         }
         if ( nbBXerrors > 0 )
         {
@@ -356,6 +359,20 @@ bool evb::test::dummyFEROL::FragmentGenerator::fillData
       fedt_t* fedTrailer = (fedt_t*)(frame - sizeof(fedt_t));
       fedTrailer->eventsize ^= 0x10;
       --corruptNbEvents;
+    }
+
+    if ( nbFedCRCerrors > 0 )
+    {
+      fedt_t* fedTrailer = (fedt_t*)(frame - sizeof(fedt_t));
+      fedTrailer->conscheck |= 0x4;
+      --nbFedCRCerrors;
+    }
+
+    if ( nbSlinkCRCerrors > 0 )
+    {
+      fedt_t* fedTrailer = (fedt_t*)(frame - sizeof(fedt_t));
+      fedTrailer->conscheck |= 0x8000;
+      --nbSlinkCRCerrors;
     }
 
     if ( duplicateNbEvents > 0 )
