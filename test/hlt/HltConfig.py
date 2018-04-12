@@ -82,10 +82,12 @@ process.datasets = cms.PSet(
   dHLTMonitor = cms.vstring( 'pHLTMonitor' ),
   dNanoDST = cms.vstring( 'pNanoDST' ),
   dParking = cms.vstring( 'pParking' ),
+  dParking2 = cms.vstring( 'pParking2' ),
   dParkingEGammaCommissioning = cms.vstring( 'pParkingEGammaCommissioning' ),
   dPhysicsEndOfFill = cms.vstring( 'pPhysicsEndOfFill' ),
   dPhysicsHadronsTaus = cms.vstring( 'pPhysicsHadronsTaus' ),
   dPhysicsMuons = cms.vstring( 'pPhysicsMuons' ),
+  dPhysicsMuons2 = cms.vstring( 'pPhysicsMuons2' ),
   dPhysicsParkingScouting = cms.vstring( 'pPhysicsParkingScouting' ),
   dPhysicsTest = cms.vstring( 'pPhysicsTest' ),
   dRPCMON = cms.vstring( 'pRPCMON' ),
@@ -157,74 +159,81 @@ process.PrescaleService = cms.Service( "PrescaleService",
     forceDefault = cms.bool( True ),
     prescaleTable = cms.VPSet(
       cms.PSet(  pathName = cms.string( "pDQM" ),
-        prescales = cms.vuint32( 0, 423, 0, 846 )
+        prescales = cms.vuint32( 211, 0, 423, 0, 846 )
       ),
       cms.PSet(  pathName = cms.string( "pALCALUMIPIXELS" ),
-        prescales = cms.vuint32( 372, 372, 743, 743 )
+        prescales = cms.vuint32( 166, 372, 372, 743, 743 )
       ),
       cms.PSet(  pathName = cms.string( "pParking" ),
-        prescales = cms.vuint32( 105, 105, 211, 211 )
+        prescales = cms.vuint32( 105, 105, 105, 211, 211 )
+      ),
+      cms.PSet(  pathName = cms.string( "pParking2" ),
+        prescales = cms.vuint32( 105, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "pNanoDST" ),
-        prescales = cms.vuint32( 1245, 1245, 2491, 2491 )
+        prescales = cms.vuint32( 622, 1245, 1245, 2491, 2491 )
       ),
       cms.PSet(  pathName = cms.string( "pHLTMonitor" ),
-        prescales = cms.vuint32( 5801, 5801, 11603, 11603 )
+        prescales = cms.vuint32( 2900, 5801, 5801, 11603, 11603 )
       ),
       cms.PSet(  pathName = cms.string( "pExpress" ),
-        prescales = cms.vuint32( 905, 905, 1810, 1810 )
+        prescales = cms.vuint32( 452, 905, 905, 1810, 1810 )
       ),
       cms.PSet(  pathName = cms.string( "pCalibration" ),
-        prescales = cms.vuint32( 10434, 10434, 20868, 20868 )
+        prescales = cms.vuint32( 5217, 10434, 10434, 20868, 20868 )
       ),
       cms.PSet(  pathName = cms.string( "pALCAPHISYM" ),
-        prescales = cms.vuint32( 6318, 6318, 12637, 12637 )
+        prescales = cms.vuint32( 3159, 6318, 6318, 12637, 12637 )
       ),
       cms.PSet(  pathName = cms.string( "pALCAP0" ),
-        prescales = cms.vuint32( 607, 607, 1213, 1213 )
+        prescales = cms.vuint32( 303, 607, 607, 1213, 1213 )
       ),
       cms.PSet(  pathName = cms.string( "pALCAELECTRON" ),
-        prescales = cms.vuint32( 1345, 1345, 2691, 2691 )
+        prescales = cms.vuint32( 672, 1345, 1345, 2691, 2691 )
       ),
       cms.PSet(  pathName = cms.string( "pPhysicsEndOfFill" ),
-        prescales = cms.vuint32( 0, 0, 0, 0 )
+        prescales = cms.vuint32( 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "pPhysicsHadronsTaus" ),
-        prescales = cms.vuint32( 135, 135, 270, 270 )
+        prescales = cms.vuint32( 135, 135, 135, 270, 270 )
       ),
       cms.PSet(  pathName = cms.string( "pPhysicsMuons" ),
-        prescales = cms.vuint32( 164, 164, 329, 329 )
+        prescales = cms.vuint32( 82, 164, 164, 329, 329 )
+      ),
+      cms.PSet(  pathName = cms.string( "pPhysicsMuons2" ),
+        prescales = cms.vuint32( 82, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "pPhysicsParkingScouting" ),
-        prescales = cms.vuint32( 704, 704, 1409, 1409 )
+        prescales = cms.vuint32( 150, 704, 704, 1409, 1409 )
       ),
       cms.PSet(  pathName = cms.string( "pRPCMON" ),
-        prescales = cms.vuint32( 882, 882, 1764, 1764 )
+        prescales = cms.vuint32( 441, 882, 882, 1764, 1764 )
       ),
       cms.PSet(  pathName = cms.string( "pScoutingCalo" ),
-        prescales = cms.vuint32( 5347, 5347, 10693, 10693 )
+        prescales = cms.vuint32( 2674, 5347, 5347, 10693, 10693 )
       ),
       cms.PSet(  pathName = cms.string( "pScoutingPF" ),
-        prescales = cms.vuint32( 4954, 4954, 9908, 9908 )
+        prescales = cms.vuint32( 2477, 4954, 4954, 9908, 9908 )
       ),
       cms.PSet(  pathName = cms.string( "pPhysicsTest" ),
-        prescales = cms.vuint32( 0, 0, 0, 0 )
+        prescales = cms.vuint32( 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "pParkingEGammaCommissioning" ),
-        prescales = cms.vuint32( 88, 88, 176, 176 )
+        prescales = cms.vuint32( 88, 88, 88, 176, 176 )
       ),
       cms.PSet(  pathName = cms.string( "pDQMEventDisplay" ),
-        prescales = cms.vuint32( 0, 3677, 0, 7353 )
+        prescales = cms.vuint32( 1836, 0, 3677, 0, 7353 )
       ),
       cms.PSet(  pathName = cms.string( "pEcalCalibration" ),
-        prescales = cms.vuint32( 15672, 15672, 31344, 31344 )
+        prescales = cms.vuint32( 7836, 15672, 15672, 31344, 31344 )
       ),
       cms.PSet(  pathName = cms.string( "pDQMCalibration" ),
-        prescales = cms.vuint32( 0, 10434, 0, 20868 )
+        prescales = cms.vuint32( 10434, 0, 10434, 0, 20868 )
       )
     ),
     lvl1DefaultLabel = cms.string( "4GBs" ),
     lvl1Labels = cms.vstring(
+      '8GBs',
       '4GBs_noDQM',
       '4GBs',
       '2GBs_noDQM',
@@ -387,6 +396,10 @@ process.hltPrepParking = cms.EDFilter( "HLTPrescaler",
     L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
     offset = cms.uint32( 0 )
 )
+process.hltPrepParking2 = cms.EDFilter( "HLTPrescaler",
+    L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
+    offset = cms.uint32( 0 )
+)
 process.hltPrepNanoDST = cms.EDFilter( "HLTPrescaler",
     L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
     offset = cms.uint32( 0 )
@@ -424,6 +437,10 @@ process.hltPrepPhysicsHadronsTaus = cms.EDFilter( "HLTPrescaler",
     offset = cms.uint32( 0 )
 )
 process.hltPrepPhysicsMuons = cms.EDFilter( "HLTPrescaler",
+    L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
+    offset = cms.uint32( 0 )
+)
+process.hltPrepPhysicsMuons2 = cms.EDFilter( "HLTPrescaler",
     L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" ),
     offset = cms.uint32( 0 )
 )
@@ -510,6 +527,12 @@ process.hltOutputPhysicsMuons = cms.OutputModule( "ShmStreamConsumer",
       'keep FEDRawDataCollection_rawDataCollector_*_*',
       'keep FEDRawDataCollection_source_*_*' )
 )
+process.hltOutputPhysicsMuons2 = cms.OutputModule( "ShmStreamConsumer",
+    SelectEvents = cms.untracked.PSet(  SelectEvents = cms.vstring( 'pPhysicsMuons2' ) ),
+    outputCommands = cms.untracked.vstring( 'drop *',
+      'keep FEDRawDataCollection_rawDataCollector_*_*',
+      'keep FEDRawDataCollection_source_*_*' )
+)
 process.hltOutputPhysicsHadronsTaus = cms.OutputModule( "ShmStreamConsumer",
     SelectEvents = cms.untracked.PSet(  SelectEvents = cms.vstring( 'pPhysicsHadronsTaus' ) ),
     outputCommands = cms.untracked.vstring( 'drop *',
@@ -524,6 +547,12 @@ process.hltOutputPhysicsEndOfFill = cms.OutputModule( "ShmStreamConsumer",
 )
 process.hltOutputParking = cms.OutputModule( "ShmStreamConsumer",
     SelectEvents = cms.untracked.PSet(  SelectEvents = cms.vstring( 'pParking' ) ),
+    outputCommands = cms.untracked.vstring( 'drop *',
+      'keep FEDRawDataCollection_rawDataCollector_*_*',
+      'keep FEDRawDataCollection_source_*_*' )
+)
+process.hltOutputParking2 = cms.OutputModule( "ShmStreamConsumer",
+    SelectEvents = cms.untracked.PSet(  SelectEvents = cms.vstring( 'pParking2' ) ),
     outputCommands = cms.untracked.vstring( 'drop *',
       'keep FEDRawDataCollection_rawDataCollector_*_*',
       'keep FEDRawDataCollection_source_*_*' )
@@ -608,9 +637,11 @@ process.epScoutingCalo = cms.EndPath( process.hltOutputScoutingCalo )
 process.epRPCMON = cms.EndPath( process.hltOutputRPCMON )
 process.epParkingScouting = cms.EndPath( process.hltOutputPhysicsParkingScouting )
 process.epPhysicsMuons = cms.EndPath( process.hltOutputPhysicsMuons )
+process.epPhysicsMuons2 = cms.EndPath( process.hltOutputPhysicsMuons2 )
 process.epPhysicsHadronsTaus = cms.EndPath( process.hltOutputPhysicsHadronsTaus )
 process.epPhysicsEndOfFill = cms.EndPath( process.hltOutputPhysicsEndOfFill )
 process.epParking = cms.EndPath( process.hltOutputParking )
+process.epParking2 = cms.EndPath( process.hltOutputParking2 )
 process.epALCALUMIPIXELS = cms.EndPath( process.hltOutputALCALUMIPIXELS )
 process.epNanoDST = cms.EndPath( process.hltOutputNanoDST )
 process.epHLTMonitor = cms.EndPath( process.hltOutputHLTMonitor )
@@ -629,6 +660,7 @@ process.epDQMCalibration = cms.EndPath( process.hltOutputDQMCalibration )
 process.pDQM = cms.Path( process.ExceptionGenerator2 + process.hltPrepDQM )
 process.pALCALUMIPIXELS = cms.Path( process.ExceptionGenerator2 + process.hltPrepALCALUMIPIXELS )
 process.pParking = cms.Path( process.ExceptionGenerator2 + process.hltPrepParking )
+process.pParking2 = cms.Path( process.ExceptionGenerator2 + process.hltPrepParking2 )
 process.pNanoDST = cms.Path( process.ExceptionGenerator2 + process.hltPrepNanoDST )
 process.pHLTMonitor = cms.Path( process.ExceptionGenerator2 + process.hltPrepHLTMonitor )
 process.pExpress = cms.Path( process.ExceptionGenerator2 + process.hltPrepExpress )
@@ -639,6 +671,7 @@ process.pALCAELECTRON = cms.Path( process.ExceptionGenerator2 + process.hltPrepA
 process.pPhysicsEndOfFill = cms.Path( process.ExceptionGenerator2 + process.hltPrepPhysicsEndOfFill )
 process.pPhysicsHadronsTaus = cms.Path( process.ExceptionGenerator2 + process.hltPrepPhysicsHadronsTaus )
 process.pPhysicsMuons = cms.Path( process.ExceptionGenerator2 + process.hltPrepPhysicsMuons )
+process.pPhysicsMuons2 = cms.Path( process.ExceptionGenerator2 + process.hltPrepPhysicsMuons2 )
 process.pPhysicsParkingScouting = cms.Path( process.ExceptionGenerator2 + process.hltPrepPhysicsParkingScouting )
 process.pRPCMON = cms.Path( process.ExceptionGenerator2 + process.hltPrepRPCMON )
 process.pScoutingCalo = cms.Path( process.ExceptionGenerator2 + process.hltPrepScoutingCalo )
@@ -697,10 +730,7 @@ options.parseArguments()
 
 process.options = cms.untracked.PSet(
     numberOfThreads = cms.untracked.uint32(options.numThreads),
-    numberOfStreams = cms.untracked.uint32(options.numFwkStreams),
-    multiProcesses = cms.untracked.PSet(
-    maxChildProcesses = cms.untracked.int32(0)
-    )
+    numberOfStreams = cms.untracked.uint32(options.numFwkStreams)
 )
 
 process.EvFDaqDirector.buBaseDir    = options.buBaseDir
