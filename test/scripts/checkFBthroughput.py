@@ -37,15 +37,19 @@ class CheckFBthroughput:
     def readParamFile(self,paramFile):
         params = {}
         with open(paramFile) as file:
-            for line in file:
-                try:
-                    (fedIds,a,b,c,rms) = line.split(',',5)
-                except ValueError:
-                    (fedIds,a,b,c,rms,_) = line.split(',',6)
-                try:
-                    params[fedIds] = (float(a),float(b),float(c))
-                except ValueError:
-                    pass
+            try:
+                for line in file:
+                    try:
+                        (fedIds,a,b,c,rms) = line.split(',',5)
+                    except ValueError:
+                        (fedIds,a,b,c,rms,_) = line.split(',',6)
+                    try:
+                        params[fedIds] = (float(a),float(b),float(c))
+                    except ValueError:
+                        pass
+            except Exception as e:
+                print("Failed to parse: "+line)
+                raise e
         return params
 
 
