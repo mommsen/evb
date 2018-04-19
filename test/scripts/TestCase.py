@@ -180,9 +180,9 @@ class TestCase:
 
     def checkAppState(self,targetState,app,instance=None):
         """
-        checks all the application states. If at least one of them
-        is not in the specified targetState or is in Failed
-        state, an exception is raised
+        Checks the state of all the applications of type 'app'. 
+        If at least one of them is not in the specified targetState 
+        or is in Failed state, an exception is raised.
         """
         try:
             for application in self._config.applications[app]:
@@ -222,6 +222,10 @@ class TestCase:
 
 
     def checkState(self,targetState):
+        """
+        Checks the application state of all applications
+        associated to this event builder.
+        """
         for app in self._config.applications.keys():
             self.checkAppState(targetState,app)
 
