@@ -198,7 +198,15 @@ if __name__ == "__main__":
                             bind_and_activate = False,
                             logRequests = False)
     server.allow_reuse_address = True
-    server.server_bind()
+    try:
+        server.server_bind()
+    except socket.error, ex:
+        import errno
+        if ex.errno == errno.EADDRINUSE:
+            raise Exception("xdaq launcher address already in use on %s:%s" % (hostname, args['port']))
+        else:
+            raise
+
     server.server_activate()
 
     launcher = xdaqLauncher(logDir = args['logDir'], useNuma = useNuma, dummyXdaq = args['dummyXdaq'])
