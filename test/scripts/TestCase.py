@@ -21,9 +21,17 @@ class LauncherException(Exception):
     pass
 
 class StateException(Exception):
+    """
+    exception which is thrown when an application
+    is not in the expected state 
+    """
     pass
 
 class FailedState(Exception):
+    """
+    exception which is thrown when an application
+    is in failed state 
+    """
     pass
 
 class ValueException(Exception):
@@ -171,6 +179,11 @@ class TestCase:
 
 
     def checkAppState(self,targetState,app,instance=None):
+        """
+        checks all the application states. If at least one of them
+        is not in the specified targetState or is in Failed
+        state, an exception is raised
+        """
         try:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:

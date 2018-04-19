@@ -109,7 +109,12 @@ class RunScans(TestRunner):
             elif self.args['compl']:
                 sizes = [ s for s in allSizes if s not in shortSizes ]
             else:
+                # explicit list of fragment sizes specified on the command line
                 sizes = self.args['sizes']
+
+            #----------
+            # symbol map / configuration to run
+            #----------
 
             if self.args['symbolMap']:
                 self._symbolMap = SymbolMap(self.args['symbolMap'])
@@ -118,6 +123,10 @@ class RunScans(TestRunner):
                 self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
                 self.startLaunchers()
                 time.sleep(1)
+
+            #----------
+            # output / result file
+            #----------
 
             outputFileName = self.args['outputDir']+"/"+configName+".dat"
             if self.args['append']:
@@ -130,6 +139,7 @@ class RunScans(TestRunner):
                     bakDir = self.args['outputDir']+'/'+dateStr
                     os.makedirs(bakDir)
                     os.rename(outputFileName,bakDir+"/"+configName+".dat")
+
             with open(outputFileName,mode) as dataFile:
                 if self.args['ferolMode']:
                     ferolMode = 'FEROL_MODE'
@@ -140,6 +150,10 @@ class RunScans(TestRunner):
                 configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors)
                 configCase.setXdaqLogLevel(self.args['logLevel'])
                 configCase.prepare(configName)
+
+                #----------
+                # loop over specified fragment sizes
+                #----------
                 for fragSize in sizes:
                     fragSizeRMS = int(fragSize * self.args['rms'])
                     data = {}
@@ -148,7 +162,9 @@ class RunScans(TestRunner):
                     data['measurement'] = configCase.runScan(fragSize,fragSizeRMS,self.args)
                     dataFile.write(str(data)+"\n")
                     dataFile.flush()
+
                 del(configCase)
+
             returnValue = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
             traceback.print_exc(file=stdout)
