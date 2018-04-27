@@ -47,6 +47,10 @@ class ConfigCase(TestCase):
 
 
     def getDataPoint(self):
+        """
+        retrieves super fragment size and event rate from the EVM
+        and RU applications
+        """
         sizes = self.getAppParam("superFragmentSize","unsignedInt","EVM")
         sizes.update( self.getAppParam("superFragmentSize","unsignedInt","RU") )
         sizes.update( self.getAppParam("eventSize","unsignedInt","BU") )
@@ -57,6 +61,10 @@ class ConfigCase(TestCase):
 
 
     def getThroughputMB(self,dataPoint):
+        """
+        calculates the throughput in MByte/sec by summing over the superfragment
+        sizes at all RUs and multiplying by the total event rate 
+        """
         try:
             size = sum(list(x['sizes']['RU0'] for x in dataPoint))/float(len(dataPoint))
             rate = sum(list(x['rates']['RU0'] for x in dataPoint))/float(len(dataPoint))
@@ -84,6 +92,10 @@ class ConfigCase(TestCase):
 
 
     def setFragmentSizes(self,fragSize,fragSizeRMS):
+        """
+        configures the fragment size to be generated at the FEROL/FRL
+        """
+
         try:
             for application in self._config.applications['FEROL']:
                 for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
@@ -122,6 +134,10 @@ class ConfigCase(TestCase):
 
 
     def start(self,dropAtRU,dropAtSocket):
+        """
+        configures and enables (starts) the event builder 
+        """
+
         runNumber=time.strftime("%s",time.localtime())
         self.configureEvB(maxTries=30)
         self.enableEvB(maxTries=30,runNumber=runNumber)
@@ -129,12 +145,23 @@ class ConfigCase(TestCase):
 
 
     def doIt(self,fragSize,fragSizeRMS,args):
+        """
+        runs a test for a single fragment size 
+        and returns the obtained performance numbers
+        """
+
         dataPoints = []
         self.setFragmentSizes(fragSize,fragSizeRMS)
+
+        # start running
         self.start(args['dropAtRU'],args['dropAtSocket'])
+
         if args['nbMeasurements'] == 0:
             dataPoints.append( self.getDataPoint() )
+
+            # run until the user presses enter
             raw_input("Press Enter to stop...")
+
         else:
             if args['long']:
                 time.sleep(300)
@@ -146,11 +173,18 @@ class ConfigCase(TestCase):
                 else:
                     time.sleep(10)
                 dataPoints.append( self.getDataPoint() )
+
         self.haltEvB()
         return dataPoints
 
 
     def runScan(self,fragSize,fragSizeRMS,args):
+        """
+        runs a test for a single fragment size 
+        and writes out summary information. Tries
+        multiple times in case of problems.
+        """
+
         if not args['verbose']:
             self._origStdout.write("%dB:"%(fragSize))
             self._origStdout.flush()
