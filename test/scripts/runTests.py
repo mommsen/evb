@@ -78,17 +78,10 @@ class RunTests(TestRunner):
         testModule = __import__(test,fromlist=test)
         testCase = getattr(testModule,'case_'+test)
         config = Configuration(self._symbolMap)
-        case = testCase(config,self._stdout)
+        case = testCase(config)
         case.fillConfiguration(self._symbolMap)
-        try:
-            case.prepare(test)
-            case.runTest()
-        except Exception as e:
-            if self.args['verbose']:
-                traceback.print_exc(file=self._stdout)
-                raw_input("Press enter to continue")
-            else:
-                raise e
+        case.prepare(test)
+        case.runTest()
 
 
 if __name__ == "__main__":

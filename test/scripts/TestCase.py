@@ -23,14 +23,14 @@ class LauncherException(Exception):
 class StateException(Exception):
     """
     exception which is thrown when an application
-    is not in the expected state 
+    is not in the expected state
     """
     pass
 
 class FailedState(Exception):
     """
     exception which is thrown when an application
-    is in failed state 
+    is in failed state
     """
     pass
 
@@ -98,15 +98,13 @@ def init_worker():
 
 class TestCase:
 
-    def __init__(self,config,stdout):
-        self._origStdout = sys.stdout
-        sys.stdout = stdout
+    def __init__(self,config):
         self._config = config
         self._pool = mp.Pool(20,init_worker)
 
         # standard multiprocessing pool does not work well with exceptions
         # over xmlrpc, so we use a pool based on threads (instead of procecesses)
-        # for xmlrpc operations (we are mostly waiting for IO so this should 
+        # for xmlrpc operations (we are mostly waiting for IO so this should
         # not be a problem for performance)
         from multiprocessing.pool import ThreadPool
         self._xmlrpcPool = ThreadPool(20)
@@ -125,8 +123,6 @@ class TestCase:
                 print(r.get(timeout=30))
         self._pool.close()
         self._pool.join()
-        sys.stdout.flush()
-        sys.stdout = self._origStdout
 
 
     def setXdaqLogLevel(self, newLevel):
@@ -180,8 +176,8 @@ class TestCase:
 
     def checkAppState(self,targetState,app,instance=None):
         """
-        Checks the state of all the applications of type 'app'. 
-        If at least one of them is not in the specified targetState 
+        Checks the state of all the applications of type 'app'.
+        If at least one of them is not in the specified targetState
         or is in Failed state, an exception is raised.
         """
         try:

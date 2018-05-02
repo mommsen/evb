@@ -32,7 +32,6 @@ class Tee(object):
 class TestRunner:
 
     def __init__(self):
-        self._stdout = sys.stdout
         try:
             self._evbTesterHome = os.environ["EVB_TESTER_HOME"]
         except KeyError:
@@ -72,23 +71,35 @@ class TestRunner:
 
     def runSetup(self,logFile,label,setup,*args):
         if self.args['verbose']:
-            self._stdout = Tee(sys.stdout,logFile)
+            outputStream = Tee(sys.stdout,logFile)
         else:
             startTime = time.strftime("%H:%M:%S", time.localtime())
             sys.stdout.write("%-32s: %s " % (label,startTime))
             sys.stdout.flush()
-            self._stdout = logFile
+            outputStream = logFile
 
         try:
-            setup(*args)
-            success = "\033[1;37;42m DONE \033[0m"
+            try:
+                sys.stdout.flush()
+                sys.stderr.flush()
+                oldStdOut,oldStdErr = sys.stdout,sys.stderr
+                sys.stdout,sys.stderr = outputStream,outputStream
+                setup(*args)
+            finally:
+                sys.stdout.flush();
+                sys.stderr.flush();
+                sys.stdout,sys.stderr = oldStdOut,oldStdErr
+            result = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
-            traceback.print_exc(file=self._stdout)
-            success = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
-
-        if not self.args['verbose']:
-            stopTime = time.strftime("%H:%M:%S", time.localtime())
-            print(stopTime+" "+success)
+            traceback.print_exc(file=outputStream)
+            if self.args['verbose']:
+                raw_input("Press enter to stop")
+            else:
+                result = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
+        finally:
+            if not self.args['verbose']:
+                stopTime = time.strftime("%H:%M:%S", time.localtime())
+                print(stopTime+" "+result)
 
 
     def startLaunchers(self):
