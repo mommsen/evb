@@ -68,44 +68,27 @@ class RunTests(TestRunner):
 
         for test in testNames:
             logFile = open(self.args['logDir']+"/"+test+".txt",'w',0)
-            if self.args['verbose']:
-                stdout = Tee(sys.stdout,logFile)
-            else:
-                startTime = time.strftime("%H:%M:%S", time.localtime())
-                sys.stdout.write("%-32s: %s " % (test,startTime))
-                sys.stdout.flush()
-                stdout = logFile
-
-            success = self.runTest(test,stdout)
-
-            if not self.args['verbose']:
-                stopTime = time.strftime("%H:%M:%S", time.localtime())
-                print(stopTime+" "+success)
+            self.runSetup(logFile,test,self.runTest,test)
         return
 
 
-    def runTest(self,test,stdout):
+    def runTest(self,test):
         Context.resetInstanceNumbers()
 
+        testModule = __import__(test,fromlist=test)
+        testCase = getattr(testModule,'case_'+test)
+        config = Configuration(self._symbolMap)
+        case = testCase(config,self._stdout)
+        case.fillConfiguration(self._symbolMap)
         try:
-            testModule = __import__(test,fromlist=test)
-            testCase = getattr(testModule,'case_'+test)
-            config = Configuration(self._symbolMap)
-            case = testCase(config,stdout)
-            case.fillConfiguration(self._symbolMap)
-            try:
-                case.prepare(test)
-                case.runTest()
-            except Exception as e:
-                if self.args['verbose']:
-                    traceback.print_exc(file=stdout)
-                    raw_input("Press enter to continue")
-                else:
-                    raise e
+            case.prepare(test)
+            case.runTest()
         except Exception as e:
-            traceback.print_exc(file=stdout)
-            return "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
-        return "\033[1;37;42m Passed \033[0m"
+            if self.args['verbose']:
+                traceback.print_exc(file=self._stdout)
+                raw_input("Press enter to continue")
+            else:
+                raise e
 
 
 if __name__ == "__main__":

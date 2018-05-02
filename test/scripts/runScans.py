@@ -67,6 +67,16 @@ class RunScans(TestRunner):
                         pass
 
 
+    def setup(self):
+        if self.args['symbolMap']:
+            self._symbolMap = SymbolMap(self.args['symbolMap'])
+        else:
+            configDir = os.path.dirname(configFile)
+            self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+            self.startLaunchers()
+            time.sleep(1)
+
+
     def doIt(self):
         if len(self.args['configs']) == 0:
             return False
@@ -74,29 +84,21 @@ class RunScans(TestRunner):
             os.makedirs(self.args['outputDir'])
         except OSError:
             pass
+
+        self.setup()
         self.fillFedSizeScalesFromFile()
+
         for configFile in self.args['configs']:
             configName = os.path.splitext(os.path.basename(configFile))[0]
             if os.path.isdir(configFile):
                 configFile += "/"+configName+".xml"
             logFile = open(self.args['outputDir']+"/"+configName+".txt",'w')
-            if self.args['verbose']:
-                stdout = Tee(sys.stdout,logFile)
-            else:
-                startTime = time.strftime("%H:%M:%S", time.localtime())
-                sys.stdout.write("%-32s: %s " % (configName,startTime))
-                sys.stdout.flush()
-                stdout = logFile
+            self.run(logfile,self.runConfig(configName,configFile))
 
-            success = self.runConfig(configName,configFile,stdout)
-
-            if not self.args['verbose']:
-                stopTime = time.strftime("%H:%M:%S", time.localtime())
-                print(stopTime+" "+success)
         return True
 
 
-    def runConfig(self,configName,configFile,stdout):
+    def runConfig(self,configName,configFile):
         try:
             allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,4096,8192,12288,16384]
             shortSizes = [256,512,768,1024,1280,1536,2048,2560,4096,8192,12288,16384]
@@ -111,22 +113,6 @@ class RunScans(TestRunner):
             else:
                 # explicit list of fragment sizes specified on the command line
                 sizes = self.args['sizes']
-
-            #----------
-            # symbol map / configuration to run
-            #----------
-
-            if self.args['symbolMap']:
-                self._symbolMap = SymbolMap(self.args['symbolMap'])
-            else:
-                configDir = os.path.dirname(configFile)
-                self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
-                self.startLaunchers()
-                time.sleep(1)
-
-            #----------
-            # output / result file
-            #----------
 
             outputFileName = self.args['outputDir']+"/"+configName+".dat"
             if self.args['append']:
@@ -147,7 +133,7 @@ class RunScans(TestRunner):
                     ferolMode = 'FRL_MODE'
                 config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
                                             self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
-                configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors)
+                configCase = ConfigCase(config,self._stdout,self.fedSizeScaleFactors)
                 configCase.setXdaqLogLevel(self.args['logLevel'])
                 configCase.prepare(configName)
 
@@ -167,7 +153,7 @@ class RunScans(TestRunner):
 
             returnValue = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
-            traceback.print_exc(file=stdout)
+            traceback.print_exc(file=self._stdout)
             returnValue = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
         finally:
             if not self.args['symbolMap']:

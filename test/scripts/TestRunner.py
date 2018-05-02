@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 
 import messengers
 from SymbolMap import SymbolMap
@@ -31,6 +32,7 @@ class Tee(object):
 class TestRunner:
 
     def __init__(self):
+        self._stdout = sys.stdout
         try:
             self._evbTesterHome = os.environ["EVB_TESTER_HOME"]
         except KeyError:
@@ -38,14 +40,13 @@ class TestRunner:
             sys.exit(2)
 
         # the launcher script to be executed on the remote host
-        # check whether it exists (assuming a cluster wide file system) 
+        # check whether it exists (assuming a cluster wide file system)
         # or not before attempting to launch it on the remote hosts
         self._launcherScript = self._evbTesterHome + "/scripts/xdaqLauncher.py"
         if not os.path.exists(self._launcherScript):
             print("Could not find xdaq launcher script " + self._launcherScript + ".")
             print("Does the environment variable EVB_TESTER_HOME point to the correct directory ?")
             sys.exit(2)
-
 
 
     def addOptions(self,parser):
@@ -69,8 +70,28 @@ class TestRunner:
             pass
 
 
+    def runSetup(self,logFile,label,setup,*args):
+        if self.args['verbose']:
+            self._stdout = Tee(sys.stdout,logFile)
+        else:
+            startTime = time.strftime("%H:%M:%S", time.localtime())
+            sys.stdout.write("%-32s: %s " % (label,startTime))
+            sys.stdout.flush()
+            self._stdout = logFile
+
+        try:
+            setup(*args)
+            success = "\033[1;37;42m DONE \033[0m"
+        except Exception as e:
+            traceback.print_exc(file=self._stdout)
+            success = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
+
+        if not self.args['verbose']:
+            stopTime = time.strftime("%H:%M:%S", time.localtime())
+            print(stopTime+" "+success)
+
+
     def startLaunchers(self):
-        
         launcherCmd = "cd /tmp && rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+ self._launcherScript + " "
         if not self.args['verbose']:
             launcherCmd += "--logDir "+self.args['logDir']+" "
