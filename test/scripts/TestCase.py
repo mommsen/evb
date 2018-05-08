@@ -10,7 +10,7 @@ import signal
 import socket
 import subprocess
 import sys
-from time import sleep
+import time
 import multiprocessing as mp
 
 import messengers
@@ -23,14 +23,14 @@ class LauncherException(Exception):
 class StateException(Exception):
     """
     exception which is thrown when an application
-    is not in the expected state 
+    is not in the expected state
     """
     pass
 
 class FailedState(Exception):
     """
     exception which is thrown when an application
-    is in failed state 
+    is in failed state
     """
     pass
 
@@ -106,7 +106,7 @@ class TestCase:
 
         # standard multiprocessing pool does not work well with exceptions
         # over xmlrpc, so we use a pool based on threads (instead of procecesses)
-        # for xmlrpc operations (we are mostly waiting for IO so this should 
+        # for xmlrpc operations (we are mostly waiting for IO so this should
         # not be a problem for performance)
         from multiprocessing.pool import ThreadPool
         self._xmlrpcPool = ThreadPool(20)
@@ -152,7 +152,7 @@ class TestCase:
                 else:
                     sys.stdout.write('.')
                     sys.stdout.flush()
-                    sleep(1)
+                    time.sleep(1)
             else:
                 print(" NOPE")
                 raise LauncherException(context.hostinfo['soapHostname']+":"+context.hostinfo['soapPort']+" is not listening")
@@ -180,8 +180,8 @@ class TestCase:
 
     def checkAppState(self,targetState,app,instance=None):
         """
-        Checks the state of all the applications of type 'app'. 
-        If at least one of them is not in the specified targetState 
+        Checks the state of all the applications of type 'app'.
+        If at least one of them is not in the specified targetState
         or is in Failed state, an exception is raised.
         """
         try:
@@ -213,7 +213,7 @@ class TestCase:
                 if runDir:
                     for rawFile in glob.glob(runDir+"/*.raw"):
                         os.remove(rawFile)
-                sleep(1)
+                time.sleep(1)
 
 
     def waitForState(self,targetState,maxTries=10):
@@ -274,7 +274,7 @@ class TestCase:
             if comp(value,expectedValue):
                 print(app+application['instance']+" "+paramName+": "+str(value))
                 return
-            sleep(1)
+            time.sleep(1)
             tries += 1
 
         raise(ValueException(paramName+" on "+app+application['instance']+
@@ -295,11 +295,42 @@ class TestCase:
             for application in self._config.applications[app]:
                 if instance is None or str(instance) == application['instance']:
                     value = None
-                    while not comp(value,expectedValue) and not sleep(1):
+                    while not comp(value,expectedValue) and not time.sleep(1):
                         value = messengers.getParam(paramName,paramType,**application)
 
         except KeyError:
             pass
+
+
+    def checkRate(self):
+        print("Checking if rate is >10 Hz:")
+        try:
+            evm = self._config.applications["EVM"][0]
+            dropAtSocket = ( messengers.getParam("dropAtSocket","boolean",**evm) == "true" )
+            dropAtRU = ( messengers.getParam("dropInputData","boolean",**evm) == "true" )
+            if not dropAtSocket:
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"EVM")
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"RU")
+            if not dropAtRU and not dropAtSocket:
+                self.checkAppParam("eventRate","unsignedInt",10,operator.ge,"BU")
+            return
+        except ValueException as e:
+            ruCounts = self.getAppParam("eventCount","unsignedLong","RU")
+            str = ""
+            for ru in sorted(ruCounts.keys()):
+                if ruCounts[ru] == 0:
+                    str += " "+ru
+            if len(str):
+                print("RUs with no events:"+str)
+            else:
+                buCounts = self.getAppParam("nbEventsBuilt","unsignedLong","BU")
+                for bu in sorted(buCounts.keys()):
+                    if buCounts[bu] == 0:
+                        str += " "+bu
+                if len(str):
+                    print("BUs with no events:"+str)
+            #raw_input("Press Enter to continue...")
+            raise e
 
 
     def getFedParams(self,fedIds,dummyFedSize,dummyFedSizeDev=0):
@@ -359,7 +390,7 @@ class TestCase:
         for application in self._config.ptIBV:
             count = 0
             while messengers.getStateName(**application) != 'Enabled':
-                sleep(1)
+                time.sleep(1)
                 count += 1
                 if count > 120:
                     raise(StateException("Failed to connect pt::ibv for "+str(application)))
@@ -390,7 +421,7 @@ class TestCase:
         if sleepTime > 0:
             sys.stdout.write("Building for "+str(sleepTime)+"s...")
             sys.stdout.flush()
-            sleep(sleepTime)
+            time.sleep(sleepTime)
             print("done")
             self.checkState('Enabled')
 
@@ -435,7 +466,7 @@ class TestCase:
         self.halt('BU')
         self.waitForState('Halted',maxTries)
         print(" done")
-        sleep(1)
+        time.sleep(1)
 
 
     def sendResync(self):
@@ -447,7 +478,7 @@ class TestCase:
         tries = 0
         while self.getAppParam('lastEventNumber','unsignedInt','EVM',0)['EVM0'] >= lastEvent and tries < 30:
             # a resync will reset the event number to 1
-            sleep(1)
+            time.sleep(1)
             tries += 1
             sys.stdout.write(".")
             sys.stdout.flush()
@@ -455,14 +486,14 @@ class TestCase:
             print(" FAILED")
             raise(StateException("No resync seen"))
         else:
-            sleep(2)
+            time.sleep(2)
             print(" done")
 
 
     def getEventInFuture(self):
-        sleep(2)
+        time.sleep(2)
         eventRate = self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
-        sleep(2)
+        time.sleep(2)
         eventRate += self.getAppParam('eventRate','unsignedInt','EVM',0)['EVM0']
         try:
             # Use roughtly a median value of the FEROL event counts
@@ -491,7 +522,7 @@ class TestCase:
 
 
     def checkEventCount(self,allBuilt=True):
-        sleep(2) # assure counters are up-to-date
+        time.sleep(2) # assure counters are up-to-date
         evmEventCount = self.getAppParam('eventCount','unsignedLong','EVM')['EVM0']
         evmEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','EVM')['EVM0']
         buEventsBuilt = self.getAppParam('nbEventsBuilt','unsignedLong','BU')
@@ -621,8 +652,165 @@ class TestCase:
         shutil.rmtree(runDir)
 
 
+    def getDataPoint(self):
+        """
+        retrieves super fragment size and event rate from the EVM
+        and RU applications
+        """
+        sizes = self.getAppParam("superFragmentSize","unsignedInt","EVM")
+        sizes.update( self.getAppParam("superFragmentSize","unsignedInt","RU") )
+        sizes.update( self.getAppParam("eventSize","unsignedInt","BU") )
+        rates = self.getAppParam("eventRate","unsignedInt","EVM")
+        rates.update( self.getAppParam("eventRate","unsignedInt","RU") )
+        rates.update( self.getAppParam("eventRate","unsignedInt","BU") )
+        return {'rates':rates,'sizes':sizes}
+
+
+    def getThroughputMB(self,dataPoint):
+        """
+        calculates the throughput in MByte/sec by summing over the superfragment
+        sizes at all RUs and multiplying by the total event rate
+        """
+        try:
+            size = sum(list(x['sizes']['RU0'] for x in dataPoint))/float(len(dataPoint))
+            rate = sum(list(x['rates']['RU0'] for x in dataPoint))/float(len(dataPoint))
+        except KeyError:
+            size = sum(list(x['sizes']['RU1'] for x in dataPoint))/float(len(dataPoint))
+            rate = sum(list(x['rates']['RU1'] for x in dataPoint))/float(len(dataPoint))
+        return int(size*rate/1000000)
+
+
+    def calculateFedSize(self,fedId,fragSize,fragSizeRMS):
+        if fedId == self._config.evmFedId:
+            return 1024,0
+        else:
+            return int(fragSize),int(fragSizeRMS)
+
+
+    def setFragmentSizes(self,fragSize,fragSizeRMS):
+        """
+        configures the fragment size to be generated at the FEROL/FRL
+        """
+
+        try:
+            for application in self._config.applications['FEROL']:
+                for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
+                    if app.params['instance'] == application['instance']:
+                        if app.params['class'] == 'ferol::FerolController':
+                            for prop in app.properties:
+                                for stream in range(2):
+                                    if prop[0] == 'expectedFedId_'+str(stream):
+                                        fedSize,fedSizeRMS = self.calculateFedSize(prop[2],fragSize,fragSizeRMS)
+                                        messengers.setParam("Event_Length_bytes_FED"+str(stream),'unsignedInt',str(fedSize),**application)
+                                        messengers.setParam("Event_Length_Stdev_bytes_FED"+str(stream),'unsignedInt',str(fedSizeRMS),**application)
+                        elif app.params['class'] == 'ferol40::Ferol40Controller':
+                            for prop in app.properties:
+                                if prop[0] == 'InputPorts':
+                                    ports = []
+                                    for stream,item in enumerate(prop[2]):
+                                    #for item in prop[2]:
+                                        for p in item:
+                                            if p[0] == 'expectedFedId':
+                                                fedSize,fedSizeRMS = self.calculateFedSize(p[2],fragSize,fragSizeRMS)
+                                                ports.append((('Event_Length_bytes','unsignedInt',str(fedSize)),('Event_Length_Stdev_bytes','unsignedInt',str(fedSizeRMS))))
+                                                messengers.setParam("Event_Length_bytes_FED"+str(stream),"unsignedInt",str(fedSize),**application)
+                                                messengers.setParam("Event_Length_Stdev_bytes_FED"+str(stream),"unsignedInt",str(fedSizeRMS),**application)
+                                    #messengers.setParam('InputPorts','Array',ports,**application)
+        except KeyError:
+            for application in self._config.applications['RU']+self._config.applications['EVM']:
+                for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
+                    if app.params['instance'] == application['instance'] and app.params['class'] in ('evb::EVM','evb::RU'):
+                        for prop in app.properties:
+                            if prop[0] == 'fedSourceIds':
+                                sources = []
+                                for item in prop[2]:
+                                    fedSize,fedSizeRMS = self.calculateFedSize(item,fragSize,fragSizeRMS)
+                                    sources.append((('dummyFedSize','unsignedInt',str(fedSize)),('dummyFedSizeStdDev','unsignedInt',str(fedSizeRMS))))
+                                messengers.setParam('ferolSources','Array',sources,**application)
+
+
+    def start(self):
+        """
+        configures and enables (starts) the event builder
+        """
+
+        runNumber=time.strftime("%s",time.localtime())
+        self.configureEvB(maxTries=30)
+        self.enableEvB(maxTries=30,runNumber=runNumber)
+        self.checkRate()
+
+
     def prepare(self,testname,maxTries=10):
         self.startXDAQs(testname)
         self.sendCmdToExecutive()
         self.waitForState(('Halted','uninitialized','Initialized'),maxTries)
         self.startPt()
+
+
+    def runScan(self,fragSize,fragSizeRMS,args):
+        """
+        runs a test for a single fragment size
+        and writes out summary information. Tries
+        multiple times in case of problems.
+        """
+
+        if not args['verbose']:
+            self._origStdout.write("%dB:"%(fragSize))
+            self._origStdout.flush()
+        tries = 0
+        while tries < 10:
+            try:
+                dataPoints = self.doIt(fragSize,fragSizeRMS,args)
+                if not args['verbose']:
+                    self._origStdout.write("%dMB/s "%(self.getThroughputMB(dataPoints)))
+                    self._origStdout.flush()
+                else:
+                    print("%3.2f:%dMB/s" % (fragSize,self.getThroughputMB(dataPoints)))
+                if args['long']:
+                    time.sleep(60)
+                return dataPoints
+            except (FailedState,StateException,ValueException) as e:
+                print(" failed: "+str(e))
+                #raw_input("Press Enter to retry...")
+                while tries < 10:
+                    tries += 1
+                    try:
+                        self.haltEvB()
+                        break
+                    except FailedState as e:
+                        print(" failed: "+str(e))
+        raise e
+
+
+    def doIt(self,fragSize,fragSizeRMS,args):
+        """
+        runs a test for a single fragment size
+        and returns the obtained performance numbers
+        """
+
+        dataPoints = []
+        self.setFragmentSizes(fragSize,fragSizeRMS)
+
+        # start running
+        self.start()
+
+        if args['nbMeasurements'] == 0:
+            dataPoints.append( self.getDataPoint() )
+
+            # run until the user presses enter
+            raw_input("Press Enter to stop...")
+
+        else:
+            if args['long']:
+                time.sleep(300)
+            elif not args['quick']:
+                time.sleep(60)
+            for n in range(args['nbMeasurements']):
+                if args['quick']:
+                    time.sleep(1)
+                else:
+                    time.sleep(10)
+                dataPoints.append( self.getDataPoint() )
+
+        self.haltEvB()
+        return dataPoints
