@@ -12,8 +12,9 @@ import XMLtools
 
 class Configuration():
 
-    def __init__(self,symbolMap):
+    def __init__(self,symbolMap,useNuma=False):
         self.symbolMap = symbolMap
+        self.useNuma = useNuma
         self.contexts = {}
         self.ptUtcp = []
         self.ptIBV = []
@@ -61,7 +62,7 @@ class Configuration():
             return True
         if self.contexts[myKey].role == 'EVM' and self.contexts[otherKey].role in ('RU','BU'):
             return True
-        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role in ('EVM','BU'):
+        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role == 'BU':
             return True
         if self.contexts[myKey].role == 'BU' and self.contexts[otherKey].role == 'EVM':
             return True
@@ -89,10 +90,10 @@ class Configuration():
 
         for k,c in self.contexts.items():
             if k == key:
-                partition.append( c.getContext(self.xcns) )
+                partition.append( c.getContext(self.xcns,self.useNuma) )
             else:
                 if self.isI2Otarget(key,k):
-                    partition.append( c.getContext(self.xcns,False) )
+                    partition.append( c.getContext(self.xcns,self.useNuma,False) )
         return partition
 
 
@@ -116,7 +117,7 @@ class ConfigFromFile(Configuration):
     def __init__(self,symbolMap,configFile,fixPorts,useNuma,generateAtRU,dropAtRU,dropAtSocket,ferolMode):
         self.frlPorts = ['60500','60600']
         self.fedId2Port = {}
-        Configuration.__init__(self,symbolMap)
+        Configuration.__init__(self,symbolMap,useNuma)
 
         if os.path.exists(configFile):
             ETroot = ET.parse(configFile).getroot()
@@ -143,10 +144,7 @@ class ConfigFromFile(Configuration):
             if generateAtRU and context.role == "FEROLCONTROLLER":
                 continue
 
-            if useNuma:
-                polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
-                context.policy = c.find(QN(polns,'policy').text)
-                #self.parsePolicy(context.policy)
+            context.extractPolicy(c)
 
             maxbulksize="0x10000"
             portNb=0
@@ -322,22 +320,6 @@ class ConfigFromFile(Configuration):
         app.properties = newProp
 
 
-    def parsePolicy(self,policy):
-        if policy is not None:
-            for element in policy:
-                pattern = re.match(r'(.*?)([A-Z0-9]*?)_FRL_HOST_NAME([:()/\/])([A-Z_0-9]*)(.*)',element.attrib['pattern'])
-                if pattern:
-                    hostInfo = self.symbolMap.getHostInfo( pattern.group(2) )
-                    if len(pattern.group(4)) > 0:
-                        if 'FRL_PORT' in pattern.group(4):
-                            port = 0
-                        else:
-                            port = 1
-                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+pattern.group(3)+self.frlPorts[port]+pattern.group(5)
-                    else:
-                        element.attrib['pattern'] = pattern.group(1)+hostInfo['frlHostname']+pattern.group(3)+pattern.group(5)
-
-
     def urlToHostAndNumber(self,url):
         """
         Converts context url strings like
@@ -352,8 +334,9 @@ class ConfigFromFile(Configuration):
 
 
 if __name__ == "__main__":
-    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20160823/canon_1str_1x1/symbolMap.txt")
-    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20160823/canon_1str_1x1/canon_1str_1x1.xml",False,False,False,True)
+    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20170131/canon_1str_4x4/symbolMap.txt")
+    config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20170131/canon_1str_4x4/canon_1str_4x4.xml",
+                                fixPorts=False,useNuma=True,generateAtRU=False,dropAtRU=False,dropAtSocket=False,ferolMode=True)
     #print(config.contexts)
     for key in config.contexts.keys():
         config.getConfigCmd(key)

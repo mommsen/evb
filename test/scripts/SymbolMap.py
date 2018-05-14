@@ -77,6 +77,6 @@ class SymbolMap:
 
 if __name__ == "__main__":
 
-    symbolMap = SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cases/")
+    symbolMap = SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cases/standaloneSymbolMap.txt")
     print(symbolMap._map)
     print(symbolMap.launchers)

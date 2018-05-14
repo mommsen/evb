@@ -13,15 +13,16 @@ class Context:
     def __init__(self):
         self.role = None
         self.hostinfo = None
-        self.policy = None
+        self.polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
+        self.policyElements = []
         self.applications = [Application.Application('xmem::probe::Application',Context.ptInstance,[]),]
 
 
-    def getContext(self,ns,fullConfig=True):
+    def getContext(self,ns,useNuma,fullConfig=True):
         context = ET.Element(QN(ns,'Context'))
         context.set('url',"http://%(soapHostname)s:%(soapPort)s" % self.hostinfo)
-        if fullConfig and self.policy is not None:
-            context.append(self.policy)
+        if useNuma and fullConfig:
+            self.addPolicy(context)
         for app in self.applications:
             if fullConfig:
                 app.addInContext(context,ns)
@@ -49,6 +50,22 @@ class Context:
         app.params['i2oPort'] =  self.hostinfo['i2oPort']
         app.params['network'] = 'tcp'
         self.applications.append(app)
+
+
+    def addPolicy(self,context):
+        if self.policyElements:
+            policy = ET.Element(QN(self.polns,'policy'))
+            for element in self.policyElements:
+                el = ET.Element(QN(self.polns,'element'),element)
+                policy.append(el)
+            context.append(policy)
+
+
+    def extractPolicy(self,context):
+        policy = context.find(QN(self.polns,'policy').text)
+        if policy is not None:
+            for element in policy:
+                self.policyElements.append(element.attrib)
 
 
 class FEROL(Context):
@@ -95,6 +112,9 @@ class RU(Context):
         self.addPtUtcpApplication()
         self.addRuApplication(properties)
         RU.instance += 1
+        self.policyElements.append(
+            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'}
+            )
 
 
     def __del__(self):
@@ -166,9 +186,10 @@ def resetInstanceNumbers():
     RU.instance = 0
     BU.instance = 0
 
+
 if __name__ == "__main__":
-    os.environ["EVB_SYMBOL_MAP"] = 'standaloneSymbolMap.txt'
-    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cases/")
+    useNuma=True
+    symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cases/standaloneSymbolMap.txt")
     xcns = 'http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30'
     partition = ET.Element(QN(xcns,'Partition'))
     evm = RU(symbolMap,[
@@ -176,28 +197,28 @@ if __name__ == "__main__":
         ])
     for fedId in range(3):
         ferol = FEROL(symbolMap,evm,fedId)
-        partition.append( ferol.getContext(xcns) )
-    partition.append( evm.getContext(xcns) )
+        partition.append( ferol.getContext(xcns,useNuma) )
+    partition.append( evm.getContext(xcns,useNuma) )
 
     ru1 = RU(symbolMap,[
         ('inputSource','string','Local'),
         ('fedSourceIds','unsignedInt',range(6,10))
         ])
-    partition.append( ru1.getContext(xcns) )
+    partition.append( ru1.getContext(xcns,useNuma) )
 
     ru2 = RU(symbolMap,[
         ('inputSource','string','FEROL')
         ])
     for fedId in range(10,12):
         ferol = FEROL(symbolMap,ru2,fedId)
-        partition.append( ferol.getContext(xcns) )
-    partition.append( ru2.getContext(xcns) )
+        partition.append( ferol.getContext(xcns,useNuma) )
+    partition.append( ru2.getContext(xcns,useNuma) )
 
     bu = BU(symbolMap,[
         ('dropEventData','boolean','true'),
         ('lumiSectionTimeout','unsignedInt','0')
         ])
-    partition.append( bu.getContext(xcns) )
+    partition.append( bu.getContext(xcns,useNuma) )
 
     XMLtools.indent(partition)
     print( ET.tostring(partition) )
