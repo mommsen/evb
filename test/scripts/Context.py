@@ -10,12 +10,16 @@ import XMLtools
 class Context:
     ptInstance = 0
 
-    def __init__(self):
-        self.role = None
-        self.hostinfo = None
+    def __init__(self,role,hostinfo):
+        self.role = role
+        self.hostinfo = hostinfo
         self.polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
-        self.policyElements = []
+        self.policyElements = self.getPolicyElements()
         self.applications = [Application.Application('xmem::probe::Application',Context.ptInstance,[]),]
+
+
+    def getPolicyElements(self):
+        return []
 
 
     def getContext(self,ns,useNuma,fullConfig=True):
@@ -72,9 +76,7 @@ class FEROL(Context):
     instance = 0
 
     def __init__(self,symbolMap,destination,fedId,properties=[]):
-        Context.__init__(self)
-        self.role = 'FEROL'
-        self.hostinfo = symbolMap.getHostInfo('FEROL'+str(FEROL.instance))
+        Context.__init__(self,'FEROL',symbolMap.getHostInfo('FEROL'+str(FEROL.instance)))
         if FEROL.instance % 2:
             frlPort = 'frlPort'
         else:
@@ -107,14 +109,10 @@ class RU(Context):
     instance = 0
 
     def __init__(self,symbolMap,properties=[]):
-        Context.__init__(self)
-        self.hostinfo = symbolMap.getHostInfo('RU'+str(RU.instance))
+        Context.__init__(self,None,symbolMap.getHostInfo('RU'+str(RU.instance)))
         self.addPtUtcpApplication()
         self.addRuApplication(properties)
         RU.instance += 1
-        self.policyElements.append(
-            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'}
-            )
 
 
     def __del__(self):
@@ -155,13 +153,64 @@ class RU(Context):
         self.applications.append(app)
 
 
+    def getPolicyElements(self):
+        # extracted from XML policy with
+        # egrep -o '[[:alnum:]]+=".*"' scripts/tmp.txt |sed -re 's/([[:alnum:]]+)=/"\1":/g'|tr "\"" "'"|tr " " ","|sed -re 's/(.*)/{\1},/'
+        policyElements = [
+            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'},
+            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
+            {'affinity':'3','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
+            {'affinity':'7','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-receiver(.+*)-mlx4_0:ibvla','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-sender(.*)-mlx4_0:ibvla','type':'alloc'},
+            {'affinity':'16','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
+            {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
+            {'affinity':'26','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
+            {'affinity':'20','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
+            {'cpunodes':'0','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:fragmentRequestFIFO(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:fragmentFIFO_FED(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:frameFIFO_BU(.+)','type':'alloc'},
+            {'affinity':'9','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort'])+'/(.*)','type':'thread'},
+            {'affinity':'13','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort2'])+'/(.*)','type':'thread'},
+            {'affinity':'9','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort'])+'/waiting','type':'thread'},
+            {'affinity':'13','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort2'])+'/waiting','type':'thread'},
+            {'affinity':'15','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-ia(.+)/'+str(self.hostinfo['frlHostname'])+':btcp/(.*)','type':'thread'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:toolbox-mem-allocator-blit-socket(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:pt-blit-inputpipe-rlist(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:socketBufferFIFO(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:grantFIFO(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:tcpla-(.*)/'+str(self.hostinfo['frlHostname'])+'(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'}
+        ]
+        if RU.instance == 0: #EVM
+            policyElements.extend([
+                {'affinity':'2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
+                {'affinity':'2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
+                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+                {'affinity':'8','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+                {'affinity':'10','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/processRequests/waiting','type':'thread'},
+                {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+                {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'},
+                {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:readoutMsgFIFO(.+)','type':'alloc'}
+                ])
+        else: #RU
+            policyElements.extend([
+                {'affinity':'0,2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
+                {'affinity':'0,2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
+                {'affinity':'8','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+                {'affinity':'10','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'}
+                ])
+        return policyElements
+
+
 class BU(Context):
     instance = 0
 
     def __init__(self,symbolMap,properties=[]):
-        Context.__init__(self)
-        self.role = 'BU'
-        self.hostinfo = symbolMap.getHostInfo('BU'+str(BU.instance))
+        Context.__init__(self,'BU',symbolMap.getHostInfo('BU'+str(BU.instance)))
         self.addPtUtcpApplication()
         self.addBuApplication(properties)
         BU.instance += 1
@@ -177,6 +226,33 @@ class BU(Context):
         app.params['id'] = str(100+BU.instance)
         app.params['network'] = 'tcp'
         self.applications.append(app)
+
+
+    def getPolicyElements(self):
+        policyElements = [
+            {'affinity':'3','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
+            {'affinity':'5','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
+            {'affinity':'7','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
+            {'affinity':'9','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
+            {'affinity':'11','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
+            {'affinity':'13','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
+            {'affinity':'31','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
+            {'affinity':'29','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
+            {'affinity':'27','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},
+            {'affinity':'23','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/resourceMonitor/waiting','type':'thread'},
+            {'affinity':'25','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:superFragmentFIFO(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:fileStatisticsFIFO_stream(.+):alloc','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:resourceFIFO:alloc','type':'alloc'},
+            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor-(.+)/waiting','type':'thread'},
+            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
+            {'affinity':'10','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
+            {'affinity':'12','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv(.*):ibvla','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:undefined','type':'alloc'}
+            ]
+        return policyElements
 
 
 def resetInstanceNumbers():
