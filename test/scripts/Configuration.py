@@ -12,7 +12,7 @@ import XMLtools
 
 class Configuration():
 
-    def __init__(self,symbolMap,useNuma=False):
+    def __init__(self,symbolMap,useNuma):
         self.symbolMap = symbolMap
         self.useNuma = useNuma
         self.contexts = {}

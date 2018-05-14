@@ -90,7 +90,7 @@ class RunTests(TestRunner):
         try:
             testModule = __import__(test,fromlist=test)
             testCase = getattr(testModule,'case_'+test)
-            config = Configuration(self._symbolMap)
+            config = Configuration(self._symbolMap,useNuma=False)
             case = testCase(config,stdout)
             case.fillConfiguration(self._symbolMap)
             try:

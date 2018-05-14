@@ -57,7 +57,7 @@ class RunBenchmarks(TestRunner):
 
     def getConfiguration(self):
         symbolMap = SymbolMap(self.args['symbolMap'])
-        config = Configuration(symbolMap)
+        config = Configuration(symbolMap,self.args['numa'])
         # EVM
         config.add( RU(symbolMap,[
             ('inputSource','string','Local'),
