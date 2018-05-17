@@ -3,6 +3,7 @@
 import argparse
 import glob
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -14,12 +15,12 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 class ExitableServer(SimpleXMLRPCServer):
     # an XMLRPC server which can exit
-    
+
     def serve_forever(self):
         self.stop = False
         while not self.stop:
             self.handle_request()
-            
+
 class xdaqThread(threading.Thread):
 
     def __init__(self,xdaqPort,logFile,useNuma, logLevel, dummyXdaq):
@@ -41,24 +42,26 @@ class xdaqThread(threading.Thread):
                 numaCtl = ['/usr/bin/numactl','--cpunodebind=1','--membind=1']
             elif 'bu-' in hostname:
                 numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
+            elif 'dvrubu-' in hostname:
+                numaCtl = ['/usr/bin/numactl','--cpunodebind=0','--membind=0']
 
         if self.dummyXdaq:
-            # launch dummyXdaq.py (during development) 
-            
+            # launch dummyXdaq.py (during development)
+
             # get the absolute directory of the file where this code is in
             dummy_xdaq_path = os.path.abspath(os.path.dirname(__file__))
-            
-            self._xdaqCommand = [ "/usr/bin/python", 
+
+            self._xdaqCommand = [ "/usr/bin/python",
                                   os.path.join(dummy_xdaq_path, "dummyXdaq.py"),
                                   "-p" + str(xdaqPort)
                                   ]
         else:
             # launch the real xdaq.exe
             self._xdaqCommand = numaCtl + [xdaqRoot+"/bin/xdaq.exe","-e"+xdaqRoot+"/etc/default.profile","-p"+str(xdaqPort)]
-                
+
 
     def run(self):
-        
+
         command = list(self._xdaqCommand)
         if self.logLevel is not None:
             command.append("-l" + self.logLevel)
@@ -174,10 +177,23 @@ class xdaqLauncher:
             raise Exception("Please specify a directory")
         return str(os.listdir(dir))
 
+
+    def getNumaInfo(self):
+        if 'dvrubu-' in socket.gethostname():
+            numaInfo = {'ibvCPU':'1','ethCPU':'0'}
+        else:
+            numaInfo = {'ibvCPU':'0','ethCPU':'1'}
+        numactl = subprocess.check_output(['numactl','--hardware'])
+        for m in re.finditer('node ([0-9]+) cpus: ([0-9 ]+)',numactl):
+            numaInfo[m.group(1)] = m.group(2).split()
+        return numaInfo
+
+
     def setLogLevel(self, level):
         # sets the XDAQ log level for the given application
         # this must be called before starting the XDAQ process in question
         self.logLevel = level
+
 
     def pinProcess(self, pid, core):
         # pins the process pid to the given core
@@ -202,7 +218,7 @@ if __name__ == "__main__":
     else:
         useNuma = False
 
-    server = ExitableServer((hostname,args['port']), 
+    server = ExitableServer((hostname,args['port']),
                             bind_and_activate = False,
                             logRequests = False)
     server.allow_reuse_address = True
@@ -231,6 +247,7 @@ if __name__ == "__main__":
                      "stopXDAQ",
                      "stopLauncher",
                      "getFiles",
+                     "getNumaInfo",
                      "setLogLevel",
                      "pinProcess",
                      ]:

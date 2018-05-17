@@ -132,18 +132,18 @@ class ConfigFromFile(Configuration):
         tid = 1
 
         for c in ETroot.getiterator(str(QN(self.xcns,'Context'))):
-            context = Context.Context()
             try:
                 url = c.attrib['url']
-                context.role,count = self.urlToHostAndNumber(url)
-                context.hostinfo = self.symbolMap.getHostInfo(context.role+str(count))
+                role,count = self.urlToHostAndNumber(url)
+                hostinfo = self.symbolMap.getHostInfo(role+str(count))
             except TypeError:
                 #print("Found unknown role for "+url+", which will be ignored")
                 continue
 
-            if generateAtRU and context.role == "FEROLCONTROLLER":
+            if generateAtRU and role == "FEROLCONTROLLER":
                 continue
 
+            context = Context.Context(role,hostinfo)
             context.extractPolicy(c)
 
             maxbulksize="0x10000"

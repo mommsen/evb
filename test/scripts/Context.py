@@ -1,4 +1,5 @@
 import os
+import xmlrpclib
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import QName as QN
 
@@ -37,7 +38,19 @@ class Context:
         return context
 
 
-    def addPtUtcpApplication(self):
+    def addPeerTransport(self):
+        if 'dvrbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname']:
+            app = self.getPtIbvApplication()
+        else:
+            app = self.getPtUtcpApplication()
+        app.params['i2oHostname'] = self.hostinfo['i2oHostname']
+        app.params['i2oPort'] =  self.hostinfo['i2oPort']
+        app.params['network'] = 'evb'
+        self.applications.append(app)
+        Context.ptInstance += 1
+
+
+    def getPtUtcpApplication(self):
         properties = [
             ('protocol','string','atcp'),
             ('maxClients','unsignedInt','9'),
@@ -48,12 +61,38 @@ class Context:
             ('maxBlockSize','unsignedInt','65537')
             ]
         app = Application.Application('pt::utcp::Application',Context.ptInstance,properties)
-        Context.ptInstance += 1
         app.params['protocol'] = 'atcp'
-        app.params['i2oHostname'] = self.hostinfo['i2oHostname']
-        app.params['i2oPort'] =  self.hostinfo['i2oPort']
-        app.params['network'] = 'tcp'
-        self.applications.append(app)
+        return app
+
+
+    def getPtIbvApplication(self):
+        if 'dvrubu-c2f33-1' in self.hostinfo['i2oHostname']:
+            interface='mlx4_1'
+        else:
+            interface='mlx4_0'
+        properties = [
+            ('iaName','string',interface),
+            ('sendPoolName','string','sudapl'),
+            ('recvPoolName','string','rudapl'),
+            ('deviceMTU','unsignedInt','4096'),
+            ('memAllocTimeout','string','PT1S'),
+            ('sendWithTimeout','boolean','true'),
+            ('useRelay','boolean','false'),
+            ('senderPoolSize','unsignedLong','0x2A570C00'),
+            ('receiverPoolSize','unsignedLong','0x5D70A400'),
+            ('completionQueueSize','unsignedInt','482160'),
+            ('sendQueuePairSize','unsignedInt','5840'),
+            ('recvQueuePairSize','unsignedInt','80'),
+            ('maxMessageSize','unsignedInt','0x20000')
+            ]
+        app = Application.Application('pt::ibv::Application',Context.ptInstance,properties)
+        app.params['protocol'] = 'ibv'
+        return app
+
+
+    def getNumaInfo(self):
+        server = xmlrpclib.ServerProxy("http://%s:%s" % (self.hostinfo['soapHostname'],self.hostinfo['launcherPort']))
+        return server.getNumaInfo()
 
 
     def addPolicy(self,context):
@@ -110,7 +149,7 @@ class RU(Context):
 
     def __init__(self,symbolMap,properties=[]):
         Context.__init__(self,None,symbolMap.getHostInfo('RU'+str(RU.instance)))
-        self.addPtUtcpApplication()
+        self.addPeerTransport()
         self.addRuApplication(properties)
         RU.instance += 1
 
@@ -130,7 +169,7 @@ class RU(Context):
             app.params['tid'] = str(10+RU.instance)
             app.params['id'] = str(50+RU.instance)
             self.role = 'RU'
-        app.params['network'] = 'tcp'
+        app.params['network'] = 'evb'
         inputSource = app.getInputSource()
         if inputSource == "Socket":
             self.addPtBlitApplication()
@@ -154,54 +193,65 @@ class RU(Context):
 
 
     def getPolicyElements(self):
+        numaInfo = self.getNumaInfo()
+        #print self.hostinfo['soapHostname'],numaInfo
+
         # extracted from XML policy with
         # egrep -o '[[:alnum:]]+=".*"' scripts/tmp.txt |sed -re 's/([[:alnum:]]+)=/"\1":/g'|tr "\"" "'"|tr " " ","|sed -re 's/(.*)/{\1},/'
         policyElements = [
-            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'},
-            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
-            {'affinity':'3','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
-            {'affinity':'7','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-receiver(.+*)-mlx4_0:ibvla','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-sender(.*)-mlx4_0:ibvla','type':'alloc'},
-            {'affinity':'16','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
-            {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
-            {'affinity':'26','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
-            {'affinity':'20','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
-            {'cpunodes':'0','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:fragmentRequestFIFO(.+)','type':'alloc'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:fragmentFIFO_FED(.+)','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:frameFIFO_BU(.+)','type':'alloc'},
-            {'affinity':'9','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort'])+'/(.*)','type':'thread'},
-            {'affinity':'13','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort2'])+'/(.*)','type':'thread'},
-            {'affinity':'9','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort'])+'/waiting','type':'thread'},
-            {'affinity':'13','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort2'])+'/waiting','type':'thread'},
-            {'affinity':'15','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-ia(.+)/'+str(self.hostinfo['frlHostname'])+':btcp/(.*)','type':'thread'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:toolbox-mem-allocator-blit-socket(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:pt-blit-inputpipe-rlist(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:socketBufferFIFO(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:grantFIFO(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:tcpla-(.*)/'+str(self.hostinfo['frlHostname'])+'(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'}
+            {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'},
+            {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][8],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][12],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][13],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-receiver(.+*):ibvla','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:toolbox-mem-allocator-ibv-sender(.*):ibvla','type':'alloc'},
+            {'cpunodes':numaInfo['ibvCPU'],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:fragmentRequestFIFO(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:fragmentFIFO_FED(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:frameFIFO_BU(.+)','type':'alloc'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-ia(.+)/'+str(self.hostinfo['i2oHostname'])+':btcp/(.*)','type':'thread'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:toolbox-mem-allocator-blit-socket(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:pt-blit-inputpipe-rlist(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:socketBufferFIFO(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:grantFIFO(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:tcpla-(.*)/'+str(self.hostinfo['i2oHostname'])+'(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'}
         ]
-        if RU.instance == 0: #EVM
+        try:
             policyElements.extend([
-                {'affinity':'2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
-                {'affinity':'2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
-                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
-                {'affinity':'8','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
-                {'affinity':'10','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/processRequests/waiting','type':'thread'},
-                {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
-                {'affinity':'24','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'},
-                {'mempolicy':'onnode','node':'0','package':'numa','pattern':'urn:readoutMsgFIFO(.+)','type':'alloc'}
+                {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['i2oPort'])+'/(.*)','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort2'])+'/(.*)','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort'])+'/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort2'])+'/waiting','type':'thread'}
+                ])
+        except KeyError:
+            pass
+
+        if RU.instance == 0: #EVM
+            workerCores = (1,3,6,9,11,12,14,15)
+            policyElements.extend([
+                {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][5],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/processRequests/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'},
+                {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:readoutMsgFIFO(.+)','type':'alloc'}
                 ])
         else: #RU
+            workerCores = (0,1,3,6,7,9,11,14,15)
             policyElements.extend([
-                {'affinity':'0,2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
-                {'affinity':'0,2,6,12,14,18,22,28,30','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
-                {'affinity':'8','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
-                {'affinity':'10','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
-                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
-                {'affinity':'4','memnode':'0','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'}
+                {'affinity':numaInfo[numaInfo['ibvCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][5],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'}
+                ])
+        policyElements.extend([
+                {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in workerCores]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
+                {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in workerCores]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'}
                 ])
         return policyElements
 
@@ -211,7 +261,7 @@ class BU(Context):
 
     def __init__(self,symbolMap,properties=[]):
         Context.__init__(self,'BU',symbolMap.getHostInfo('BU'+str(BU.instance)))
-        self.addPtUtcpApplication()
+        self.addPeerTransport()
         self.addBuApplication(properties)
         BU.instance += 1
 
@@ -224,33 +274,36 @@ class BU(Context):
         app = Application.Application('evb::BU',BU.instance,properties)
         app.params['tid'] = str(100+BU.instance)
         app.params['id'] = str(100+BU.instance)
-        app.params['network'] = 'tcp'
+        app.params['network'] = 'evb'
         self.applications.append(app)
 
 
     def getPolicyElements(self):
+        numaInfo = self.getNumaInfo()
+        #print self.hostinfo['soapHostname'],numaInfo
+
         policyElements = [
-            {'affinity':'3','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
-            {'affinity':'5','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
-            {'affinity':'7','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
-            {'affinity':'9','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
-            {'affinity':'11','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
-            {'affinity':'13','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
-            {'affinity':'31','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
-            {'affinity':'29','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
-            {'affinity':'27','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},
-            {'affinity':'23','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/resourceMonitor/waiting','type':'thread'},
-            {'affinity':'25','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:superFragmentFIFO(.+)','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:fileStatisticsFIFO_stream(.+):alloc','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:resourceFIFO:alloc','type':'alloc'},
-            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor-(.+)/waiting','type':'thread'},
-            {'cpunodes':'1','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
-            {'affinity':'10','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
-            {'affinity':'12','memnode':'1','mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:toolbox-mem-allocator-ibv(.*):ibvla','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':'1','package':'numa','pattern':'urn:undefined','type':'alloc'}
+            {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][5],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][15],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][13],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][11],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/resourceMonitor/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][12],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/monitoring/waiting','type':'thread'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:superFragmentFIFO(.+)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:fileStatisticsFIFO_stream(.+):alloc','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:resourceFIFO:alloc','type':'alloc'},
+            {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor-(.+)/waiting','type':'thread'},
+            {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][5],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:toolbox-mem-allocator-ibv(.*):ibvla','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:pt::ibv::(.*)','type':'alloc'},
+            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:undefined','type':'alloc'}
             ]
         return policyElements
 

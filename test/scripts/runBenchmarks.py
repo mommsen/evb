@@ -31,7 +31,7 @@ class RunBenchmarks(TestRunner):
 
 
     def doIt(self):
-
+        self._symbolMap = SymbolMap(self.args['symbolMap'])
         benchmark = "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])
 
         logFile = open(self.args['logDir']+"/"+benchmark+".txt",'w',0)
@@ -44,11 +44,15 @@ class RunBenchmarks(TestRunner):
             stdout = logFile
 
         try:
+            self.startLaunchers()
+            time.sleep(1)
             self.runBenchmark(benchmark,stdout)
             success = "\033[1;37;42m OKAY \033[0m"
         except Exception as e:
             traceback.print_exc(file=stdout)
             success = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
+        finally:
+            self.stopLaunchers()
 
         if not self.args['verbose']:
             stopTime = time.strftime("%H:%M:%S", time.localtime())
@@ -56,22 +60,21 @@ class RunBenchmarks(TestRunner):
 
 
     def getConfiguration(self):
-        symbolMap = SymbolMap(self.args['symbolMap'])
-        config = Configuration(symbolMap,self.args['numa'])
+        config = Configuration(self._symbolMap,self.args['numa'])
         # EVM
-        config.add( RU(symbolMap,[
+        config.add( RU(self._symbolMap,[
             ('inputSource','string','Local'),
             ('fedSourceIds','unsignedInt',(0,))
             ]) )
         # RUs with 8 FEDs each
         for ru in range(self.args['nRUs']):
-            config.add( RU(symbolMap,[
+            config.add( RU(self._symbolMap,[
                 ('inputSource','string','Local'),
                 ('fedSourceIds','unsignedInt',range(8*ru+1,8*ru+9))
                 ]) )
         # BUs
         for bu in range(self.args['nBUs']):
-            config.add( BU(symbolMap,[
+            config.add( BU(self._symbolMap,[
                 ('dropEventData','boolean','true'),
                 ('lumiSectionTimeout','unsignedInt','0')
                 ]) )
