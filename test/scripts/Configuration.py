@@ -60,11 +60,13 @@ class Configuration():
     def isI2Otarget(self,myKey,otherKey):
         if myKey == otherKey:
             return True
-        if self.contexts[myKey].role == 'EVM' and self.contexts[otherKey].role in ('RU','BU'):
+        if self.contexts[myKey].role == 'EVM' and self.contexts[otherKey].role in ('RU','BU','RUBU'):
             return True
-        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role == 'BU':
+        if self.contexts[myKey].role == 'RU' and self.contexts[otherKey].role in ('BU','RUBU'):
             return True
         if self.contexts[myKey].role == 'BU' and self.contexts[otherKey].role == 'EVM':
+            return True
+        if self.contexts[myKey].role == 'RUBU' and self.contexts[otherKey].role in ('EVM','BU','RUBU'):
             return True
         return False
 

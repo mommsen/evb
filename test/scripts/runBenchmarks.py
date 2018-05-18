@@ -9,7 +9,7 @@ from Configuration import Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from TestCase import TestCase
-from Context import Context,RU,BU
+from Context import Context,RU,BU,RUBU
 
 
 class RunBenchmarks(TestRunner):
@@ -21,8 +21,9 @@ class RunBenchmarks(TestRunner):
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         TestRunner.addScanOptions(self,parser)
-        parser.add_argument("--nRUs",default=1,type=int,help="number of RUs [default: %(default)s]")
+        parser.add_argument("--nRUs",default=1,type=int,help="number of RUs, excl. EVM [default: %(default)s]")
         parser.add_argument("--nBUs",default=1,type=int,help="number of BUs [default: %(default)s]")
+        parser.add_argument("--nRUBUs",default=0,type=int,help="number of RUBUs, excl. EVM [default: %(default)s]")
         try:
             symbolMapfile = self._evbTesterHome + '/cases/' + os.environ["EVB_SYMBOL_MAP"]
             parser.add_argument("-m","--symbolMap",default=symbolMapfile,help="symbolMap file to use, [default: %(default)s]")
@@ -75,6 +76,14 @@ class RunBenchmarks(TestRunner):
         # BUs
         for bu in range(self.args['nBUs']):
             config.add( BU(self._symbolMap,[
+                ('dropEventData','boolean','true'),
+                ('lumiSectionTimeout','unsignedInt','0')
+                ]) )
+        # RUBUs with 8 FEDs each
+        for rubu in range(self.args['nRUBUs']):
+            config.add( RUBU(self._symbolMap,[
+                ('inputSource','string','Local'),
+                ('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108))],[ #avoid softFED 1022
                 ('dropEventData','boolean','true'),
                 ('lumiSectionTimeout','unsignedInt','0')
                 ]) )

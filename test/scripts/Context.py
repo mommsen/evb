@@ -91,8 +91,15 @@ class Context:
 
 
     def getNumaInfo(self):
-        server = xmlrpclib.ServerProxy("http://%s:%s" % (self.hostinfo['soapHostname'],self.hostinfo['launcherPort']))
-        return server.getNumaInfo()
+        try:
+            server = xmlrpclib.ServerProxy("http://%s:%s" % (self.hostinfo['soapHostname'],self.hostinfo['launcherPort']))
+            return server.getNumaInfo()
+        except xmlrpclib.Fault:
+            return {
+                '1': ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19', '21', '23', '25', '27', '29', '31'],
+                '0': ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30'],
+                'ethCPU': '1', 'ibvCPU': '0'
+                }
 
 
     def addPolicy(self,context):
@@ -152,10 +159,6 @@ class RU(Context):
         self.addPeerTransport()
         self.addRuApplication(properties)
         RU.instance += 1
-
-
-    def __del__(self):
-        RU.instance = 0
 
 
     def addRuApplication(self,properties):
@@ -266,10 +269,6 @@ class BU(Context):
         BU.instance += 1
 
 
-    def __del__(self):
-        BU.instance = 0
-
-
     def addBuApplication(self,properties):
         app = Application.Application('evb::BU',BU.instance,properties)
         app.params['tid'] = str(100+BU.instance)
@@ -308,9 +307,26 @@ class BU(Context):
         return policyElements
 
 
+class RUBU(RU):
+
+    def __init__(self,symbolMap,ruProperties=[],buProperties=[]):
+        RU.__init__(self,symbolMap,ruProperties)
+        self.role = 'RUBU'
+        self.addBuApplication(buProperties)
+
+
+    def addBuApplication(self,properties):
+        app = Application.Application('evb::BU',RU.instance-1,properties)
+        app.params['tid'] = str(99+RU.instance)
+        app.params['id'] = str(99+RU.instance)
+        app.params['network'] = 'evb'
+        self.applications.append(app)
+
+
 def resetInstanceNumbers():
     # resets all instance numbers of the above classes
     # (these are class wide / static variables)
+    Context.ptInstance = 0
     FEROL.instance = 0
     RU.instance = 0
     BU.instance = 0
@@ -348,6 +364,14 @@ if __name__ == "__main__":
         ('lumiSectionTimeout','unsignedInt','0')
         ])
     partition.append( bu.getContext(xcns,useNuma) )
+
+    rubu = RUBU(symbolMap,[
+        ('inputSource','string','Local'),
+        ('fedSourceIds','unsignedInt',range(6,10))],
+        [('dropEventData','boolean','true'),
+        ('lumiSectionTimeout','unsignedInt','0')
+        ])
+    partition.append( rubu.getContext(xcns,useNuma) )
 
     XMLtools.indent(partition)
     print( ET.tostring(partition) )
