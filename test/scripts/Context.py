@@ -205,7 +205,6 @@ class RU(Context):
             app = Application.Application('evb::RU',RU.instance,properties)
             app.params['tid'] = str(10+RU.instance)
             app.params['id'] = str(50+RU.instance)
-            self.role = 'RU'
         app.params['network'] = 'evb'
         inputSource = app.getInputSource()
         if inputSource == "Socket":
