@@ -15,7 +15,10 @@ class Context:
         self.role = role
         self.hostinfo = hostinfo
         self.polns = 'http://xdaq.web.cern.ch/xdaq/xsd/2013/XDAQPolicy-10'
-        self.policyElements = self.getPolicyElements()
+        try:
+            self.policyElements = self.getPolicyElements()
+        except KeyError:
+            self.policyElements = []
         self.applications = [Application.Application('xmem::probe::Application',Context.ptInstance,[]),]
 
 
@@ -78,13 +81,41 @@ class Context:
             ('memAllocTimeout','string','PT1S'),
             ('sendWithTimeout','boolean','true'),
             ('useRelay','boolean','false'),
-            ('senderPoolSize','unsignedLong','0x2A570C00'),
-            ('receiverPoolSize','unsignedLong','0x5D70A400'),
-            ('completionQueueSize','unsignedInt','482160'),
-            ('sendQueuePairSize','unsignedInt','5840'),
-            ('recvQueuePairSize','unsignedInt','80'),
             ('maxMessageSize','unsignedInt','0x20000')
             ]
+        if self.role is 'EVM':
+            properties.extend([
+                ('senderPoolSize','unsignedLong','0x2A570C00'),
+                ('receiverPoolSize','unsignedLong','0x5D70A400'),
+                ('completionQueueSize','unsignedInt','482160'),
+                ('sendQueuePairSize','unsignedInt','5840'),
+                ('recvQueuePairSize','unsignedInt','80')
+            ])
+        elif self.role is 'RU':
+            properties.extend([
+                ('senderPoolSize','unsignedLong','0xBAE14800'),
+                ('receiverPoolSize','unsignedLong','0x5D70A400'),
+                ('completionQueueSize','unsignedInt','23860'),
+                ('sendQueuePairSize','unsignedInt','320'),
+                ('recvQueuePairSize','unsignedInt','500')
+            ])
+        elif self.role is 'BU':
+            properties.extend([
+                ('senderPoolSize','unsignedLong','0xA3D800'),
+                ('receiverPoolSize','unsignedLong','0x1788E3800'),
+                ('completionQueueSize','unsignedInt','32400'),
+                ('sendQueuePairSize','unsignedInt','80'),
+                ('recvQueuePairSize','unsignedInt','320')
+            ])
+        elif self.role is 'RUBU':
+            properties.extend([
+                ('senderPoolSize','unsignedLong','0xBAE14800'),
+                ('receiverPoolSize','unsignedLong','0x1788E3800'),
+                ('completionQueueSize','unsignedInt','32400'),
+                ('sendQueuePairSize','unsignedInt','320'),
+                ('recvQueuePairSize','unsignedInt','500')
+            ])
+
         app = Application.Application('pt::ibv::Application',Context.ptInstance,properties)
         app.params['protocol'] = 'ibv'
         return app
@@ -155,15 +186,18 @@ class RU(Context):
     instance = 0
 
     def __init__(self,symbolMap,properties=[]):
-        Context.__init__(self,None,symbolMap.getHostInfo('RU'+str(RU.instance)))
+        if RU.instance == 0:
+            role = 'EVM'
+        else:
+            role = 'RU'
+        Context.__init__(self,role,symbolMap.getHostInfo('RU'+str(RU.instance)))
         self.addPeerTransport()
         self.addRuApplication(properties)
         RU.instance += 1
 
 
     def addRuApplication(self,properties):
-        if RU.instance == 0:
-            self.role = 'EVM'
+        if self.role is 'EVM':
             app = Application.Application('evb::EVM',RU.instance,properties)
             app.params['tid'] = '1'
             app.params['id'] = '50'
@@ -321,6 +355,42 @@ class RUBU(RU):
         app.params['id'] = str(99+RU.instance)
         app.params['network'] = 'evb'
         self.applications.append(app)
+
+
+    def getPolicyElements(self):
+        numaInfo = self.getNumaInfo()
+        policyElements = [
+            {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in (0,1,3,6,7)]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
+            {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in (0,1,3,6,7)]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][5],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][12],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][13],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:fifo/PeerTransport/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][5],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'}
+            ]
+
+        try:
+            policyElements.extend([
+                {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['i2oPort'])+'/(.*)','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:tcpla-psp(.*)/'+str(self.hostinfo['frlHostname'])+'([:/])'+str(self.hostinfo['frlPort2'])+'/(.*)','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort'])+'/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Pipe_'+str(self.hostinfo['frlHostname'])+':'+str(self.hostinfo['frlPort2'])+'/waiting','type':'thread'}
+                ])
+        except KeyError:
+            pass
+
+        return policyElements
 
 
 def resetInstanceNumbers():

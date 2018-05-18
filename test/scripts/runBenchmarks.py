@@ -65,27 +65,58 @@ class RunBenchmarks(TestRunner):
         # EVM
         config.add( RU(self._symbolMap,[
             ('inputSource','string','Local'),
-            ('fedSourceIds','unsignedInt',(0,))
+            ('fedSourceIds','unsignedInt',(0,)),
+            ('blockSize','unsignedInt','0x4000'),
+            ('allocateBlockSize','unsignedInt','0x20000'),
+            ('maxAllocateTime','unsignedInt','250'),
+            ('numberOfResponders','unsignedInt','2'),
+            ('socketBufferFIFOCapacity','unsignedInt','1024'),
+            ('grantFIFOCapacity','unsignedInt','16384'),
+            ('fragmentFIFOCapacity','unsignedInt','256'),
+            ('fragmentRequestFIFOCapacity','unsignedInt','80')
             ]) )
         # RUs with 8 FEDs each
         for ru in range(self.args['nRUs']):
             config.add( RU(self._symbolMap,[
                 ('inputSource','string','Local'),
-                ('fedSourceIds','unsignedInt',range(8*ru+1,8*ru+9))
+                ('fedSourceIds','unsignedInt',range(8*ru+1,8*ru+9)),
+                ('blockSize','unsignedInt','0x20000'),
+                ('numberOfResponders','unsignedInt','6'),
+                ('socketBufferFIFOCapacity','unsignedInt','1024'),
+                ('grantFIFOCapacity','unsignedInt','16384'),
+                ('fragmentFIFOCapacity','unsignedInt','256'),
+                ('fragmentRequestFIFOCapacity','unsignedInt','6000')
                 ]) )
         # BUs
         for bu in range(self.args['nBUs']):
             config.add( BU(self._symbolMap,[
                 ('dropEventData','boolean','true'),
-                ('lumiSectionTimeout','unsignedInt','0')
+                ('lumiSectionTimeout','unsignedInt','0'),
+                ('maxEvtsUnderConstruction','unsignedInt','640'),
+                ('eventsPerRequest','unsignedInt','8'),
+                ('superFragmentFIFOCapacity','unsignedInt','12800'),
+                ('numberOfBuilders','unsignedInt','5')
                 ]) )
         # RUBUs with 8 FEDs each
         for rubu in range(self.args['nRUBUs']):
-            config.add( RUBU(self._symbolMap,[
+            config.add( RUBU(self._symbolMap,
+                [ # RU config
                 ('inputSource','string','Local'),
-                ('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108))],[ #avoid softFED 1022
+                ('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108)), #avoid softFED
+                ('blockSize','unsignedInt','0x20000'),
+                ('numberOfResponders','unsignedInt','6'),
+                ('socketBufferFIFOCapacity','unsignedInt','1024'),
+                ('grantFIFOCapacity','unsignedInt','16384'),
+                ('fragmentFIFOCapacity','unsignedInt','256'),
+                ('fragmentRequestFIFOCapacity','unsignedInt','6000')
+                ],
+                [ #BU config
                 ('dropEventData','boolean','true'),
-                ('lumiSectionTimeout','unsignedInt','0')
+                ('lumiSectionTimeout','unsignedInt','0'),
+                ('maxEvtsUnderConstruction','unsignedInt','640'),
+                ('eventsPerRequest','unsignedInt','8'),
+                ('superFragmentFIFOCapacity','unsignedInt','12800'),
+                ('numberOfBuilders','unsignedInt','5')
                 ]) )
         return config
 
