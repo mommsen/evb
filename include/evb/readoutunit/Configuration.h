@@ -105,13 +105,13 @@ namespace evb {
       Configuration()
         : sendPoolName("sudapl"),
           inputSource("Socket"),
-          numberOfResponders(4),
+          numberOfResponders(6),
           blockSize(65536),
           numberOfPreallocatedBlocks(0),
           socketBufferFIFOCapacity(128),
           grantFIFOCapacity(4096),
           fragmentFIFOCapacity(512),
-          fragmentRequestFIFOCapacity(2048), // 64 BUs with 32 requests
+          fragmentRequestFIFOCapacity(2048),
           checkCRC(1),
           writeNextFragmentsToFile(0),
           dropAtSocket(false),
