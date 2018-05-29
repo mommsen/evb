@@ -235,3 +235,56 @@ takes one or more dat files as argument. A typical command looks like
       -o ppFedBuilder_splitTracker.pdf \
       --tag '78+1 RUs #Rightarrow 73 BUs' --subtag "Real FED distribution and sizes" \
       --totalThroughput --minx 620 --maxx 2580 --maxy 320 --ratemax 280 --nologx
+
+
+EvB Benchmark
+-------------
+This benchmark uses the standard EvB code and protocols to measure
+network throughputs. The benchmark script creates configurations on
+the fly for arbitrary numbers of RUs and BUs, and also for folded
+RUBUs. Note that the EVM is kept separate in all cases. The script
+also supports mixed configurations, i.e. N RUs with M BUs and K RUBUs.
+
+Each RU(BU) generates the data for 8 FEROL streams locally, and the
+(RU)BU drops the completed events, i.e. they are not written to
+disk. The configuration also takes care of the NUMA settings. It uses
+the default settings for the unfolded EvB, and adopts the values found
+by Andre's genetic algorithm for the folded one. It can also deal with
+the dvrubu nodes where the IB and ETH cards are on the other socket
+compared to the production setup.
+
+To test a configuration for a single fragment, you can use
+
+   runBenchmarks.py -o $outputDir --logDir $logDir \
+       --nbMeasurements 0 --sizes 2048 \
+       --nRUs 0 --nBUs 0 --nRUBUs 2 --symbolMap cases/dvrubuSymbolMap.txt
+
+    --outputDir gives the path relative to the execution directory
+      where the results of the scan are stored. You'll find there 2
+      files: a txt file which contains summary output from the scan
+      including the configuration snippets as sent to the
+      applications, and a dat file which contains the raw
+      measurements. This file can be used to plot the results
+      (see above.)
+    --logDir should point to a directory with enough quota
+      (e.g. /globalscratch/$USER) as it will contain the detailled
+      debug output of all XDAQ processes.
+    --nbMeasurements 0' is a backdoor to inhibit the scan. In this
+      case, the script waits for the return being pressed before
+      proceeding. It is possible to specify multiple sizes in which case
+      the script reconfigures the system for the next fragment size and
+      waits again on the return key. If all sizes have been tried, the
+      system is teared down. Note that it might be useful to run with
+      '--verbose' option in which case you get all output also on the
+      terminal.
+    --nRUs defines the number of RUs to be used (default is 1)
+    --nBUs defines the number of BUs to be used (default is 1)
+    --nRUBUs defines the number of RUBUs (default is 0)
+    --symbolMap gives the relative path to the symbol map defining the
+      mapping between logical and physical names. It overrides the one
+      set by the environment variable EVB_SYMBOL_MAP. The symbolMap
+      file must contain at least as many nodes as RUs, BUs, and RUBUs
+      are requested on the command line. RUBUs are treated as RUs.
+
+To run a full scan, the same parameters can be used as for the
+standard performance scan (see above.)
