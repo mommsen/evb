@@ -33,7 +33,7 @@ class RunBenchmarks(TestRunner):
 
     def doIt(self):
         self._symbolMap = SymbolMap(self.args['symbolMap'])
-        benchmark = "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])
+        benchmark = "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])+"x"+str(self.args['nRUBUs'])
 
         logFile = open(self.args['logDir']+"/"+benchmark+".txt",'w',0)
         if self.args['verbose']:
