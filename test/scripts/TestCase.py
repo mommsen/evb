@@ -114,15 +114,13 @@ class TestCase:
         self._xdaqLogLevel = None
 
 
-    def __del__(self):
+    def destroy(self):
         try:
             shutil.rmtree("/tmp/evb_test")
         except OSError:
             pass
         if self._config:
-            results = [self._xmlrpcPool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
-            for r in results:
-                print(r.get(timeout=30))
+            self.stopXDAQs()
         self._pool.close()
         self._pool.join()
         sys.stdout.flush()
@@ -131,6 +129,18 @@ class TestCase:
 
     def setXdaqLogLevel(self, newLevel):
         self._xdaqLogLevel = newLevel
+
+    def stopXDAQs(self):
+        # stops all XDAQ processes we started before
+        import logging
+        logging.info("stopping all XDAQs")
+
+        results = [self._xmlrpcPool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
+        for r in results:
+            print(r.get(timeout=30))
+        
+        logging.info("done stopping all XDAQs")
+
 
     def startXDAQs(self,testname):
         try:

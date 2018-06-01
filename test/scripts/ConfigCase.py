@@ -13,8 +13,8 @@ class ConfigCase(TestCase):
         self.defaultFedSize = defaultFedSize
 
 
-    def __del__(self):
-        TestCase.__del__(self)
+    def destroy(self):
+        TestCase.destroy(self)
 
 
     def calculateFedSize(self,fedId,fragSize,fragSizeRMS):
