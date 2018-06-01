@@ -41,8 +41,7 @@ def sendSoapMessage(soapHostname,soapPort,urn,body):
         response = server.getresponse().read()
         return minidom.parseString(response)
     except (httplib.HTTPException,socket.error) as e:
-        raise SOAPexception("Received bad response from "+soapHostname+":"+soapPort+": "+str(e))
-
+        raise SOAPexception("Received bad response from "+soapHostname+":"+str(soapPort)+": "+str(e))
 
 def sendCmdToApp(command,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
