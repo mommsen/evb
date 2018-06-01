@@ -17,6 +17,10 @@ class RunScans(TestRunner):
     def __init__(self):
         TestRunner.__init__(self)
 
+        # callback passed to TestCase to be called when startup is complete
+        # and the number of measurements is zero
+        self.afterStartupCallback = None
+
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         TestRunner.addScanOptions(self,parser)
@@ -30,6 +34,8 @@ class RunScans(TestRunner):
         parser.add_argument("--scaleFedSizesFromFile",help="scale the FED fragment sizes relative to the sizes in the given file")
         parser.add_argument("--calculateFedSizesFromFile",help="calculate the FED fragment sizes using the parameters in the given file")
 
+    def setAfterStartupCallback(self, afterStartupCallback):
+        self.afterStartupCallback = afterStartupCallback
 
     def fillFedSizeScalesFromFile(self):
         self.fedSizeScaleFactors = {}
@@ -84,7 +90,7 @@ class RunScans(TestRunner):
         return True
 
 
-    def runConfig(self,configName,configFile,stdout):
+    def runConfig(self,configName,configFile,stdout, afterStartupCallback = None):
         try:
             #----------
             # symbol map / configuration to run
@@ -108,7 +114,8 @@ class RunScans(TestRunner):
                 ferolMode = 'FRL_MODE'
             config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
                                     self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
-            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize)
+            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize, 
+                                    afterStartupCallback = self.afterStartupCallback)
             configCase.setXdaqLogLevel(self.args['logLevel'])
             configCase.prepare(configName)
 

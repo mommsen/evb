@@ -98,11 +98,20 @@ def init_worker():
 
 class TestCase:
 
-    def __init__(self,config,stdout):
+    def __init__(self,config,stdout,afterStartupCallback = None):
+        """
+        @param afterStartupCallback is a callback which will be called
+        after the EVB has been enabled when nbMeasurements is zero.
+        If this is left None, the user is prompted to press enter
+        to terminate the test. This function is called with the
+        TestCase object as argument.
+        """
+
         self._origStdout = sys.stdout
         sys.stdout = stdout
         self._config = config
         self._pool = mp.Pool(20,init_worker)
+        self.afterStartupCallback = afterStartupCallback
 
         # standard multiprocessing pool does not work well with exceptions
         # over xmlrpc, so we use a pool based on threads (instead of procecesses)
@@ -807,8 +816,11 @@ class TestCase:
         if args['nbMeasurements'] == 0:
             dataPoints.append( self.getDataPoint() )
 
-            # run until the user presses enter
-            raw_input("Press Enter to stop...")
+            if self.afterStartupCallback is None:
+                # run until the user presses enter
+                raw_input("Press Enter to stop...")
+            else:
+                self.afterStartupCallback(self)
 
         else:
             if args['long']:
