@@ -7,8 +7,8 @@ from TestCase import *
 
 class ConfigCase(TestCase):
 
-    def __init__(self,config,stdout,fedSizeScaleFactors,defaultFedSize):
-        TestCase.__init__(self,config,stdout)
+    def __init__(self,config,stdout,fedSizeScaleFactors,defaultFedSize,afterStartupCallback = None):
+        TestCase.__init__(self,config,stdout, afterStartupCallback = afterStartupCallback)
         self.fedSizeScaleFactors = fedSizeScaleFactors
         self.defaultFedSize = defaultFedSize
 
