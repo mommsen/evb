@@ -116,6 +116,8 @@ class RunScans(TestRunner):
 
             returnValue = "\033[1;37;42m DONE \033[0m"
         except Exception as e:
+            import logging
+            logging.info("got an exception " + str(e) + " " + traceback.format_exc())
             traceback.print_exc(file=stdout)
             returnValue = "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
         finally:
