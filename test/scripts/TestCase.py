@@ -114,7 +114,7 @@ class TestCase:
         self._xdaqLogLevel = None
 
 
-    def __del__(self):
+    def destroy(self):
         try:
             shutil.rmtree("/tmp/evb_test")
         except OSError:

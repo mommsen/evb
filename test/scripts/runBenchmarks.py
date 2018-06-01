@@ -127,7 +127,7 @@ class RunBenchmarks(TestRunner):
         testCase.prepare(benchmark)
 
         self.scanFedSizes(benchmark,testCase)
-        del(testCase)
+        testCase.destroy()
 
 
 if __name__ == "__main__":
