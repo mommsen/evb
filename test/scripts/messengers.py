@@ -36,13 +36,16 @@ def sendSoapMessage(soapHostname,soapPort,urn,body):
                "SOAPAction":urn}
     server = httplib.HTTPConnection(soapHostname,soapPort)
     #server.set_debuglevel(4)
-    server.request("POST","",soapMessage,headers)
+    try:
+        server.request("POST","",soapMessage,headers)
+    except (socket.error) as e:
+        raise Exception("error sending SOAP POST request to "+soapHostname+":"+str(soapPort)+": "+str(e), e)
+
     try:
         response = server.getresponse().read()
         return minidom.parseString(response)
     except (httplib.HTTPException,socket.error) as e:
-        raise SOAPexception("Received bad response from "+soapHostname+":"+soapPort+": "+str(e))
-
+        raise SOAPexception("Received bad response from "+soapHostname+":"+str(soapPort)+": "+str(e))
 
 def sendCmdToApp(command,soapHostname,soapPort,launcherPort,app,instance):
     urn = "urn:xdaq-application:class="+app+",instance="+str(instance)
