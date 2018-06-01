@@ -36,7 +36,11 @@ def sendSoapMessage(soapHostname,soapPort,urn,body):
                "SOAPAction":urn}
     server = httplib.HTTPConnection(soapHostname,soapPort)
     #server.set_debuglevel(4)
-    server.request("POST","",soapMessage,headers)
+    try:
+        server.request("POST","",soapMessage,headers)
+    except (socket.error) as e:
+        raise Exception("error sending SOAP POST request to "+soapHostname+":"+str(soapPort)+": "+str(e), e)
+
     try:
         response = server.getresponse().read()
         return minidom.parseString(response)
