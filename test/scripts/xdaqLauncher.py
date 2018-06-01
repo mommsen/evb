@@ -96,6 +96,9 @@ class xdaqLauncher:
         # if True, use dummyXdaq.py instead of xdaq.exe
         self.dummyXdaq = dummyXdaq
 
+        # /dev/null to redirect subcommand output
+        self.devnull = open(os.devnull, "w")
+
     def cleanTempFiles(self):
         try:
             for file in glob.glob("/tmp/dump_*txt"):
@@ -199,7 +202,7 @@ class xdaqLauncher:
         # pins the process pid to the given core
 
         mask = hex(1 << core)
-        status = subprocess.call(["/bin/taskset", "-p", mask, str(pid)])
+        status = subprocess.call(["/bin/taskset", "-p", mask, str(pid)], stdout = self.devnull)
 
         return status
 
