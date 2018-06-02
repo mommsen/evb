@@ -335,6 +335,38 @@ class ConfigFromFile(Configuration):
         return None
 
 
+def getApplicationStates(configuration):
+    # @param configuration must be an instance of Configuration.
+    # 
+    # @return a dict of (application type) -> (list of application states)
+    # where application type is e.g. 'RU' etc. and application state
+    # is e.g. 'Failed' etc.
+    # 
+    # this is e.g. used to check if any of the applications went into
+    # 'Failed' state
+
+    result = {}
+
+    import messengers
+
+    for appType, appList in configuration.applications.items():
+        result[appType] = []
+
+        for application in appList:
+
+            try:
+                state = messengers.getStateName(**application)
+            except Exception, ex:
+                # e.g. connection refused
+                state = None
+
+            result[appType].append(state)
+
+    return result
+
+
+
+
 if __name__ == "__main__":
     symbolMap = SymbolMap.SymbolMap(os.environ["EVB_TESTER_HOME"]+"/cdaq/20170131/canon_1str_4x4/symbolMap.txt")
     config = ConfigFromFile(symbolMap,os.environ["EVB_TESTER_HOME"]+"/cdaq/20170131/canon_1str_4x4/canon_1str_4x4.xml",
