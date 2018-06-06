@@ -9,7 +9,7 @@ from Configuration import Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from TestCase import TestCase
-from Context import Context,RU,BU,RUBU
+from Context import Context,RU,BU,RUBU, resetInstanceNumbers
 
 
 class RunBenchmarks(TestRunner):
@@ -61,6 +61,8 @@ class RunBenchmarks(TestRunner):
 
 
     def getConfiguration(self):
+        resetInstanceNumbers()
+
         config = Configuration(self._symbolMap,self.args['numa'])
         # EVM
         config.add( RU(self._symbolMap,[
