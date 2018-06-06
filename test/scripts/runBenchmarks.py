@@ -61,6 +61,8 @@ class RunBenchmarks(TestRunner):
 
 
     def getConfiguration(self):
+        """Note that this needs the xdaq launchers running since it has to query the remote hosts
+        to get numa information based on the output of numactl --hardware"""
         resetInstanceNumbers()
 
         config = Configuration(self._symbolMap,self.args['numa'])
