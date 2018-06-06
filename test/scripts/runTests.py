@@ -102,6 +102,8 @@ class RunTests(TestRunner):
                     raw_input("Press enter to continue")
                 else:
                     raise e
+            finally:
+                case.destroy()
         except Exception as e:
             traceback.print_exc(file=stdout)
             return "\033[1;37;41m FAILED \033[0m "+type(e).__name__+": "+str(e)
