@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from Configuration import ConfigFromFile
+from Configuration import ConfigFromFile, Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from ConfigCase import ConfigCase
@@ -60,6 +60,66 @@ class RunScans(TestRunner):
                     except ValueError:
                         pass
 
+    def getAllConfigurations(self):
+        """:return a list of dicts with information about the tests to be run. Each entry of the returned
+        value is a dict with the following keys:
+
+        name           name of the configuration to be run
+        symbolMap      a SymbolMap object
+        config         a Configuration object
+        configFile     the configuration file corresponding to the config object
+        """
+
+        result = []
+
+        if self.args['ferolMode']:
+            ferolMode = 'FEROL_MODE'
+        else:
+            ferolMode = 'FRL_MODE'
+
+        for configFile in self.args['configs']:
+
+            entry = {}
+
+            #-----
+            # configuration name
+            #-----
+
+            configName = os.path.splitext(os.path.basename(configFile))[0]
+            if os.path.isdir(configFile):
+                configFile += "/"+configName+".xml"
+
+            entry['name'] = configName
+            entry['configFile'] = configFile
+
+            #-----
+            # SymbolMap
+            #-----
+
+            if self.args['symbolMap']:
+                # use symbol map specified on the command line
+                # which is common to all test configuration
+                symbolMap = SymbolMap(self.args['symbolMap'])
+            else:
+                # use test-specific SymbolMap
+                configDir = os.path.dirname(configFile)
+                symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+
+            entry['symbolMap'] = symbolMap
+
+            #----------
+            # create configuration
+            #----------
+
+            config = ConfigFromFile(symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
+                                    self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
+
+            entry['config'] = config
+
+            result.append(entry)
+
+        return result
+
 
     def doIt(self):
         if len(self.args['configs']) == 0:
@@ -69,10 +129,12 @@ class RunScans(TestRunner):
         except OSError:
             pass
         self.fillFedSizeScalesFromFile()
-        for configFile in self.args['configs']:
-            configName = os.path.splitext(os.path.basename(configFile))[0]
-            if os.path.isdir(configFile):
-                configFile += "/"+configName+".xml"
+
+
+        for entry in self.getAllConfigurations():
+
+            configName = entry['name']
+
             logFile = open(self.args['outputDir']+"/"+configName+".txt",'w')
             if self.args['verbose']:
                 stdout = Tee(sys.stdout,logFile)
@@ -82,7 +144,9 @@ class RunScans(TestRunner):
                 sys.stdout.flush()
                 stdout = logFile
 
-            success = self.runConfig(configName,configFile,stdout)
+            config = entry['config']
+
+            success = self.runConfig(configName,config,stdout)
 
             if not self.args['verbose']:
                 stopTime = time.strftime("%H:%M:%S", time.localtime())
@@ -90,31 +154,25 @@ class RunScans(TestRunner):
         return True
 
 
-    def runConfig(self,configName,configFile,stdout, afterStartupCallback = None):
-        try:
-            #----------
-            # symbol map / configuration to run
-            #----------
+    def runConfig(self,configName,config,stdout, afterStartupCallback = None):
 
-            if self.args['symbolMap']:
-                self._symbolMap = SymbolMap(self.args['symbolMap'])
-            else:
-                configDir = os.path.dirname(configFile)
-                self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+        assert isinstance(config, Configuration)
+
+        try:
+            # set self._symbolMap so that TestCase.startLaunchers() and TestCase.stopLaunchers()
+            # know where the launchers are
+            self._symbolMap = config.symbolMap
+
+            if not self.args['symbolMap']:
+                # test-specific SymbolMaps
                 self.startLaunchers()
                 time.sleep(1)
 
             #----------
-            # create configuration
+            # run the configuration
             #----------
 
-            if self.args['ferolMode']:
-                ferolMode = 'FEROL_MODE'
-            else:
-                ferolMode = 'FRL_MODE'
-            config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
-                                    self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
-            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize, 
+            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize,
                                     afterStartupCallback = self.afterStartupCallback)
             configCase.setXdaqLogLevel(self.args['logLevel'])
             configCase.prepare(configName)
@@ -130,6 +188,7 @@ class RunScans(TestRunner):
         finally:
             configCase.destroy()
             if not self.args['symbolMap']:
+                # test-specific SymbolMaps
                 self.stopLaunchers()
         return returnValue
 
