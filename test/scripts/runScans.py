@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from Configuration import ConfigFromFile
+from Configuration import ConfigFromFile, Configuration
 from TestRunner import TestRunner,Tee,BadConfig
 from SymbolMap import SymbolMap
 from ConfigCase import ConfigCase
@@ -90,31 +90,25 @@ class RunScans(TestRunner):
         return True
 
 
-    def runConfig(self,configName,configFile,stdout, afterStartupCallback = None):
-        try:
-            #----------
-            # symbol map / configuration to run
-            #----------
+    def runConfig(self,configName,config,stdout, afterStartupCallback = None):
 
-            if self.args['symbolMap']:
-                self._symbolMap = SymbolMap(self.args['symbolMap'])
-            else:
-                configDir = os.path.dirname(configFile)
-                self._symbolMap = SymbolMap(configDir+"/symbolMap.txt")
+        assert isinstance(config, Configuration)
+
+        try:
+            # set self._symbolMap so that TestCase.startLaunchers() and TestCase.stopLaunchers()
+            # know where the launchers are
+            self._symbolMap = config.symbolMap
+
+            if not self.args['symbolMap']:
+                # test-specific SymbolMaps
                 self.startLaunchers()
                 time.sleep(1)
 
             #----------
-            # create configuration
+            # run the configuration
             #----------
 
-            if self.args['ferolMode']:
-                ferolMode = 'FEROL_MODE'
-            else:
-                ferolMode = 'FRL_MODE'
-            config = ConfigFromFile(self._symbolMap,configFile,self.args['fixPorts'],self.args['numa'],
-                                    self.args['generateAtRU'],self.args['dropAtRU'],self.args['dropAtSocket'],ferolMode)
-            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize, 
+            configCase = ConfigCase(config,stdout,self.fedSizeScaleFactors,self.defaultFedSize,
                                     afterStartupCallback = self.afterStartupCallback)
             configCase.setXdaqLogLevel(self.args['logLevel'])
             configCase.prepare(configName)
@@ -130,6 +124,7 @@ class RunScans(TestRunner):
         finally:
             configCase.destroy()
             if not self.args['symbolMap']:
+                # test-specific SymbolMaps
                 self.stopLaunchers()
         return returnValue
 
