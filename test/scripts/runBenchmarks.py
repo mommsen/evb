@@ -35,6 +35,27 @@ class RunBenchmarks(TestRunner):
         if self._symbolMap is None:
             self._symbolMap = SymbolMap(self.args['symbolMap'])
 
+
+    def getAllConfigurations(self):
+        """:return a list of dicts with information about the tests to be run. Each entry of the returned
+        value is a dict with the following keys:
+
+        name           name of the configuration to be run
+        symbolMap      a SymbolMap object
+        config         a Configuration object
+        """
+
+        self.createSymbolMap()
+
+        return [
+            dict(
+                name = self.getBenchmarkName(),
+                symbolMap = SymbolMap(self.args['symbolMap']),
+                config = self.getConfiguration(),
+            )
+        ]
+
+
     def getBenchmarkName(self):
         return "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])+"x"+str(self.args['nRUBUs'])
 
