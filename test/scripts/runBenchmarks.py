@@ -16,7 +16,7 @@ class RunBenchmarks(TestRunner):
 
     def __init__(self):
         TestRunner.__init__(self)
-
+        self._symbolMap = None
 
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
@@ -31,8 +31,12 @@ class RunBenchmarks(TestRunner):
             parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
 
 
+    def createSymbolMap(self):
+        if self._symbolMap is None:
+            self._symbolMap = SymbolMap(self.args['symbolMap'])
+
     def doIt(self):
-        self._symbolMap = SymbolMap(self.args['symbolMap'])
+        self.createSymbolMap()
         benchmark = "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])+"x"+str(self.args['nRUBUs'])
 
         logFile = open(self.args['logDir']+"/"+benchmark+".txt",'w',0)
