@@ -50,7 +50,7 @@ class RunBenchmarks(TestRunner):
         return [
             dict(
                 name = self.getBenchmarkName(),
-                symbolMap = SymbolMap(self.args['symbolMap']),
+                symbolMap = self._symbolMap,
                 config = self.getConfiguration(),
             )
         ]
