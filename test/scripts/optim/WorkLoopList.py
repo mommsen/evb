@@ -36,7 +36,6 @@ class WorkLoopList:
         # note that work loops contain ALL work loops so we have
         # to distinguish RU and BU workloops ourselves in some cases
 
-
         for appType, applicationList in applications.items():
 
             thisParameterNames = None
@@ -101,6 +100,17 @@ class WorkLoopList:
                 result.append(appType + "/" + paramName)
 
         return sorted(result)
+
+    #----------------------------------------
+
+    def fillWorkLoopData(self):
+        # re-reads information about the workloops
+        # this should be called after restarting the xdaq
+        # processes
+
+        for workLoopDataList in self.workLoopDatas.values():
+            for workLoopData in workLoopDataList:
+                workLoopData.fillWorkLoopData()
 
     #----------------------------------------
 
