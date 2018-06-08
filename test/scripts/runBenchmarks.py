@@ -16,7 +16,7 @@ class RunBenchmarks(TestRunner):
 
     def __init__(self):
         TestRunner.__init__(self)
-
+        self._symbolMap = None
 
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
@@ -31,9 +31,37 @@ class RunBenchmarks(TestRunner):
             parser.add_argument("-m","--symbolMap",required=True,help="symbolMap file to use")
 
 
+    def createSymbolMap(self):
+        if self._symbolMap is None:
+            self._symbolMap = SymbolMap(self.args['symbolMap'])
+
+
+    def getAllConfigurations(self):
+        """:return a list of dicts with information about the tests to be run. Each entry of the returned
+        value is a dict with the following keys:
+
+        name           name of the configuration to be run
+        symbolMap      a SymbolMap object
+        config         a Configuration object
+        """
+
+        self.createSymbolMap()
+
+        return [
+            dict(
+                name = self.getBenchmarkName(),
+                symbolMap = self._symbolMap,
+                config = self.getConfiguration(),
+            )
+        ]
+
+
+    def getBenchmarkName(self):
+        return "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])+"x"+str(self.args['nRUBUs'])
+
     def doIt(self):
-        self._symbolMap = SymbolMap(self.args['symbolMap'])
-        benchmark = "benchmark_"+str(self.args['nRUs'])+"x"+str(self.args['nBUs'])+"x"+str(self.args['nRUBUs'])
+        self.createSymbolMap()
+        benchmark = self.getBenchmarkName()
 
         logFile = open(self.args['logDir']+"/"+benchmark+".txt",'w',0)
         if self.args['verbose']:
@@ -61,6 +89,8 @@ class RunBenchmarks(TestRunner):
 
 
     def getConfiguration(self):
+        """Note that this needs the xdaq launchers running since it has to query the remote hosts
+        to get numa information based on the output of numactl --hardware"""
         resetInstanceNumbers()
 
         config = Configuration(self._symbolMap,self.args['numa'])
