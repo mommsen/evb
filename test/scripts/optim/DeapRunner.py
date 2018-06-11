@@ -6,7 +6,7 @@ class DeapRunner:
     # class for configuring and running the genetic algorithm
     # for optimizing the work loop to core assignments
 
-    def __init__(self, coreNumbers, goalFunction, resultFname = None):
+    def __init__(self, coreNumbers, goalFunction, resultFname = None, evbRunner = None):
         # configures the genetic algorithm toolbox
         # 
         # @param coreNumbers is the list of core numbers which can be
@@ -16,6 +16,9 @@ class DeapRunner:
 
         # the function which pins the threads
         self.goalFunction = goalFunction
+
+        # object allowing to restart the EVB when it goes to failed state
+        self.evbRunner = evbRunner
 
         #----------
         self.parameterNames = goalFunction.getParameterNames()
