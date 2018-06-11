@@ -23,45 +23,35 @@ from RestartableRunner import RestartableRunner
 # main
 #----------------------------------------------------------------------
 if __name__ == "__main__":
+
+    # object to get the configuration from
+    testRunner = RunBenchmarks()
     parser = ArgumentParser()
 
-
-    parser.add_argument("configFile", 
-                        metavar = "config",
-                        help="path to the configuration file which is run by runScans.py (this is used to find the RUs and BUs to tune)")
-
-    parser.add_argument("-o","--outputDir",
-                        metavar = "dir",
-                        default = "/globalscratch/%s/scans" % getpass.getuser(),
-                        help = "output directory where log file and results in .csv format will be written to [default: %(default)s]")
+    # add options to run the event builder
+    testRunner.addOptions(parser)
 
     options = parser.parse_args()
 
-    # remove any trailing slash
-    while options.configFile.endswith('/'):
-        options.configFile = options.configFile[:-1]
+    testRunner.args = vars(options)
+    testRunner.createSymbolMap()
 
-    configName = os.path.splitext(os.path.basename(options.configFile))[0]
-    if os.path.isdir(options.configFile):
-        options.configFile += "/"+configName+".xml"
-
-    # take the symbol map from the directory in which the configuration file resides
-    symbolMapFname = os.path.join(os.path.dirname(options.configFile), "symbolMap.txt")
-    from SymbolMap import SymbolMap
-    symbolMap = SymbolMap(symbolMapFname)
-
-    from Configuration import ConfigFromFile
-    config = ConfigFromFile(symbolMap,options.configFile,
-                            # dummy arguments
-                            fixPorts = False,
-                            useNuma = False,
-                            generateAtRU = False,
-                            dropAtRU = False,
-                            dropAtSocket = False,
-                            ferolMode = False
-                            )
 
     #----------
+    # check/override some event builder options
+    options.nbMeasurements = 0
+
+    if len(options.sizes) != 1:
+        print >> sys.stderr,"must specify excatly one superfragment size to run with (in the future we may support optimizing for a mix of fragment sizes)"
+        sys.exit(1)
+
+    #----------
+
+    if not os.path.exists(options.outputDir):
+        os.makedirs(options.outputDir)
+
+    timeStamp = optimutils.initLogging(os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.log"), timestamp = None)
+    logging.info("startup of optimization")
 
     # on the RUBU:
     # CPU0 (Infiniband side):
@@ -95,13 +85,14 @@ if __name__ == "__main__":
     logging.info("starting EVB")
     evbRunnerThread.start()
 
-    timeStamp = initLogging(os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.log"), timestamp = None)
     # wait for the EVB to finish starting
     logging.info("waiting for completion of EVB start")
     evbRunner.evbStarted.wait()
     logging.info("EVB start complete")
 
-    logging.info("using configuration file " + os.path.abspath(options.configFile))
+    # now we can get the benchmark configuration
+    logging.info("getting configuration")
+    config = testRunner.getAllConfigurations()[0]['config']
 
     #----------
     # find RUs, BUs and RUBUs
