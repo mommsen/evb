@@ -77,6 +77,16 @@ class GoalFunctionDeap:
 
     #----------------------------------------
 
+    def readWorkLoopList(self):
+        """this should be called after restarting the EVB
+        to re-read the thread ids of the newly started
+        workloops"""
+
+        logging.info("rereading work loop data")
+        self.workLoopList.fillWorkLoopData()
+
+    #----------------------------------------
+
     def getEventRate(self):
         # @return (event rate mean, event rate std dev)
         # 
