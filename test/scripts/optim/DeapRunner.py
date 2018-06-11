@@ -51,11 +51,11 @@ class DeapRunner:
                                             # participating in each tournament
         )
 
-        # defnine how to generate a parameter value:
+        # define how to generate a parameter value:
         # randomly sample from the list of given core numbers
         self.toolbox.register("attr_core", lambda: random.choice(self.coreNumbers))
 
-        # define what how many and what type of parameters
+        # define how many and what type of parameters
         # an individual is made of
         self.toolbox.register("individual", 
                               tools.initRepeat, 
