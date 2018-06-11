@@ -127,33 +127,86 @@ class WorkLoopData:
         # @param launcherPort is the port where to contact
         # the launcher to set the pinning of a process
 
-        self.appType = appType
+        self.appType  = appType
+        self.soapHost = soapHost
+        self.soapPort = soapPort
 
-        # fetch the information about the workloops
-        workerList = getWorkLoops((soapHost, soapPort))
+        # list of work loops and associated information
+        self.workerList = None
 
-        # canonicalize work loop names
-        wlnToCanonical = canonicalizeWorkLoopNames(workerList.keys())
+        # maps from work loop name to canonical work loop name
+        self.wlnToCanonical = None
+
+        # list of unused work loops (for debugging purposes)
+        self.unusedWorkLoops = None
 
         # keep a list of unused workloops for debugging purposes
-        self.unusedWorkLoops = sorted(
-            [ wln 
-              for wln in workerList.keys()
-              if not wln in wlnToCanonical.keys()              
-              ])
-
+        self.unusedWorkLoops = None
 
         # maps from canonical workloop name
         # to process id on the soapHost
-        self.workLoopToPid = {}
+        self.workLoopToPid = None
 
-        for wln, cwln in wlnToCanonical.items():
-            self.workLoopToPid[cwln] = workerList[wln]['SYS_gettid']
+        self.fillWorkLoopData()
 
         # create an xmlrpc client
         import xmlrpclib
 
         self.rpcclient = xmlrpclib.ServerProxy("http://%s:%s" % (soapHost, launcherPort))
+
+    #----------------------------------------
+
+    def fillWorkLoopData(self):
+        # this is called on init and must also be called
+        # when the xdaq processes are restarted
+
+        # if we are called the first time we don't do
+        # consistency checks
+        #
+        # if this is called after restarting the xdaq processes
+        # we insist that the work loops are equivalent
+        # (apart from the actual process ids)
+        isFirst = self.workerList is None
+
+        # fetch the information about the workloops
+        self.workerList = getWorkLoops((self.soapHost, self.soapPort))
+
+        # canonicalize work loop names
+        if isFirst:
+            self.wlnToCanonical = canonicalizeWorkLoopNames(self.workerList.keys())
+        else:
+            assert self.wlnToCanonical == canonicalizeWorkLoopNames(self.workerList.keys())
+
+        makeUnusedWorkLoops = lambda: sorted(
+            [ wln 
+              for wln in self.workerList.keys()
+              if not wln in self.wlnToCanonical.keys()              
+              ])
+        
+        if isFirst:
+            self.unusedWorkLoops = makeUnusedWorkLoops()
+        else:
+            assert self.unusedWorkLoops == makeUnusedWorkLoops()
+
+
+        # maps from canonical workloop name
+        # to process id on the soapHost
+        #
+        # this will be different from the previous call
+        # so no reason to compare to potentially existing data
+
+        # print changes in workloop IDs after an EVB
+        # restart (mainly for debugging)
+        oldAssignments = self.workLoopToPid
+        self.workLoopToPid = {}
+
+        for wln, cwln in self.wlnToCanonical.items():
+            
+            self.workLoopToPid[cwln] = self.workerList[wln]['SYS_gettid']
+
+            import logging
+            if not isFirst:
+                logging.debug("changing workloop %s from PID %d to %d" % (cwln, oldAssignments[cwln], self.workLoopToPid[cwln]))
 
     #----------------------------------------
 
