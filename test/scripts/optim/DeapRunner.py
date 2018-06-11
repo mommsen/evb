@@ -175,6 +175,41 @@ class DeapRunner:
         # evaluate the goal function
         rateMean, rateStd, lastRate = self.goalFunction(paramDict)
 
+        #----------
+        # check for applications in failed state
+        #----------
+        someFailed = False
+
+        if rateMean < 1 or lastRate < 1:
+            logger = logging.getLogger("evaluate")
+
+            # EVM seems to stay in ready state we must check
+            # RU and BU states
+            
+            # check if any application is not in 'Enabled' state
+            some_applications_failed = self.evbRunner.checkApplicationsEnabled() == False
+
+            logger.warn("event rate almost zero (%.1f Hz) or last rate almost zero (%.1f Hz)" % (rateMean, lastRate))
+
+            if some_applications_failed:
+
+                logger.error("some applications are not in enabled state state")
+
+                someFailed = True
+
+                # must request a restart
+                logging.info("requesting EVB restart")
+                self.evbRunner.restartEVB()
+                logging.info("done restarting EVB")
+
+                # re-read XDAQ workloop lists because
+                # thread ids will have changed
+                self.goalFunction.readWorkLoopList()
+
+            else:
+                logger.error("no applications in failed state")
+
+        #----------
         # append to the result .csv file
         if self.csvWriter is not None:
             # gmtime to be consistent with the hyperopt conversion
@@ -190,31 +225,6 @@ class DeapRunner:
 
             self.csvWriter.writerow(values)
             self.csvFile.flush()
-
-        if rateMean < 1 or lastRate < 1:
-            logger = logging.getLogger("evaluate")
-
-            # EVM seems to stay in ready state we must check
-            # RU and BU states
-            applicationStates = self.goalFunction.getApplicationStates()
-
-            # count application states (we don't have collections.Counter
-            # in python 2.6 on CC7)
-            failedPerType = {}
-            for appType, stateList in applicationStates.items():
-                for state in stateList:
-                    if state == 'Failed':
-                        failedPerType[appType] = failedPerType.get(appType,0) + 1
-
-            logger.warn("event rate almost zero (%.1f Hz) or last rate almost zero (%.1f Hz)" % (rateMean, lastRate))
-            
-            if failedPerType:
-                logger.error("%d applications in failed state" % len(failedPerType))
-
-                # must request a restart
-                raise Exception("applications in failed state")
-            else:
-                logger.error("no applications in failed state")
 
 
 
