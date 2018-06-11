@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+
+from argparse import ArgumentParser
+
 # scans pinning of xdaq threads 'passively', i.e. attaches
 # to an existing running setup (without starting one for the moment)
 
@@ -7,27 +10,18 @@
 import os, sys
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), ".."))
 
-import time, logging, re
-from pprint import pprint
-import numpy as np
-import math
-import os
-import getpass
+from runBenchmarks import RunBenchmarks
+from runScans import RunScans
 
-from optimutils import *
+import time, logging, re, os, sys, threading
 
-#----------------------------------------------------------------------
+import optimutils
 
-import sys, time
-import logging
-
-import numpy as np
 
 #----------------------------------------------------------------------
 # main
 #----------------------------------------------------------------------
 if __name__ == "__main__":
-    from argparse import ArgumentParser
     parser = ArgumentParser()
 
 
