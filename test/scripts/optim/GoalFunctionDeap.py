@@ -116,27 +116,5 @@ class GoalFunctionDeap:
                                    None, 
                                    "evb::EVM" ,0)
     
-    #----------------------------------------
-
-    def getApplicationStates(self):
-        # @return a dict of (application type) -> (list of application states)
-        # where application type is e.g. 'RU' etc. and application state
-        # is e.g. 'Failed' etc.
-        # 
-        # this is e.g. used to check if any of the applications went into
-        # 'Failed' state
-        
-        result = {}
-
-        import messengers
-
-        for appType, appList in self.applications.items():
-            result[appType] = []
-
-            for application in appList:
-                result[appType].append(messengers.getStateName(**application))
-
-        return result
-
 
 #----------------------------------------------------------------------
