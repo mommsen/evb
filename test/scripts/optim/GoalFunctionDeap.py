@@ -3,6 +3,11 @@
 import logging, time
 import numpy as np
 
+import sys, os
+parent_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
+if not parent_path in sys.path:
+    sys.path.append(parent_path)
+
 class GoalFunctionDeap:
     # goal function to maximize by adjusting the assignment
     # of work loops to CPU cores
