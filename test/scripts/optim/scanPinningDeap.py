@@ -120,7 +120,7 @@ if __name__ == "__main__":
     #----------
 
     from GoalFunctionDeap import GoalFunctionDeap
-    goalFunction = GoalFunctionDeap(config.applications, workLoopList)
+    goalFunction = GoalFunctionDeap(config, workLoopList)
 
     # write the event rate before tuning
     time.sleep(1)

@@ -22,7 +22,7 @@ class GoalFunctionDeap:
     # and returns the average event rate (including variation)
     #----------------------------------------
 
-    def __init__(self, applications, workLoopList,
+    def __init__(self, config, workLoopList,
                  measurementPeriod = 10):
         # @param workLoopList must be an object of type WorkLoopList
         # which contains information about the process ids on each 
@@ -34,22 +34,19 @@ class GoalFunctionDeap:
         # sample the EVM rate (for the moment this is 
         # sampled each second)
         #
-        # @param applications is a dict of xdaq application type -> list of 
-        # information about applications of this type. This must
-        # be of the same format as Configuration.applications. This
-        # is used to check the application states e.g. when the 
+        # @param config must be an instance of a Configuration object.
+        # This is used to retrieve the application states e.g. when the 
         # readout rate drops to zero. It is also used to 
         # get information about the EVM application to 
         # retrieve the readout rate.
         
         # EVM host for reading the rate
-        evmApplication = applications['EVM'][0]
+        self.config = config
+        evmApplication = self.config.applications['EVM'][0]
         self.evmHostPort = (evmApplication['soapHostname'], int(evmApplication['soapPort']))
 
         self.workLoopList = workLoopList
         self.measurementPeriod = measurementPeriod
-
-        self.applications = dict(applications)
 
     #----------------------------------------
 
