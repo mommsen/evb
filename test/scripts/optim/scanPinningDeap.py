@@ -17,6 +17,7 @@ import time, logging, re, os, sys, threading
 
 import optimutils
 
+from RestartableRunner import RestartableRunner
 
 #----------------------------------------------------------------------
 # main
@@ -75,11 +76,30 @@ if __name__ == "__main__":
     # includes hyperthreads
     cpuList = range(32)
 
+    #----------
+    # the object to launch the event builder processes
+    # and restart them on failure
+    evbRunner = RestartableRunner(testRunner)
+    #----------
 
-    if not os.path.exists(options.outputDir):
-        os.makedirs(options.outputDir)
+    #----------
+    # launch the event builder 
+    # so that we can read the list of workloops and
+    # decide which ones to tune
+    #----------
+
+    devnull = open("/dev/null", "w")
+
+    evbRunnerThread = threading.Thread(target = evbRunner.run,
+                                       args = (devnull,))
+    logging.info("starting EVB")
+    evbRunnerThread.start()
 
     timeStamp = initLogging(os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.log"), timestamp = None)
+    # wait for the EVB to finish starting
+    logging.info("waiting for completion of EVB start")
+    evbRunner.evbStarted.wait()
+    logging.info("EVB start complete")
 
     logging.info("using configuration file " + os.path.abspath(options.configFile))
 
@@ -131,7 +151,8 @@ if __name__ == "__main__":
     # run optimization 
     from DeapRunner import DeapRunner
     runner = DeapRunner(cpuList, goalFunction,
-                        resultFname = os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.csv").format(timestamp = timeStamp)
+                        resultFname = os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.csv").format(timestamp = timeStamp),
+                        evbRunner = evbRunner
                    )
 
     runner.run()
