@@ -82,6 +82,8 @@ class DeapRunner:
                              'eval_index', # index of evaluation within the generation
                              'rate',
                              'rate_uncert',
+                             'failed',     # some applications went into failed state,
+                                           # need a restart
                              ]
             
             # add parameter names
@@ -211,13 +213,15 @@ class DeapRunner:
 
         #----------
         # append to the result .csv file
+        #----------
         if self.csvWriter is not None:
             # gmtime to be consistent with the hyperopt conversion
             values = dict(book_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(now)),
                           generation = self.generation,
                           eval_index = self.evalIndex,
                           rate = rateMean,
-                          rate_uncert = rateStd
+                          rate_uncert = rateStd,
+                          failed = someFailed
                           )
             # add parameter items
             for name, value in paramDict.items():
