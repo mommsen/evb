@@ -146,4 +146,15 @@ if __name__ == "__main__":
                         evbRunner = evbRunner
                    )
 
-    runner.run()
+    try:
+        runner.run()
+    except Exception, ex:
+        logging.warn("got exception: " + str(ex))
+
+    finally:
+        # this also catches KeyboardInterrupt (CTRL-C)
+        evbRunner.stopEVB()
+        evbRunnerThread.join()
+        
+
+
