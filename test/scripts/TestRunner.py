@@ -74,8 +74,8 @@ class TestRunner:
 
 
     def getFedSizes(self):
-        allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,4096,8192,12288,16384]
-        shortSizes = [256,512,768,1024,1280,1536,2048,2560,4096,8192,12288,16384]
+        allSizes = [256,512,768,1024,1149,1280,1408,1536,1664,1856,2048,2560,4096,8192,12288]
+        shortSizes = [256,512,768,1024,1280,1536,2048,2560,4096,8192,12288]
         if self.args['relsizes']:
             return [ int(r * self.defaultFedSize) for r in self.args['relsizes'] ]
         elif self.args['full']:

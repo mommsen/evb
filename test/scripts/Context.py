@@ -109,8 +109,8 @@ class Context:
             ])
         elif self.role is 'RUBU':
             properties.extend([
-                ('senderPoolSize','unsignedLong','0xBAE14800'),
-                ('receiverPoolSize','unsignedLong','0x1788E3800'),
+                ('senderPoolSize','unsignedLong','0xBB852000'),
+                ('receiverPoolSize','unsignedLong','0x1D5FEDC00'),
                 ('completionQueueSize','unsignedInt','32400'),
                 ('sendQueuePairSize','unsignedInt','320'),
                 ('recvQueuePairSize','unsignedInt','500')
@@ -131,6 +131,9 @@ class Context:
                 '0': ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30'],
                 'ethCPU': '1', 'ibvCPU': '0'
                 }
+        except:
+            print "Failed to get NUMA information from "+self.hostinfo['soapHostname']
+            raise
 
 
     def addPolicy(self,context):
@@ -343,8 +346,10 @@ class BU(Context):
 class RUBU(RU):
 
     def __init__(self,symbolMap,ruProperties=[],buProperties=[]):
-        RU.__init__(self,symbolMap,ruProperties)
-        self.role = 'RUBU'
+        Context.__init__(self,'RUBU',symbolMap.getHostInfo('RU'+str(RU.instance)))
+        self.addPeerTransport()
+        self.addRuApplication(ruProperties)
+        RU.instance += 1
         self.addBuApplication(buProperties)
 
 

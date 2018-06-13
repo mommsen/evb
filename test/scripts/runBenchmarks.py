@@ -63,7 +63,7 @@ class RunBenchmarks(TestRunner):
         self.createSymbolMap()
         benchmark = self.getBenchmarkName()
 
-        logFile = open(self.args['logDir']+"/"+benchmark+".txt",'w',0)
+        logFile = open(self.args['outputDir']+"/"+benchmark+".txt",'w',0)
         if self.args['verbose']:
             stdout = Tee(sys.stdout,logFile)
         else:
@@ -74,7 +74,7 @@ class RunBenchmarks(TestRunner):
 
         try:
             self.startLaunchers()
-            time.sleep(1)
+            time.sleep(5)
             self.runBenchmark(benchmark,stdout)
             success = "\033[1;37;42m OKAY \033[0m"
         except Exception as e:
