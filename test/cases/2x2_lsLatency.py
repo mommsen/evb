@@ -1,4 +1,4 @@
-import time
+import operator
 
 from TestCase import *
 from Context import RU,BU
@@ -23,10 +23,10 @@ class case_2x2_lsLatency(TestCase):
         self.checkEVM(2048)
         self.checkRU(24576)
         self.checkBU(26624)
-        time.sleep(5)
+        self.waitForAppParam('nbLumiSections','unsignedInt',6,operator.ge,'BU')
         self.checkAppState("Mist","BU",0)
         self.checkAppState("Throttled","BU",1)
-        time.sleep(5)
+        self.waitForAppParam('nbLumiSections','unsignedInt',7,operator.ge,'BU')
         self.checkAppState("Cloud","BU",0)
         self.checkAppState("Blocked","BU",1)
         self.haltEvB()
@@ -36,7 +36,7 @@ class case_2x2_lsLatency(TestCase):
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
              ('fedSourceIds','unsignedInt',(512,)),
-             ('fakeLumiSectionDuration','unsignedInt','1')
+             ('fakeLumiSectionDuration','unsignedInt','4')
             ]) )
         self._config.add( RU(symbolMap,[
              ('inputSource','string','Local'),
