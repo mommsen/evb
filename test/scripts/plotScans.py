@@ -387,7 +387,10 @@ class PlotScans:
                     continue
                 dataPoint = value['measurement']
                 if self.args['totalThroughput']:
-                    app = 'BU0'
+                    if 'BU0' in dataPoint[0]['sizes']:
+                        app = 'BU0'
+                    else:
+                        app = 'BU1'
                 elif app not in dataPoint[0]['sizes']:
                     app = 'RU0'
                 if self.args['plotMaxRU']:
@@ -412,7 +415,7 @@ class PlotScans:
                     entry['sizes'].append(value['fragSize'])
                     entry['rmsSizes'].append(value['fragSizeRMS'])
                 if self.args['totalThroughput']:
-                    rawRates = list(x['rates']['RU0']/1000. for x in dataPoint)
+                    rawRates = list(x['rates']['RU1']/1000. for x in dataPoint)
                     rawThroughputs = list(sum(x['sizes'][k]*x['rates'][k]/1000000000. for k in x['rates'].keys() if k.startswith(('EVM','RU'))) for x in dataPoint)
                 else:
                     rawRates = list(x['rates'][app]/1000. for x in dataPoint)

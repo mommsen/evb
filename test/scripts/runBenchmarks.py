@@ -145,7 +145,7 @@ class RunBenchmarks(TestRunner):
                 [ #BU config
                 ('dropEventData','boolean','true'),
                 ('lumiSectionTimeout','unsignedInt','0'),
-                ('maxEvtsUnderConstruction','unsignedInt','640'),
+                ('maxEvtsUnderConstruction','unsignedInt','320'),
                 ('eventsPerRequest','unsignedInt','8'),
                 ('superFragmentFIFOCapacity','unsignedInt','12800'),
                 ('numberOfBuilders','unsignedInt','5')

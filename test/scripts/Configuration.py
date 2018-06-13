@@ -72,7 +72,6 @@ class Configuration():
 
 
     def getTargets(self,key):
-        myRole = self.contexts[key].role
         i2ons = "http://xdaq.web.cern.ch/xdaq/xsd/2004/I2OConfiguration-30"
         protocol = ET.Element(QN(i2ons,'protocol'))
         for k,c in self.contexts.items():

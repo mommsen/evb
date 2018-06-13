@@ -42,15 +42,18 @@ class Context:
 
 
     def addPeerTransport(self):
-        if 'dvrbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname']:
-            app = self.getPtIbvApplication()
-        else:
-            app = self.getPtUtcpApplication()
-        app.params['i2oHostname'] = self.hostinfo['i2oHostname']
-        app.params['i2oPort'] =  self.hostinfo['i2oPort']
-        app.params['network'] = 'evb'
-        self.applications.append(app)
-        Context.ptInstance += 1
+        try:
+            if 'dvrbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname']:
+                app = self.getPtIbvApplication()
+            else:
+                app = self.getPtUtcpApplication()
+            app.params['i2oHostname'] = self.hostinfo['i2oHostname']
+            app.params['i2oPort'] =  self.hostinfo['i2oPort']
+            app.params['network'] = 'evb'
+            self.applications.append(app)
+            Context.ptInstance += 1
+        except KeyError as e:
+            raise KeyError("Cannot find key "+str(e)+" for "+self.hostinfo['soapHostname'])
 
 
     def getPtUtcpApplication(self):
@@ -110,10 +113,10 @@ class Context:
         elif self.role is 'RUBU':
             properties.extend([
                 ('senderPoolSize','unsignedLong','0xBB852000'),
-                ('receiverPoolSize','unsignedLong','0x1D5FEDC00'),
+                ('receiverPoolSize','unsignedLong','0x200000000'), #maximum pool size with 65536 buffers of 131072 bytes
                 ('completionQueueSize','unsignedInt','32400'),
                 ('sendQueuePairSize','unsignedInt','320'),
-                ('recvQueuePairSize','unsignedInt','500')
+                ('recvQueuePairSize','unsignedInt','320')
             ])
 
         app = Application.Application('pt::ibv::Application',Context.ptInstance,properties)
@@ -131,9 +134,8 @@ class Context:
                 '0': ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30'],
                 'ethCPU': '1', 'ibvCPU': '0'
                 }
-        except:
-            print "Failed to get NUMA information from "+self.hostinfo['soapHostname']
-            raise
+        except Exception as e:
+            raise Exception("Failed to get NUMA information from "+self.hostinfo['soapHostname']+": "+str(e))
 
 
     def addPolicy(self,context):
@@ -355,8 +357,8 @@ class RUBU(RU):
 
     def addBuApplication(self,properties):
         app = Application.Application('evb::BU',RU.instance-1,properties)
-        app.params['tid'] = str(99+RU.instance)
-        app.params['id'] = str(99+RU.instance)
+        app.params['tid'] = str(199+RU.instance)
+        app.params['id'] = str(199+RU.instance)
         app.params['network'] = 'evb'
         self.applications.append(app)
 
