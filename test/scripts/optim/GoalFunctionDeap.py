@@ -57,8 +57,6 @@ class GoalFunctionDeap:
         # returns the value to be minimized
         # (we return the negative rate here)
 
-        logger.info("running test with " + str(args))
-
         # apply pinning
         self.workLoopList.applyPinning(args)
 
@@ -66,8 +64,6 @@ class GoalFunctionDeap:
         time.sleep(1)
 
         rateMean, rateStd, lastRate = self.getEventRate()
-
-        logger.info("got readout rate: %.1f +/- %.1f kHz" % (rateMean / 1e3, rateStd / 1e3))
 
         return rateMean, rateStd, lastRate
 
