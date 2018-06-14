@@ -29,9 +29,16 @@ def getFedIdsFromWorkLoopNames(workLoopNames):
     fedids = set()
 
     for name in workLoopNames:
-        mo = re.match('evb::RU_\d+/parseSocketBuffers_(\d+)/waiting$', name)
-        if mo:
-            fedids.add(int(mo.group(1)))
+
+        for pattern in [
+            'evb::RU_\d+/parseSocketBuffers_(\d+)/waiting$',
+            'evb::RU_\d+/generating_(\d+)/waiting$',
+            ]: 
+
+            mo = re.match(pattern, name)
+            if mo:
+                fedids.add(int(mo.group(1)))
+                break
     
     return sorted(fedids)
     
@@ -74,6 +81,11 @@ def canonicalizeWorkLoopNames(workLoopNames):
 
             'evb::BU(_\d+)/requestFragments/waiting',        # found on BU
             'evb::BU(_\d+)/lumiAccounting/waiting',          # found on BU
+
+            # this thread appears when generating on the RU
+            # and should be seen as a replacement 
+            # for the parseSocketBuffers threads
+            "evb::RU(_\d+)/generating_(\d+)/waiting", 
             ):
 
             pattern = pattern + "$"
@@ -90,7 +102,8 @@ def canonicalizeWorkLoopNames(workLoopNames):
                 for index in range(1, len(mo.groups()) + 1):
                     newName += wln[prevEnd:mo.start(index)]
                     
-                    if index == 2 and 'parseSocketBuffers' in wln:
+                    if index == 2 and ('parseSocketBuffers' in wln or 
+                                       'generating_' in wln):
                         # special treatment for work loop names containing FED ids
                         fedid = int(mo.group(index))
                         
