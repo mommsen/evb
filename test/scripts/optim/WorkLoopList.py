@@ -114,4 +114,25 @@ class WorkLoopList:
 
     #----------------------------------------
 
+    def getCurrentThreadPinnings(self):
+        """:return a nested dict with information about the work loop
+        to cpu core assignments.
+        The first index is the application type (e.g. RU),
+        the second index is a tuple (soap host, soap port)
+        the third index is the (canonical) work loop name
+        the value is the cpu core this work loop was last found running on
+        """
+        result = {}
 
+        for appType, workLoopDatas in self.workLoopDatas.items():
+
+            thisResult = {}
+
+            for workLoopData in workLoopDatas:
+                key = (workLoopData.soapHost, workLoopData.soapPort)
+
+                thisResult[key] = workLoopData.getCurrentThreadPinnings()
+
+            result[appType] = thisResult
+
+        return result

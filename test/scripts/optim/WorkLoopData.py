@@ -235,4 +235,28 @@ class WorkLoopData:
 
     #----------------------------------------
 
+    def getCurrentThreadPinnings(self):
+        """:return a dict of canonical work loop name to the CPU core number
+        where the thread last ran"""
+
+        result = {}
+
+        if self.workLoopToPid is None:
+            # not yet set
+            return result
+
+        # collect the list of all PIDs to look at
+        pids = list(self.workLoopToPid.values())
+
+        # pinnings will be a map of pid -> last CPU used
+        # (note that the pids will be strings, not ints)
+        lastCpus = self.rpcclient.getLastCpuOfProcesses(pids)
+
+        # map back from pids to work loop names
+        for wln, pid in self.workLoopToPid.items():
+            result[wln] = lastCpus[str(pid)]
+
+        return result
+
+
 #----------------------------------------------------------------------
