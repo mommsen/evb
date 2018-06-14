@@ -135,8 +135,6 @@ if __name__ == "__main__":
 
     # write the event rate before tuning
     time.sleep(1)
-    rateMean, rateStd, lastRate = goalFunction.getEventRate()
-    logging.info("readout rate before tuning: %.1f +/- %.1f kHz" % (rateMean / 1e3, rateStd / 1e3))
     logging.info("starting scan")
 
     # run optimization 

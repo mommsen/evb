@@ -137,6 +137,11 @@ class DeapRunner:
     def run(self):
         # run the evolutionary algorithm
 
+        # keep track of the initial rate before tuning was started
+        # to be able to print improvements in each log message
+        self.initialRateMean, self.initialRateStd, lastRate = self.goalFunction.getEventRate()
+        logging.info("readout rate before tuning: %.1f +/- %.1f kHz" % (self.initialRateMean / 1e3, self.initialRateStd / 1e3))
+
         self.generation = 0
         self.evalIndex = None
 
