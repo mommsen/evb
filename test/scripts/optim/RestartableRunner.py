@@ -51,7 +51,10 @@ class RestartableRunner:
         logging.info("RestartableRunner.run() called")
 
         self.testRunner.startLaunchers()
-        time.sleep(1)
+
+        # TODO: check if all launchers are responding (with timeout)
+        # instead of waiting for a fixed amount of time
+        time.sleep(5)
 
         configData = self.testRunner.getAllConfigurations()[0]
         config = configData['config']
