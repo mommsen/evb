@@ -179,8 +179,15 @@ class DeapRunner:
 
         now = time.time()
 
+        logger = logging.getLogger("evaluate")
+
         # evaluate the goal function
+        logger.info("running test with " + str(paramDict))
+
         rateMean, rateStd, lastRate = self.goalFunction(paramDict)
+
+        logger.info("got readout rate: %.1f +/- %.1f kHz (%+.1f kHz w.r.t to initial)" % (
+            rateMean / 1e3, rateStd / 1e3, (rateMean - self.initialRateMean) / 1e3))
 
         #----------
         # check for applications in failed state
@@ -188,7 +195,6 @@ class DeapRunner:
         someFailed = False
 
         if rateMean < 1 or lastRate < 1:
-            logger = logging.getLogger("evaluate")
 
             # EVM seems to stay in ready state we must check
             # RU and BU states
