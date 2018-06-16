@@ -102,6 +102,62 @@ class DeapRunner:
 
     #----------------------------------------
 
+    def initializeFromCurrentStateClones(self, containerType, individualCreator, n):
+        """function which is used to create the initial population. This reads
+        the currently used CPU core assignments of the running system
+        and generates a population of thread assignments from it.
+
+        It takes the pinning assignments of a random instance of each
+        type and creates n clones of this configuration.
+
+        This method is called instead of tools.initRepeat()
+        """
+
+        # get the currently assigned cpu cores
+        logging.info("reading initial thread pinnings for initialization")
+
+        # parameter names are appType + "/" + paramName
+        # see WorkLoopList.getParameterNames()
+        #
+        # group thread pinnings by parameter names
+        paramNameToCores = {}
+
+        currentPinning = self.goalFunction.workLoopList.getCurrentThreadPinnings()
+
+        from pprint import pformat
+        logging.info("initial thread pinnings: " + pformat(currentPinning))
+
+        for appType, perAppTypeData in currentPinning.items():
+            for soapHostPort, perHostPortData in perAppTypeData.items():
+                for workLoopName, cpu in perHostPortData.items():
+                    paramName = appType + "/" + workLoopName
+
+                    assert not paramName in paramNameToCores
+                    paramNameToCores[paramName] = cpu
+
+                # just take the first soap host / port (application instance)
+                break
+
+        # create the population
+        population = []
+
+        from deap import creator
+
+        for i in range(n):
+            # create a n times the same individual
+
+            indiv = []
+
+            for param in self.parameterNames:
+                indiv.append(paramNameToCores[param])
+
+            population.append(creator.Individual(indiv))
+
+        return containerType(population)
+
+
+    #----------------------------------------
+
     def changeCore(self, individual, indpb):
         # custom mutation operator:
         # for each of the elements in individual, 
