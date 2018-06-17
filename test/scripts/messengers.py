@@ -23,7 +23,7 @@ class SOAPexception(Exception):
 def webPing(soapHostname,soapPort):
     code = None
     try:
-        code = urllib.urlopen("http://"+soapHostname+":"+soapPort+"/urn:xdaq-application:lid=3").getcode()
+        code = urllib.urlopen("http://"+soapHostname+":"+str(soapPort)+"/urn:xdaq-application:lid=3").getcode()
     except IOError:
         pass
     return (code == 200)
