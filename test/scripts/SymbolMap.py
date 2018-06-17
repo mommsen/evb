@@ -16,6 +16,9 @@ class SymbolMap:
         self._shortHostTypeToHostTypes = {}
 
         hostTypeRegEx = re.compile('^([A-Za-z0-9_]+)SOAP_HOST_NAME')
+
+        # similar to hostTypeRegEx but only capturing RU, BU etc.
+        shortHostTypeRegEx = re.compile('^([A-Za-z]+)[0-9]+_')
         hostCount = 0
         launcherPort = None
         previousVal = ""
@@ -34,6 +37,10 @@ class SymbolMap:
                             try:
                                 # hostType is e.g. 'BU2_'
                                 hostType = hostTypeRegEx.findall(key)[0]
+
+                                shortHostType = shortHostTypeRegEx.findall(key)[0]
+
+                                self._shortHostTypeToHostTypes.setdefault(shortHostType,[]).append(re.sub("_$", "",hostType))
 
                                 if val != previousVal:
                                     launcherPort += 1
@@ -77,6 +84,20 @@ class SymbolMap:
             pass
         return hostInfo
 
+    def getHostsOfType(self, shortHostType):
+        """
+        :param shortHostType: a 'short host type' like 'BU'
+        :return: a list of 'host types' like 'BU2' for the given short host type
+         or an empty list if no entry for the given type was found
+        """
+
+        return self._shortHostTypeToHostTypes.get(shortHostType, [])
+
+    def getShortHostTypes(self):
+        """
+        :return: a list of know 'short host types'
+        """
+        return list(self._shortHostTypeToHostTypes)
 
     def parse(self,string):
         for (key,val) in self._map.iteritems():
