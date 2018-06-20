@@ -7,12 +7,13 @@ class DeapRunner:
     # for optimizing the work loop to core assignments
 
     def __init__(self, coreNumbers, goalFunction, resultFname = None, evbRunner = None):
-        # configures the genetic algorithm toolbox
-        # 
-        # @param coreNumbers is the list of core numbers which can be
-        # used to pin these threads to
-        #
-        # @param goalFunction must be an instance of GoalFunctionDeap
+        """configures the genetic algorithm toolbox
+
+        :param coreNumbers: is the list of core numbers which can be
+                           used to pin these threads to
+
+        :param goalFunction: must be an instance of GoalFunctionDeap
+        """
 
         # the function which pins the threads
         self.goalFunction = goalFunction
