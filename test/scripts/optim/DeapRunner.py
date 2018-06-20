@@ -68,7 +68,7 @@ class DeapRunner:
                               len(self.parameterNames) # number of parameters per individual
                 )
 
-        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
+        self.toolbox.register("population", self.initializeFromCurrentStateClones, list, self.toolbox.individual)
 
         # register our custom mapping function with some instrumentation to keep track
         # of generation and evaluation index within the generation
@@ -196,6 +196,11 @@ class DeapRunner:
 
         # keep track of the initial rate before tuning was started
         # to be able to print improvements in each log message
+
+        sleepTime = 30
+        logging.info("sleeping %d seconds before retrieving initial performance" % sleepTime)
+        time.sleep(sleepTime)
+
         self.initialRateMean, self.initialRateStd, lastRate = self.goalFunction.getEventRate()
         logging.info("readout rate before tuning: %.1f +/- %.1f kHz" % (self.initialRateMean / 1e3, self.initialRateStd / 1e3))
 
