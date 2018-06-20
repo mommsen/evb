@@ -99,6 +99,13 @@ class xdaqLauncher:
         # /dev/null to redirect subcommand output
         self.devnull = open(os.devnull, "w")
 
+        # remove core files in /tmp on startup
+        for fname in glob.glob("/tmp/core.*"):
+            try:
+                os.remove(fname)
+            except OSError:
+                pass
+
     def cleanTempFiles(self):
         try:
             for file in glob.glob("/tmp/dump_*txt"):
