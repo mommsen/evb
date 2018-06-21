@@ -206,6 +206,50 @@ class xdaqLauncher:
 
         return status
 
+    def getLastCpuOfProcesses(self, processes):
+        """Given a list of thread (process) ids, returns the
+        last cpu used according to /proc/<pid>/stat .
+
+        :param processes a list of thread ids (integers) for which
+               the last used CPU should be returned.
+
+        :return a dict of thread id to last cpu used. Note that they
+                keys will be strings, not integers (as required
+                by python xmlrpc)
+        """
+
+        result = {}
+
+        for pid in processes:
+            # see e.g. http://man7.org/linux/man-pages/man5/proc.5.html
+            # for the format of /proc/<pid>/stat
+
+            with open("/proc/%s/stat" % pid) as fin:
+                data = fin.readline()
+
+                #              pid     executable
+                # we assume that there is no parenthesis in the executable name
+                mo = re.match("(\d+) \((.+)\) ", data)
+
+                if not mo:
+                    # there is an unexpected format, silently ignore it for the moment
+                    continue
+
+                rest = data[mo.end():].lstrip()
+
+                # rest contains values from position 3 on (as described
+                # in the above man page), i.e. the index in parts
+                # is the index in the man page minus 3.
+                parts = re.split('\s+', rest)
+
+                proc = int(parts[39 - 3])
+
+                # convert pid to a string, see https://stackoverflow.com/questions/6996585
+                result[str(pid)] = proc
+
+        return result
+
+
 
 if __name__ == "__main__":
 
@@ -253,6 +297,7 @@ if __name__ == "__main__":
                      "getNumaInfo",
                      "setLogLevel",
                      "pinProcess",
+                     "getLastCpuOfProcesses",
                      ]:
         server.register_function(getattr(launcher, command))
 
