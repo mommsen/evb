@@ -128,8 +128,7 @@ class TestRunner:
 
 
     def startLaunchers(self):
-
-        launcherCmd = "cd /tmp && rm -f /tmp/core.* && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+ self._launcherScript + " "
+        launcherCmd = "cd /tmp && export XDAQ_ROOT="+os.environ["XDAQ_ROOT"]+" && "+ self._launcherScript + " "
         if not self.args['verbose']:
             launcherCmd += "--logDir "+self.args['logDir']+" "
         if self.args['numa']:
