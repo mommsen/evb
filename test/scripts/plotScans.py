@@ -310,11 +310,11 @@ class PlotScans:
     def getThroughputGraph(self,n,case):
         try:
             from numpy import array
-            graph = ROOT.TGraphErrors(len(case['sizes']),
+            graph = ROOT.TGraphAsymmErrors(len(case['sizes']),
                                     array(case['sizes'],'f'),
                                     array(case['throughputs'],'f'),
-                                    array(case['rmsSizes'],'f'),
-                                    array(case['rmsThroughputs'],'f'))
+                                    array(case['sizesLow'],'f'),array(case['sizesHigh'],'f'),
+                                    array(case['throughputsLow'],'f'),array(case['throughputsHigh'],'f'))
             graph.SetTitle(case['name'])
             graph.SetLineWidth(2)
             graph.SetLineColor(self.colors[n])
@@ -330,11 +330,11 @@ class PlotScans:
     def getRateGraph(self,n,case):
         try:
             from numpy import array
-            graph = ROOT.TGraphErrors(len(case['sizes']),
+            graph = ROOT.TGraphAsymmErrors(len(case['sizes']),
                                         array(case['sizes'],'f'),
                                         array(case['rates'],'f'),
-                                        array(case['rmsSizes'],'f'),
-                                        array(case['rmsRates'],'f'))
+                                        array(case['sizesLow'],'f'),array(case['sizesHigh'],'f'),
+                                        array(case['ratesLow'],'f'),array(case['ratesHigh'],'f'))
             graph.SetTitle(case['name'])
             graph.SetLineWidth(1)
             graph.SetLineStyle(2)
@@ -371,14 +371,17 @@ class PlotScans:
 
 
     def readCaseData(self,case,app):
-        from numpy import mean,sqrt,square
+        from numpy import mean,percentile,sqrt,square
         entry = {}
         entry['sizes'] = []
-        entry['rmsSizes'] = []
+        entry['sizesLow'] = []
+        entry['sizesHigh'] = []
         entry['rates'] = []
-        entry['rmsRates'] = []
+        entry['ratesLow'] = []
+        entry['ratesHigh'] = []
         entry['throughputs'] = []
-        entry['rmsThroughputs'] = []
+        entry['throughputsLow'] = []
+        entry['throughputsHigh'] = []
         with open(case,'r') as file:
             for line in file:
                 try:
@@ -406,14 +409,16 @@ class PlotScans:
                     sizes = list(x for x in rawSizes if x > 0)
                     if len(sizes) == 0:
                         continue
-                    averageSize = mean(sizes)
-                    entry['sizes'].append(averageSize)
-                    entry['rmsSizes'].append(sqrt(mean(square(averageSize-sizes))))
+                    meanSize = percentile(sizes,50)
+                    entry['sizes'].append(meanSize)
+                    entry['sizesLow'].append(meanSize - percentile(sizes,16))
+                    entry['sizesHigh'].append(percentile(sizes,84) - meanSize)
                     if value['fragSize'] == 2048 and not self.nominalSize:
-                        self.nominalSize = averageSize
+                        self.nominalSize = meanSize
                 else:
                     entry['sizes'].append(value['fragSize'])
-                    entry['rmsSizes'].append(value['fragSizeRMS'])
+                    entry['sizesLow'].append(value['fragSizeRMS'])
+                    entry['sizesHigh'].append(value['fragSizeRMS'])
                 if self.args['totalThroughput']:
                     rawRates = list(x['rates']['RU1']/1000. for x in dataPoint)
                     rawThroughputs = list(sum(x['sizes'][k]*x['rates'][k]/1000000000. for k in x['rates'].keys() if k.startswith(('EVM','RU'))) for x in dataPoint)
@@ -421,13 +426,15 @@ class PlotScans:
                     rawRates = list(x['rates'][app]/1000. for x in dataPoint)
                     rawThroughputs = list(x['sizes'][app]*x['rates'][app]/1000000. for x in dataPoint)
                 rates = list(x for x in rawRates if x > 0)
-                averageRate = mean(rates)
-                entry['rates'].append(averageRate)
-                entry['rmsRates'].append(sqrt(mean(square(averageRate-rates))))
+                meanRate = percentile(rates,50)
+                entry['rates'].append(meanRate)
+                entry['ratesLow'].append(meanRate - percentile(rates,16))
+                entry['ratesHigh'].append(percentile(rates,84) - meanRate)
                 throughputs = list(x for x in rawThroughputs if x > 0)
-                averageThroughput = mean(throughputs)
-                entry['throughputs'].append(averageThroughput)
-                entry['rmsThroughputs'].append(sqrt(mean(square(averageThroughput-throughputs))))
+                meanThroughput = percentile(throughputs,50)
+                entry['throughputs'].append(meanThroughput)
+                entry['throughputsLow'].append(meanThroughput - percentile(throughputs,16))
+                entry['throughputsHigh'].append(percentile(throughputs,84) - meanThroughput)
         # Sort the entries by size
         keys = ['sizes'] + [k for k in entry.keys() if k is not 'sizes']
         sortedEntries = zip(*sorted(zip(*[entry[k] for k in keys]), key=lambda pair: pair[0]))
@@ -447,9 +454,9 @@ class PlotScans:
 
     def printTable(self):
         for n,case in enumerate(self.cases):
-            print(47*"-")
+            print(62*"-")
             print("Case: "+case['name']+" - "+case['app']+" - color:"+str(self.colors[n])+" - marker:"+str(self.markers[n]))
-            print(47*"-")
+            print(62*"-")
             if self.args['totalThroughput']:
                 sizeUnit = '(kB)'
                 througputUnit = '(GB/s)'
@@ -459,14 +466,14 @@ class PlotScans:
                     sizeUnit = '(kB)'
                 else:
                     sizeUnit = '(B)'
-            print("Size %4s : Throughput %7s :      Rate (kHz)"%(sizeUnit,througputUnit))
-            print(47*"-")
+            print("Size %4s : Throughput %7s        : Rate (kHz)"%(sizeUnit,througputUnit))
+            print(62*"-")
             try:
-                for entry in zip(case['sizes'],case['throughputs'],case['rmsThroughputs'],case['rates'],case['rmsRates']):
-                    print("%9d :  %6.1f +- %6.1f :  %5.1f +- %5.1f"%entry)
+                for entry in zip(case['sizes'],case['throughputs'],case['throughputsLow'],case['throughputsHigh'],case['rates'],case['ratesLow'],case['ratesHigh']):
+                    print("%9d :  %6.1f - %6.1f + %6.1f :  %5.1f - %5.1f + %5.1f"%entry)
             except KeyError:
                 pass
-            print(47*"-")
+            print(62*"-")
 
 
     def fillColorsMarkers(self):
