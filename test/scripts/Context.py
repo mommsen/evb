@@ -43,7 +43,7 @@ class Context:
 
     def addPeerTransport(self):
         try:
-            if 'rbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname']:
+            if 'rbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname'] or 'ebs1v0' in self.hostinfo['i2oHostname']:
                 app = self.getPtIbvApplication()
             else:
                 app = self.getPtUtcpApplication()
@@ -376,11 +376,13 @@ class RUBU(RU):
             {'affinity':numaInfo[numaInfo['ibvCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ibvCPU']][12],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ibvCPU']][13],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][14],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_6/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:fifo/PeerTransport/waiting','type':'thread'},
