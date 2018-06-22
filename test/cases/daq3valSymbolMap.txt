@@ -1,0 +1,73 @@
+LAUNCHER_BASE_PORT 17777
+SOAP_BASE_PORT 25000
+I2O_BASE_PORT 54320
+FRL_BASE_PORT 55320
+
+RU0_SOAP_HOST_NAME dvrubu-c2e33-06-01.cms
+RU0_I2O_HOST_NAME dvrubu-c2e33-06-01.dv3rbs1v0.cms
+
+RU1_SOAP_HOST_NAME dvrubu-c2e33-08-01.cms
+RU1_I2O_HOST_NAME dvrubu-c2e33-08-01.dv3rbs1v0.cms
+
+RU2_SOAP_HOST_NAME dvrubu-c2e34-06-01.cms
+RU2_I2O_HOST_NAME dvrubu-c2e34-06-01.dv3rbs1v0.cms
+
+RU3_SOAP_HOST_NAME dvrubu-c2e34-08-01.cms
+RU3_I2O_HOST_NAME dvrubu-c2e34-08-01.dv3rbs1v0.cms
+
+RU4_SOAP_HOST_NAME dvrubu-c2e34-10-01.cms
+RU4_I2O_HOST_NAME dvrubu-c2e34-10-01.dv3rbs1v0.cms
+
+RU5_SOAP_HOST_NAME dvrubu-c2e34-12-01.cms
+RU5_I2O_HOST_NAME dvrubu-c2e34-12-01.dv3rbs1v0.cms
+
+RU6_SOAP_HOST_NAME dvrubu-c2e34-16-01.cms
+RU6_I2O_HOST_NAME dvrubu-c2e34-16-01.dv3rbs1v0.cms
+
+RU7_SOAP_HOST_NAME dvrubu-c2e34-18-01.cms
+RU7_I2O_HOST_NAME dvrubu-c2e34-18-01.dv3rbs1v0.cms
+
+RU8_SOAP_HOST_NAME dvrubu-c2e34-20-01.cms
+RU8_I2O_HOST_NAME dvrubu-c2e34-20-01.dv3rbs1v0.cms
+BU0_SOAP_HOST_NAME dvrubu-c2e34-20-01.cms
+BU0_I2O_HOST_NAME dvrubu-c2e34-20-01.dv3rbs1v0.cms
+
+RU9_SOAP_HOST_NAME dvrubu-c2e34-27-01.cms
+RU9_I2O_HOST_NAME dvrubu-c2e34-27-01.dv3rbs1v0.cms
+BU1_SOAP_HOST_NAME dvrubu-c2e34-27-01.cms
+BU1_I2O_HOST_NAME dvrubu-c2e34-27-01.dv3rbs1v0.cms
+
+RU10_SOAP_HOST_NAME dvrubu-c2e34-29-01.cms
+RU10_I2O_HOST_NAME dvrubu-c2e34-29-01.dv3rbs1v0.cms
+BU2_SOAP_HOST_NAME dvrubu-c2e34-29-01.cms
+BU2_I2O_HOST_NAME dvrubu-c2e34-29-01.dv3rbs1v0.cms
+
+RU11_SOAP_HOST_NAME dvrubu-c2e34-31-01.cms
+RU11_I2O_HOST_NAME dvrubu-c2e34-31-01.dv3rbs1v0.cms
+BU3_SOAP_HOST_NAME dvrubu-c2e34-31-01.cms
+BU3_I2O_HOST_NAME dvrubu-c2e34-31-01.dv3rbs1v0.cms
+
+RU12_SOAP_HOST_NAME dvrubu-c2e34-33-01.cms
+RU12_I2O_HOST_NAME dvrubu-c2e34-33-01.dv3rbs1v0.cms
+BU4_SOAP_HOST_NAME dvrubu-c2e34-33-01.cms
+BU4_I2O_HOST_NAME dvrubu-c2e34-33-01.dv3rbs1v0.cms
+
+RU13_SOAP_HOST_NAME dvrubu-c2e34-35-01.cms
+RU13_I2O_HOST_NAME dvrubu-c2e34-35-01.dv3rbs1v0.cms
+BU5_SOAP_HOST_NAME dvrubu-c2e34-35-01.cms
+BU5_I2O_HOST_NAME dvrubu-c2e34-35-01.dv3rbs1v0.cms
+
+RU14_SOAP_HOST_NAME dvrubu-c2e34-37-01.cms
+RU14_I2O_HOST_NAME dvrubu-c2e34-37-01.dv3rbs1v0.cms
+BU6_SOAP_HOST_NAME dvrubu-c2e34-37-01.cms
+BU6_I2O_HOST_NAME dvrubu-c2e34-37-01.dv3rbs1v0.cms
+
+RU15_SOAP_HOST_NAME dvrubu-c2e34-39-01.cms
+RU15_I2O_HOST_NAME dvrubu-c2e34-39-01.dv3rbs1v0.cms
+BU7_SOAP_HOST_NAME dvrubu-c2e34-39-01.cms
+BU7_I2O_HOST_NAME dvrubu-c2e34-39-01.dv3rbs1v0.cms
+
+RU16_SOAP_HOST_NAME dvrubu-c2e34-41-01.cms
+RU16_I2O_HOST_NAME dvrubu-c2e34-41-01.dv3rbs1v0.cms
+BU8_SOAP_HOST_NAME dvrubu-c2e34-41-01.cms
+BU8_I2O_HOST_NAME dvrubu-c2e34-41-01.dv3rbs1v0.cms
