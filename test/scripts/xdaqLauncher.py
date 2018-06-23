@@ -189,7 +189,9 @@ class xdaqLauncher:
 
 
     def getNumaInfo(self):
-        if 'dvrubu-' in socket.gethostname():
+        if 'dvrubu-c2e34' in socket.gethostname():
+            numaInfo = {'ibvCPU':'0','ethCPU':'1'}
+        elif 'dvrubu-' in socket.gethostname():
             numaInfo = {'ibvCPU':'1','ethCPU':'0'}
         else:
             numaInfo = {'ibvCPU':'0','ethCPU':'1'}
