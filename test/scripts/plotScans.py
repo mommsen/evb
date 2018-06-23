@@ -42,6 +42,7 @@ class PlotScans:
         parser.add_argument("--hideDate",default=False,action="store_true",help="Hide the date")
         parser.add_argument("--hideRate",default=False,action="store_true",help="Hide the rate curves")
         parser.add_argument("--hideLineSpeed",default=False,action="store_true",help="Hide the line speed line")
+        parser.add_argument("--ibLineSpeeds",default=False,action="store_true",help="Show IB line speeds line")
         parser.add_argument("-o","--outputName",default="plot.pdf",help="File for plot output [default: %(default)s]")
         parser.add_argument("-a","--app",nargs="*",default=['RU0'],help="Take values from given application [default: %(default)s]")
         parser.add_argument('--legend',nargs="*",help="Give a list of custom legend entries to be used")
@@ -200,6 +201,7 @@ class PlotScans:
         self.auxPad.SetMargin(self.marginSize,self.marginSize,self.marginSize,self.topMargin)
         self.auxPad.Draw()
 
+
     def createLineSpeed(self):
         self.throughputPad.cd()
         if 'BU' in self.cases[0]['app']:
@@ -209,6 +211,18 @@ class PlotScans:
         self.lineSpeed.SetLineColor(ROOT.kGray+2)
         self.lineSpeed.SetLineStyle(7)
         self.lineSpeed.Draw()
+
+
+    def createIbLineSpeeds(self):
+        self.throughputPad.cd()
+        self.lineSpeed56 = ROOT.TLine(self.args['minx'],7000,self.args['maxx'],7000)
+        self.lineSpeed56.SetLineColor(ROOT.kGray+2)
+        self.lineSpeed56.SetLineStyle(7)
+        self.lineSpeed56.Draw()
+        self.lineSpeed100 = ROOT.TLine(self.args['minx'],12500,self.args['maxx'],12500)
+        self.lineSpeed100.SetLineColor(ROOT.kGray+2)
+        self.lineSpeed100.SetLineStyle(7)
+        self.lineSpeed100.Draw()
 
 
     def createRequirementLine(self):
@@ -426,15 +440,18 @@ class PlotScans:
                     rawRates = list(x['rates'][app]/1000. for x in dataPoint)
                     rawThroughputs = list(x['sizes'][app]*x['rates'][app]/1000000. for x in dataPoint)
                 rates = list(x for x in rawRates if x > 0)
-                meanRate = percentile(rates,50)
-                entry['rates'].append(meanRate)
-                entry['ratesLow'].append(meanRate - percentile(rates,16))
-                entry['ratesHigh'].append(percentile(rates,84) - meanRate)
-                throughputs = list(x for x in rawThroughputs if x > 0)
-                meanThroughput = percentile(throughputs,50)
-                entry['throughputs'].append(meanThroughput)
-                entry['throughputsLow'].append(meanThroughput - percentile(throughputs,16))
-                entry['throughputsHigh'].append(percentile(throughputs,84) - meanThroughput)
+                try:
+                    meanRate = percentile(rates,50)
+                    entry['rates'].append(meanRate)
+                    entry['ratesLow'].append(meanRate - percentile(rates,16))
+                    entry['ratesHigh'].append(percentile(rates,84) - meanRate)
+                    throughputs = list(x for x in rawThroughputs if x > 0)
+                    meanThroughput = percentile(throughputs,50)
+                    entry['throughputs'].append(meanThroughput)
+                    entry['throughputsLow'].append(meanThroughput - percentile(throughputs,16))
+                    entry['throughputsHigh'].append(percentile(throughputs,84) - meanThroughput)
+                except ValueError:
+                    pass
         # Sort the entries by size
         keys = ['sizes'] + [k for k in entry.keys() if k is not 'sizes']
         sortedEntries = zip(*sorted(zip(*[entry[k] for k in keys]), key=lambda pair: pair[0]))
@@ -494,6 +511,8 @@ class PlotScans:
         self.createAuxPad()
         if not self.args['hideLineSpeed']:
             self.createLineSpeed()
+        if self.args['ibLineSpeeds']:
+            self.createIbLineSpeeds()
         if not self.args['hideDate']:
             self.createDate()
         if not self.args['hideRate']:
