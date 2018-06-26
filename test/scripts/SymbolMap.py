@@ -3,6 +3,14 @@ import re
 import socket
 import sys
 
+
+try:
+    # requires python 2.7
+    from collections import OrderedDict
+except ImportError:
+    # python 2.6 (but not in main python rpm package)
+    from ordereddict import OrderedDict
+
 class SymbolMap:
 
     def __init__(self,symbolMapfile):
@@ -24,43 +32,77 @@ class SymbolMap:
         previousVal = ""
 
         try:
-            with open(symbolMapfile) as symbolMap:
-                for line in symbolMap:
-                    if line.rstrip(): #skip empty lines
-                        try:
-                            (key,val) = line.split()
-                            if val == 'localhost':
-                                val = self._hostname
-                            self._map[key] = val
-                            if key == 'LAUNCHER_BASE_PORT':
-                                launcherPort = int(val)
-                            try:
-                                # hostType is e.g. 'BU2_'
-                                hostType = hostTypeRegEx.findall(key)[0]
+            if symbolMapfile.endswith(".py"):
+                rawMap = self.__readFromPythonFile(symbolMapfile)
+            else:
+                # assume .txt
+                rawMap = self.__readFromTextFile(symbolMapfile)
 
-                                shortHostType = shortHostTypeRegEx.findall(key)[0]
+            # post processing of rawMap (e.g. add additional quantities)
+            for key, val in rawMap.items():
 
-                                self._shortHostTypeToHostTypes.setdefault(shortHostType,[]).append(re.sub("_$", "",hostType))
+                try:
+                    if val == 'localhost':
+                        val = self._hostname
+                    self._map[key] = val
+                    if key == 'LAUNCHER_BASE_PORT':
+                        launcherPort = int(val)
+                    try:
+                        # hostType is e.g. 'BU2_'
+                        hostType = hostTypeRegEx.findall(key)[0]
 
-                                if val != previousVal:
-                                    launcherPort += 1
-                                    self.launchers.append((self._map[hostType + 'SOAP_HOST_NAME'],launcherPort))
-                                    previousVal = val
+                        shortHostType = shortHostTypeRegEx.findall(key)[0]
 
-                                self._map[hostType + 'LAUNCHER_PORT'] = str(launcherPort)
-                                self._map[hostType + 'SOAP_PORT']     = str(int(self._map['SOAP_BASE_PORT'])     + hostCount)
-                                self._map[hostType + 'I2O_PORT']      = str(int(self._map['I2O_BASE_PORT'])      + hostCount)
-                                self._map[hostType + 'FRL_PORT']      = str(int(self._map['FRL_BASE_PORT'])      + hostCount)
-                                self._map[hostType + 'FRL_PORT2']     = str(int(self._map['FRL_BASE_PORT']) + 50 + hostCount)
-                                hostCount += 1
-                            except IndexError:
-                                pass
-                        except ValueError:
-                            pass
+                        self._shortHostTypeToHostTypes.setdefault(shortHostType, []).append(
+                            re.sub("_$", "", hostType))
+
+                        if val != previousVal:
+                            launcherPort += 1
+                            self.launchers.append((self._map[hostType + 'SOAP_HOST_NAME'], launcherPort))
+                            previousVal = val
+
+                        self._map[hostType + 'LAUNCHER_PORT'] = str(launcherPort)
+                        self._map[hostType + 'SOAP_PORT'] = str(int(self._map['SOAP_BASE_PORT']) + hostCount)
+                        self._map[hostType + 'I2O_PORT'] = str(int(self._map['I2O_BASE_PORT']) + hostCount)
+                        self._map[hostType + 'FRL_PORT'] = str(int(self._map['FRL_BASE_PORT']) + hostCount)
+                        self._map[hostType + 'FRL_PORT2'] = str(int(self._map['FRL_BASE_PORT']) + 50 + hostCount)
+                        hostCount += 1
+                    except IndexError:
+                        pass
+                except ValueError:
+                    pass
+
+
 
         except EnvironmentError as e:
             print("Could not open "+symbolMapfile+": "+str(e))
             sys.exit(2)
+
+
+    def __readFromTextFile(self, symbolMapfile):
+        """reads the 'classic' format of a SymbolMap from a plain text file"""
+
+        # this will remember insertion order
+        rawMap = OrderedDict()
+
+        with open(symbolMapfile) as symbolMap:
+            for line in symbolMap:
+                if line.rstrip():  # skip empty lines
+                    (key, val) = line.split()
+                    rawMap[key] = val
+
+        return rawMap
+
+    def __readFromPythonFile(self, symbolMapFile):
+        """reads the SymbolMap from a python code file"""
+
+        # this will remember insertion order
+        data = OrderedDict()
+
+        # this must fill data
+        execfile(symbolMapFile)
+
+        return data
 
 
     def getHostInfo(self,hostType):
