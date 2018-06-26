@@ -107,6 +107,8 @@ if __name__ == "__main__":
     rus = config.applications['RU']
     bus = config.applications['BU']
 
+    evms = config.applications['EVM']
+
     # we should remove RUBUs from list of RUs and BUs
     # (because RUBUs will also appear in the list of RUs and BUs)
     # for the moment, if we have RUBUs, we just look at them and
@@ -117,12 +119,14 @@ if __name__ == "__main__":
 
     if rubus:
         # we have at least one RUBU, assume all are RUBUs
-        workLoopList = WorkLoopList(dict(RUBU = rubus))
+        workLoopList = WorkLoopList(dict(RUBU = rubus,
+                                         EVM = evms))
         logging.info("setup with %d RUBUs" % len(rubus))
     else:
         workLoopList = WorkLoopList(dict(
-                RU = rus,
-                BU = bus))
+                RU  = rus,
+                BU  = bus,
+                EVM = evms))
         logging.info("setup with %d RUs and %d BUs" % (len(rus), len(bus)))
 
 
