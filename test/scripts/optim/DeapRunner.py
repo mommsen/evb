@@ -144,8 +144,8 @@ class DeapRunner:
 
         from deap import creator
 
-        for i in range(n):
-            # create a n times the same individual
+        for i in range(n / 2):
+            # create a n/2 times the same individual
 
             indiv = []
 
@@ -153,6 +153,16 @@ class DeapRunner:
                 indiv.append(paramNameToCores[param])
 
             population.append(creator.Individual(indiv))
+
+        for i in range(n/2, n):
+            # create the rest with random initializations
+            indiv = []
+
+            for param in self.parameterNames:
+                indiv.append(self.toolbox.attr_core())
+
+            population.append(creator.Individual(indiv))
+
 
         return containerType(population)
 
