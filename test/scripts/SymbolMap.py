@@ -143,7 +143,7 @@ class SymbolMap:
 
     def parse(self,string):
         for (key,val) in self._map.iteritems():
-            string = string.replace(key,val)
+            string = string.replace(key,str(val))
         return string
 
 
