@@ -7,12 +7,13 @@ class DeapRunner:
     # for optimizing the work loop to core assignments
 
     def __init__(self, coreNumbers, goalFunction, resultFname = None, evbRunner = None):
-        # configures the genetic algorithm toolbox
-        # 
-        # @param coreNumbers is the list of core numbers which can be
-        # used to pin these threads to
-        #
-        # @param goalFunction must be an instance of GoalFunctionDeap
+        """configures the genetic algorithm toolbox
+
+        :param coreNumbers: is the list of core numbers which can be
+                           used to pin these threads to
+
+        :param goalFunction: must be an instance of GoalFunctionDeap
+        """
 
         # the function which pins the threads
         self.goalFunction = goalFunction
@@ -67,7 +68,7 @@ class DeapRunner:
                               len(self.parameterNames) # number of parameters per individual
                 )
 
-        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
+        self.toolbox.register("population", self.initializeFromCurrentStateClones, list, self.toolbox.individual)
 
         # register our custom mapping function with some instrumentation to keep track
         # of generation and evaluation index within the generation
@@ -99,6 +100,72 @@ class DeapRunner:
             self.csvWriter.writerow(dict(zip(headerNames, headerNames)))
         else:
             self.csvWriter = None
+
+    #----------------------------------------
+
+    def initializeFromCurrentStateClones(self, containerType, individualCreator, n):
+        """function which is used to create the initial population. This reads
+        the currently used CPU core assignments of the running system
+        and generates a population of thread assignments from it.
+
+        It takes the pinning assignments of a random instance of each
+        type and creates n clones of this configuration.
+
+        This method is called instead of tools.initRepeat()
+        """
+
+        # get the currently assigned cpu cores
+        logging.info("reading initial thread pinnings for initialization")
+
+        # parameter names are appType + "/" + paramName
+        # see WorkLoopList.getParameterNames()
+        #
+        # group thread pinnings by parameter names
+        paramNameToCores = {}
+
+        currentPinning = self.goalFunction.workLoopList.getCurrentThreadPinnings()
+
+        from pprint import pformat
+        logging.info("initial thread pinnings: " + pformat(currentPinning))
+
+        for appType, perAppTypeData in currentPinning.items():
+            for soapHostPort, perHostPortData in perAppTypeData.items():
+                for workLoopName, cpu in perHostPortData.items():
+                    paramName = appType + "/" + workLoopName
+
+                    assert not paramName in paramNameToCores
+                    paramNameToCores[paramName] = cpu
+
+                # just take the first soap host / port (application instance)
+                break
+
+        # create the population
+        population = []
+
+        from deap import creator
+
+        for i in range(n / 2):
+            # create a n/2 times the same individual
+
+            indiv = []
+
+            for param in self.parameterNames:
+                indiv.append(paramNameToCores[param])
+
+            population.append(creator.Individual(indiv))
+
+        for i in range(n/2, n):
+            # create the rest with random initializations
+            indiv = []
+
+            for param in self.parameterNames:
+                indiv.append(self.toolbox.attr_core())
+
+            population.append(creator.Individual(indiv))
+
+
+        return containerType(population)
+
 
     #----------------------------------------
 
@@ -139,6 +206,11 @@ class DeapRunner:
 
         # keep track of the initial rate before tuning was started
         # to be able to print improvements in each log message
+
+        sleepTime = 30
+        logging.info("sleeping %d seconds before retrieving initial performance" % sleepTime)
+        time.sleep(sleepTime)
+
         self.initialRateMean, self.initialRateStd, lastRate = self.goalFunction.getEventRate()
         logging.info("readout rate before tuning: %.1f +/- %.1f kHz" % (self.initialRateMean / 1e3, self.initialRateStd / 1e3))
 
