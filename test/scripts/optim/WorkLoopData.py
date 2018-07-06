@@ -63,7 +63,7 @@ def canonicalizeWorkLoopNames(workLoopNames):
             # below will be removed
 
             # close to 100% CPU usage threads        
-            'pt::ibv::completionworkloopr(-\d+)/polling', # found on BU and RU
+            'pt::ibv::completionworkloopr(-\d+)/polling', # found on BU and RU and EVM
             'pt::ibv::completionworkloops/polling',       # found on BU and RU
             'tcpla-psp/(\S+:)\d+/polling',                # found on RU; remove host name but keep the port number
 
@@ -85,8 +85,14 @@ def canonicalizeWorkLoopNames(workLoopNames):
             # this thread appears when generating on the RU
             # and should be seen as a replacement 
             # for the parseSocketBuffers threads
-            "evb::RU(_\d+)/generating_(\d+)/waiting", 
-            ):
+            "evb::RU(_\d+)/generating_(\d+)/waiting",
+
+            # EVM threads
+            "evb::EVM(_\d+)/Responder_(\d+)/waiting",
+            "evb::EVM(_\d+)/generating_(\d+)/waiting",
+            "evb::EVM(_\d+)/buPoster/waiting",
+            "evb::EVM(_\d+)/processRequests/waiting",
+        ):
 
             pattern = pattern + "$"
 
@@ -101,21 +107,24 @@ def canonicalizeWorkLoopNames(workLoopNames):
                 prevEnd = 0
                 for index in range(1, len(mo.groups()) + 1):
                     newName += wln[prevEnd:mo.start(index)]
-                    
-                    if index == 2 and ('parseSocketBuffers' in wln or 
-                                       'generating_' in wln):
-                        # special treatment for work loop names containing FED ids
-                        fedid = int(mo.group(index))
-                        
-                        fedIndex = fedids.index(fedid)
-                        newName += "%02d" % fedIndex
+
+                    if index == 2:
+                        if ('parseSocketBuffers' in wln or 'generating_' in wln) and not 'EVM' in wln:
+                            # special treatment for work loop names containing FED ids
+                            fedid = int(mo.group(index))
+
+                            fedIndex = fedids.index(fedid)
+                            newName += "%02d" % fedIndex
+                        else:
+                            # on EVM the number in 'generating' seems not to be a FED id ?
+                            newName += mo.group(index)
 
                     prevEnd = mo.end(index)
 
                 newName += wln[prevEnd:]
                 
                 # make sure newName has not been produced before
-                assert not newName in mappedNames
+                assert not newName in mappedNames, "mapped name %s found more than once" % newName
                 mappedNames.add(newName)
 
                 result[wln] = newName
