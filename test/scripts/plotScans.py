@@ -471,9 +471,9 @@ class PlotScans:
 
     def printTable(self):
         for n,case in enumerate(self.cases):
-            print(62*"-")
+            print(61*"-")
             print("Case: "+case['name']+" - "+case['app']+" - color:"+str(self.colors[n])+" - marker:"+str(self.markers[n]))
-            print(62*"-")
+            print(61*"-")
             if self.args['totalThroughput']:
                 sizeUnit = '(kB)'
                 througputUnit = '(GB/s)'
@@ -484,13 +484,13 @@ class PlotScans:
                 else:
                     sizeUnit = '(B)'
             print("Size %4s : Throughput %7s        : Rate (kHz)"%(sizeUnit,througputUnit))
-            print(62*"-")
+            print(61*"-")
             try:
                 for entry in zip(case['sizes'],case['throughputs'],case['throughputsLow'],case['throughputsHigh'],case['rates'],case['ratesLow'],case['ratesHigh']):
-                    print("%9d :  %6.1f - %6.1f + %6.1f :  %5.1f - %5.1f + %5.1f"%entry)
+                    print("%9d :  %7.1f - %6.1f + %6.1f :  %5.1f - %4.1f + %4.1f"%entry)
             except KeyError:
                 pass
-            print(62*"-")
+            print(61*"-")
 
 
     def fillColorsMarkers(self):
