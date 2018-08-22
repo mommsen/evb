@@ -118,7 +118,11 @@ class TestRunner:
         #print(self.args)
         #return
         try:
-            os.mkdir(self.args['logDir'])
+            os.makedirs(self.args['logDir'])
+        except OSError:
+            pass
+        try:
+            os.makedirs(self.args['outputDir'])
         except OSError:
             pass
         try:
