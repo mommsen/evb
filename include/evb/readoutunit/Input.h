@@ -219,6 +219,9 @@ namespace evb {
       xdata::UnsignedInteger32 superFragmentSizeStdDev_;
       xdata::UnsignedInteger32 incompleteSuperFragmentCount_;
       xdata::UnsignedInteger64 eventCount_;
+      xdata::Vector<xdata::UnsignedInteger32> fedIds_;
+      xdata::Vector<xdata::UnsignedInteger32> fedFragmentSizes_;
+      xdata::Vector<xdata::UnsignedInteger32> fedFragmentSizeStdDevs_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithoutFragments_;
       xdata::Vector<xdata::UnsignedInteger32> fedIdsWithErrors_;
       xdata::Vector<xdata::UnsignedInteger32> fedDataCorruption_;
@@ -521,6 +524,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   superFragmentSizeStdDev_ = 0;
   incompleteSuperFragmentCount_ = 0;
   eventCount_ = 0;
+  fedIds_.clear();
+  fedFragmentSizes_.clear();
+  fedFragmentSizeStdDevs_.clear();
   fedIdsWithoutFragments_.clear();
   fedIdsWithErrors_.clear();
   fedDataCorruption_.clear();
@@ -534,6 +540,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::appendMonitoringItems(I
   items.add("superFragmentSizeStdDev", &superFragmentSizeStdDev_);
   items.add("incompleteSuperFragmentCount", &incompleteSuperFragmentCount_);
   items.add("eventCount", &eventCount_);
+  items.add("fedIds", &fedIds_);
+  items.add("fedFragmentSizes", &fedFragmentSizes_);
+  items.add("fedFragmentSizeStdDevs", &fedFragmentSizeStdDevs_);
   items.add("fedIdsWithoutFragments", &fedIdsWithoutFragments_);
   items.add("fedIdsWithErrors", &fedIdsWithErrors_);
   items.add("fedDataCorruption", &fedDataCorruption_);
@@ -569,6 +578,9 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
   {
     boost::shared_lock<boost::shared_mutex> sl(ferolStreamsMutex_);
 
+    fedIds_.clear();
+    fedFragmentSizes_.clear();
+    fedFragmentSizeStdDevs_.clear();
     fedIdsWithoutFragments_.clear();
     fedIdsWithErrors_.clear();
     fedDataCorruption_.clear();
@@ -581,13 +593,19 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
     for (typename FerolStreams::iterator it = ferolStreams_.begin(), itEnd = ferolStreams_.end();
           it != itEnd; ++it)
     {
+      uint32_t fragmentSize = 0;
+      uint32_t fragmentSizeStdDev = 0;
       uint32_t queueElements = 0;
       uint32_t corruptedEvents = 0;
       uint32_t eventsOutOfSequence = 0;
       uint32_t crcErrors = 0;
       uint32_t bxErrors = 0;
 
-      it->second->retrieveMonitoringQuantities(queueElements,corruptedEvents,eventsOutOfSequence,crcErrors,bxErrors);
+      it->second->retrieveMonitoringQuantities(fragmentSize,fragmentSizeStdDev,queueElements,corruptedEvents,eventsOutOfSequence,crcErrors,bxErrors);
+
+      fedIds_.push_back(it->first);
+      fedFragmentSizes_.push_back(fragmentSize);
+      fedFragmentSizeStdDevs_.push_back(fragmentSizeStdDev);
 
       if ( queueElements > maxElements )
         maxElements = queueElements;

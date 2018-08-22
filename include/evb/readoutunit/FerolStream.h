@@ -113,7 +113,9 @@ namespace evb {
       /**
        * Return the requested monitoring quantities.
        */
-      void retrieveMonitoringQuantities(uint32_t& queueElements,
+      void retrieveMonitoringQuantities(uint32_t& fragmentSize,
+                                        uint32_t& fragmentSizeStdDev,
+                                        uint32_t& queueElements,
                                         uint32_t& corruptedEvents,
                                         uint32_t& eventsOutOfSequence,
                                         uint32_t& crcErrors,
@@ -423,6 +425,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::resetMonitoringCo
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitoringQuantities
 (
+  uint32_t& fragmentSize,
+  uint32_t& fragmentSizeStdDev,
   uint32_t& queueElements,
   uint32_t& corruptedEvents,
   uint32_t& eventsOutOfSequence,
@@ -433,6 +437,8 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   {
     boost::mutex::scoped_lock sl(inputMonitorMutex_);
 
+    fragmentSize = inputMonitor_.eventSize;
+    fragmentSizeStdDev = inputMonitor_.eventSizeStdDev;
     const double deltaT = inputMonitor_.perf.deltaT();
     inputMonitor_.rate = inputMonitor_.perf.logicalRate(deltaT);
     inputMonitor_.throughput = inputMonitor_.perf.throughput(deltaT);

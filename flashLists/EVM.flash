@@ -24,6 +24,9 @@
   <xmas:item name="throughputPerBU"               infospace="urn:evb::EVM" type="vector unsigned int 64"/>
   <xmas:item name="fragmentRatePerBU"             infospace="urn:evb::EVM" type="vector unsigned int 32"/>
   <xmas:item name="retryRatePerBU"                infospace="urn:evb::EVM" type="vector double"/>
+  <xmas:item name="fedIds"                        infospace="urn:evb::EVM" type="vector unsigned int 32"/>
+  <xmas:item name="fedFragmentSizes"              infospace="urn:evb::EVM" type="vector unsigned int 32"/>
+  <xmas:item name="fedFragmentSizeStdDevs"        infospace="urn:evb::EVM" type="vector unsigned int 32"/>
   <xmas:item name="fedIdsWithoutFragments"        infospace="urn:evb::EVM" type="vector unsigned int 32"/>
   <xmas:item name="fedIdsWithErrors"              infospace="urn:evb::EVM" type="vector unsigned int 32"/>
   <xmas:item name="fedDataCorruption"             infospace="urn:evb::EVM" type="vector unsigned int 32"/>
