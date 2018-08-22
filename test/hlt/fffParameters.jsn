@@ -1,5 +1,5 @@
 {
     "TRANSFER_MODE": "TIER0_TRANSFER_OFF",
-    "CMSSW_VERSION": "CMSSW_10_1_1",
+    "CMSSW_VERSION": "CMSSW_10_1_9_patch1",
     "SCRAM_ARCH": "slc7_amd64_gcc630"
 }

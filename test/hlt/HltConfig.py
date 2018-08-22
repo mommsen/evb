@@ -149,7 +149,8 @@ process.EvFDaqDirector = cms.Service( "EvFDaqDirector",
     outputAdler32Recheck = cms.untracked.bool( False ),
     selectedTransferMode = cms.untracked.string( "" ),
     requireTransfersPSet = cms.untracked.bool( False ),
-    emptyLumisectionMode = cms.untracked.bool( False )
+    emptyLumisectionMode = cms.untracked.bool( False ),
+    useFileBroker = cms.untracked.bool( False )
 )
 process.FastMonitoringService = cms.Service( "FastMonitoringService",
     fastMonIntervals = cms.untracked.uint32( 2 ),
@@ -738,9 +739,14 @@ process.EvFDaqDirector.baseDir      = options.dataDir
 process.EvFDaqDirector.runNumber    = options.runNumber
 
 try:
-     process.EvFDaqDirector.selectedTransferMode = options.transferMode
+    process.EvFDaqDirector.selectedTransferMode = options.transferMode
 except:
-     print "unable to set process.EvFDaqDirector.selectedTransferMode=",         options.transferMode
+    print "unable to set process.EvFDaqDirector.selectedTransferMode=", options.transferMode
 for moduleName in process.__dict__['_Process__outputmodules']:
     modified_module = getattr(process,moduleName)
     modified_module.compression_level=cms.untracked.int32(0)
+
+try:
+    process.EvFDaqDirector.useFileBroker = True
+except:
+    print "no process.EvFDaqDirector.useFileBroker in Python configuration"
