@@ -123,7 +123,7 @@ class TestRunner:
             pass
         try:
             os.makedirs(self.args['outputDir'])
-        except OSError:
+        except (OSError,KeyError):
             pass
         try:
             self.doIt()
