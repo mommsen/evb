@@ -24,6 +24,7 @@ class RunBenchmarks(TestRunner):
         parser.add_argument("--nRUs",default=1,type=int,help="number of RUs, excl. EVM [default: %(default)s]")
         parser.add_argument("--nBUs",default=1,type=int,help="number of BUs [default: %(default)s]")
         parser.add_argument("--nRUBUs",default=0,type=int,help="number of RUBUs, excl. EVM [default: %(default)s]")
+        parser.add_argument("--outputDisk",help="full path to output directory. If not specified, the data is dropped on the BU")
         try:
             symbolMapfile = self._evbTesterHome + '/cases/' + os.environ["EVB_SYMBOL_MAP"]
             parser.add_argument("-m","--symbolMap",default=symbolMapfile,help="symbolMap file to use, [default: %(default)s]")
@@ -120,15 +121,23 @@ class RunBenchmarks(TestRunner):
                 ('fragmentRequestFIFOCapacity','unsignedInt','6000')
                 ]) )
         # BUs
+        buConfig = [
+            ('lumiSectionTimeout','unsignedInt','0'),
+            ('maxEvtsUnderConstruction','unsignedInt','320'),
+            ('eventsPerRequest','unsignedInt','8'),
+            ('superFragmentFIFOCapacity','unsignedInt','12800'),
+            ('numberOfBuilders','unsignedInt','5')
+            ]
+        if self.args['outputDisk']:
+            buConfig.append( ('dropEventData','boolean','false') )
+            buConfig.append( ('rawDataDir','string',self.args['outputDisk']) )
+            buConfig.append( ('metaDataDir','string',self.args['outputDisk']) )
+            buConfig.append( ('deleteRawDataFiles','boolean','true') )
+            buConfig.append( ('ignoreResourceSummary','boolean','true') )
+        else:
+            buConfig.append( ('dropEventData','boolean','true') )
         for bu in range(self.args['nBUs']):
-            config.add( BU(self._symbolMap,[
-                ('dropEventData','boolean','true'),
-                ('lumiSectionTimeout','unsignedInt','0'),
-                ('maxEvtsUnderConstruction','unsignedInt','320'),
-                ('eventsPerRequest','unsignedInt','8'),
-                ('superFragmentFIFOCapacity','unsignedInt','12800'),
-                ('numberOfBuilders','unsignedInt','5')
-                ]) )
+            config.add( BU(self._symbolMap,buConfig) )
         # RUBUs with 8 FEDs each
         for rubu in range(self.args['nRUBUs']):
             config.add( RUBU(self._symbolMap,
@@ -142,14 +151,8 @@ class RunBenchmarks(TestRunner):
                 ('fragmentFIFOCapacity','unsignedInt','256'),
                 ('fragmentRequestFIFOCapacity','unsignedInt','6000')
                 ],
-                [ #BU config
-                ('dropEventData','boolean','true'),
-                ('lumiSectionTimeout','unsignedInt','0'),
-                ('maxEvtsUnderConstruction','unsignedInt','320'),
-                ('eventsPerRequest','unsignedInt','8'),
-                ('superFragmentFIFOCapacity','unsignedInt','12800'),
-                ('numberOfBuilders','unsignedInt','5')
-                ]) )
+                buConfig
+                ) )
         return config
 
 
