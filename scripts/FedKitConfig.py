@@ -104,11 +104,7 @@ class FedKitConfig:
             <TCP_REXMTTHRESH_FED1 xsi:type="xsd:unsignedInt">3</TCP_REXMTTHRESH_FED1>
             <TCP_REXMTCWND_SHIFT_FED0 xsi:type="xsd:unsignedInt">6</TCP_REXMTCWND_SHIFT_FED0>
             <TCP_REXMTCWND_SHIFT_FED1 xsi:type="xsd:unsignedInt">6</TCP_REXMTCWND_SHIFT_FED1>
-            <!--N_Descriptors_FED0 xsi:type="xsd:unsignedInt">4</N_Descriptors_FED0>
-            <TCP_SOCKET_BUFFER_DDR xsi:type="xsd:boolean">false</TCP_SOCKET_BUFFER_DDR>
-            <DDR_memory_mask xsi:type="xsd:unsignedInt">0x0fffffff</DDR_memory_mask>
-            <QDR_memory_mask xsi:type="xsd:unsignedInt">0x007fffff</QDR_memory_mask>
-            <lightStop xsi:type="xsd:boolean">false</lightStop-->
+            <lightStop xsi:type="xsd:boolean">true</lightStop>
           </properties>
         </xc:Application>
 
