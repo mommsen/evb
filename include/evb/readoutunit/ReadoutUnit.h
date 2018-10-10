@@ -79,15 +79,15 @@ namespace evb {
     private:
 
       virtual void do_bindI2oCallbacks();
-      inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*) throw (i2o::exception::Exception);
+      inline void I2O_SHIP_FRAGMENTS_Callback(toolbox::mem::Reference*) ;
 
       virtual void bindNonDefaultXgiCallbacks();
       virtual cgicc::table getMainWebPage() const;
       virtual void addComponentsToWebPage(cgicc::table&) const;
 
-      void eventCountForLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
-      void getLatestLumiSection(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
-      void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+      void eventCountForLumiSection(xgi::Input*, xgi::Output*) ;
+      void getLatestLumiSection(xgi::Input*, xgi::Output*) ;
+      void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) ;
       void displayDipStatusTable(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
 
       xdata::UnsignedInteger32 eventsInRU_;
@@ -216,7 +216,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::I2O_SHIP_FR
 (
   toolbox::mem::Reference *bufRef
 )
-throw (i2o::exception::Exception)
+
 {
   try
   {
@@ -294,7 +294,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::writeNextFr
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
+
 {
   cgicc::Cgicc cgi(in);
   uint16_t count = 1;
@@ -320,7 +320,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::eventCountF
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
+
 {
   cgicc::Cgicc cgi(in);
 
@@ -359,7 +359,7 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::getLatestLu
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
+
 {
   *out << buProxy_->getLatestLumiSection();
 }

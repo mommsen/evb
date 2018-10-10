@@ -3,9 +3,9 @@
 
 #include "config/PackageInfo.h"
 
-#define EVB_VERSION_MAJOR 5
-#define EVB_VERSION_MINOR 7
-#define EVB_VERSION_PATCH 1
+#define EVB_VERSION_MAJOR 6
+#define EVB_VERSION_MINOR 0
+#define EVB_VERSION_PATCH 0
 #undef EVB_PREVIOUS_VERSIONS
 
 
@@ -29,7 +29,7 @@ namespace evb
   config::PackageInfo getPackageInfo();
 
   void checkPackageDependencies()
-    throw (config::PackageInfo::VersionException);
+    ;
 
   std::set<std::string, std::less<std::string> > getPackageDependencies();
 }

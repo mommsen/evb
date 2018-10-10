@@ -18,17 +18,25 @@
 
 BUILD_HOME:=$(shell pwd)/../..
 
-include $(XDAQ_ROOT)/config/mfAutoconf.rules
-include $(XDAQ_ROOT)/config/mfDefs.$(XDAQ_OS)
-include $(XDAQ_ROOT)/config/mfDefs.extern_coretools
-include $(XDAQ_ROOT)/config/mfDefs.coretools
-include $(XDAQ_ROOT)/config/mfDefs.powerpack
-include $(XDAQ_ROOT)/config/mfDefs.general_worksuite
+ifndef BUILD_SUPPORT
+BUILD_SUPPORT=config
+endif
+
+ifndef PROJECT_NAME
+PROJECT_NAME=daq
+endif
+
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfAutoconf.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.$(XDAQ_OS)
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.extern_coretools
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.coretools
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.powerpack
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.general_worksuite
 
 #
 # Packages to be built
 #
-Project=daq
+Project=$(PROJECT_NAME)
 Package=evb
 
 Sources=\
@@ -159,7 +167,7 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX) \
 	/opt/dip/lib64
 
-UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations
+UserCCFlags = -O3 -funroll-loops
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
@@ -182,5 +190,5 @@ clean: _cleanall
 
 install: _installall
 
-include $(XDAQ_ROOT)/config/Makefile.rules
-include $(XDAQ_ROOT)/config/mfRPM.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/Makefile.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfRPM.rules

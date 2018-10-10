@@ -123,7 +123,7 @@ void evb::BU::I2O_BU_CACHE_Callback
 (
   toolbox::mem::Reference* bufRef
 )
-throw (i2o::exception::Exception)
+
 {
   try
   {
@@ -199,7 +199,7 @@ cgicc::table evb::BU::getMainWebPage() const
 
 
 void evb::BU::displayResourceTable(xgi::Input* in,xgi::Output* out)
-throw (xgi::exception::Exception)
+
 {
   using namespace cgicc;
   table layoutTable;
@@ -216,7 +216,7 @@ throw (xgi::exception::Exception)
 
 
 void evb::BU::writeNextEventsToFile(xgi::Input* in,xgi::Output* out)
-throw (xgi::exception::Exception)
+
 {
   cgicc::Cgicc cgi(in);
   uint16_t count = 1;

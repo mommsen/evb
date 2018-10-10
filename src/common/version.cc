@@ -11,7 +11,7 @@
 GETPACKAGEINFO(evb)
 
 
-void evb::checkPackageDependencies() throw (config::PackageInfo::VersionException)
+void evb::checkPackageDependencies() 
 {
   CHECKDEPENDENCY(config);
   CHECKDEPENDENCY(pt);

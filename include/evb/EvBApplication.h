@@ -135,7 +135,7 @@ namespace evb {
     void bindI2oCallbacks();
     void bindSoapCallbacks();
     void bindXgiCallbacks();
-    xoap::MessageReference processSoapFsmEvent(xoap::MessageReference msg) throw (xoap::exception::Exception);
+    xoap::MessageReference processSoapFsmEvent(xoap::MessageReference msg) ;
 
     void startMonitoringWorkloop();
     bool updateMonitoringInfo(toolbox::task::WorkLoop*);
@@ -146,8 +146,8 @@ namespace evb {
     void handleItemChangedEvent(const std::string& item);
     void handleItemRetrieveEvent(const std::string& item);
 
-    void defaultWebPage(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
-    void queueWebPage(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+    void defaultWebPage(xgi::Input*, xgi::Output*) ;
+    void queueWebPage(xgi::Input*, xgi::Output*) ;
     std::string getCurrentTimeUTC() const;
 
     typedef std::map<std::string,QueueContentFunction> QueueContents;
@@ -417,7 +417,7 @@ xoap::MessageReference evb::EvBApplication<Configuration,StateMachine>::processS
 (
   xoap::MessageReference msg
 )
-throw (xoap::exception::Exception)
+
 {
   std::string event = "";
   std::string newState = "unknown";
@@ -593,7 +593,7 @@ void evb::EvBApplication<Configuration,StateMachine>::defaultWebPage
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
+
 {
   *out << getWebPageHeader();
   *out << getMainWebPage();
@@ -629,7 +629,7 @@ void evb::EvBApplication<Configuration,StateMachine>::queueWebPage
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
+
 {
   using namespace cgicc;
 
