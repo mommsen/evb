@@ -88,7 +88,7 @@ namespace evb {
       void eventCountForLumiSection(xgi::Input*, xgi::Output*) ;
       void getLatestLumiSection(xgi::Input*, xgi::Output*) ;
       void writeNextFragmentsToFile(xgi::Input*, xgi::Output*) ;
-      void displayDipStatusTable(xgi::Input*, xgi::Output*) throw (xgi::exception::Exception);
+      void displayDipStatusTable(xgi::Input*, xgi::Output*);
 
       xdata::UnsignedInteger32 eventsInRU_;
       xdata::UnsignedInteger32 eventRate_;
@@ -337,7 +337,6 @@ void evb::readoutunit::ReadoutUnit<Unit,Configuration,StateMachine>::displayDipS
   xgi::Input  *in,
   xgi::Output *out
 )
-throw (xgi::exception::Exception)
 {
   using namespace cgicc;
   table layoutTable;
