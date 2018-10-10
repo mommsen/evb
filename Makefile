@@ -167,7 +167,7 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX) \
 	/opt/dip/lib64
 
-UserCCFlags = -O3 -funroll-loops
+UserCCFlags = -O3 -funroll-loops -Werror
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 
 # These libraries can be platform specific and
