@@ -1,8 +1,7 @@
 #ifndef _evb_bu_EventInfo_h_
 #define _evb_bu_EventInfo_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <sys/uio.h>
 
@@ -45,7 +44,7 @@ namespace evb {
 
     }; // EventInfo
 
-    typedef boost::shared_ptr<EventInfo> EventInfoPtr;
+    using EventInfoPtr = std::shared_ptr<EventInfo>;
 
   } } // namespace evb::bu
 

@@ -2,10 +2,10 @@
 #define _evb_evm_RUproxy_h_
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <map>
+#include <memory>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -47,7 +47,7 @@ namespace evb {
       RUproxy
       (
         EVM*,
-        boost::shared_ptr< readoutunit::StateMachine<EVM> >
+        std::shared_ptr< readoutunit::StateMachine<EVM> >
       );
 
       ~RUproxy();
@@ -114,11 +114,11 @@ namespace evb {
       void fillRUInstance(xdata::UnsignedInteger32 instance);
 
       EVM* evm_;
-      boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine_;
+      std::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine_;
 
       toolbox::mem::Pool* msgPool_;
 
-      typedef OneToOneQueue<readoutunit::FragmentRequestPtr> ReadoutMsgFIFO;
+      using ReadoutMsgFIFO = OneToOneQueue<readoutunit::FragmentRequestPtr>;
       ReadoutMsgFIFO readoutMsgFIFO_;
 
       toolbox::task::WorkLoop* processRequestsWL_;
@@ -130,7 +130,7 @@ namespace evb {
       I2O_TID tid_;
       uint32_t ruCount_;
 
-      typedef std::vector<ApplicationDescriptorAndTid> ApplicationDescriptorsAndTids;
+      using ApplicationDescriptorsAndTids = std::vector<ApplicationDescriptorAndTid>;
       ApplicationDescriptorsAndTids participatingRUs_;
       std::vector<I2O_TID> ruTids_;
 

@@ -2,11 +2,11 @@
 #define _evb_readoutunit_PipeHandler_h_
 
 #include <map>
+#include <memory>
 #include <set>
 #include <stdint.h>
 #include <string.h>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "evb/readoutunit/SocketBuffer.h"
@@ -61,12 +61,12 @@ namespace evb {
       int outstandingBuffers_;
 
       SocketBuffer::ReleaseFunction releaseFunction_;
-      typedef OneToOneQueue<toolbox::mem::Reference*> GrantFIFO;
+      using GrantFIFO = OneToOneQueue<toolbox::mem::Reference*>;
       GrantFIFO grantFIFO_;
       mutable boost::mutex grantFIFOmutex_;
 
-      typedef boost::shared_ptr< SocketStream<ReadoutUnit,Configuration> > SocketStreamPtr;
-      typedef std::map<uint16_t,SocketStreamPtr> SocketStreams;
+      using SocketStreamPtr = std::shared_ptr< SocketStream<ReadoutUnit,Configuration> > ;
+      using SocketStreams = std::map<uint16_t,SocketStreamPtr>;
       SocketStreams socketStreams_;
       mutable boost::mutex socketStreamsMutex_;
 

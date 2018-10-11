@@ -131,7 +131,7 @@ namespace evb {
 
         EvBidFactory evbIdFactory_;
         boost::scoped_ptr<FragmentTracker> fragmentTracker_;
-        typedef std::vector<toolbox::mem::Reference*> PlaybackData;
+        using PlaybackData = std::vector<toolbox::mem::Reference*>;
         PlaybackData playbackData_;
         PlaybackData::const_reverse_iterator playbackDataPos_;
       };

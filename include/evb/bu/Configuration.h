@@ -1,9 +1,8 @@
 #ifndef _evb_bu_configuration_h_
 #define _evb_bu_configuration_h_
 
+#include <memory>
 #include <stdint.h>
-
-#include <boost/shared_ptr.hpp>
 
 #include "evb/InfoSpaceItems.h"
 #include "xdaq/ApplicationContext.h"
@@ -173,7 +172,7 @@ namespace evb {
       }
     };
 
-    typedef boost::shared_ptr<Configuration> ConfigurationPtr;
+    using ConfigurationPtr = std::shared_ptr<Configuration>;
 
   } } // namespace evb::bu
 

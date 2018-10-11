@@ -12,8 +12,8 @@ namespace evb {
   class RU;
 
   namespace ru {
-    typedef readoutunit::StateMachine<RU> RUStateMachine;
-    typedef readoutunit::ReadoutUnit<RU,readoutunit::Configuration,RUStateMachine> ReadoutUnit;
+    using RUStateMachine = readoutunit::StateMachine<RU>;
+    using ReadoutUnit = readoutunit::ReadoutUnit<RU,readoutunit::Configuration,RUStateMachine>;
   }
 
   /**

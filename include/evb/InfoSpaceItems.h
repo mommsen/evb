@@ -45,7 +45,7 @@ namespace evb {
 
   private:
 
-    typedef std::vector< std::pair<std::string, std::pair<xdata::Serializable*,Listeners> > > Items;
+    using Items = std::vector<std::pair<std::string, std::pair<xdata::Serializable*,Listeners>>>;
     inline Items getItems() const { return items_; }
 
     Items items_;

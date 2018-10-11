@@ -1,9 +1,9 @@
 #ifndef _evb_bu_StreamHandler_h_
 #define _evb_bu_StreamHandler_h_
 
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -73,12 +73,12 @@ namespace evb {
       boost::mutex fileHandlerMutex_;
 
       FileStatisticsPtr currentFileStatistics_;
-      typedef OneToOneQueue<FileStatisticsPtr> FileStatisticsFIFO;
+      using FileStatisticsFIFO = OneToOneQueue<FileStatisticsPtr>;
       FileStatisticsFIFO fileStatisticsFIFO_;
 
     };
 
-    typedef boost::shared_ptr<StreamHandler> StreamHandlerPtr;
+    using StreamHandlerPtr = std::shared_ptr<StreamHandler>;
 
   } } // namespace evb::bu
 

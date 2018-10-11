@@ -1,8 +1,7 @@
 #ifndef _evb_readoutunit_SuperFragment_h_
 #define _evb_readoutunit_SuperFragment_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <vector>
 
@@ -31,11 +30,11 @@ namespace evb {
       bool hasMissingFEDs() const
       { return !missingFedIds_.empty(); }
 
-      typedef std::vector<uint16_t> MissingFedIds;
+      using MissingFedIds = std::vector<uint16_t>;
       MissingFedIds getMissingFedIds() const
       { return missingFedIds_; }
 
-      typedef std::vector<FedFragmentPtr> FedFragments;
+      using FedFragments = std::vector<FedFragmentPtr>;
       const FedFragments& getFedFragments() const
       { return fedFragments_; }
 
@@ -53,7 +52,7 @@ namespace evb {
 
     };
 
-    typedef boost::shared_ptr<SuperFragment> SuperFragmentPtr;
+    using SuperFragmentPtr = std::shared_ptr<SuperFragment>;
 
   } //namespace readoutunit
 } //namespace evb

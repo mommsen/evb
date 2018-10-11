@@ -1,11 +1,9 @@
 #ifndef _evb_FragmentTracker_h_
 #define _evb_FragmentTracker_h_
 
+#include <memory>
 #include <ostream>
 #include <stdint.h>
-
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "evb/CRCCalculator.h"
 #include "evb/EvBid.h"
@@ -64,7 +62,7 @@ namespace evb {
     void waitForNextTrigger();
 
     CRCCalculator crcCalculator_;
-    boost::scoped_ptr<FragmentSize> fragmentSize_;
+    std::unique_ptr<FragmentSize> fragmentSize_;
 
     enum FedComponent
     {
@@ -88,7 +86,7 @@ namespace evb {
     uint32_t availableTriggers_;
   };
 
-  typedef boost::shared_ptr<FragmentTracker> FragmentTrackerPtr;
+  using FragmentTrackerPtr = std::shared_ptr<FragmentTracker>;
 
 } // namespace evb
 

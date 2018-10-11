@@ -1,7 +1,6 @@
 #ifndef _evb_readoutunit_FedFragmentFactory_h_
 #define _evb_readoutunit_FedFragmentFactory_h_
 
-#include <boost/shared_ptr.hpp>
 
 #include <stdint.h>
 

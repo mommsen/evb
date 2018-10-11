@@ -23,7 +23,7 @@ namespace evb {
       // The state machine //
       ///////////////////////
 
-      typedef EvBStateMachine<StateMachine,Outermost> EvBStateMachine;
+      using EvBStateMachine = EvBStateMachine<StateMachine,Outermost>;
       class StateMachine: public EvBStateMachine
       {
 

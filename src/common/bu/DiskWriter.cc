@@ -22,7 +22,7 @@
 evb::bu::DiskWriter::DiskWriter
 (
   BU* bu,
-  boost::shared_ptr<ResourceManager> resourceManager
+  std::shared_ptr<ResourceManager> resourceManager
 ) :
   bu_(bu),
   resourceManager_(resourceManager),

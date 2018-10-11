@@ -9,11 +9,11 @@
 
 #include <boost/mpl/list.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include "xcept/Exception.h"
 #include "xcept/tools.h"
 
+#include <memory>
 #include <string>
 
 
@@ -70,9 +70,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Fail,Failed>
-        > reactions;
+        >;
 
         Failed(my_context c) : my_state("Failed", c)
         { safeEntryAction(); }
@@ -89,9 +89,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
-        > reactions;
+        >;
 
         AllOk(my_context c) : my_state("AllOk", c)
         { safeEntryAction(); }
@@ -109,9 +109,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Configure,Active>
-        > reactions;
+        >;
 
         Halted(my_context c) : my_state("Halted", c)
         { safeEntryAction(); }
@@ -129,9 +129,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Halt,Halted>
-        > reactions;
+        >;
 
         Active(my_context c) : my_state("Active", c)
         { safeEntryAction(); }
@@ -151,9 +151,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<ConfigureDone,Ready>
-        > reactions;
+        >;
 
         Configuring(my_context c) : my_state("Configuring", c)
         { safeEntryAction(); }
@@ -165,7 +165,7 @@ namespace evb {
         void activity();
 
       private:
-        boost::scoped_ptr<boost::thread> configuringThread_;
+        std::unique_ptr<boost::thread> configuringThread_;
         volatile bool doConfiguring_;
 
       };
@@ -179,9 +179,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Enable,Enabled>
-        > reactions;
+        >;
 
         Ready(my_context c) : my_state("Ready", c)
         { safeEntryAction(); }
@@ -202,7 +202,7 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<> reactions;
+        using reactions = boost::mpl::list<>;
 
         Running(my_context c) : my_state("Running", c)
         { safeEntryAction(); }
@@ -223,9 +223,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<Stop,Draining>
-        > reactions;
+        >;
 
         Enabled(my_context c) : my_state("Enabled", c)
         { safeEntryAction(); }
@@ -243,9 +243,9 @@ namespace evb {
 
       public:
 
-        typedef boost::mpl::list<
+        using reactions = boost::mpl::list<
         boost::statechart::transition<DrainingDone,Ready>
-        > reactions;
+        >;
 
         Draining(my_context c) : my_state("Draining", c)
         { safeEntryAction(); }
@@ -257,7 +257,7 @@ namespace evb {
         void activity();
 
       private:
-        boost::scoped_ptr<boost::thread> drainingThread_;
+        std::unique_ptr<boost::thread> drainingThread_;
         volatile bool doDraining_;
 
       };

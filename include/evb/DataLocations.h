@@ -6,7 +6,7 @@
 
 namespace evb {
 
-  typedef std::vector<iovec> DataLocations;
+  using DataLocations = std::vector<iovec>;
 
 } // namespace evb
 

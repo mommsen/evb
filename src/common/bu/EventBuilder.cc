@@ -17,8 +17,8 @@
 evb::bu::EventBuilder::EventBuilder
 (
   BU* bu,
-  boost::shared_ptr<DiskWriter> diskWriter,
-  boost::shared_ptr<ResourceManager> resourceManager
+  std::shared_ptr<DiskWriter> diskWriter,
+  std::shared_ptr<ResourceManager> resourceManager
 ) :
   bu_(bu),
   diskWriter_(diskWriter),

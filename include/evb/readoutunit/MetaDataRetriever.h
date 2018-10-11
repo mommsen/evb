@@ -1,14 +1,13 @@
 #ifndef _evb_readoutunit_MetaDataRetriever_h_
 #define _evb_readoutunit_MetaDataRetriever_h_
 
+#include <memory>
 #include <sstream>
 #include <stdint.h>
 #include <string.h>
 #include <utility>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "dip/DipException.h"
@@ -61,12 +60,12 @@ namespace evb {
 
       log4cplus::Logger& logger_;
 
-      boost::scoped_ptr<DipFactory> dipFactory_;
-      typedef std::vector<DipSubscription*> DipSubscriptions;
+      std::unique_ptr<DipFactory> dipFactory_;
+      using DipSubscriptions = std::vector<DipSubscription*>;
       DipSubscriptions dipSubscriptions_;
 
       enum DipStatus { unavailable,okay,masked };
-      typedef std::pair<std::string,DipStatus> DipTopic;
+      using DipTopic = std::pair<std::string,DipStatus>;
       struct isTopic
       {
         isTopic(const std::string& topic) : topic_(topic) {};
@@ -76,7 +75,7 @@ namespace evb {
         }
         const std::string topic_;
       };
-      typedef std::vector<DipTopic> DipTopics;
+      using DipTopics = std::vector<DipTopic>;
       DipTopics dipTopics_;
 
       MetaData::Luminosity lastLuminosity_;
@@ -92,7 +91,7 @@ namespace evb {
       mutable boost::mutex dcsMutex_;
     };
 
-    typedef boost::shared_ptr<MetaDataRetriever> MetaDataRetrieverPtr;
+    using MetaDataRetrieverPtr = std::shared_ptr<MetaDataRetriever>;
 
   } //namespace readoutunit
 } //namespace evb

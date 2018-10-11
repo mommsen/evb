@@ -2,7 +2,6 @@
 #define _evb_StateMachine_h_
 
 #include <boost/regex.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 #include <boost/statechart/state.hpp>
 #include <boost/statechart/state_machine.hpp>
@@ -87,7 +86,7 @@ namespace evb {
     std::string getReasonForError() const { return reasonForError_; }
     void clearError() { reasonForError_.clear(); }
 
-    typedef std::list<std::string> SoapFsmEvents;
+    using SoapFsmEvents = std::list<std::string>;
     SoapFsmEvents getSoapFsmEvents() const { return soapFsmEvents_; }
 
   protected:
@@ -130,8 +129,8 @@ namespace evb {
     { return stateName_; }
 
   protected:
-    typedef boost::statechart::state<MostDerived, Context, InnerInitial, historyMode> boost_state;
-    typedef EvBState my_state;
+    using boost_state = boost::statechart::state<MostDerived, Context, InnerInitial, historyMode>;
+    using my_state = EvBState;
 
     EvBState(const std::string stateName, typename boost_state::my_context& c) :
       boost_state(c), stateName_(stateName) {};

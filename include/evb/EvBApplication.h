@@ -1,12 +1,12 @@
 #ifndef _evb_EvBApplication_h_
 #define _evb_EvBApplication_h_
 
-#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
-#include <boost/shared_ptr.hpp>
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <time.h>
 
@@ -76,8 +76,8 @@ namespace evb {
     toolbox::net::URN getURN() const { return urn_; }
     std::string getIdentifier(const std::string& suffix = "") const;
     const std::string& getSubSystem() const { return subSystem_; }
-    boost::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
-    boost::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
+    std::shared_ptr<Configuration> getConfiguration() const { return configuration_; }
+    std::shared_ptr<StateMachine> getStateMachine() const { return stateMachine_; }
     toolbox::mem::Pool* getMsgPool() const;
 
     uint32_t postMessage
@@ -86,7 +86,7 @@ namespace evb {
       const xdaq::ApplicationDescriptor* destination
     );
 
-    typedef boost::function<cgicc::div()> QueueContentFunction;
+    using QueueContentFunction = std::function<cgicc::div()>;
     void registerQueueCallback(const std::string name, QueueContentFunction);
 
   protected:
@@ -115,8 +115,8 @@ namespace evb {
 
     xdata::InfoSpace *monitoringInfoSpace_;
 
-    const boost::shared_ptr<Configuration> configuration_;
-    boost::shared_ptr<StateMachine> stateMachine_;
+    const std::shared_ptr<Configuration> configuration_;
+    std::shared_ptr<StateMachine> stateMachine_;
     xdaq2rc::SOAPParameterExtractor soapParameterExtractor_;
 
     std::string subSystem_;
@@ -150,7 +150,7 @@ namespace evb {
     void queueWebPage(xgi::Input*, xgi::Output*) ;
     std::string getCurrentTimeUTC() const;
 
-    typedef std::map<std::string,QueueContentFunction> QueueContents;
+    using QueueContents = std::map<std::string,QueueContentFunction>;
     QueueContents queueContents_;
 
     toolbox::task::WorkLoop* monitoringWorkLoop_;

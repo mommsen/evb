@@ -1,8 +1,7 @@
 #ifndef _evb_readoutunit_ReadoutUnit_h_
 #define _evb_readoutunit_ReadoutUnit_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <string>
 
 #include "cgicc/HTMLClasses.h"
@@ -47,15 +46,15 @@ namespace evb {
         const std::string& appIcon
       );
 
-      typedef boost::shared_ptr< Input<Unit,Configuration> > InputPtr;
+      using InputPtr = std::shared_ptr< Input<Unit,Configuration> > ;
       InputPtr getInput() const
       { return input_; }
 
-      typedef boost::shared_ptr< FerolConnectionManager<Unit,Configuration> > FerolConnectionManagerPtr;
+      using FerolConnectionManagerPtr = std::shared_ptr< FerolConnectionManager<Unit,Configuration> > ;
       FerolConnectionManagerPtr getFerolConnectionManager() const
       { return ferolConnectionManager_; }
 
-      typedef boost::shared_ptr< BUproxy<Unit> > BUproxyPtr;
+      using BUproxyPtr = std::shared_ptr< BUproxy<Unit> > ;
       BUproxyPtr getBUproxy() const
       { return buProxy_; }
 

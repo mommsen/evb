@@ -1,11 +1,11 @@
 #ifndef _evb_EvBidFactory_h_
 #define _evb_EvBidFactory_h_
 
+#include <memory>
 #include <stdint.h>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
 #include "evb/DataLocations.h"
@@ -25,7 +25,7 @@ namespace evb {
     /**
      * Pass the function to extract the lumi section information from the payload
      */
-    typedef boost::function< uint32_t(const DataLocations&) > LumiSectionFunction;
+    using LumiSectionFunction = boost::function< uint32_t(const DataLocations&) >;
     void setLumiSectionFunction(LumiSectionFunction&);
 
     /**
@@ -76,12 +76,12 @@ namespace evb {
     LumiSectionFunction lumiSectionFunction_;
     boost::posix_time::seconds fakeLumiSectionDuration_;
     uint32_t fakeLumiSection_;
-    boost::shared_ptr<boost::thread> fakeLumiThread_;
+    std::shared_ptr<boost::thread> fakeLumiThread_;
     volatile bool doFakeLumiSections_;
 
   };
 
-  typedef boost::shared_ptr<EvBidFactory> EvBidFactoryPtr;
+  using EvBidFactoryPtr = std::shared_ptr<EvBidFactory>;
 
 } // namespace evb
 

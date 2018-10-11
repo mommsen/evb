@@ -1,9 +1,8 @@
 #ifndef _evb_evm_h_
 #define _evb_evm_h_
 
+#include <memory>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "evb/evm/Configuration.h"
 #include "evb/evm/RUproxy.h"
@@ -18,8 +17,8 @@ namespace evb {
   class EVM;
 
   namespace evm {
-    typedef readoutunit::StateMachine<EVM> EVMStateMachine;
-    typedef readoutunit::ReadoutUnit<EVM,evm::Configuration,EVMStateMachine> ReadoutUnit;
+    using EVMStateMachine = readoutunit::StateMachine<EVM>;
+    using ReadoutUnit = readoutunit::ReadoutUnit<EVM,evm::Configuration,EVMStateMachine>;
   }
 
   /**
@@ -34,7 +33,7 @@ namespace evb {
 
     XDAQ_INSTANTIATOR();
 
-    typedef boost::shared_ptr<evm::RUproxy> RUproxyPtr;
+    using RUproxyPtr = std::shared_ptr<evm::RUproxy>;
     RUproxyPtr getRUproxy() const
     { return ruProxy_; }
 
@@ -47,7 +46,7 @@ namespace evb {
     virtual void do_updateMonitoringInfo();
     virtual void do_handleItemChangedEvent(const std::string& item);
 
-    boost::shared_ptr<evm::RUproxy> ruProxy_;
+    std::shared_ptr<evm::RUproxy> ruProxy_;
 
 
   }; // class EVM

@@ -2,12 +2,12 @@
 #define _evb_readoutunit_BUposter_h_
 
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 #include <map>
+#include <memory>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -98,8 +98,8 @@ namespace evb {
 
       ReadoutUnit* readoutUnit_;
 
-      typedef OneToOneQueue<toolbox::mem::Reference*> FrameFIFO;
-      typedef boost::shared_ptr<FrameFIFO> FrameFIFOPtr;
+      using FrameFIFO = OneToOneQueue<toolbox::mem::Reference*>;
+      using FrameFIFOPtr = std::shared_ptr<FrameFIFO>;
       struct BUconnection {
         const I2O_TID tid;
         const xdaq::ApplicationDescriptor* bu;
@@ -112,8 +112,8 @@ namespace evb {
 
         BUconnection(const I2O_TID tid, const FrameFIFOPtr& frameFIFO);
       };
-      typedef boost::shared_ptr<BUconnection> BUconnectionPtr;
-      typedef std::map<I2O_TID,BUconnectionPtr> BUconnections;
+      using BUconnectionPtr = std::shared_ptr<BUconnection>;
+      using BUconnections = std::map<I2O_TID,BUconnectionPtr>;
       BUconnections buConnections_;
       mutable boost::shared_mutex buConnectionsMutex_;
 

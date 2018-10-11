@@ -1,8 +1,7 @@
 #ifndef _evb_bu_FragmentChain_h_
 #define _evb_bu_FragmentChain_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <sstream>
 #include <stdint.h>
 #include <vector>
@@ -54,7 +53,7 @@ namespace evb {
 
     }; // FragmentChain
 
-    typedef boost::shared_ptr<FragmentChain> FragmentChainPtr;
+    using FragmentChainPtr = std::shared_ptr<FragmentChain>;
 
   } // namespace bu
 } // namespace evb

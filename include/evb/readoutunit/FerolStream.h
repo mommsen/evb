@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
@@ -165,7 +164,7 @@ namespace evb {
       EvBidFactoryPtr evbIdFactory_;
       FedFragmentFactory<ReadoutUnit> fedFragmentFactory_;
 
-      typedef OneToOneQueue<FedFragmentPtr> FragmentFIFO;
+      using FragmentFIFO = OneToOneQueue<FedFragmentPtr>;
       FragmentFIFO fragmentFIFO_;
 
       InputMonitor inputMonitor_;

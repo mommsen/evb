@@ -10,7 +10,6 @@
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/mpl/list.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
 
 #include "evb/EvBStateMachine.h"
@@ -19,6 +18,7 @@
 #include "xcept/Exception.h"
 #include "xcept/tools.h"
 
+#include <memory>
 #include <string>
 
 
@@ -64,10 +64,10 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Outermost<Owner>,StateMachine<Owner>,boost::mpl::list< AllOk<Owner> > > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Outermost<Owner>,StateMachine<Owner>,boost::mpl::list< AllOk<Owner> > >;
+      using reactions = boost::mpl::list<
         boost::statechart::in_state_reaction< DrainingDone >
-        > reactions;
+        >;
 
       Outermost(typename my_state::boost_state::my_context c) : my_state("Outermost", c)
       { this->safeEntryAction(); }
@@ -86,11 +86,11 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Failed<Owner>,Outermost<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Failed<Owner>,Outermost<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Halt,Halted<Owner> >,
         boost::statechart::in_state_reaction< Fail >
-        > reactions;
+        >;
 
       Failed(typename my_state::boost_state::my_context c) : my_state("Failed", c)
       { this->safeEntryAction(); }
@@ -111,12 +111,12 @@ namespace evb {
 
     public:
 
-      typedef EvBState< AllOk<Owner>,Outermost<Owner>,boost::mpl::list< Halted<Owner> > > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< AllOk<Owner>,Outermost<Owner>,boost::mpl::list< Halted<Owner> > >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition<Fail,Failed<Owner>,
                                       EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >,
                                       &EvBStateMachine< StateMachine<Owner>,Outermost<Owner> >::failEvent>
-        > reactions;
+        >;
 
       AllOk(typename my_state::boost_state::my_context c) : my_state("AllOk", c)
       { this->safeEntryAction(); }
@@ -135,11 +135,11 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Halted<Owner>,AllOk<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Halted<Owner>,AllOk<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Configure,Active<Owner> >,
         boost::statechart::in_state_reaction< Halt >
-        > reactions;
+        >;
 
       Halted(typename my_state::boost_state::my_context c) : my_state("Halted", c)
       { this->safeEntryAction(); }
@@ -160,10 +160,10 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Active<Owner>,AllOk<Owner>,boost::mpl::list< Configuring<Owner> > > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Active<Owner>,AllOk<Owner>,boost::mpl::list< Configuring<Owner> > >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Halt,Halted<Owner> >
-        > reactions;
+        >;
 
       Active(typename my_state::boost_state::my_context c) : my_state("Active", c)
       { this->safeEntryAction(); }
@@ -182,10 +182,10 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Configuring<Owner>,Active<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Configuring<Owner>,Active<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< ConfigureDone,Ready<Owner> >
-        > reactions;
+        >;
 
       Configuring(typename my_state::boost_state::my_context c) : my_state("Configuring", c)
       { this->safeEntryAction(); }
@@ -198,7 +198,7 @@ namespace evb {
 
     private:
       void doConfigure(const Owner*) {};
-      boost::scoped_ptr<boost::thread> configuringThread_;
+      std::unique_ptr<boost::thread> configuringThread_;
       volatile bool doConfiguring_;
 
     };
@@ -213,11 +213,11 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Ready<Owner>,Active<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Ready<Owner>,Active<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Enable,Enabled<Owner> >,
         boost::statechart::in_state_reaction< Clear >
-        > reactions;
+        >;
 
       Ready(typename my_state::boost_state::my_context c) : my_state("Ready", c)
       { this->safeEntryAction(); }
@@ -239,10 +239,10 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Running<Owner>,Active<Owner>,boost::mpl::list< Enabled<Owner> > > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Running<Owner>,Active<Owner>,boost::mpl::list< Enabled<Owner> > >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Clear,Configuring<Owner> >
-        > reactions;
+        >;
 
       Running(typename my_state::boost_state::my_context c) : my_state("Running", c)
       { this->safeEntryAction(); }
@@ -269,8 +269,8 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Enabled<Owner>,Running<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Enabled<Owner>,Running<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::transition< MismatchDetected,SyncLoss<Owner>,
                                        StateMachine<Owner>,
@@ -281,7 +281,7 @@ namespace evb {
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::dataLoss>
-        > reactions;
+        >;
 
       Enabled(typename my_state::boost_state::my_context c) : my_state("Enabled", c)
       { this->safeEntryAction(); }
@@ -302,10 +302,10 @@ namespace evb {
 
     public:
 
-      typedef EvBState< Draining<Owner>,Running<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< Draining<Owner>,Running<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< DrainingDone,Ready<Owner> >
-        > reactions;
+        >;
 
       Draining(typename my_state::boost_state::my_context c) : my_state("Draining", c)
       { this->safeEntryAction(); }
@@ -319,7 +319,7 @@ namespace evb {
     private:
 
       void doDraining(const Owner*) {};
-      boost::scoped_ptr<boost::thread> drainingThread_;
+      std::unique_ptr<boost::thread> drainingThread_;
       volatile bool doDraining_;
 
     };
@@ -334,12 +334,12 @@ namespace evb {
 
     public:
 
-      typedef EvBState< SyncLoss<Owner>,Running<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< SyncLoss<Owner>,Running<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::in_state_reaction< MismatchDetected >,
         boost::statechart::in_state_reaction< EventOutOfSequence >
-        > reactions;
+        >;
 
       SyncLoss(typename my_state::boost_state::my_context c) : my_state("SyncLoss", c)
       { this->safeEntryAction(); }
@@ -361,11 +361,11 @@ namespace evb {
 
     public:
 
-      typedef EvBState< IncompleteEvents<Owner>,Running<Owner>,boost::mpl::list< MissingData<Owner> > > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< IncompleteEvents<Owner>,Running<Owner>,boost::mpl::list< MissingData<Owner> > >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< Stop,Draining<Owner> >,
         boost::statechart::transition< Recovered,Enabled<Owner> >
-        > reactions;
+        >;
 
       IncompleteEvents(typename my_state::boost_state::my_context c) : my_state("IncompleteEvents", c)
       { this->safeEntryAction(); }
@@ -378,7 +378,7 @@ namespace evb {
     private:
 
       void timeoutActivity();
-      boost::scoped_ptr<boost::thread> timeoutThread_;
+      std::unique_ptr<boost::thread> timeoutThread_;
 
     };
 
@@ -392,13 +392,13 @@ namespace evb {
 
     public:
 
-      typedef EvBState< MissingData<Owner>,IncompleteEvents<Owner> > my_state;
-      typedef boost::mpl::list<
+      using my_state = EvBState< MissingData<Owner>,IncompleteEvents<Owner> >;
+      using reactions = boost::mpl::list<
         boost::statechart::transition< DataLoss,MissingData<Owner>,
                                        StateMachine<Owner>,
                                        &StateMachine<Owner>::dataLoss>,
         boost::statechart::custom_reaction< Recovered >
-        > reactions;
+        >;
 
       MissingData(typename my_state::boost_state::my_context c) : my_state("MissingData", c)
       { this->safeEntryAction(); }

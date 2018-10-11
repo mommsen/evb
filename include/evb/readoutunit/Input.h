@@ -3,8 +3,6 @@
 
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
@@ -14,6 +12,7 @@
 #include <iterator>
 #include <map>
 #include <math.h>
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 
@@ -175,8 +174,8 @@ namespace evb {
       ReadoutUnit* getReadoutUnit() const
       { return readoutUnit_; }
 
-      typedef boost::shared_ptr< FerolStream<ReadoutUnit,Configuration> > FerolStreamPtr;
-      typedef std::map<uint16_t,FerolStreamPtr> FerolStreams;
+      using FerolStreamPtr = std::shared_ptr< FerolStream<ReadoutUnit,Configuration> >;
+      using FerolStreams = std::map<uint16_t,FerolStreamPtr>;
 
     private:
 
@@ -198,7 +197,7 @@ namespace evb {
       mutable boost::shared_mutex ferolStreamsMutex_;
       typename FerolStreams::iterator masterStream_;
 
-      typedef std::map<uint32_t,uint32_t> LumiCounterMap;
+      using LumiCounterMap = std::map<uint32_t,uint32_t>;
       LumiCounterMap lumiCounterMap_;
       LumiCounterMap::iterator currentLumiCounter_;
       boost::mutex lumiCounterMutex_;
@@ -675,7 +674,7 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentSiz
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::configure()
 {
-  const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
+  const std::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
   if ( configuration->blockSize % 8 != 0 )
   {

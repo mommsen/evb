@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_LocalStream_h_
 #define _evb_readoutunit_LocalStream_h_
 
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 
@@ -66,10 +67,10 @@ namespace evb {
       bool generating(toolbox::task::WorkLoop*);
       void waitForNextTrigger();
 
-      const boost::shared_ptr<Configuration> configuration_;
+      const std::shared_ptr<Configuration> configuration_;
       toolbox::task::WorkLoop* generatingWorkLoop_;
       toolbox::task::ActionSignature* generatingAction_;
-      boost::scoped_ptr<FragmentSize> fragmentSize_;
+      std::unique_ptr<FragmentSize> fragmentSize_;
 
       volatile bool generatingActive_;
       uint32_t maxTriggerRate_;

@@ -1,8 +1,7 @@
 #ifndef _evb_bu_FileStatistics_h_
 #define _evb_bu_FileStatistics_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -23,7 +22,7 @@ namespace evb {
       FileStatistics(const uint32_t ls, const std::string& fileName)
         : creationTime(time(0)),lumiSection(ls),fileName(fileName),nbEventsWritten(0),lastEventNumberWritten(0),fileSize(0) {};
     };
-    typedef boost::shared_ptr<FileStatistics> FileStatisticsPtr;
+    using FileStatisticsPtr = std::shared_ptr<FileStatistics>;
 
 
     inline std::ostream& operator<<

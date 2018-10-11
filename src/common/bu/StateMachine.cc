@@ -16,10 +16,10 @@
 evb::bu::StateMachine::StateMachine
 (
   BU* bu,
-  boost::shared_ptr<RUproxy> ruProxy,
-  boost::shared_ptr<DiskWriter> diskWriter,
+  std::shared_ptr<RUproxy> ruProxy,
+  std::shared_ptr<DiskWriter> diskWriter,
   EventBuilderPtr eventBuilder,
-  boost::shared_ptr<ResourceManager> resourceManager
+  std::shared_ptr<ResourceManager> resourceManager
 ):
   EvBStateMachine(bu),
   bu_(bu),

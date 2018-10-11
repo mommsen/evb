@@ -1,8 +1,7 @@
 #ifndef _evb_bu_FedInfo_h_
 #define _evb_bu_FedInfo_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <vector>
@@ -40,7 +39,7 @@ namespace evb {
       static CRCCalculator crcCalculator_;
     };
 
-    typedef boost::shared_ptr<FedInfo> FedInfoPtr;
+    using FedInfoPtr = std::shared_ptr<FedInfo>;
 
   } } // namespace evb::bu
 

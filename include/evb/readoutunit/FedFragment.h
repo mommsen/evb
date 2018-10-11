@@ -1,8 +1,7 @@
 #ifndef _evb_readoutunit_FedFragment_h_
 #define _evb_readoutunit_FedFragment_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <string>
 #include <sys/uio.h>
@@ -116,7 +115,7 @@ namespace evb {
       bool hasCRCerror_;
       bool hasFEDerror_;
       toolbox::mem::Reference* bufRef_;
-      typedef std::vector<SocketBufferPtr> SocketBuffers;
+      using SocketBuffers = std::vector<SocketBufferPtr>;
       SocketBuffers socketBuffers_;
       DataLocations dataLocations_;
       DataLocations::const_iterator copyIterator_;
@@ -126,7 +125,7 @@ namespace evb {
       uint32_t payloadLength_;
     };
 
-    typedef boost::shared_ptr<FedFragment> FedFragmentPtr;
+    using FedFragmentPtr = std::shared_ptr<FedFragment>;
 
   } //namespace readoutunit
 } //namespace evb

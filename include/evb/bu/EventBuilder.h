@@ -2,11 +2,10 @@
 #define _evb_bu_EventBuilder_h_
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <map>
+#include <memory>
 #include <stdint.h>
 #include <vector>
 
@@ -51,8 +50,8 @@ namespace evb {
       EventBuilder
       (
         BU*,
-        boost::shared_ptr<DiskWriter>,
-        boost::shared_ptr<ResourceManager>
+        std::shared_ptr<DiskWriter>,
+        std::shared_ptr<ResourceManager>
       );
 
       ~EventBuilder();
@@ -70,7 +69,7 @@ namespace evb {
       /**
        * Register the state machine
        */
-      void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
+      void registerStateMachine(std::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
 
       /**
@@ -130,8 +129,8 @@ namespace evb {
 
     private:
 
-      typedef std::map<EvBid,EventPtr> PartialEvents;           //indexed by EvBid
-      typedef std::multimap<uint32_t,EventPtr> CompleteEvents;  //indexed by lumi section
+      using PartialEvents = std::map<EvBid,EventPtr>;           //indexed by EvBid
+      using CompleteEvents = std::multimap<uint32_t,EventPtr>;  //indexed by lumi section
 
       struct EventMapMonitor
       {
@@ -154,23 +153,23 @@ namespace evb {
       bool isEmpty() const;
 
       BU* bu_;
-      boost::shared_ptr<DiskWriter> diskWriter_;
-      boost::shared_ptr<ResourceManager> resourceManager_;
-      boost::shared_ptr<StateMachine> stateMachine_;
+      std::shared_ptr<DiskWriter> diskWriter_;
+      std::shared_ptr<ResourceManager> resourceManager_;
+      std::shared_ptr<StateMachine> stateMachine_;
 
       const ConfigurationPtr configuration_;
       uint32_t runNumber_;
 
-      typedef OneToOneQueue<FragmentChainPtr> SuperFragmentFIFO;
-      typedef boost::shared_ptr<SuperFragmentFIFO> SuperFragmentFIFOPtr;
-      typedef std::map<uint16_t,SuperFragmentFIFOPtr> SuperFragmentFIFOs;
+      using SuperFragmentFIFO = OneToOneQueue<FragmentChainPtr>;
+      using SuperFragmentFIFOPtr = std::shared_ptr<SuperFragmentFIFO>;
+      using SuperFragmentFIFOs = std::map<uint16_t,SuperFragmentFIFOPtr>;
       SuperFragmentFIFOs superFragmentFIFOs_;
 
-      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
+      using WorkLoops = std::vector<toolbox::task::WorkLoop*>;
       WorkLoops builderWorkLoops_;
       toolbox::task::ActionSignature* builderAction_;
 
-      typedef std::map<uint16_t,EventMapMonitor> EventMapMonitors;
+      using EventMapMonitors = std::map<uint16_t,EventMapMonitor>;
       EventMapMonitors eventMapMonitors_;
 
       uint64_t corruptedEvents_;
@@ -191,7 +190,7 @@ namespace evb {
 
     }; // EventBuilder
 
-    typedef boost::shared_ptr<EventBuilder> EventBuilderPtr;
+    using EventBuilderPtr = std::shared_ptr<EventBuilder>;
 
   } } // namespace evb::bu
 

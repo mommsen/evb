@@ -1,9 +1,9 @@
 #ifndef _evb_bu_Event_h_
 #define _evb_bu_Event_h_
 
-#include <boost/shared_ptr.hpp>
 
 #include <limits>
+#include <memory>
 #include <map>
 #include <stdint.h>
 #include <vector>
@@ -83,21 +83,21 @@ namespace evb {
 
       EventInfoPtr eventInfo_;
 
-      typedef std::vector<toolbox::mem::Reference*> BufferReferences;
+      using BufferReferences = std::vector<toolbox::mem::Reference*>;
       BufferReferences myBufRefs_;
 
       const EvBid evbId_;
       const bool checkCRC_;
       const bool calculateCRC32_;
       const uint16_t buResourceId_;
-      typedef std::map<I2O_TID,uint32_t> RUsizes;
+      using RUsizes = std::map<I2O_TID,uint32_t>;
       RUsizes ruSizes_;
 
       msg::FedIds missingFedIds_;
 
     }; // Event
 
-    typedef boost::shared_ptr<Event> EventPtr;
+    using EventPtr = std::shared_ptr<Event>;
 
   } } // namespace evb::bu
 

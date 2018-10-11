@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_FragmentRequest_h_
 #define _evb_readoutunit_FragmentRequest_h_
 
+#include <memory>
 #include <stdint.h>
 #include <vector>
 
@@ -23,7 +24,7 @@ namespace evb {
       std::vector<I2O_TID> ruTids;
     };
 
-    typedef boost::shared_ptr<FragmentRequest> FragmentRequestPtr;
+    using FragmentRequestPtr = std::shared_ptr<FragmentRequest>;
 
     inline std::ostream& operator<<
     (

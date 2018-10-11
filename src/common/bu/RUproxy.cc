@@ -22,8 +22,8 @@
 evb::bu::RUproxy::RUproxy
 (
   BU* bu,
-  boost::shared_ptr<EventBuilder> eventBuilder,
-  boost::shared_ptr<ResourceManager> resourceManager
+  std::shared_ptr<EventBuilder> eventBuilder,
+  std::shared_ptr<ResourceManager> resourceManager
 ) :
   bu_(bu),
   eventBuilder_(eventBuilder),

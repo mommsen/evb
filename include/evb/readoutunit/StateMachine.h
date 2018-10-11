@@ -4,7 +4,6 @@
 #include <set>
 
 #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/statechart/event_base.hpp>
 
 #include "evb/EvBStateMachine.h"
@@ -99,7 +98,7 @@ namespace evb {
     private:
 
       Owner* owner_;
-      typedef std::set<uint16_t> MissingFeds;
+      using MissingFeds = std::set<uint16_t>;
       MissingFeds missingFeds_;
 
     };

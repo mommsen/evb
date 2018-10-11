@@ -1,9 +1,8 @@
 #ifndef _evb_readoutunit_configuration_h_
 #define _evb_readoutunit_configuration_h_
 
+#include <memory>
 #include <stdint.h>
-
-#include <boost/shared_ptr.hpp>
 
 #include "evb/Constants.h"
 #include "evb/Exception.h"
@@ -67,7 +66,7 @@ namespace evb {
           bag->addField("dummyFedSizeStdDev",&dummyFedSizeStdDev);
         }
       };
-      typedef xdata::Vector< xdata::Bag<FerolSource> > FerolSources;
+      using FerolSources = xdata::Vector< xdata::Bag<FerolSource> >;
 
       xdata::String sendPoolName;                            // The pool name used for evb messages
       xdata::String inputSource;                             // Input mode selection: Socket or Local
@@ -175,7 +174,7 @@ namespace evb {
 
     };
 
-    typedef boost::shared_ptr<Configuration> ConfigurationPtr;
+    using ConfigurationPtr = std::shared_ptr<Configuration>;
 
   } } // namespace evb::readoutunit
 

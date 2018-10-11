@@ -1,9 +1,8 @@
 #ifndef _evb_evm_configuration_h_
 #define _evb_evm_configuration_h_
 
+#include <memory>
 #include <stdint.h>
-
-#include <boost/shared_ptr.hpp>
 
 #include "evb/Exception.h"
 #include "evb/InfoSpaceItems.h"
@@ -95,7 +94,7 @@ namespace evb {
       }
     };
 
-    typedef boost::shared_ptr<Configuration> ConfigurationPtr;
+    using ConfigurationPtr = std::shared_ptr<Configuration>;
 
   } } // namespace evb::evm
 

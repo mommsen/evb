@@ -1,7 +1,7 @@
 #ifndef _evb_test_dummyFEROL_configuration_h_
 #define _evb_test_dummyFEROL_configuration_h_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "xdata/Boolean.h"
 #include "xdata/String.h"
@@ -79,7 +79,7 @@ namespace evb {
         }
       };
 
-      typedef boost::shared_ptr<Configuration> ConfigurationPtr;
+      using ConfigurationPtr = std::shared_ptr<Configuration>;
 
     } } } // namespace evb::test::dummyFEROL
 

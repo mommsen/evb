@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_FerolConnectionManager_h_
 #define _evb_readoutunit_FerolConnectionManager_h_
 
+#include <memory>
 #include <netdb.h>
 #include <set>
 #include <stdint.h>
@@ -8,7 +9,6 @@
 #include <sys/socket.h>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
 
 #include "evb/readoutunit/Input.h"
 #include "evb/readoutunit/PipeHandler.h"
@@ -96,8 +96,8 @@ namespace evb {
 
       pt::blit::PipeService* pipeService_;
 
-      typedef boost::shared_ptr< PipeHandler<ReadoutUnit,Configuration> > PipeHandlerPtr;
-      typedef std::map<uint16_t,PipeHandlerPtr> PipeHandlers;
+      using PipeHandlerPtr = std::shared_ptr< PipeHandler<ReadoutUnit,Configuration> > ;
+      using PipeHandlers = std::map<uint16_t,PipeHandlerPtr>;
       PipeHandlers pipeHandlers_;
       mutable boost::mutex mutex_;
 
@@ -200,7 +200,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
       XCEPT_RAISE(exception::TCP,msg.str());
     }
 
-    const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
+    const std::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
     typename Configuration::FerolSources::iterator it = configuration->ferolSources.begin();
     const typename Configuration::FerolSources::iterator itEnd = configuration->ferolSources.end();
@@ -331,7 +331,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
     XCEPT_RAISE(exception::Configuration, "Cannot get FEROL streams from BLIT because no pt::blit is available");
   }
 
-  const boost::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
+  const std::shared_ptr<Configuration> configuration = readoutUnit_->getConfiguration();
 
   std::set<uint32_t> fedIds;
   for ( xdata::Vector<xdata::UnsignedInteger32>::const_iterator it = configuration->fedSourceIds.begin(), itEnd = configuration->fedSourceIds.end();

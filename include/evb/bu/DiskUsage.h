@@ -2,9 +2,9 @@
 #define _evb_bu_DiskUsage_h_
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+#include <memory>
 #include <stdint.h>
 #include <sys/statfs.h>
 
@@ -80,7 +80,7 @@ namespace evb {
       bool valid_;
     };
 
-    typedef boost::shared_ptr<DiskUsage> DiskUsagePtr;
+    using DiskUsagePtr = std::shared_ptr<DiskUsage>;
 
   } } // namespace evb::bu
 

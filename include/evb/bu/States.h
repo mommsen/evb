@@ -10,11 +10,11 @@
 
 #include <boost/mpl/list.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include "xcept/Exception.h"
 #include "xcept/tools.h"
 
+#include <memory>
 #include <string>
 
 
@@ -62,14 +62,14 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Release>,
       boost::statechart::in_state_reaction<Throttle>,
       boost::statechart::in_state_reaction<Block>,
       boost::statechart::in_state_reaction<Misted>,
       boost::statechart::in_state_reaction<Clouded>,
       boost::statechart::in_state_reaction<Pause>
-      > reactions;
+      >;
 
       Outermost(my_context c) : my_state("Outermost", c)
       { safeEntryAction(); }
@@ -87,10 +87,10 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Halt,Halted>,
       boost::statechart::in_state_reaction<Fail>
-      > reactions;
+      >;
 
       Failed(my_context c) : my_state("Failed", c)
       { safeEntryAction(); }
@@ -110,9 +110,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Fail,Failed,EvBStateMachine,&StateMachine::failEvent>
-      > reactions;
+      >;
 
       AllOk(my_context c) : my_state("AllOk", c)
       { safeEntryAction(); }
@@ -130,10 +130,10 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Configure,Active>,
       boost::statechart::in_state_reaction<Halt>
-      > reactions;
+      >;
 
       Halted(my_context c) : my_state("Halted", c)
       { safeEntryAction(); }
@@ -151,9 +151,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Halt,Halted>
-      > reactions;
+      >;
 
       Active(my_context c) : my_state("Active", c)
       { safeEntryAction(); }
@@ -174,9 +174,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<ConfigureDone,Ready>
-      > reactions;
+      >;
 
       Configuring(my_context c) : my_state("Configuring", c)
       { safeEntryAction(); }
@@ -188,7 +188,7 @@ namespace evb {
       void activity();
 
     private:
-      boost::scoped_ptr<boost::thread> configuringThread_;
+      std::unique_ptr<boost::thread> configuringThread_;
       volatile bool doConfiguring_;
 
     };
@@ -202,10 +202,10 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Enable,Running>,
       boost::statechart::in_state_reaction<Clear>
-      > reactions;
+      >;
 
       Ready(my_context c) : my_state("Ready", c)
       { safeEntryAction(); }
@@ -225,9 +225,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Clear,Configuring>
-      > reactions;
+      >;
 
       Running(my_context c) : my_state("Running", c)
       { safeEntryAction(); }
@@ -250,7 +250,7 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<Stop,Draining>,
       boost::statechart::transition<Release,Enabled>,
       boost::statechart::transition<Throttle,Throttled>,
@@ -258,7 +258,7 @@ namespace evb {
       boost::statechart::transition<Misted,Mist>,
       boost::statechart::transition<Clouded,Cloud>,
       boost::statechart::transition<Pause,Paused>
-      > reactions;
+      >;
 
       Processing(my_context c) : my_state("Processing", c)
       { safeEntryAction(); }
@@ -276,9 +276,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::transition<DrainingDone,Ready>
-      > reactions;
+      >;
 
       Draining(my_context c) : my_state("Draining", c)
       { safeEntryAction(); }
@@ -290,7 +290,7 @@ namespace evb {
       void activity();
 
     private:
-      boost::scoped_ptr<boost::thread> drainingThread_;
+      std::unique_ptr<boost::thread> drainingThread_;
       volatile bool doDraining_;
 
     };
@@ -304,9 +304,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Release>
-      > reactions;
+      >;
 
       Enabled(my_context c) : my_state("Enabled", c)
       { safeEntryAction(); }
@@ -324,9 +324,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Throttle>
-      > reactions;
+      >;
 
       Throttled(my_context c) : my_state("Throttled", c)
       { safeEntryAction(); }
@@ -344,9 +344,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Block>
-      > reactions;
+      >;
 
       Blocked(my_context c) : my_state("Blocked", c)
       { safeEntryAction(); }
@@ -364,9 +364,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Misted>
-      > reactions;
+      >;
 
       Mist(my_context c) : my_state("Mist", c)
       { safeEntryAction(); }
@@ -384,9 +384,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Clouded>
-      > reactions;
+      >;
 
       Cloud(my_context c) : my_state("Cloud", c)
       { safeEntryAction(); }
@@ -404,9 +404,9 @@ namespace evb {
 
     public:
 
-      typedef boost::mpl::list<
+      using reactions = boost::mpl::list<
       boost::statechart::in_state_reaction<Paused>
-      > reactions;
+      >;
 
       Paused(my_context c) : my_state("Paused", c)
       { safeEntryAction(); }

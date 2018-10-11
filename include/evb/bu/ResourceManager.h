@@ -3,13 +3,13 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include <time.h>
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
@@ -80,7 +80,7 @@ namespace evb {
         BUresource(const uint16_t id,const uint16_t priority,const uint16_t eventsToDiscard)
           : id(id),priority(priority),eventsToDiscard(eventsToDiscard) {};
       };
-      typedef std::vector<BUresource> BUresources;
+      using BUresources = std::vector<BUresource>;
       void getAllAvailableResources(BUresources&);
 
       /**
@@ -97,7 +97,7 @@ namespace evb {
         LumiSectionAccount(const uint32_t ls)
           : lumiSection(ls),startTime(time(0)),nbEvents(0),nbIncompleteEvents(0) {};
       };
-      typedef boost::shared_ptr<LumiSectionAccount> LumiSectionAccountPtr;
+      using LumiSectionAccountPtr = std::shared_ptr<LumiSectionAccount>;
 
       bool getNextLumiSectionAccount(LumiSectionAccountPtr&,const bool completeLumiSectionsOnly);
 
@@ -203,18 +203,18 @@ namespace evb {
       const ConfigurationPtr configuration_;
       uint32_t lumiSectionTimeout_;
 
-      typedef std::list<EvBid> EvBidList;
+      using EvBidList = std::list<EvBid>;
       struct ResourceInfo
       {
         int16_t builderId;
         bool blocked;
         EvBidList evbIdList;
       };
-      typedef std::map<uint16_t,ResourceInfo> BuilderResources;
+      using BuilderResources = std::map<uint16_t,ResourceInfo>;
       BuilderResources builderResources_;
       mutable boost::mutex builderResourcesMutex_;
 
-      typedef OneToOneQueue<BuilderResources::iterator> ResourceFIFO;
+      using ResourceFIFO = OneToOneQueue<BuilderResources::iterator>;
       ResourceFIFO resourceFIFO_;
       mutable boost::mutex resourceFIFOmutex_;
 
@@ -242,11 +242,11 @@ namespace evb {
       bool resourceSummaryFailureAlreadyNotified_;
       bool resourceLimitiationAlreadyNotified_;
 
-      typedef std::vector<DiskUsagePtr> DiskUsageMonitors;
+      using DiskUsageMonitors = std::vector<DiskUsagePtr>;
       DiskUsageMonitors diskUsageMonitors_;
       mutable boost::mutex diskUsageMonitorsMutex_;
 
-      typedef std::map<uint32_t,LumiSectionAccountPtr> LumiSectionAccounts;
+      using LumiSectionAccounts = std::map<uint32_t,LumiSectionAccountPtr>;
       LumiSectionAccounts lumiSectionAccounts_;
       mutable boost::mutex lumiSectionAccountsMutex_;
       uint32_t oldestIncompleteLumiSection_;

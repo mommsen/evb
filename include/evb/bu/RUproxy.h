@@ -5,6 +5,7 @@
 
 #include <curl/curl.h>
 #include <map>
+#include <memory>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -50,8 +51,8 @@ namespace evb {
       RUproxy
       (
         BU*,
-        boost::shared_ptr<EventBuilder>,
-        boost::shared_ptr<ResourceManager>
+        std::shared_ptr<EventBuilder>,
+        std::shared_ptr<ResourceManager>
       );
 
       ~RUproxy();
@@ -98,7 +99,7 @@ namespace evb {
       /**
        * Register the state machine
        */
-      void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
+      void registerStateMachine(std::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
 
       /**
@@ -136,9 +137,9 @@ namespace evb {
       static int curlWriter(char*, size_t, size_t, std::string*);
 
       BU* bu_;
-      boost::shared_ptr<EventBuilder> eventBuilder_;
-      boost::shared_ptr<ResourceManager> resourceManager_;
-      boost::shared_ptr<StateMachine> stateMachine_;
+      std::shared_ptr<EventBuilder> eventBuilder_;
+      std::shared_ptr<ResourceManager> resourceManager_;
+      std::shared_ptr<StateMachine> stateMachine_;
 
       toolbox::mem::Pool* msgPool_;
       const ConfigurationPtr configuration_;
@@ -166,7 +167,7 @@ namespace evb {
         inline bool operator< (const Index& other) const
         { return ruTid == other.ruTid ? buResourceId < other.buResourceId : ruTid < other.ruTid; }
       };
-      typedef std::map<Index,FragmentChainPtr> DataBlockMap;
+      using DataBlockMap = std::map<Index,FragmentChainPtr>;
       DataBlockMap dataBlockMap_;
       boost::mutex dataBlockMapMutex_;
 
@@ -179,7 +180,7 @@ namespace evb {
 
         StatsPerRU() : logicalCount(0),payload(0),roundTripTime(0) {};
       };
-      typedef std::map<uint32_t,StatsPerRU> CountsPerRU;
+      using CountsPerRU = std::map<uint32_t,StatsPerRU>;
 
       struct FragmentMonitoring
       {

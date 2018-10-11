@@ -1,8 +1,7 @@
 #ifndef _evb_bu_FileHandler_h_
 #define _evb_bu_FileHandler_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 
@@ -44,7 +43,7 @@ namespace evb {
 
     }; // FileHandler
 
-    typedef boost::shared_ptr<FileHandler> FileHandlerPtr;
+    using FileHandlerPtr = std::shared_ptr<FileHandler>;
 
   } } // namespace evb::bu
 

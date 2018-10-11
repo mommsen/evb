@@ -1,7 +1,8 @@
 #ifndef _evb_bu_StateMachine_h_
 #define _evb_bu_StateMachine_h_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
 #include <boost/statechart/event_base.hpp>
 
 #include "evb/Exception.h"
@@ -40,7 +41,7 @@ namespace evb {
     // The state machine //
     ///////////////////////
 
-    typedef EvBStateMachine<StateMachine,Outermost> EvBStateMachine;
+    using EvBStateMachine = EvBStateMachine<StateMachine,Outermost>;
     class StateMachine: public EvBStateMachine
     {
 
@@ -49,25 +50,25 @@ namespace evb {
       StateMachine
       (
         BU*,
-        boost::shared_ptr<RUproxy>,
-        boost::shared_ptr<DiskWriter>,
-        boost::shared_ptr<EventBuilder>,
-        boost::shared_ptr<ResourceManager>
+        std::shared_ptr<RUproxy>,
+        std::shared_ptr<DiskWriter>,
+        std::shared_ptr<EventBuilder>,
+        std::shared_ptr<ResourceManager>
       );
 
       BU* bu() const { return bu_; }
-      boost::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }
-      boost::shared_ptr<DiskWriter> diskWriter() const { return diskWriter_; }
-      boost::shared_ptr<EventBuilder> eventBuilder() const { return eventBuilder_; }
-      boost::shared_ptr<ResourceManager> resourceManager() const { return resourceManager_; }
+      std::shared_ptr<RUproxy> ruProxy() const { return ruProxy_; }
+      std::shared_ptr<DiskWriter> diskWriter() const { return diskWriter_; }
+      std::shared_ptr<EventBuilder> eventBuilder() const { return eventBuilder_; }
+      std::shared_ptr<ResourceManager> resourceManager() const { return resourceManager_; }
 
     private:
 
       BU* bu_;
-      boost::shared_ptr<RUproxy> ruProxy_;
-      boost::shared_ptr<DiskWriter> diskWriter_;
-      boost::shared_ptr<EventBuilder> eventBuilder_;
-      boost::shared_ptr<ResourceManager> resourceManager_;
+      std::shared_ptr<RUproxy> ruProxy_;
+      std::shared_ptr<DiskWriter> diskWriter_;
+      std::shared_ptr<EventBuilder> eventBuilder_;
+      std::shared_ptr<ResourceManager> resourceManager_;
 
     };
 

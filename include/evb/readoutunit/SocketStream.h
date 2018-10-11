@@ -69,7 +69,7 @@ namespace evb {
       void startParseSocketBuffersWorkLoop();
       bool parseSocketBuffers(toolbox::task::WorkLoop*);
 
-      typedef OneToOneQueue<SocketBufferPtr> SocketBufferFIFO;
+      using SocketBufferFIFO = OneToOneQueue<SocketBufferPtr>;
       SocketBufferFIFO socketBufferFIFO_;
 
       toolbox::task::WorkLoop* parseSocketBuffersWL_;

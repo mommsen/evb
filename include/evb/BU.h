@@ -1,8 +1,7 @@
 #ifndef _evb_bu_h_
 #define _evb_bu_h_
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <stdint.h>
 #include <string>
 
@@ -45,7 +44,7 @@ namespace evb {
 
     virtual ~BU() {};
 
-    boost::shared_ptr<bu::RUproxy> getRUproxy() const
+    std::shared_ptr<bu::RUproxy> getRUproxy() const
     { return ruProxy_; }
 
     XDAQ_INSTANTIATOR();
@@ -67,10 +66,10 @@ namespace evb {
     void displayResourceTable(xgi::Input*,xgi::Output*) ;
     void writeNextEventsToFile(xgi::Input*,xgi::Output*) ;
 
-    boost::shared_ptr<bu::DiskWriter> diskWriter_;
-    boost::shared_ptr<bu::ResourceManager> resourceManager_;
-    boost::shared_ptr<bu::EventBuilder> eventBuilder_;
-    boost::shared_ptr<bu::RUproxy> ruProxy_;
+    std::shared_ptr<bu::DiskWriter> diskWriter_;
+    std::shared_ptr<bu::ResourceManager> resourceManager_;
+    std::shared_ptr<bu::EventBuilder> eventBuilder_;
+    std::shared_ptr<bu::RUproxy> ruProxy_;
 
     xdata::UnsignedInteger64 throughput_;
     xdata::UnsignedInteger32 eventRate_;

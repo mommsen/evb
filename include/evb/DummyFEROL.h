@@ -1,7 +1,6 @@
 #ifndef _evb_test_DummyFEROL_h_
 #define _evb_test_DummyFEROL_h_
 
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <stdint.h>

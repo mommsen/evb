@@ -2,9 +2,9 @@
 #define _evb_readoutunit_SocketBuffer_h_
 
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <memory>
 #include <stdint.h>
 
 #include "pt/blit/InputPipe.h"
@@ -23,7 +23,7 @@ namespace evb {
     {
     public:
 
-      typedef boost::function< void(toolbox::mem::Reference*) > ReleaseFunction;
+      using ReleaseFunction = boost::function< void(toolbox::mem::Reference*) >;
 
       SocketBuffer(toolbox::mem::Reference* bufRef, ReleaseFunction& releaseFunction)
         : bufRef_(bufRef),releaseFunction_(releaseFunction) {}
@@ -41,7 +41,7 @@ namespace evb {
 
     };
 
-    typedef boost::shared_ptr<SocketBuffer> SocketBufferPtr;
+    using SocketBufferPtr = std::shared_ptr<SocketBuffer>;
 
   } //namespace readoutunit
 } //namespace evb

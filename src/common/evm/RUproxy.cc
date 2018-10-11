@@ -20,7 +20,7 @@
 evb::evm::RUproxy::RUproxy
 (
   EVM* evm,
-  boost::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine
+  std::shared_ptr< readoutunit::StateMachine<EVM> > stateMachine
 ) :
   evm_(evm),
   stateMachine_(stateMachine),

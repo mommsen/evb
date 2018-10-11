@@ -2,11 +2,11 @@
 #define _evb_bu_DiskWriter_h_
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <curl/curl.h>
 #include <map>
+#include <memory>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -41,7 +41,7 @@ namespace evb {
       DiskWriter
       (
         BU*,
-        boost::shared_ptr<ResourceManager>
+        std::shared_ptr<ResourceManager>
       );
 
       ~DiskWriter();
@@ -73,7 +73,7 @@ namespace evb {
       /**
        * Register the state machine
        */
-      void registerStateMachine(boost::shared_ptr<StateMachine> stateMachine)
+      void registerStateMachine(std::shared_ptr<StateMachine> stateMachine)
       { stateMachine_ = stateMachine; }
 
       /**
@@ -122,8 +122,8 @@ namespace evb {
         bool isComplete() const
         { return isEmpty || (nbEvents > 0 && nbEvents == nbEventsWritten+nbIncompleteEvents); }
       };
-      typedef boost::shared_ptr<LumiInfo> LumiInfoPtr;
-      typedef std::map<uint32_t,LumiInfoPtr> LumiStatistics;
+      using LumiInfoPtr = std::shared_ptr<LumiInfo>;
+      using LumiStatistics = std::map<uint32_t,LumiInfoPtr>;
       LumiStatistics lumiStatistics_;
       boost::mutex lumiStatisticsMutex_;
 
@@ -151,8 +151,8 @@ namespace evb {
       void defineEoR(const boost::filesystem::path& jsdDir);
 
       BU* bu_;
-      boost::shared_ptr<ResourceManager> resourceManager_;
-      boost::shared_ptr<StateMachine> stateMachine_;
+      std::shared_ptr<ResourceManager> resourceManager_;
+      std::shared_ptr<StateMachine> stateMachine_;
       const ConfigurationPtr configuration_;
 
       const uint32_t buInstance_;
@@ -164,7 +164,7 @@ namespace evb {
       boost::filesystem::path eolsDefFile_;
       boost::filesystem::path eorDefFile_;
 
-      typedef std::map<uint16_t,StreamHandlerPtr > StreamHandlers;
+      using StreamHandlers = std::map<uint16_t,StreamHandlerPtr>;
       StreamHandlers streamHandlers_;
 
       toolbox::task::WorkLoop* lumiAccountingWorkLoop_;

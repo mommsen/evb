@@ -1,13 +1,13 @@
 #ifndef _evb_OneToOneQueue_h_
 #define _evb_OneToOneQueue_h_
 
+#include <memory>
 #include <stdexcept>
 #include <stdint.h>
 #include <vector>
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_pointer.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -154,7 +154,7 @@ namespace evb {
     struct is_shared_ptr
       : boost::mpl::false_ {};
     template <class U>
-    struct is_shared_ptr<boost::shared_ptr<U> >
+    struct is_shared_ptr<std::shared_ptr<U> >
       : boost::mpl::true_ {};
 
     template<typename T>

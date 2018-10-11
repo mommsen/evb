@@ -3,9 +3,9 @@
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <memory>
 #include <set>
 #include <stdint.h>
 #include <vector>
@@ -129,7 +129,7 @@ namespace evb {
 
     private:
 
-      typedef std::vector<SuperFragmentPtr> SuperFragments;
+      using SuperFragments = std::vector<SuperFragmentPtr>;
 
       void resetMonitoringCounters();
       void startProcessingWorkLoop();
@@ -158,7 +158,7 @@ namespace evb {
       I2O_TID tid_;
       toolbox::mem::Pool* msgPool_;
 
-      typedef std::vector<toolbox::task::WorkLoop*> WorkLoops;
+      using WorkLoops = std::vector<toolbox::task::WorkLoop*>;
       WorkLoops workLoops_;
       toolbox::task::ActionSignature* action_;
       volatile bool doProcessing_;
@@ -168,20 +168,20 @@ namespace evb {
       mutable boost::mutex processingRequestMutex_;
 
       //used on the RU
-      typedef OneToOneQueue<FragmentRequestPtr> FragmentRequestFIFO;
+      using FragmentRequestFIFO = OneToOneQueue<FragmentRequestPtr>;
       FragmentRequestFIFO fragmentRequestFIFO_;
 
       //used on the EVM
-      typedef boost::shared_ptr<FragmentRequestFIFO> FragmentRequestFIFOPtr;
-      typedef std::vector<FragmentRequestFIFOPtr> PrioritizedFragmentRequestFIFOs;
-      typedef std::map<I2O_TID,PrioritizedFragmentRequestFIFOs> FragmentRequestFIFOs;
+      using FragmentRequestFIFOPtr = std::shared_ptr<FragmentRequestFIFO>;
+      using PrioritizedFragmentRequestFIFOs = std::vector<FragmentRequestFIFOPtr>;
+      using FragmentRequestFIFOs = std::map<I2O_TID,PrioritizedFragmentRequestFIFOs>;
       FragmentRequestFIFOs::iterator nextBU_;
       FragmentRequestFIFOs fragmentRequestFIFOs_;
       mutable boost::shared_mutex fragmentRequestFIFOsMutex_;
 
       uint64_t lastLumiTransition_;
 
-      typedef std::map<I2O_TID,uint64_t> BUtimestamps;
+      using BUtimestamps = std::map<I2O_TID,uint64_t>;
       struct RequestMonitoring
       {
         uint64_t throughput;

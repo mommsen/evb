@@ -13,9 +13,9 @@
 namespace evb {
   namespace msg {
 
-    typedef std::vector<EvBid> EvBids;
-    typedef std::vector<I2O_TID> RUtids;
-    typedef std::vector<uint16_t> FedIds;
+    using EvBids = std::vector<EvBid>;
+    using RUtids = std::vector<I2O_TID>;
+    using FedIds = std::vector<uint16_t>;
 
     /**
      * Event request for one or more events identified by the event-builder ids to be sent
