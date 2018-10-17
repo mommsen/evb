@@ -66,7 +66,7 @@ void evb::bu::EventBuilder::configure()
   writeNextEventsToFile_ = 0;
 
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
 
     processesActive_.clear();
     processesActive_.resize(configuration_->numberOfBuilders.value_);
@@ -121,7 +121,7 @@ void evb::bu::EventBuilder::startProcessing(const uint32_t runNumber)
 
   runNumber_ = runNumber;
   {
-    boost::mutex::scoped_lock sl(errorCountMutex_);
+    std::lock_guard<std::mutex> guard(errorCountMutex_);
     corruptedEvents_ = 0;
     eventsWithCRCerrors_ = 0;
     eventsMissingData_ = 0;
@@ -176,7 +176,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   const uint16_t builderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
     processesActive_.set(builderId);
   }
 
@@ -210,14 +210,14 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
           const uint32_t eventsMissingData = handleCompleteEvents(completeEvents,streamHandler);
           if ( eventsMissingData > 0 )
           {
-            boost::mutex::scoped_lock sl(errorCountMutex_);
+            std::lock_guard<std::mutex> guard(errorCountMutex_);
             eventsMissingData_ += eventsMissingData;
           }
         }
         catch(exception::DataCorruption& e)
         {
           {
-            boost::mutex::scoped_lock sl(errorCountMutex_);
+            std::lock_guard<std::mutex> guard(errorCountMutex_);
             ++corruptedEvents_;
           }
 
@@ -229,7 +229,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
         {
           bool reportError;
           {
-            boost::mutex::scoped_lock sl(errorCountMutex_);
+            std::lock_guard<std::mutex> guard(errorCountMutex_);
             reportError = evb::isFibonacci( ++eventsWithCRCerrors_ );
           }
 
@@ -252,11 +252,11 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
 
       if ( ! workDone )
       {
-        boost::mutex::scoped_lock sl(processesActiveMutex_);
+        std::unique_lock<std::mutex> lock(processesActiveMutex_);
         processesActive_.reset(builderId);
-        sl.unlock();
+        lock.unlock();
         ::usleep(1000);
-        sl.lock();
+        lock.lock();
         processesActive_.set(builderId);
       }
     }
@@ -264,7 +264,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   catch(xcept::Exception& e)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(builderId);
     }
     stateMachine_->processFSMEvent( Fail(e) );
@@ -272,7 +272,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   catch(std::exception& e)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(builderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
@@ -282,7 +282,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   catch(...)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(builderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
@@ -291,7 +291,7 @@ bool evb::bu::EventBuilder::process(toolbox::task::WorkLoop* wl)
   }
 
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
     processesActive_.reset(builderId);
   }
 
@@ -435,7 +435,7 @@ uint32_t evb::bu::EventBuilder::handleCompleteEvents
 
       if ( writeNextEventsToFile_ > 0 )
       {
-        boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+        std::lock_guard<std::mutex> guard(writeNextEventsToFileMutex_);
         if ( writeNextEventsToFile_ > 0 ) // recheck once we have the lock
         {
           event->dumpEventToFile("Requested by user");
@@ -472,7 +472,7 @@ void evb::bu::EventBuilder::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::EventBuilder::updateMonitoringItems()
 {
-  boost::mutex::scoped_lock sl(errorCountMutex_);
+  std::lock_guard<std::mutex> guard(errorCountMutex_);
 
   nbCorruptedEvents_ = corruptedEvents_;
   nbEventsWithCRCerrors_ = eventsWithCRCerrors_;
@@ -482,28 +482,28 @@ void evb::bu::EventBuilder::updateMonitoringItems()
 
 uint64_t evb::bu::EventBuilder::getNbCorruptedEvents() const
 {
-  boost::mutex::scoped_lock sl(errorCountMutex_);
+  std::lock_guard<std::mutex> guard(errorCountMutex_);
   return corruptedEvents_;
 }
 
 
 uint64_t evb::bu::EventBuilder::getNbEventsWithCRCerrors() const
 {
-  boost::mutex::scoped_lock sl(errorCountMutex_);
+  std::lock_guard<std::mutex> guard(errorCountMutex_);
   return eventsWithCRCerrors_;
 }
 
 
 uint64_t evb::bu::EventBuilder::getNbEventsMissingData() const
 {
-  boost::mutex::scoped_lock sl(errorCountMutex_);
+  std::lock_guard<std::mutex> guard(errorCountMutex_);
   return eventsMissingData_;
 }
 
 
 void evb::bu::EventBuilder::writeNextEventsToFile(const uint16_t count)
 {
-  boost::mutex::scoped_lock sl(writeNextEventsToFileMutex_);
+  std::lock_guard<std::mutex> guard(writeNextEventsToFileMutex_);
   writeNextEventsToFile_ = count;
 }
 
@@ -516,7 +516,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
   div.add(p("EventBuilder"));
 
   {
-    boost::mutex::scoped_lock sl(errorCountMutex_);
+    std::lock_guard<std::mutex> guard(errorCountMutex_);
 
     cgicc::table table;
     table.set("title","Number of bad events since the beginning of the run.");
@@ -538,7 +538,7 @@ cgicc::div evb::bu::EventBuilder::getHtmlSnipped() const
     cgicc::table table;
     table.set("title","List of builder threads. Each thread assembles events independently. Any complete event is held back until all threads have reached the next lumi section.");
 
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
 
     table.add(tr()
               .add(th("Event builders").set("colspan","5")));

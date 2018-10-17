@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_MetaDataStream_h_
 #define _evb_readoutunit_MetaDataStream_h_
 
+#include <mutex>
 #include <stdint.h>
 #include <string.h>
 #include <vector>
@@ -81,7 +82,7 @@ namespace evb {
 
       toolbox::mem::Reference* currentDataBufRef_;
       toolbox::mem::Reference* nextDataBufRef_;
-      mutable boost::mutex dataMutex_;
+      mutable std::mutex dataMutex_;
 
       toolbox::mem::Pool* fragmentPool_;
       toolbox::task::WorkLoop* metaDataRequestWorkLoop_;
@@ -183,7 +184,7 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::startRequestWo
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::fillInitialData()
 {
-  boost::mutex::scoped_lock sl(dataMutex_);
+  std::lock_guard<std::mutex> guard(dataMutex_);
 
   nextDataBufRef_ = toolbox::mem::getMemoryPoolFactory()->
     getFrame(fragmentPool_,MetaData::dataSize);
@@ -226,7 +227,7 @@ bool evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::metaDataReques
   do {
     if ( metaDataRetriever_->fillData(payload) )
     {
-      boost::mutex::scoped_lock sl(dataMutex_);
+      std::lock_guard<std::mutex> guard(dataMutex_);
 
       if ( nextDataBufRef_ ) nextDataBufRef_->release();
       nextDataBufRef_ = bufRef;
@@ -252,7 +253,7 @@ void evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::appendFedFragm
 {
   if ( currentDataBufRef_ != nextDataBufRef_ )
   {
-    boost::mutex::scoped_lock sl(dataMutex_);
+    std::lock_guard<std::mutex> guard(dataMutex_);
 
     if ( currentDataBufRef_ ) currentDataBufRef_->release();
     currentDataBufRef_ = nextDataBufRef_->duplicate();
@@ -345,7 +346,7 @@ cgicc::tr evb::readoutunit::MetaDataStream<ReadoutUnit,Configuration>::getFedTab
           .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
                .set("onclick","dumpFragments("+fedId+",1);")));
   {
-    boost::mutex::scoped_lock sl(this->inputMonitorMutex_);
+    std::lock_guard<std::mutex> guard(this->inputMonitorMutex_);
 
     row.add(td(boost::lexical_cast<std::string>(this->inputMonitor_.lastEventNumber)));
     row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(this->inputMonitor_.eventSize))

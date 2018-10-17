@@ -1,6 +1,7 @@
 #ifndef _evb_readoutunit_SocketStream_h_
 #define _evb_readoutunit_SocketStream_h_
 
+#include <mutex>
 #include <stdint.h>
 #include <string.h>
 
@@ -154,7 +155,7 @@ bool evb::readoutunit::SocketStream<ReadoutUnit,Configuration>::parseSocketBuffe
     {
       const uint32_t usedBufferSize = socketBuffer->getBufRef()->getDataSize();
       {
-        boost::mutex::scoped_lock sl(this->socketMonitorMutex_);
+        std::lock_guard<std::mutex> guard(this->socketMonitorMutex_);
 
         ++(this->socketMonitor_.perf.logicalCount);
         this->socketMonitor_.perf.sumOfSizes += usedBufferSize;

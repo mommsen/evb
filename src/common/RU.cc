@@ -36,7 +36,7 @@ namespace evb {
     template<>
     bool BUproxy<RU>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      boost::mutex::scoped_lock sl(processingRequestMutex_);
+      std::lock_guard<std::mutex> guard(processingRequestMutex_);
 
       if ( doProcessing_ && fragmentRequestFIFO_.deq(fragmentRequest) )
       {
@@ -50,7 +50,7 @@ namespace evb {
             superFragments.push_back(superFragment);
           }
           {
-            boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+            std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
             --requestMonitoring_.activeRequests;
           }
 
@@ -69,7 +69,7 @@ namespace evb {
     template<>
     bool BUproxy<RU>::isEmpty()
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       return ( fragmentRequestFIFO_.empty() && processesActive_.none() );
     }
 

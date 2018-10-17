@@ -119,7 +119,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(luminosityMutex_);
+      std::lock_guard<std::mutex> guard(luminosityMutex_);
 
       lastLuminosity_.timeStamp = dipData.extractDipTime().getAsMillis();
       lastLuminosity_.lumiSection = dipData.extractInt("LumiSection");
@@ -132,7 +132,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(beamSpotMutex_);
+      std::lock_guard<std::mutex> guard(beamSpotMutex_);
 
       lastBeamSpot_.timeStamp = dipData.extractDipTime().getAsMillis();
       lastBeamSpot_.x = dipData.extractFloat("x");
@@ -159,7 +159,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(ctppsMutex_);
+      std::lock_guard<std::mutex> guard(ctppsMutex_);
 
       lastCTPPS_.timeStamp = dipData.extractDipTime().getAsMillis();
       lastCTPPS_.status = 0;
@@ -175,7 +175,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
   {
     if ( dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(dcsMutex_);
+      std::lock_guard<std::mutex> guard(dcsMutex_);
 
       const uint64_t dipTime = dipData.extractDipTime().getAsMillis();
       lastDCS_.timeStamp = std::max(lastDCS_.timeStamp,dipTime);
@@ -187,7 +187,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
     const uint16_t pos = std::find_if(dipTopics_.begin(), dipTopics_.end(), isTopic(topicName)) - dipTopics_.begin();
     if ( pos < dipTopics_.size() && dipData.extractDataQuality() == DIP_QUALITY_GOOD )
     {
-      boost::mutex::scoped_lock sl(dcsMutex_);
+      std::lock_guard<std::mutex> guard(dcsMutex_);
 
       const std::string state = dipData.extractString();
 
@@ -205,7 +205,7 @@ void evb::readoutunit::MetaDataRetriever::handleMessage(DipSubscription* subscri
 
 bool evb::readoutunit::MetaDataRetriever::fillLuminosity(MetaData::Luminosity& luminosity)
 {
-  boost::mutex::scoped_lock sl(luminosityMutex_);
+  std::lock_guard<std::mutex> guard(luminosityMutex_);
 
   if ( lastLuminosity_.timeStamp > 0 && lastLuminosity_ != luminosity )
   {
@@ -219,7 +219,7 @@ bool evb::readoutunit::MetaDataRetriever::fillLuminosity(MetaData::Luminosity& l
 
 bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(MetaData::BeamSpot& beamSpot)
 {
-  boost::mutex::scoped_lock sl(beamSpotMutex_);
+  std::lock_guard<std::mutex> guard(beamSpotMutex_);
 
   if ( lastBeamSpot_.timeStamp > 0 && lastBeamSpot_ != beamSpot )
   {
@@ -233,7 +233,7 @@ bool evb::readoutunit::MetaDataRetriever::fillBeamSpot(MetaData::BeamSpot& beamS
 
 bool evb::readoutunit::MetaDataRetriever::fillCTPPS(MetaData::CTPPS& CTPPS)
 {
-  boost::mutex::scoped_lock sl(ctppsMutex_);
+  std::lock_guard<std::mutex> guard(ctppsMutex_);
 
   if ( lastCTPPS_.timeStamp > 0 && lastCTPPS_ != CTPPS )
   {
@@ -247,7 +247,7 @@ bool evb::readoutunit::MetaDataRetriever::fillCTPPS(MetaData::CTPPS& CTPPS)
 
 bool evb::readoutunit::MetaDataRetriever::fillDCS(MetaData::DCS& dcs)
 {
-  boost::mutex::scoped_lock sl(dcsMutex_);
+  std::lock_guard<std::mutex> guard(dcsMutex_);
 
   if ( lastDCS_.timeStamp > 0 && lastDCS_ != dcs )
   {
@@ -339,35 +339,35 @@ cgicc::table evb::readoutunit::MetaDataRetriever::dipStatusTable() const
 
         if ( topic == "dip/CMS/BRIL/Luminosity" )
         {
-          boost::mutex::scoped_lock sl(luminosityMutex_);
+          std::lock_guard<std::mutex> guard(luminosityMutex_);
           std::ostringstream valueStr;
           valueStr << lastLuminosity_;
           row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/Tracker/BeamSpot" )
         {
-          boost::mutex::scoped_lock sl(dcsMutex_);
+          std::lock_guard<std::mutex> guard(dcsMutex_);
           std::ostringstream valueStr;
           valueStr << lastBeamSpot_;
           row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/CTPPS/detectorFSM" )
         {
-          boost::mutex::scoped_lock sl(ctppsMutex_);
+          std::lock_guard<std::mutex> guard(ctppsMutex_);
           std::ostringstream valueStr;
           valueStr << lastCTPPS_;
           row.add(td(pre(valueStr.str())));
         }
         else if ( topic == "dip/CMS/MCS/Current" )
         {
-          boost::mutex::scoped_lock sl(dcsMutex_);
+          std::lock_guard<std::mutex> guard(dcsMutex_);
           std::ostringstream valueStr;
           valueStr << std::fixed << std::setprecision(3) << lastDCS_.magnetCurrent << " A";
           row.add(td(valueStr.str()));
         }
         else
         {
-          boost::mutex::scoped_lock sl(dcsMutex_);
+          std::lock_guard<std::mutex> guard(dcsMutex_);
           if ( lastDCS_.highVoltageReady & (1 << pos) )
             row.add(td("READY"));
           else

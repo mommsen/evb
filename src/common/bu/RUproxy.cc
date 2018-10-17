@@ -81,7 +81,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       index.buResourceId = dataBlockMsg->buResourceId;
 
       {
-        boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(fragmentMonitoringMutex_);
 
         ++fragmentMonitoring_.perf.i2oCount;
         fragmentMonitoring_.perf.sumOfSizes += payload;
@@ -122,7 +122,7 @@ void evb::bu::RUproxy::superFragmentCallback(toolbox::mem::Reference* bufRef)
       }
 
       {
-        boost::mutex::scoped_lock sl(dataBlockMapMutex_);
+        std::lock_guard<std::mutex> guard(dataBlockMapMutex_);
 
         DataBlockMap::iterator dataBlockPos = dataBlockMap_.lower_bound(index);
         if ( dataBlockPos == dataBlockMap_.end() || (dataBlockMap_.key_comp()(index,dataBlockPos->first)) )
@@ -330,7 +330,7 @@ void evb::bu::RUproxy::sendRequests()
     catch(exception::I2O& e)
     {
       {
-        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
         requestMonitoring_.perf.retryCount += retries;
       }
 
@@ -341,7 +341,7 @@ void evb::bu::RUproxy::sendRequests()
     }
 
     {
-      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+      std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
       requestMonitoring_.perf.sumOfSizes += msgSize;
       requestMonitoring_.perf.sumOfSquares += msgSize*msgSize;
@@ -383,7 +383,7 @@ void evb::bu::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 void evb::bu::RUproxy::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
     const double deltaT = requestMonitoring_.perf.deltaT();
     requestMonitoring_.throughput = requestMonitoring_.perf.throughput(deltaT);
@@ -396,7 +396,7 @@ void evb::bu::RUproxy::updateMonitoringItems()
     requestRetryRate_ = requestMonitoring_.retryRate;
   }
   {
-    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(fragmentMonitoringMutex_);
 
     const double deltaT = fragmentMonitoring_.perf.deltaT();
     fragmentMonitoring_.incompleteSuperFragments = dataBlockMap_.size();
@@ -445,13 +445,13 @@ void evb::bu::RUproxy::updateMonitoringItems()
 void evb::bu::RUproxy::resetMonitoringCounters()
 {
   {
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
     requestMonitoring_.requestRate = 0;
     requestMonitoring_.requestRetryRate = 0;
     requestMonitoring_.perf.reset();
   }
   {
-    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(fragmentMonitoringMutex_);
     fragmentMonitoring_.lastEventNumberFromEVM = 0;
     fragmentMonitoring_.lastEventNumberFromRUs = 0;
     fragmentMonitoring_.incompleteSuperFragments = 0;
@@ -465,7 +465,7 @@ void evb::bu::RUproxy::resetMonitoringCounters()
 void evb::bu::RUproxy::configure()
 {
   {
-    boost::mutex::scoped_lock sl(dataBlockMapMutex_);
+    std::lock_guard<std::mutex> guard(dataBlockMapMutex_);
     dataBlockMap_.clear();
   }
 
@@ -572,7 +572,7 @@ uint32_t evb::bu::RUproxy::getLatestLumiSection()
 
 uint32_t evb::bu::RUproxy::getValueFromEVM(const std::string& url)
 {
-  boost::mutex::scoped_lock sl(curlMutex_);
+  std::lock_guard<std::mutex> guard(curlMutex_);
 
   uint32_t value = 0;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
@@ -627,7 +627,7 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     table table;
     table.set("title","Statistics of super fragments received from the EVM/RUs.");
 
-    boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(fragmentMonitoringMutex_);
 
     table.add(tr()
               .add(td("last event number from EVM"))
@@ -658,7 +658,7 @@ cgicc::div evb::bu::RUproxy::getHtmlSnipped() const
     table table;
     table.set("title","Statistics of requests sent to the EVM.");
 
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
     table.add(tr()
               .add(th("Event requests").set("colspan","2")));
@@ -690,7 +690,7 @@ cgicc::table evb::bu::RUproxy::getStatisticsPerRU() const
 {
   using namespace cgicc;
 
-  boost::mutex::scoped_lock sl(fragmentMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(fragmentMonitoringMutex_);
 
   table table;
   table.set("title","Statistics of received super fragments and total payload per EVM/RU.");

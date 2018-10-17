@@ -223,7 +223,7 @@ namespace evb {
       // In case that there was no event request during the last lumisection,
       // return all requests to the BU without assigning any events.
 
-      boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+      std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
       boost::unique_lock<boost::shared_mutex> ul(fragmentRequestFIFOsMutex_);
 
       for ( FragmentRequestFIFOs::iterator it = fragmentRequestFIFOs_.begin(), itEnd = fragmentRequestFIFOs_.end();
@@ -262,7 +262,7 @@ namespace evb {
     template<>
     bool BUproxy<EVM>::processRequest(FragmentRequestPtr& fragmentRequest, SuperFragments& superFragments)
     {
-      boost::mutex::scoped_lock prm(processingRequestMutex_);
+      std::lock_guard<std::mutex> guard(processingRequestMutex_);
 
       SuperFragmentPtr superFragment;
 
@@ -321,7 +321,7 @@ namespace evb {
           }
         }
         {
-          boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+          std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
           --requestMonitoring_.activeRequests;
         }
       }
@@ -342,11 +342,11 @@ namespace evb {
     bool BUproxy<EVM>::isEmpty()
     {
       {
-        boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
         if ( dataMonitoring_.outstandingEvents != 0 ) return false;
       }
       {
-        boost::mutex::scoped_lock sl(processesActiveMutex_);
+        std::lock_guard<std::mutex> guard(processesActiveMutex_);
         if ( processesActive_.any() ) return false;
       }
       return true;

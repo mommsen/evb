@@ -3,11 +3,11 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/locks.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -108,7 +108,7 @@ namespace evb {
         uint32_t i2oRate;
         double retryRate;
         PerformanceMonitor perf;
-        mutable boost::mutex perfMutex;
+        mutable std::mutex perfMutex;
 
         BUconnection(const I2O_TID tid, const FrameFIFOPtr& frameFIFO);
       };
@@ -191,7 +191,7 @@ void evb::readoutunit::BUposter<ReadoutUnit>::updateMonitoringItems()
   for (typename BUconnections::iterator it = buConnections_.begin(), itEnd = buConnections_.end();
        it != itEnd; ++it)
   {
-    boost::mutex::scoped_lock sl(it->second->perfMutex);
+    std::lock_guard<std::mutex> guard(it->second->perfMutex);
 
     const double deltaT = it->second->perf.deltaT();
     it->second->throughput = it->second->perf.throughput(deltaT);
@@ -330,7 +330,7 @@ bool evb::readoutunit::BUposter<ReadoutUnit>::postFrames(toolbox::task::WorkLoop
             const uint32_t payloadSize = bufRef->getDataSize();
             const uint32_t retries = readoutUnit_->postMessage(bufRef,it->second->bu);
             {
-              boost::mutex::scoped_lock sl(it->second->perfMutex);
+              std::lock_guard<std::mutex> guard(it->second->perfMutex);
               it->second->perf.retryCount += retries;
               it->second->perf.sumOfSizes += payloadSize;
               it->second->perf.sumOfSquares += payloadSize*payloadSize;

@@ -116,11 +116,11 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
     {
       pos->second.builderId = -1;
       {
-        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
         --eventMonitoring_.outstandingRequests;
       }
       {
-        boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+        std::lock_guard<std::mutex> guard(resourceFIFOmutex_);
         resourceFIFO_.enqWait(pos);
       }
       return -1;
@@ -135,7 +135,7 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
         pos->second.evbIdList.push_back(evbId);
         incrementEventsInLumiSection(evbId.lumiSection());
       }
-      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+      std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
       eventMonitoring_.nbEventsInBU += dataBlockMsg->nbSuperFragments;
       --eventMonitoring_.outstandingRequests;
     }
@@ -186,14 +186,14 @@ uint16_t evb::bu::ResourceManager::underConstruction(const msg::I2O_DATA_BLOCK_M
 
 uint32_t evb::bu::ResourceManager::getOldestIncompleteLumiSection() const
 {
-  boost::mutex::scoped_lock sl(lsLatencyMutex_);
+  std::lock_guard<std::mutex> guard(lsLatencyMutex_);
   return oldestIncompleteLumiSection_;
 }
 
 
 void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+  std::lock_guard<std::mutex> guard(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::const_iterator pos = lumiSectionAccounts_.find(lumiSection);
 
@@ -227,7 +227,7 @@ void evb::bu::ResourceManager::incrementEventsInLumiSection(const uint32_t lumiS
 
 void evb::bu::ResourceManager::eventCompletedForLumiSection(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+  std::lock_guard<std::mutex> guard(lumiSectionAccountsMutex_);
 
   LumiSectionAccounts::iterator pos = lumiSectionAccounts_.find(lumiSection);
 
@@ -248,7 +248,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
   const bool completeLumiSectionsOnly
 )
 {
-  boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+  std::lock_guard<std::mutex> guard(lumiSectionAccountsMutex_);
 
   const LumiSectionAccounts::iterator oldestLumiSection = lumiSectionAccounts_.begin();
   bool foundCompleteLS = false;
@@ -264,7 +264,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
 
   uint32_t outstandingRequests;
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
@@ -313,7 +313,7 @@ bool evb::bu::ResourceManager::getNextLumiSectionAccount
   }
 
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
     oldestIncompleteLumiSection_ = lumiSectionAccounts_.begin()->first;
   }
   return foundCompleteLS;
@@ -324,7 +324,7 @@ void evb::bu::ResourceManager::eventCompleted(const EventPtr& event)
 {
   eventCompletedForLumiSection(event->getEventInfo()->lumiSection());
 
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
 
   const uint32_t eventSize = event->getEventInfo()->eventSize();
   eventMonitoring_.perf.sumOfSizes += eventSize;
@@ -349,7 +349,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
   pos->second.evbIdList.remove(event->getEvBid());
 
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
     --eventMonitoring_.nbEventsInBU;
     ++eventsToDiscard_;
   }
@@ -357,7 +357,7 @@ void evb::bu::ResourceManager::discardEvent(const EventPtr& event)
   if ( pos->second.evbIdList.empty() )
   {
     pos->second.builderId = -1;
-    boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+    std::lock_guard<std::mutex> guard(resourceFIFOmutex_);
     resourceFIFO_.enqWait(pos);
   }
 }
@@ -371,7 +371,7 @@ void evb::bu::ResourceManager::getAllAvailableResources(BUresources& resources)
   {
     if ( eventsToDiscard_ > 0 )
     {
-      boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+      std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
       resources.push_back( BUresource(0,0,eventsToDiscard_) );
       eventsToDiscard_ = 0;
     }
@@ -389,13 +389,13 @@ void evb::bu::ResourceManager::getAllAvailableResources(BUresources& resources)
       {
         ::usleep(configuration_->sleepTimeBlocked);
 
-        boost::mutex::scoped_lock sl(resourceFIFOmutex_);
+        std::lock_guard<std::mutex> guard(resourceFIFOmutex_);
         resourceFIFO_.enqWait(pos);
         return;
       }
       else
       {
-        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
 
         pos->second.builderId = (++builderId_) % configuration_->numberOfBuilders;
         resources.push_back( BUresource(pos->first,currentPriority_,eventsToDiscard_) );
@@ -429,7 +429,7 @@ void evb::bu::ResourceManager::stopProcessing()
 
 float evb::bu::ResourceManager::getAvailableResources(std::string& statusMsg, std::string& statusKeys)
 {
-  boost::mutex::scoped_lock sl(resourceSummaryMutex_);
+  std::lock_guard<std::mutex> guard(resourceSummaryMutex_);
 
   if ( resourceSummary_.empty() ) return nbResources_;
 
@@ -449,7 +449,7 @@ float evb::bu::ResourceManager::getAvailableResources(std::string& statusMsg, st
   uint32_t lsLatency = 0;
   try
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
 
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(resourceSummary_.string(), pt);
@@ -619,7 +619,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
   bu_->notifyQualified("error",sentinelError);
 
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
 
     fusHLT_ = 0;
     fusCloud_ = 0;
@@ -636,7 +636,7 @@ void evb::bu::ResourceManager::handleResourceSummaryFailure(const std::string& m
 
 void evb::bu::ResourceManager::updateDiskUsages()
 {
-  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+  std::lock_guard<std::mutex> guard(diskUsageMonitorsMutex_);
 
   for ( DiskUsageMonitors::const_iterator it = diskUsageMonitors_.begin(), itEnd = diskUsageMonitors_.end();
         it != itEnd; ++it)
@@ -661,7 +661,7 @@ void evb::bu::ResourceManager::updateDiskUsages()
 
 float evb::bu::ResourceManager::getOverThreshold()
 {
-  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+  std::lock_guard<std::mutex> guard(diskUsageMonitorsMutex_);
 
   if ( diskUsageMonitors_.empty() ) return 0;
 
@@ -693,12 +693,12 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
 
       if ( configuration_->usePriorities )
       {
-        boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
         currentPriority_ = getPriority();
       }
     }
     {
-      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      std::lock_guard<std::mutex> guard(statusMessageMutex_);
 
       statusMessage_ = statusMsg;
       statusKeys_ = statusKeys;
@@ -717,7 +717,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
   catch(xcept::Exception &e)
   {
     {
-      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      std::lock_guard<std::mutex> guard(statusMessageMutex_);
       statusMessage_ = e.message();
     }
     bu_->getStateMachine()->processFSMEvent( Fail(e) );
@@ -725,7 +725,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
   catch(std::exception& e)
   {
     {
-      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      std::lock_guard<std::mutex> guard(statusMessageMutex_);
       statusMessage_ = e.what();
     }
     XCEPT_DECLARE(exception::FFF,
@@ -735,7 +735,7 @@ bool evb::bu::ResourceManager::resourceMonitor(toolbox::task::WorkLoop*)
   catch(...)
   {
     {
-      boost::mutex::scoped_lock sl(statusMessageMutex_);
+      std::lock_guard<std::mutex> guard(statusMessageMutex_);
       statusMessage_ = "Failed for unknown reason";
     }
     XCEPT_DECLARE(exception::FFF,
@@ -787,7 +787,7 @@ void evb::bu::ResourceManager::updateResources(const float availableResources, s
   }
 
   {
-    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+    std::lock_guard<std::mutex> guard(builderResourcesMutex_);
 
     BuilderResources::reverse_iterator rit = builderResources_.rbegin();
     const BuilderResources::reverse_iterator ritEnd = builderResources_.rend();
@@ -818,7 +818,7 @@ void evb::bu::ResourceManager::updateResources(const float availableResources, s
 
 uint16_t evb::bu::ResourceManager::getPriority()
 {
-  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+  std::lock_guard<std::mutex> guard(diskUsageMonitorsMutex_);
 
   if ( ramDiskUsed_ < 0.0 ) // invalid
   {
@@ -839,7 +839,7 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
   bool allFUsStale;
   bool fusInCloud;
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
     allFUsQuarantined = (fusHLT_ == 0U) && (fusQuarantined_ > 0U);
     allFUsStale = (fusHLT_ == 0U) && (fusStale_ > 0U);
     fusInCloud = (fusCloud_ > 0U) && (fusStale_ == 0U);
@@ -853,7 +853,7 @@ void evb::bu::ResourceManager::changeStatesBasedOnResources()
 
   uint32_t outstandingRequests;
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
     outstandingRequests = std::max(0,eventMonitoring_.outstandingRequests);
   }
 
@@ -950,7 +950,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
   updateDiskUsages();
 
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
 
     fuSlotsHLT_ = fusHLT_;
     fuSlotsCloud_ = fusCloud_;
@@ -961,7 +961,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     queuedLumiSectionsOnFUs_ = queuedLSonFUs_;
   }
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
 
     const double deltaT = eventMonitoring_.perf.deltaT();
     nbEventsInBU_ = eventMonitoring_.nbEventsInBU;
@@ -980,7 +980,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     eventMonitoring_.perf.reset();
   }
   {
-    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+    std::lock_guard<std::mutex> guard(builderResourcesMutex_);
 
     nbTotalResources_ = nbResources_;
     nbBlockedResources_ = 0;
@@ -1002,7 +1002,7 @@ void evb::bu::ResourceManager::updateMonitoringItems()
     }
   }
   {
-    boost::mutex::scoped_lock sl(statusMessageMutex_);
+    std::lock_guard<std::mutex> guard(statusMessageMutex_);
     statusMsg_ = statusMessage_;
     statusKeywords_ = statusKeys_;
   }
@@ -1012,14 +1012,14 @@ void evb::bu::ResourceManager::updateMonitoringItems()
 void evb::bu::ResourceManager::resetMonitoringCounters()
 {
   {
-    boost::mutex::scoped_lock sl(lsLatencyMutex_);
+    std::lock_guard<std::mutex> guard(lsLatencyMutex_);
 
     oldestIncompleteLumiSection_ = 0;
     queuedLS_ = 0;
     initiallyQueuedLS_ = 0;
   }
   {
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
 
     eventMonitoring_.nbEventsInBU = 0;
     eventMonitoring_.nbEventsBuilt = 0;
@@ -1032,14 +1032,14 @@ void evb::bu::ResourceManager::resetMonitoringCounters()
 
 uint32_t evb::bu::ResourceManager::getEventSize() const
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
   return eventMonitoring_.perf.size();
 }
 
 
 uint32_t evb::bu::ResourceManager::getEventRate() const
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
   const double deltaT = eventMonitoring_.perf.deltaT();
   return eventMonitoring_.perf.logicalRate(deltaT);
 }
@@ -1047,7 +1047,7 @@ uint32_t evb::bu::ResourceManager::getEventRate() const
 
 uint32_t evb::bu::ResourceManager::getThroughput() const
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
   const double deltaT = eventMonitoring_.perf.deltaT();
   return eventMonitoring_.perf.throughput(deltaT);
 }
@@ -1055,14 +1055,14 @@ uint32_t evb::bu::ResourceManager::getThroughput() const
 
 uint32_t evb::bu::ResourceManager::getNbEventsInBU() const
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
   return eventMonitoring_.nbEventsInBU;
 }
 
 
 uint64_t evb::bu::ResourceManager::getNbEventsBuilt() const
 {
-  boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
   return eventMonitoring_.nbEventsBuilt;
 }
 
@@ -1090,7 +1090,7 @@ void evb::bu::ResourceManager::configure()
 
 void evb::bu::ResourceManager::configureResources()
 {
-  boost::mutex::scoped_lock sl(builderResourcesMutex_);
+  std::lock_guard<std::mutex> guard(builderResourcesMutex_);
   if (configuration_->dropEventData)
     blockedResources_ = 0;
   else
@@ -1117,7 +1117,7 @@ void evb::bu::ResourceManager::configureResources()
 
 void evb::bu::ResourceManager::configureResourceSummary()
 {
-  boost::mutex::scoped_lock sl(resourceSummaryMutex_);
+  std::lock_guard<std::mutex> guard(resourceSummaryMutex_);
 
   resourceSummary_.clear();
   resourceSummaryFailureAlreadyNotified_ = false;
@@ -1141,7 +1141,7 @@ void evb::bu::ResourceManager::configureResourceSummary()
 
 void evb::bu::ResourceManager::configureDiskUsageMonitors()
 {
-  boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+  std::lock_guard<std::mutex> guard(diskUsageMonitorsMutex_);
 
   diskUsageMonitors_.clear();
 
@@ -1173,7 +1173,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table table;
     table.set("title","Statistics of built events. If the number of outstanding requests is larger than 0, the BU waits for data.");
 
-    boost::mutex::scoped_lock sl(eventMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(eventMonitoringMutex_);
 
     table.add(tr()
               .add(td("# events built"))
@@ -1211,7 +1211,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
     table.set("title","If no FU slots are available or the output disk is full, no events are requested unless 'dropEventData' is set to true in the configuration.");
 
     {
-      boost::mutex::scoped_lock sl(lsLatencyMutex_);
+      std::lock_guard<std::mutex> guard(lsLatencyMutex_);
 
       table.add(tr()
                 .add(td("# FU slots available"))
@@ -1239,7 +1239,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
                 .add(td(boost::lexical_cast<std::string>(blockedResources_)+"/"+boost::lexical_cast<std::string>(nbResources_))));
     }
     {
-      boost::mutex::scoped_lock sl(diskUsageMonitorsMutex_);
+      std::lock_guard<std::mutex> guard(diskUsageMonitorsMutex_);
 
       if ( ! diskUsageMonitors_.empty() )
       {
@@ -1273,12 +1273,12 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnipped() const
   }
 
   {
-    boost::mutex::scoped_lock sl(statusMessageMutex_);
+    std::lock_guard<std::mutex> guard(statusMessageMutex_);
     div.add(p(statusMessage_));
   }
 
   {
-    boost::mutex::scoped_lock sl(lumiSectionAccountsMutex_);
+    std::lock_guard<std::mutex> guard(lumiSectionAccountsMutex_);
 
     if ( ! lumiSectionAccounts_.empty() )
     {
@@ -1332,7 +1332,7 @@ cgicc::div evb::bu::ResourceManager::getHtmlSnippedForResourceTable() const
   const std::string colspan = boost::lexical_cast<std::string>(configuration_->eventsPerRequest+1);
 
   {
-    boost::mutex::scoped_lock sl(builderResourcesMutex_);
+    std::lock_guard<std::mutex> guard(builderResourcesMutex_);
 
     for (BuilderResources::const_iterator it = builderResources_.begin(), itEnd = builderResources_.end();
           it != itEnd; ++it)

@@ -4,7 +4,9 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/thread.hpp>
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 #include <sys/statfs.h>
 
@@ -71,8 +73,8 @@ namespace evb {
 
       enum State { IDLE, UPDATE, UPDATING, STOP };
       State state_;
-      boost::mutex mutex_;
-      boost::condition_variable condition_;
+      std::mutex mutex_;
+      std::condition_variable condition_;
       boost::thread diskUsageThread_;
       boost::thread deleteThread_;
       float diskSizeGB_;

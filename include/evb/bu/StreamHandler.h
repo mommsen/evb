@@ -1,9 +1,8 @@
 #ifndef _evb_bu_StreamHandler_h_
 #define _evb_bu_StreamHandler_h_
 
-#include <boost/thread/mutex.hpp>
-
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -70,7 +69,7 @@ namespace evb {
       uint32_t currentLumiSection_;
 
       FileHandlerPtr fileHandler_;
-      boost::mutex fileHandlerMutex_;
+      std::mutex fileHandlerMutex_;
 
       FileStatisticsPtr currentFileStatistics_;
       using FileStatisticsFIFO = OneToOneQueue<FileStatisticsPtr>;

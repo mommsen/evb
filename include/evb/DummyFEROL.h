@@ -1,8 +1,6 @@
 #ifndef _evb_test_DummyFEROL_h_
 #define _evb_test_DummyFEROL_h_
 
-#include <boost/thread/mutex.hpp>
-
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -97,7 +95,7 @@ namespace evb {
       uint32_t lastResync_;
 
       PerformanceMonitor dataMonitoring_;
-      mutable boost::mutex dataMonitoringMutex_;
+      mutable std::mutex dataMonitoringMutex_;
 
       xdata::UnsignedInteger32 stopAtEvent_;
       xdata::UnsignedInteger32 resyncAtEvent_;

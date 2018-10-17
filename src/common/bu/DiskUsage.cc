@@ -41,7 +41,7 @@ evb::bu::DiskUsage::~DiskUsage()
 {
   deleteFiles_ = false;
   {
-    boost::mutex::scoped_lock lock(mutex_);
+    std::lock_guard<std::mutex> guard(mutex_);
     state_ = STOP;
     condition_.notify_one();
   }
@@ -56,7 +56,7 @@ evb::bu::DiskUsage::~DiskUsage()
 
 void evb::bu::DiskUsage::update()
 {
-  boost::mutex::scoped_lock lock(mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
 
   if ( state_ != IDLE )
   {
@@ -97,7 +97,7 @@ void evb::bu::DiskUsage::doStatFs()
   while(1)
   {
     {
-      boost::mutex::scoped_lock lock(mutex_);
+      std::unique_lock<std::mutex> lock(mutex_);
       while (state_ == IDLE)
       {
         condition_.wait(lock);
@@ -122,7 +122,7 @@ void evb::bu::DiskUsage::doStatFs()
     if (path_ == "/aSlowDiskForUnitTests") ::sleep(5);
 
     {
-      boost::mutex::scoped_lock lock(mutex_);
+      std::lock_guard<std::mutex> guard(mutex_);
       if (state_ == STOP) break;
       state_ = IDLE;
     }

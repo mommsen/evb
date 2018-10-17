@@ -3,11 +3,10 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <stdint.h>
 #include <string.h>
-
-#include <boost/thread/mutex.hpp>
 
 #include "evb/readoutunit/SocketBuffer.h"
 #include "evb/readoutunit/SocketStream.h"
@@ -63,12 +62,12 @@ namespace evb {
       SocketBuffer::ReleaseFunction releaseFunction_;
       using GrantFIFO = OneToOneQueue<toolbox::mem::Reference*>;
       GrantFIFO grantFIFO_;
-      mutable boost::mutex grantFIFOmutex_;
+      mutable std::mutex grantFIFOmutex_;
 
       using SocketStreamPtr = std::shared_ptr< SocketStream<ReadoutUnit,Configuration> > ;
       using SocketStreams = std::map<uint16_t,SocketStreamPtr>;
       SocketStreams socketStreams_;
-      mutable boost::mutex socketStreamsMutex_;
+      mutable std::mutex socketStreamsMutex_;
 
     };
 
@@ -133,7 +132,7 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::createStream
   const typename Configuration::FerolSource* ferolSource
 )
 {
-  boost::mutex::scoped_lock sl(socketStreamsMutex_);
+  std::lock_guard<std::mutex> guard(socketStreamsMutex_);
 
   const SocketStreamPtr socketStream(
     new SocketStream<ReadoutUnit,Configuration>(readoutUnit_,ferolSource->fedId)
@@ -149,7 +148,7 @@ void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::addFerolStreams
   std::set<uint32_t>& fedIds
 )
 {
-  boost::mutex::scoped_lock sl(socketStreamsMutex_);
+  std::lock_guard<std::mutex> guard(socketStreamsMutex_);
 
   for ( typename SocketStreams::const_iterator it = socketStreams_.begin(), itEnd = socketStreams_.end();
         it != itEnd; ++it)
@@ -221,7 +220,7 @@ bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::processPipe(toolb
 
         if ( ! readoutUnit_->getConfiguration()->dropAtSocket )
         {
-          boost::mutex::scoped_lock sl(socketStreamsMutex_);
+          std::lock_guard<std::mutex> guard(socketStreamsMutex_);
           const typename SocketStreams::iterator pos = socketStreams_.find(event.sid);
           if ( pos != socketStreams_.end() )
             pos->second->addBuffer(socketBuffer);
@@ -268,7 +267,7 @@ bool evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::processPipe(toolb
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::PipeHandler<ReadoutUnit,Configuration>::releaseBuffer(toolbox::mem::Reference* bufRef)
 {
-  boost::mutex::scoped_lock sl(grantFIFOmutex_);
+  std::lock_guard<std::mutex> guard(grantFIFOmutex_);
 
   grantFIFO_.enqWait(bufRef);
 }

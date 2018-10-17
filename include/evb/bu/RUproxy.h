@@ -1,11 +1,10 @@
 #ifndef _evb_bu_RUproxy_h_
 #define _evb_bu_RUproxy_h_
 
-#include <boost/thread/mutex.hpp>
-
 #include <curl/curl.h>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -155,7 +154,7 @@ namespace evb {
       std::string evmURL_;
       CURL* curl_;
       std::string curlBuffer_;
-      mutable boost::mutex curlMutex_;
+      mutable std::mutex curlMutex_;
       float roundTripTimeSampling_;
 
       // Lookup table of data blocks, indexed by RU tid and BU resource id
@@ -169,7 +168,7 @@ namespace evb {
       };
       using DataBlockMap = std::map<Index,FragmentChainPtr>;
       DataBlockMap dataBlockMap_;
-      boost::mutex dataBlockMapMutex_;
+      std::mutex dataBlockMapMutex_;
 
       struct StatsPerRU
       {
@@ -194,7 +193,7 @@ namespace evb {
         PerformanceMonitor perf;
         CountsPerRU countsPerRU;
       } fragmentMonitoring_;
-      mutable boost::mutex fragmentMonitoringMutex_;
+      mutable std::mutex fragmentMonitoringMutex_;
 
       struct RequestMonitoring
       {
@@ -206,7 +205,7 @@ namespace evb {
         double packingFactor;
         PerformanceMonitor perf;
       } requestMonitoring_;
-      mutable boost::mutex requestMonitoringMutex_;
+      mutable std::mutex requestMonitoringMutex_;
 
       xdata::UnsignedInteger32 requestRate_;
       xdata::Double requestRetryRate_;

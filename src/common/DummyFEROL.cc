@@ -102,7 +102,7 @@ void evb::test::DummyFEROL::do_appendMonitoringInfoSpaceItems
 
 void evb::test::DummyFEROL::do_updateMonitoringInfo()
 {
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
   const double deltaT = dataMonitoring_.deltaT();
   throughput_ = dataMonitoring_.throughput(deltaT);
@@ -156,7 +156,7 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
   {
     table table;
 
-    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
     table.add(tr()
               .add(td("last event number"))
@@ -191,7 +191,7 @@ cgicc::div evb::test::DummyFEROL::getHtmlSnipped() const
 
 void evb::test::DummyFEROL::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
   dataMonitoring_.reset();
   lastEventNumber_ = 0;
   lastResync_ = 0;
@@ -431,7 +431,7 @@ bool evb::test::DummyFEROL::generating(toolbox::task::WorkLoop *wl)
 
 inline void evb::test::DummyFEROL::updateCounters(toolbox::mem::Reference* bufRef)
 {
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
   const uint32_t payload = bufRef->getDataSize();
 

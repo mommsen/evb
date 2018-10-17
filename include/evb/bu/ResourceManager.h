@@ -4,13 +4,13 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include <time.h>
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/EvBid.h"
@@ -212,11 +212,11 @@ namespace evb {
       };
       using BuilderResources = std::map<uint16_t,ResourceInfo>;
       BuilderResources builderResources_;
-      mutable boost::mutex builderResourcesMutex_;
+      mutable std::mutex builderResourcesMutex_;
 
       using ResourceFIFO = OneToOneQueue<BuilderResources::iterator>;
       ResourceFIFO resourceFIFO_;
-      mutable boost::mutex resourceFIFOmutex_;
+      mutable std::mutex resourceFIFOmutex_;
 
       uint32_t runNumber_;
       uint32_t eventsToDiscard_;
@@ -235,20 +235,20 @@ namespace evb {
       double fuOutBwMB_;
       bool requestEvents_;
       bool pauseRequested_;
-      mutable boost::mutex lsLatencyMutex_;
+      mutable std::mutex lsLatencyMutex_;
 
       boost::filesystem::path resourceSummary_;
-      mutable boost::mutex resourceSummaryMutex_;
+      mutable std::mutex resourceSummaryMutex_;
       bool resourceSummaryFailureAlreadyNotified_;
       bool resourceLimitiationAlreadyNotified_;
 
       using DiskUsageMonitors = std::vector<DiskUsagePtr>;
       DiskUsageMonitors diskUsageMonitors_;
-      mutable boost::mutex diskUsageMonitorsMutex_;
+      mutable std::mutex diskUsageMonitorsMutex_;
 
       using LumiSectionAccounts = std::map<uint32_t,LumiSectionAccountPtr>;
       LumiSectionAccounts lumiSectionAccounts_;
-      mutable boost::mutex lumiSectionAccountsMutex_;
+      mutable std::mutex lumiSectionAccountsMutex_;
       uint32_t oldestIncompleteLumiSection_;
       volatile bool doProcessing_;
       toolbox::task::WorkLoop* resourceMonitorWL_;
@@ -262,11 +262,11 @@ namespace evb {
         int32_t outstandingRequests;
         PerformanceMonitor perf;
       } eventMonitoring_;
-      mutable boost::mutex eventMonitoringMutex_;
+      mutable std::mutex eventMonitoringMutex_;
 
       std::string statusMessage_;
       std::string statusKeys_;
-      mutable boost::mutex statusMessageMutex_;
+      mutable std::mutex statusMessageMutex_;
 
       xdata::UnsignedInteger32 nbEventsInBU_;
       xdata::UnsignedInteger64 nbEventsBuilt_;

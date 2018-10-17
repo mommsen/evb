@@ -3,9 +3,9 @@
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <memory>
+#include <mutex>
 #include <set>
 #include <stdint.h>
 #include <vector>
@@ -163,9 +163,9 @@ namespace evb {
       toolbox::task::ActionSignature* action_;
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
-      boost::mutex processesActiveMutex_;
+      std::mutex processesActiveMutex_;
       uint32_t nbActiveProcesses_;
-      mutable boost::mutex processingRequestMutex_;
+      mutable std::mutex processingRequestMutex_;
 
       //used on the RU
       using FragmentRequestFIFO = OneToOneQueue<FragmentRequestPtr>;
@@ -192,7 +192,7 @@ namespace evb {
         PerformanceMonitor perf;
         BUtimestamps buTimestamps;
       } requestMonitoring_;
-      mutable boost::mutex requestMonitoringMutex_;
+      mutable std::mutex requestMonitoringMutex_;
 
       struct DataMonitoring
       {
@@ -207,7 +207,7 @@ namespace evb {
         double packingFactor;
         PerformanceMonitor perf;
       } dataMonitoring_;
-      mutable boost::mutex dataMonitoringMutex_;
+      mutable std::mutex dataMonitoringMutex_;
 
       xdata::UnsignedInteger32 activeRequests_;
       xdata::UnsignedInteger32 requestRate_;
@@ -319,7 +319,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
       fragmentRequest->nbRequests = eventRequest->nbRequests;
       handleRequest(eventRequest, fragmentRequest);
       {
-        boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
         requestMonitoring_.buTimestamps[eventRequest->buTid] = eventRequest->timeStampNS;
       }
     }
@@ -328,12 +328,12 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::readoutMsgCallback(toolbox::mem::Re
   }
 
   {
-    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
     dataMonitoring_.outstandingEvents -= nbDiscards;
   }
 
   {
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
     const uint32_t msgSize = stdMsg->MessageSize << 2;
     requestMonitoring_.perf.sumOfSizes += msgSize;
@@ -358,7 +358,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   const uint16_t responderId = boost::lexical_cast<uint16_t>( wlName.substr(startPos,endPos-startPos) );
 
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
     processesActive_.set(responderId);
   }
 
@@ -376,7 +376,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   catch(xcept::Exception& e)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(responderId);
     }
     readoutUnit_->getStateMachine()->processFSMEvent( Fail(e) );
@@ -384,7 +384,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   catch(std::exception& e)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(responderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
@@ -394,7 +394,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   catch(...)
   {
     {
-      boost::mutex::scoped_lock sl(processesActiveMutex_);
+      std::lock_guard<std::mutex> guard(processesActiveMutex_);
       processesActive_.reset(responderId);
     }
     XCEPT_DECLARE(exception::SuperFragment,
@@ -403,7 +403,7 @@ bool evb::readoutunit::BUproxy<ReadoutUnit>::process(toolbox::task::WorkLoop* wl
   }
 
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
     processesActive_.reset(responderId);
   }
 
@@ -533,7 +533,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::sendData
 
   bool lumiTransition = false;
   {
-    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
     if ( lastLumiSectionToBUs > dataMonitoring_.lastLumiSectionToBUs )
     {
@@ -636,7 +636,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::configure()
      nextBU_ = fragmentRequestFIFOs_.begin();
   }
   {
-    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
     requestMonitoring_.activeRequests = 0;
   }
 
@@ -721,7 +721,7 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
     const double deltaT = requestMonitoring_.perf.deltaT();
     requestMonitoring_.throughput = requestMonitoring_.perf.throughput(deltaT);
@@ -733,7 +733,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     requestMonitoring_.perf.reset();
   }
   {
-    boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
     const double deltaT = dataMonitoring_.perf.deltaT();
     dataMonitoring_.fragmentCount += dataMonitoring_.perf.logicalCount;
@@ -747,7 +747,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::updateMonitoringItems()
     dataMonitoring_.perf.reset();
   }
   {
-    boost::mutex::scoped_lock sl(processesActiveMutex_);
+    std::lock_guard<std::mutex> guard(processesActiveMutex_);
     nbActiveProcesses_ = processesActive_.count();
   }
   buPoster_.updateMonitoringItems();
@@ -758,12 +758,12 @@ template<class ReadoutUnit>
 void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 {
   {
-    boost::mutex::scoped_lock rsl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
     requestMonitoring_.perf.reset();
     requestMonitoring_.buTimestamps.clear();
   }
   {
-    boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
     dataMonitoring_.lastEventNumberToBUs = 0;
     dataMonitoring_.lastLumiSectionToBUs = 0;
     dataMonitoring_.outstandingEvents = 0;
@@ -777,7 +777,7 @@ void evb::readoutunit::BUproxy<ReadoutUnit>::resetMonitoringCounters()
 template<class ReadoutUnit>
 uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getNbEventsBuilt() const
 {
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
   return dataMonitoring_.fragmentCount + dataMonitoring_.perf.logicalCount - dataMonitoring_.outstandingEvents;
 }
 
@@ -785,7 +785,7 @@ uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getNbEventsBuilt() const
 template<class ReadoutUnit>
 uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getFragmentCount() const
 {
-  boost::mutex::scoped_lock sl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
   return dataMonitoring_.fragmentCount + dataMonitoring_.perf.logicalCount;
 }
 
@@ -793,7 +793,7 @@ uint64_t evb::readoutunit::BUproxy<ReadoutUnit>::getFragmentCount() const
 template<class ReadoutUnit>
 uint32_t evb::readoutunit::BUproxy<ReadoutUnit>::getLatestLumiSection() const
 {
-  boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
   return dataMonitoring_.lastLumiSectionToBUs;
 }
 
@@ -807,7 +807,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   div.add(p("BUproxy"));
 
   {
-    boost::mutex::scoped_lock dsl(dataMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(dataMonitoringMutex_);
 
     table table;
     table.set("title","Super fragments are sent to the BUs requesting events.");
@@ -851,7 +851,7 @@ cgicc::div evb::readoutunit::BUproxy<ReadoutUnit>::getHtmlSnipped() const
   }
 
   {
-    boost::mutex::scoped_lock sl(requestMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(requestMonitoringMutex_);
 
     table table;
     table.set("title",getHelpTextForBuRequests());

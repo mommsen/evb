@@ -2,11 +2,11 @@
 #define _evb_bu_DiskWriter_h_
 
 #include <boost/filesystem/convenience.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <curl/curl.h>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 
 #include "cgicc/HTMLClasses.h"
@@ -125,7 +125,7 @@ namespace evb {
       using LumiInfoPtr = std::shared_ptr<LumiInfo>;
       using LumiStatistics = std::map<uint32_t,LumiInfoPtr>;
       LumiStatistics lumiStatistics_;
-      boost::mutex lumiStatisticsMutex_;
+      std::mutex lumiStatisticsMutex_;
 
       void resetMonitoringCounters();
       void startLumiAccounting();
@@ -184,7 +184,7 @@ namespace evb {
         uint32_t lastEventNumberWritten;
         uint32_t currentLumiSection;
       } diskWriterMonitoring_;
-      mutable boost::mutex diskWriterMonitoringMutex_;
+      mutable std::mutex diskWriterMonitoringMutex_;
 
       xdata::UnsignedInteger32 nbFilesWritten_;
       xdata::UnsignedInteger32 nbLumiSections_;

@@ -30,7 +30,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 {
   if ( configuration_->dropEventData ) return;
 
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+  std::lock_guard<std::mutex> guard(fileHandlerMutex_);
 
   const uint32_t lumiSection = event->getEventInfo()->lumiSection();
 
@@ -67,7 +67,7 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
 
 bool evb::bu::StreamHandler::closeFileIfOpenedBefore(const time_t& time)
 {
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+  std::lock_guard<std::mutex> guard(fileHandlerMutex_);
 
   if ( fileHandler_.get() && currentFileStatistics_->creationTime < time )
   {
@@ -81,7 +81,7 @@ bool evb::bu::StreamHandler::closeFileIfOpenedBefore(const time_t& time)
 
 void evb::bu::StreamHandler::closeFile()
 {
-  boost::mutex::scoped_lock sl(fileHandlerMutex_);
+  std::lock_guard<std::mutex> guard(fileHandlerMutex_);
 
   if ( fileHandler_.get() )
   {

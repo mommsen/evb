@@ -2,6 +2,7 @@
 #define _evb_readoutunit_FerolConnectionManager_h_
 
 #include <memory>
+#include <mutex>
 #include <netdb.h>
 #include <set>
 #include <stdint.h>
@@ -99,7 +100,7 @@ namespace evb {
       using PipeHandlerPtr = std::shared_ptr< PipeHandler<ReadoutUnit,Configuration> > ;
       using PipeHandlers = std::map<uint16_t,PipeHandlerPtr>;
       PipeHandlers pipeHandlers_;
-      mutable boost::mutex mutex_;
+      mutable std::mutex mutex_;
 
     };
 
@@ -137,7 +138,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::pipeSe
 {
   try
   {
-    boost::mutex::scoped_lock sl(mutex_);
+    std::lock_guard<std::mutex> guard(mutex_);
 
     if ( ! acceptConnections_ )
     {
@@ -181,7 +182,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::connec
 {
   try
   {
-    boost::mutex::scoped_lock sl(mutex_);
+    std::lock_guard<std::mutex> guard(mutex_);
 
     if ( !acceptConnections_ )
     {
@@ -277,7 +278,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::accept
 {
   if ( ! pipeService_ ) return;
 
-  boost::mutex::scoped_lock sl(mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
   createPipes();
   acceptConnections_ = true;
 }
@@ -288,7 +289,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::dropCo
 {
   if ( ! pipeService_ ) return;
 
-  boost::mutex::scoped_lock sl(mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
   acceptConnections_ = false;
   pipeHandlers_.clear();
 }
@@ -347,7 +348,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::getAct
   do
   {
     {
-      boost::mutex::scoped_lock sl(mutex_);
+      std::lock_guard<std::mutex> guard(mutex_);
 
       for ( typename PipeHandlers::const_iterator it = pipeHandlers_.begin(), itEnd = pipeHandlers_.end();
             it != itEnd; ++it)
@@ -376,7 +377,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::startP
 {
   if ( ! pipeService_ ) return;
 
-  boost::mutex::scoped_lock sl(mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
 
   acceptConnections_ = false;
 }
@@ -398,7 +399,7 @@ void evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::drain(
 template<class ReadoutUnit,class Configuration>
 bool evb::readoutunit::FerolConnectionManager<ReadoutUnit,Configuration>::handlersIdle() const
 {
-  boost::mutex::scoped_lock sl(mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
 
   for ( typename PipeHandlers::const_iterator it = pipeHandlers_.begin(), itEnd = pipeHandlers_.end();
         it != itEnd; ++it)

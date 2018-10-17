@@ -1,9 +1,7 @@
 #ifndef _evb_readoutunit_SocketBuffer_h_
 #define _evb_readoutunit_SocketBuffer_h_
 
-#include <boost/function.hpp>
-#include <boost/thread/mutex.hpp>
-
+#include <functional>
 #include <memory>
 #include <stdint.h>
 
@@ -23,7 +21,7 @@ namespace evb {
     {
     public:
 
-      using ReleaseFunction = boost::function< void(toolbox::mem::Reference*) >;
+      using ReleaseFunction = std::function< void(toolbox::mem::Reference*) >;
 
       SocketBuffer(toolbox::mem::Reference* bufRef, ReleaseFunction& releaseFunction)
         : bufRef_(bufRef),releaseFunction_(releaseFunction) {}

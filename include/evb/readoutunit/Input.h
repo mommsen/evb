@@ -3,7 +3,6 @@
 
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 #include <fstream>
@@ -13,6 +12,7 @@
 #include <map>
 #include <math.h>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 #include <string.h>
 
@@ -200,7 +200,7 @@ namespace evb {
       using LumiCounterMap = std::map<uint32_t,uint32_t>;
       LumiCounterMap lumiCounterMap_;
       LumiCounterMap::iterator currentLumiCounter_;
-      boost::mutex lumiCounterMutex_;
+      std::mutex lumiCounterMutex_;
 
       uint32_t runNumber_;
 
@@ -209,7 +209,7 @@ namespace evb {
       volatile bool buildDummySuperFragmentActive_;
 
       InputMonitor superFragmentMonitor_;
-      mutable boost::mutex superFragmentMonitorMutex_;
+      mutable std::mutex superFragmentMonitorMutex_;
       uint32_t incompleteEvents_;
 
       xdata::UnsignedInteger32 lastEventNumber_;
@@ -328,7 +328,7 @@ bool evb::readoutunit::Input<ReadoutUnit,Configuration>::buildDummySuperFragment
         }
 
         {
-          boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+          std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
           superFragmentMonitor_.lastEventNumber = eventNumber;
           superFragmentMonitor_.perf.sumOfSizes += size;
           superFragmentMonitor_.perf.sumOfSquares += size*size;
@@ -358,7 +358,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCounters(const SuperFragmentPtr& superFragment)
 {
   {
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
 
     const uint32_t size = superFragment->getSize();
     superFragmentMonitor_.lastEventNumber = superFragment->getEvBid().eventNumber();
@@ -371,7 +371,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
   }
 
   {
-    boost::mutex::scoped_lock sl(lumiCounterMutex_);
+    std::lock_guard<std::mutex> guard(lumiCounterMutex_);
 
     const uint32_t lumiSection = superFragment->getEvBid().lumiSection();
     for(uint32_t ls = currentLumiCounter_->first+1; ls <= lumiSection; ++ls)
@@ -395,7 +395,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateSuperFragmentCoun
 template<class ReadoutUnit,class Configuration>
 uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCountForLumiSection(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(lumiCounterMutex_);
+  std::lock_guard<std::mutex> guard(lumiCounterMutex_);
 
   const LumiCounterMap::const_iterator pos = lumiCounterMap_.find(lumiSection);
 
@@ -412,7 +412,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::startProcessing(const u
   runNumber_ = runNumber;
 
   {
-    boost::mutex::scoped_lock sl(lumiCounterMutex_);
+    std::lock_guard<std::mutex> guard(lumiCounterMutex_);
 
     lumiCounterMap_.clear();
     currentLumiCounter_ =
@@ -555,7 +555,7 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 {
   {
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
 
     const double deltaT = superFragmentMonitor_.perf.deltaT();
     superFragmentMonitor_.rate = superFragmentMonitor_.perf.logicalRate(deltaT);
@@ -632,7 +632,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::updateMonitoringItems()
 template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
   superFragmentMonitor_.reset();
 
   incompleteEvents_ = 0;
@@ -642,7 +642,7 @@ void evb::readoutunit::Input<ReadoutUnit,Configuration>::resetMonitoringCounters
 template<class ReadoutUnit,class Configuration>
 uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventRate() const
 {
-  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
   return superFragmentMonitor_.rate;
 }
 
@@ -650,7 +650,7 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventRate() cons
 template<class ReadoutUnit,class Configuration>
 uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getLastEventNumber() const
 {
-  boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+  std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
   return superFragmentMonitor_.lastEventNumber;
 }
 
@@ -658,7 +658,7 @@ uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getLastEventNumber(
 template<class ReadoutUnit,class Configuration>
 uint64_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCount() const
 {
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
     return superFragmentMonitor_.eventCount;
 }
 
@@ -666,7 +666,7 @@ uint64_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getEventCount() con
 template<class ReadoutUnit,class Configuration>
 uint32_t evb::readoutunit::Input<ReadoutUnit,Configuration>::getSuperFragmentSize() const
 {
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
     return superFragmentMonitor_.eventSize;
 }
 
@@ -813,7 +813,7 @@ cgicc::div evb::readoutunit::Input<ReadoutUnit,Configuration>::getHtmlSnipped() 
     table table;
     table.set("title","Super-fragment statistics are only filled when super-fragments have been built. When there are no requests from the BUs, these counters remain 0.");
 
-    boost::mutex::scoped_lock sl(superFragmentMonitorMutex_);
+    std::lock_guard<std::mutex> guard(superFragmentMonitorMutex_);
 
     table.add(tr()
               .add(td("evt number of last super fragment"))

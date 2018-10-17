@@ -6,10 +6,10 @@
 #include <string>
 #include <fstream>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include "cgicc/HTMLClasses.h"
 #include "evb/Constants.h"
@@ -159,7 +159,7 @@ namespace evb {
         void reset() { rate=0;usedBufferSize=0;usedBufferSizeStdDev=0; }
       };
       SocketMonitor socketMonitor_;
-      mutable boost::mutex socketMonitorMutex_;
+      mutable std::mutex socketMonitorMutex_;
 
       EvBidFactoryPtr evbIdFactory_;
       FedFragmentFactory<ReadoutUnit> fedFragmentFactory_;
@@ -168,7 +168,7 @@ namespace evb {
       FragmentFIFO fragmentFIFO_;
 
       InputMonitor inputMonitor_;
-      mutable boost::mutex inputMonitorMutex_;
+      mutable std::mutex inputMonitorMutex_;
 
 
     private:
@@ -232,7 +232,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::updateInputMonito
   const FedFragmentPtr& fragment
 )
 {
-  boost::mutex::scoped_lock sl(inputMonitorMutex_);
+  std::lock_guard<std::mutex> guard(inputMonitorMutex_);
   const uint32_t fedSize = fragment->getFedSize();
 
   ++(inputMonitor_.perf.i2oCount);
@@ -410,11 +410,11 @@ template<class ReadoutUnit,class Configuration>
 void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::resetMonitoringCounters()
 {
   {
-    boost::mutex::scoped_lock sl(inputMonitorMutex_);
+    std::lock_guard<std::mutex> guard(inputMonitorMutex_);
     inputMonitor_.reset();
   }
   {
-    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+    std::lock_guard<std::mutex> guard(socketMonitorMutex_);
     socketMonitor_.reset();
   }
   bxErrors_ = 0;
@@ -434,7 +434,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
 )
 {
   {
-    boost::mutex::scoped_lock sl(inputMonitorMutex_);
+    std::lock_guard<std::mutex> guard(inputMonitorMutex_);
 
     fragmentSize = inputMonitor_.eventSize;
     fragmentSizeStdDev = inputMonitor_.eventSizeStdDev;
@@ -450,7 +450,7 @@ void evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::retrieveMonitorin
   }
 
   {
-    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+    std::lock_guard<std::mutex> guard(socketMonitorMutex_);
 
     const double deltaT = socketMonitor_.perf.deltaT();
     socketMonitor_.rate = socketMonitor_.perf.logicalRate(deltaT);
@@ -486,7 +486,7 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
           .add(button("dump").set("type","button").set("title","write the next FED fragment to /tmp")
                .set("onclick","dumpFragments("+fedId+",1);")));
   {
-    boost::mutex::scoped_lock sl(inputMonitorMutex_);
+    std::lock_guard<std::mutex> guard(inputMonitorMutex_);
 
     row.add(td(boost::lexical_cast<std::string>(inputMonitor_.lastEventNumber)));
     row.add(td(boost::lexical_cast<std::string>(static_cast<uint32_t>(inputMonitor_.eventSize))
@@ -500,7 +500,7 @@ cgicc::tr evb::readoutunit::FerolStream<ReadoutUnit,Configuration>::getFedTableR
     .add(td(boost::lexical_cast<std::string>(bxErrors_)));
 
   {
-    boost::mutex::scoped_lock sl(socketMonitorMutex_);
+    std::lock_guard<std::mutex> guard(socketMonitorMutex_);
 
     row.add(td(boost::lexical_cast<std::string>(socketMonitor_.usedBufferSize)
                +" +/- "+boost::lexical_cast<std::string>(socketMonitor_.usedBufferSizeStdDev)));

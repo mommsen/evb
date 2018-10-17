@@ -2,10 +2,10 @@
 #define _evb_bu_EventBuilder_h_
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stdint.h>
 #include <vector>
 
@@ -175,14 +175,14 @@ namespace evb {
       uint64_t corruptedEvents_;
       uint64_t eventsWithCRCerrors_;
       uint64_t eventsMissingData_;
-      mutable boost::mutex errorCountMutex_;
+      mutable std::mutex errorCountMutex_;
 
       volatile bool doProcessing_;
       boost::dynamic_bitset<> processesActive_;
-      mutable boost::mutex processesActiveMutex_;
+      mutable std::mutex processesActiveMutex_;
 
       mutable uint16_t writeNextEventsToFile_;
-      mutable boost::mutex writeNextEventsToFileMutex_;
+      mutable std::mutex writeNextEventsToFileMutex_;
 
       xdata::UnsignedInteger64 nbCorruptedEvents_;
       xdata::UnsignedInteger64 nbEventsWithCRCerrors_;

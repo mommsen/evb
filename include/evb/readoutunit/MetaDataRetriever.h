@@ -2,13 +2,12 @@
 #define _evb_readoutunit_MetaDataRetriever_h_
 
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <stdint.h>
 #include <string.h>
 #include <utility>
 #include <vector>
-
-#include <boost/thread/mutex.hpp>
 
 #include "dip/DipException.h"
 #include "dip/DipFactory.h"
@@ -79,16 +78,16 @@ namespace evb {
       DipTopics dipTopics_;
 
       MetaData::Luminosity lastLuminosity_;
-      mutable boost::mutex luminosityMutex_;
+      mutable std::mutex luminosityMutex_;
 
       MetaData::BeamSpot lastBeamSpot_;
-      mutable boost::mutex beamSpotMutex_;
+      mutable std::mutex beamSpotMutex_;
 
       MetaData::CTPPS lastCTPPS_;
-      mutable boost::mutex ctppsMutex_;
+      mutable std::mutex ctppsMutex_;
 
       MetaData::DCS lastDCS_;
-      mutable boost::mutex dcsMutex_;
+      mutable std::mutex dcsMutex_;
     };
 
     using MetaDataRetrieverPtr = std::shared_ptr<MetaDataRetriever>;

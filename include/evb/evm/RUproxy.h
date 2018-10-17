@@ -2,7 +2,6 @@
 #define _evb_evm_RUproxy_h_
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <memory>
@@ -144,7 +143,7 @@ namespace evb {
         double packingFactor;
         PerformanceMonitor perf;
      } allocateMonitoring_;
-      mutable boost::mutex allocateMonitoringMutex_;
+      mutable std::mutex allocateMonitoringMutex_;
 
       xdata::UnsignedInteger32 allocateRate_;
       xdata::Double allocateRetryRate_;

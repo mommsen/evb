@@ -248,7 +248,7 @@ void evb::bu::DiskWriter::doLumiSectionAccounting(const bool completeLumiSection
       writeEoLS(it->second);
 
       {
-        boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+        std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
 
         if ( it->second->nbEventsWritten > 0 )
           ++diskWriterMonitoring_.nbLumiSections;
@@ -388,7 +388,7 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
   boost::filesystem::rename(path,jsonFile);
 
   {
-    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
 
     ++diskWriterMonitoring_.nbFiles;
     diskWriterMonitoring_.nbEventsWritten += fileStatistics->nbEventsWritten;
@@ -407,7 +407,7 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
 
 evb::bu::DiskWriter::LumiStatistics::iterator evb::bu::DiskWriter::getLumiStatistics(const uint32_t lumiSection)
 {
-  boost::mutex::scoped_lock sl(lumiStatisticsMutex_);
+  std::lock_guard<std::mutex> guard(lumiStatisticsMutex_);
 
   LumiStatistics::iterator pos = lumiStatistics_.lower_bound(lumiSection);
   if ( pos == lumiStatistics_.end() || lumiStatistics_.key_comp()(lumiSection,pos->first) )
@@ -434,7 +434,7 @@ void evb::bu::DiskWriter::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::bu::DiskWriter::updateMonitoringItems()
 {
-  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
 
   nbFilesWritten_ = diskWriterMonitoring_.nbFiles;
   nbLumiSections_ = diskWriterMonitoring_.nbLumiSections;
@@ -444,7 +444,7 @@ void evb::bu::DiskWriter::updateMonitoringItems()
 
 void evb::bu::DiskWriter::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
 
   diskWriterMonitoring_.nbFiles = 0;
   diskWriterMonitoring_.nbEventsWritten = 0;
@@ -457,7 +457,7 @@ void evb::bu::DiskWriter::resetMonitoringCounters()
 
 uint32_t evb::bu::DiskWriter::getNbLumiSections() const
 {
-  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
   return diskWriterMonitoring_.nbLumiSections;
 }
 
@@ -517,7 +517,7 @@ cgicc::div evb::bu::DiskWriter::getHtmlSnipped() const
     table table;
     table.set("title","Statistics for files generated. This numbers are updated only then a file is closed. Thus, they lag a bit behind. If 'dropEventData' is true, these counters stay at 0.");
 
-    boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
 
     table.add(tr()
               .add(td("last evt number written"))
@@ -738,7 +738,7 @@ void evb::bu::DiskWriter::writeEoR() const
     XCEPT_RAISE(exception::DiskWriting, msg.str());
   }
 
-  boost::mutex::scoped_lock sl(diskWriterMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(diskWriterMonitoringMutex_);
   const std::string path = jsonFile.string() + ".tmp";
   std::ofstream json(path.c_str());
   json << "{"                                                                           << std::endl;

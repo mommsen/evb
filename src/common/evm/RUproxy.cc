@@ -190,7 +190,7 @@ bool evb::evm::RUproxy::processRequests(toolbox::task::WorkLoop* wl)
         ++requestCount;
 
         {
-          boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+          std::lock_guard<std::mutex> guard(allocateMonitoringMutex_);
 
           allocateMonitoring_.lastEventNumberToRUs = fragmentRequest->evbIds[nbRequests-1].eventNumber();
           allocateMonitoring_.perf.logicalCount += nbRequests*ruCount_;
@@ -285,7 +285,7 @@ void evb::evm::RUproxy::sendMsgToRUs(toolbox::mem::Reference*& rqstBufRef, const
   rqstBufRef = 0;
 
   {
-    boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(allocateMonitoringMutex_);
 
     const uint32_t totalSize = msgSize*ruCount_;
     allocateMonitoring_.perf.sumOfSizes += totalSize;
@@ -308,7 +308,7 @@ void evb::evm::RUproxy::appendMonitoringItems(InfoSpaceItems& items)
 
 void evb::evm::RUproxy::updateMonitoringItems()
 {
-  boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(allocateMonitoringMutex_);
 
   const double deltaT = allocateMonitoring_.perf.deltaT();
   allocateMonitoring_.throughput = allocateMonitoring_.perf.throughput(deltaT);
@@ -325,7 +325,7 @@ void evb::evm::RUproxy::updateMonitoringItems()
 
 void evb::evm::RUproxy::resetMonitoringCounters()
 {
-  boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+  std::lock_guard<std::mutex> guard(allocateMonitoringMutex_);
   allocateMonitoring_.lastEventNumberToRUs = 0;
   allocateMonitoring_.perf.reset();
 }
@@ -423,7 +423,7 @@ cgicc::div evb::evm::RUproxy::getHtmlSnipped() const
     table table;
     table.set("title","Statistics of readout messages sent to the RUs. Normally, the allocate FIFO should be empty.");
 
-    boost::mutex::scoped_lock sl(allocateMonitoringMutex_);
+    std::lock_guard<std::mutex> guard(allocateMonitoringMutex_);
 
     table.add(tr()
               .add(td("last event number to RUs"))
