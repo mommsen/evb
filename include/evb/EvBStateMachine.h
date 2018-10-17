@@ -1,7 +1,6 @@
 #ifndef _evb_StateMachine_h_
 #define _evb_StateMachine_h_
 
-#include <boost/regex.hpp>
 #include <boost/statechart/event_base.hpp>
 #include <boost/statechart/state.hpp>
 #include <boost/statechart/state_machine.hpp>
@@ -17,6 +16,7 @@
 #include "xdaq2rc/RcmsStateNotifier.h"
 #include "xdata/String.h"
 
+#include <regex>
 #include <string>
 
 
@@ -383,10 +383,10 @@ void evb::EvBStateMachine<MostDerived,InitialState>::unconsumed_event
 {
   boost::shared_lock<boost::shared_mutex> stateNameSharedLock(stateNameMutex_);
 
-  const boost::regex e("[A-Za-z0-9]+evb[0-9a-z]+([a-zA-Z]+)E", boost::regex::extended);
-  boost::smatch what;
+  const std::regex e("[A-Za-z0-9]+evb[0-9a-z]+([a-zA-Z]+)E", std::regex::extended);
+  std::smatch what;
   std::string event = typeid(evt).name();
-  if ( boost::regex_match(event,what,e) )
+  if ( std::regex_match(event,what,e) )
     event = what[1];
   LOG4CPLUS_ERROR(getLogger(),
                   "The '" << event << "' event is not supported from the '"

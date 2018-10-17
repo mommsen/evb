@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <iomanip>
+#include <regex>
 #include <stdio.h>
 #include <sstream>
 #include <string.h>
@@ -7,7 +8,6 @@
 #include <sys/types.h>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
 
 #include "evb/BU.h"
 #include "evb/bu/DiskWriter.h"
@@ -627,18 +627,18 @@ void evb::bu::DiskWriter::writeBlacklist(const boost::filesystem::path& tmpPath)
   const char* path = blacklistPath.string().c_str();
   std::ofstream blacklist(path);
 
-  const boost::regex regex("[a-zA-Z]+-[a-zA-Z0-9-]+");
-  boost::sregex_iterator res(configuration_->fuBlacklist.value_.begin(), configuration_->fuBlacklist.value_.end(), regex);
-  const boost::sregex_iterator end;
+  const std::regex regex("[a-zA-Z]+-[a-zA-Z0-9-]+");
+  std::sregex_iterator res(configuration_->fuBlacklist.value_.begin(), configuration_->fuBlacklist.value_.end(), regex);
+  const std::sregex_iterator end;
   if ( res == end )
   {
     blacklist << "[]" << std::endl;
   }
   else
   {
-    blacklist << "[\"" << *res  << "\"";
+    blacklist << "[\"" << res->str()  << "\"";
     while (++res != end) {
-      blacklist << ", \"" << *res << "\"";
+      blacklist << ", \"" << res->str() << "\"";
     }
     blacklist << "]" << std::endl;
   }

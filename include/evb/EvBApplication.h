@@ -2,11 +2,11 @@
 #define _evb_EvBApplication_h_
 
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
 
 #include <functional>
 #include <map>
 #include <memory>
+#include <regex>
 #include <string>
 #include <time.h>
 
@@ -235,13 +235,14 @@ void evb::EvBApplication<Configuration,StateMachine>::initApplicationInfoSpace()
     {
       xdata::Properties* properties = static_cast<xdata::Properties*>( appInfoSpace->find("descriptor") );
       std::string group = properties->getProperty("group");
-      const boost::regex regex("subs_([a-zA-Z0-9_+-]+)");
-      boost::regex_token_iterator<std::string::iterator> it(group.begin(), group.end(), regex, 1);
-      boost::regex_token_iterator<std::string::iterator> end;
+      const std::regex regex("subs_([a-zA-Z0-9_+-]+)");
+      std::sregex_token_iterator it(group.begin(), group.end(), regex, 1);
+      std::sregex_token_iterator end;
       std::string systems = "";
       while ( it != end )
       {
-        systems += *it++ + "/";
+        systems += it->str() + "/";
+        ++it;
       }
       if ( ! systems.empty() )
         subSystem_ = systems.substr(0,systems.size()-1);
