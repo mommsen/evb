@@ -1,11 +1,10 @@
 #ifndef _evb_test_dummyFEROL_FragmentGenerator_h_
 #define _evb_test_dummyFEROL_FragmentGenerator_h_
 
+#include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
-
-#include "boost/scoped_ptr.hpp"
 
 #include "evb/EvBid.h"
 #include "evb/EvBidFactory.h"
@@ -130,7 +129,7 @@ namespace evb {
         uint32_t fragmentPoolSize_;
 
         EvBidFactory evbIdFactory_;
-        boost::scoped_ptr<FragmentTracker> fragmentTracker_;
+        std::unique_ptr<FragmentTracker> fragmentTracker_;
         using PlaybackData = std::vector<toolbox::mem::Reference*>;
         PlaybackData playbackData_;
         PlaybackData::const_reverse_iterator playbackDataPos_;
