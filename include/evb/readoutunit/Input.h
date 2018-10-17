@@ -1,7 +1,6 @@
 #ifndef _evb_readoutunit_Input_h_
 #define _evb_readoutunit_Input_h_
 
-#include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
