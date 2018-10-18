@@ -18,17 +18,30 @@
 
 BUILD_HOME:=$(shell pwd)/../..
 
-include $(XDAQ_ROOT)/config/mfAutoconf.rules
-include $(XDAQ_ROOT)/config/mfDefs.$(XDAQ_OS)
-include $(XDAQ_ROOT)/config/mfDefs.extern_coretools
-include $(XDAQ_ROOT)/config/mfDefs.coretools
-include $(XDAQ_ROOT)/config/mfDefs.powerpack
-include $(XDAQ_ROOT)/config/mfDefs.general_worksuite
+ifndef BUILD_SUPPORT
+BUILD_SUPPORT=config
+endif
+
+ifndef PROJECT_NAME
+PROJECT_NAME=daq
+endif
+
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfAutoconf.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.$(XDAQ_OS)
+
+ifndef MFDEFS_SUPPORT
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.extern_coretools
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.coretools
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.powerpack
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfDefs.general_worksuite
+else
+include $(BUILD_HOME)/mfDefs.$(PROJECT_NAME)
+endif
 
 #
 # Packages to be built
 #
-Project=daq
+Project=$(PROJECT_NAME)
 Package=evb
 
 Sources=\
@@ -182,5 +195,5 @@ clean: _cleanall
 
 install: _installall
 
-include $(XDAQ_ROOT)/config/Makefile.rules
-include $(XDAQ_ROOT)/config/mfRPM.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/Makefile.rules
+include $(XDAQ_ROOT)/$(BUILD_SUPPORT)/mfRPM.rules
