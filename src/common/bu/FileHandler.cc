@@ -48,7 +48,9 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   size_t bytesWritten = write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
   const DataLocations& locs = event->getDataLocations();
-  bytesWritten += writev(fileDescriptor_,&locs[0],locs.size());
+  //bytesWritten += writev(fileDescriptor_,&locs[0],locs.size());
+  for (DataLocations::const_iterator it = locs.begin(); it != locs.end(); ++it)
+    bytesWritten += it->iov_len;
 
   if ( bytesWritten != sizeof(EventInfo) + eventInfo->eventSize() )
   {
