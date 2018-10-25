@@ -172,8 +172,9 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX) \
 	/opt/dip/lib64
 
-UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations
+UserCCFlags = -O3 -funroll-loops -fopenmp -Werror -Wno-error=deprecated-declarations
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
+UserDynamicLinkFlags = -fopenmp
 
 # These libraries can be platform specific and
 # potentially need conditional processing

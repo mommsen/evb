@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <omp.h>
 
 #include "evb/Exception.h"
 #include "evb/DataLocations.h"
@@ -70,6 +71,8 @@ evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
+
+  omp_set_num_threads(1);
 }
 
 
@@ -86,11 +89,21 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   fileSize_ += sizeof(EventInfo);
 
   const DataLocations& locs = event->getDataLocations();
+  void* filePos[100];
+  void* loc[100];
+  uint32_t len[100];
+  uint16_t count = 0;
   for (DataLocations::const_iterator it = locs.begin(); it != locs.end(); ++it)
   {
-    memcpy(fileMap_+fileSize_, it->iov_base, it->iov_len);
+    filePos[count] = fileMap_+fileSize_;
+    loc[count] = it->iov_base;
+    len[count] = it->iov_len;
     fileSize_ += it->iov_len;
+    ++count;
   }
+  #pragma omp parallel for
+  for (uint16_t i = 0; i < count; i++)
+    memcpy(filePos[i], loc[i], len[i]);
 }
 
 
