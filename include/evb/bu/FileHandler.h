@@ -41,6 +41,8 @@ namespace evb {
       int fileDescriptor_;
 
       uint64_t fileSize_;
+      uint64_t maxFileSize_;
+      unsigned char* fileMap_;
 
     }; // FileHandler
 
