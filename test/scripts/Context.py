@@ -72,7 +72,7 @@ class Context:
 
 
     def getPtIbvApplication(self):
-        if 'dvrubu-c2e3' in self.hostinfo['i2oHostname']:
+        if 'd3vrubu-c2e3' in self.hostinfo['i2oHostname']:
             interface='mlx5_0'
         elif 'dvrubu-c2f33-1' in self.hostinfo['i2oHostname']:
             interface='mlx4_1'
