@@ -13,6 +13,8 @@
 #include "xcept/tools.h"
 
 
+const void* evb::bu::FileHandler::buf = malloc(sizeof(unsigned char)*1000000);
+
 evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
   rawFileName_(rawFileName),
   fileDescriptor_(0),
@@ -47,8 +49,10 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   const EventInfoPtr& eventInfo = event->getEventInfo();
   size_t bytesWritten = write(fileDescriptor_,eventInfo.get(),sizeof(EventInfo));
 
-  const DataLocations& locs = event->getDataLocations();
-  bytesWritten += writev(fileDescriptor_,&locs[0],locs.size());
+  //const DataLocations& locs = event->getDataLocations();
+  //bytesWritten += writev(fileDescriptor_,&locs[0],locs.size());
+  bytesWritten += write(fileDescriptor_,buf,eventInfo->eventSize());
+  //bytesWritten += eventInfo->eventSize();
 
   if ( bytesWritten != sizeof(EventInfo) + eventInfo->eventSize() )
   {

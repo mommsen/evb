@@ -42,6 +42,8 @@ namespace evb {
 
       uint64_t fileSize_;
 
+      static const void* buf;
+
     }; // FileHandler
 
     typedef boost::shared_ptr<FileHandler> FileHandlerPtr;
