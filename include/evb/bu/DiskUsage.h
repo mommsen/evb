@@ -25,8 +25,7 @@ namespace evb {
       (
         const boost::filesystem::path& path,
         const float lowWaterMark,
-        const float highWaterMark,
-        const bool deleteFiles
+        const float highWaterMark
       );
 
       ~DiskUsage();
@@ -62,19 +61,16 @@ namespace evb {
     private:
 
       void doStatFs();
-      void deleteRawFiles();
 
       const boost::filesystem::path path_;
       const float lowWaterMark_;
       const float highWaterMark_;
-      bool deleteFiles_;
 
       enum State { IDLE, UPDATE, UPDATING, STOP };
       State state_;
       boost::mutex mutex_;
       boost::condition_variable condition_;
       boost::thread diskUsageThread_;
-      boost::thread deleteThread_;
       float diskSizeGB_;
       float relDiskUsage_;
       bool valid_;

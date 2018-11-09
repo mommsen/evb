@@ -1148,14 +1148,14 @@ void evb::bu::ResourceManager::configureDiskUsageMonitors()
   if ( configuration_->dropEventData ) return;
 
   DiskUsagePtr rawDiskUsage(
-    new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark,configuration_->deleteRawDataFiles)
+    new DiskUsage(configuration_->rawDataDir.value_,configuration_->rawDataLowWaterMark,configuration_->rawDataHighWaterMark)
   );
   diskUsageMonitors_.push_back(rawDiskUsage);
 
   if ( configuration_->metaDataDir != configuration_->rawDataDir )
   {
     DiskUsagePtr metaDiskUsage(
-      new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark,false)
+      new DiskUsage(configuration_->metaDataDir.value_,configuration_->metaDataLowWaterMark,configuration_->metaDataHighWaterMark)
     );
     diskUsageMonitors_.push_back(metaDiskUsage);
   }

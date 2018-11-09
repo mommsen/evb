@@ -12,13 +12,11 @@ evb::bu::DiskUsage::DiskUsage
 (
   const boost::filesystem::path& path,
   const float lowWaterMark,
-  const float highWaterMark,
-  const bool deleteFiles
+  const float highWaterMark
 ) :
   path_(path),
   lowWaterMark_(lowWaterMark),
   highWaterMark_(highWaterMark),
-  deleteFiles_(deleteFiles),
   state_(IDLE),
   valid_(false)
 {
@@ -32,14 +30,12 @@ evb::bu::DiskUsage::DiskUsage
   }
 
   diskUsageThread_ = boost::thread( boost::bind( &DiskUsage::doStatFs, this ) );
-  deleteThread_ = boost::thread( boost::bind( &DiskUsage::deleteRawFiles, this ) );
   update();
 }
 
 
 evb::bu::DiskUsage::~DiskUsage()
 {
-  deleteFiles_ = false;
   {
     boost::mutex::scoped_lock lock(mutex_);
     state_ = STOP;
@@ -48,7 +44,6 @@ evb::bu::DiskUsage::~DiskUsage()
   try
   {
     diskUsageThread_.join();
-    deleteThread_.join();
   }
   catch ( const boost::thread_interrupted& ) {}
 }
@@ -125,43 +120,6 @@ void evb::bu::DiskUsage::doStatFs()
       boost::mutex::scoped_lock lock(mutex_);
       if (state_ == STOP) break;
       state_ = IDLE;
-    }
-  }
-}
-
-
-void evb::bu::DiskUsage::deleteRawFiles()
-{
-  while ( deleteFiles_ )
-  {
-    if ( valid_ && relDiskUsage_ > 0.5 )
-    {
-      boost::filesystem::recursive_directory_iterator it(path_);
-      while ( it != boost::filesystem::recursive_directory_iterator() )
-      {
-        if ( it->path().filename() == "open" )
-        {
-          it.pop();
-          continue;
-        }
-
-        if ( it->path().extension() == ".raw" )
-        {
-          try
-          {
-            boost::filesystem::remove(*it);
-          }
-          catch(boost::filesystem::filesystem_error)
-          {
-            //don't care
-          }
-        }
-        ++it;
-      }
-    }
-    else
-    {
-      ::sleep(1);
     }
   }
 }

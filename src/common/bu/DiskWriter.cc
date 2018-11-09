@@ -361,9 +361,11 @@ void evb::bu::DiskWriter::handleRawDataFile(const FileStatisticsPtr& fileStatist
     "_ls" << std::setw(4) << fileStatistics->lumiSection <<
     "_index" << std::setw(6) << lumiStatistics->second->index++ <<
     ".raw";
-  //boost::filesystem::remove(runRawDataDir_ / fileStatistics->fileName);
   const boost::filesystem::path destination( runRawDataDir_.parent_path() / fileNameStream.str() );
-  boost::filesystem::rename(fileStatistics->fileName, destination);
+  if ( configuration_->deleteRawDataFiles )
+    boost::filesystem::remove(fileStatistics->fileName);
+  else
+    boost::filesystem::rename(fileStatistics->fileName, destination);
 
   boost::filesystem::path jsonFile( runMetaDataDir_ / fileNameStream.str() );
   jsonFile.replace_extension("jsn");
