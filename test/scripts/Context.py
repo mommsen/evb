@@ -86,7 +86,7 @@ class Context:
             ('memAllocTimeout','string','PT1S'),
             ('sendWithTimeout','boolean','true'),
             ('useRelay','boolean','false'),
-            ('maxMessageSize','unsignedInt','0x20000')
+            ('maxMessageSize','unsignedInt','0x3fff0')
             ]
         if self.role is 'EVM':
             properties.extend([

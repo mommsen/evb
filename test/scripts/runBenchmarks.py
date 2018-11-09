@@ -113,7 +113,7 @@ class RunBenchmarks(TestRunner):
             config.add( RU(self._symbolMap,[
                 ('inputSource','string','Local'),
                 ('fedSourceIds','unsignedInt',range(8*ru+1,8*ru+9)),
-                ('blockSize','unsignedInt','0x20000'),
+                ('blockSize','unsignedInt','0x3fff0'),
                 ('numberOfResponders','unsignedInt','6'),
                 ('socketBufferFIFOCapacity','unsignedInt','1024'),
                 ('grantFIFOCapacity','unsignedInt','16384'),
@@ -134,6 +134,7 @@ class RunBenchmarks(TestRunner):
             buConfig.append( ('metaDataDir','string',self.args['outputDisk']) )
             buConfig.append( ('deleteRawDataFiles','boolean','true') )
             buConfig.append( ('ignoreResourceSummary','boolean','true') )
+            buConfig.append( ('maxEventsPerFile','unsignedInt','100') )
         else:
             buConfig.append( ('dropEventData','boolean','true') )
         for bu in range(self.args['nBUs']):
@@ -144,7 +145,7 @@ class RunBenchmarks(TestRunner):
                 [ # RU config
                 ('inputSource','string','Local'),
                 ('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108)), #avoid softFED
-                ('blockSize','unsignedInt','0x20000'),
+                ('blockSize','unsignedInt','0x3fff0'),
                 ('numberOfResponders','unsignedInt','6'),
                 ('socketBufferFIFOCapacity','unsignedInt','1024'),
                 ('grantFIFOCapacity','unsignedInt','16384'),
