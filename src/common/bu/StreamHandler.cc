@@ -14,9 +14,13 @@ evb::bu::StreamHandler::StreamHandler
   configuration_(bu->getConfiguration()),
   index_(0),
   currentFileStatistics_(new FileStatistics(0,"")),
-  fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1))
+  fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1)),
+  streamBufferSizeGB_(45)
 {
   fileStatisticsFIFO_.resize(configuration_->fileStatisticsFIFOCapacity);
+  streamBuffer_ = static_cast<unsigned char*>( malloc(streamBufferSizeGB_*1000*1000*1000) );
+  //bzero(streamBuffer_,streamBufferSizeGB_*1000*1000*1000);
+  writePtr_ = readPtr_ = streamBuffer_;
 }
 
 
@@ -55,12 +59,39 @@ void evb::bu::StreamHandler::writeEvent(const EventPtr event)
     currentFileStatistics_.reset( new FileStatistics(lumiSection,fileName.str()) );
   }
 
-  fileHandler_->writeEvent(event);
+  //fileHandler_->writeEvent(event);
+
+  const EventInfoPtr& eventInfo = event->getEventInfo();
+  copyDataIntoBuffer(eventInfo.get(), sizeof(EventInfo));
+
+  const DataLocations& locs = event->getDataLocations();
+  for (DataLocations::const_iterator it = locs.begin(); it != locs.end(); ++it)
+  {
+    copyDataIntoBuffer(it->iov_base,it->iov_len);
+  }
   currentFileStatistics_->lastEventNumberWritten = event->getEventInfo()->eventNumber();
 
   if ( ++currentFileStatistics_->nbEventsWritten >= configuration_->maxEventsPerFile )
   {
     do_closeFile();
+  }
+}
+
+
+void evb::bu::StreamHandler::copyDataIntoBuffer(void* loc, size_t length)
+{
+  const size_t remaining = streamBuffer_ + streamBufferSizeGB_*1000*1000*1000 - writePtr_;
+
+  if ( length > remaining )
+  {
+    memcpy(writePtr_,loc,remaining);
+    memcpy(streamBuffer_,static_cast<unsigned char*>(loc)+remaining,length-remaining);
+    writePtr_ = streamBuffer_ + length - remaining;
+  }
+  else
+  {
+    memcpy(writePtr_,loc,length);
+    writePtr_ += length;
   }
 }
 

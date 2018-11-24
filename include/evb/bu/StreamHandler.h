@@ -76,6 +76,12 @@ namespace evb {
       typedef OneToOneQueue<FileStatisticsPtr> FileStatisticsFIFO;
       FileStatisticsFIFO fileStatisticsFIFO_;
 
+      const size_t streamBufferSizeGB_;
+      unsigned char* streamBuffer_;
+      unsigned char* writePtr_;
+      unsigned char* readPtr_;
+
+      void copyDataIntoBuffer(void* loc, size_t length);
     };
 
     typedef boost::shared_ptr<StreamHandler> StreamHandlerPtr;
