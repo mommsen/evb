@@ -323,11 +323,15 @@ class BU(Context):
 
         policyElements = [
             {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][5],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_6/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][8],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_7/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][9],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_8/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_9 /waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][15],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][13],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},

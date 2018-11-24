@@ -15,7 +15,7 @@ evb::bu::StreamHandler::StreamHandler
   index_(0),
   currentFileStatistics_(new FileStatistics(0,"")),
   fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1)),
-  streamBufferSizeGB_(45)
+  streamBufferSizeGB_(30)
 {
   fileStatisticsFIFO_.resize(configuration_->fileStatisticsFIFOCapacity);
   streamBuffer_ = static_cast<unsigned char*>( malloc(streamBufferSizeGB_*1000*1000*1000) );
