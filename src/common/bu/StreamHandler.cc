@@ -27,6 +27,7 @@ evb::bu::StreamHandler::StreamHandler
 evb::bu::StreamHandler::~StreamHandler()
 {
   closeFile();
+  free(streamBuffer_);
 }
 
 
