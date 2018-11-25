@@ -126,7 +126,7 @@ class RunBenchmarks(TestRunner):
             ('maxEvtsUnderConstruction','unsignedInt','320'),
             ('eventsPerRequest','unsignedInt','8'),
             ('superFragmentFIFOCapacity','unsignedInt','12800'),
-            ('numberOfBuilders','unsignedInt','5')
+            ('numberOfBuilders','unsignedInt','8')
             ]
         if self.args['outputDisk']:
             buConfig.append( ('dropEventData','boolean','false') )
