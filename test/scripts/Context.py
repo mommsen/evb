@@ -330,7 +330,7 @@ class BU(Context):
             {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_6/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][8],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_7/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][9],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_8/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][9],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_8/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_9 /waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][15],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
