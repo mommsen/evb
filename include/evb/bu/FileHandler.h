@@ -31,6 +31,11 @@ namespace evb {
       void writeEvent(const EventPtr&);
 
       /**
+       * Write the data chunk to disk
+       */
+      void writeChunk(const void* loc, const size_t len);
+
+      /**
        * Close the file and do the bookkeeping.
        */
       uint64_t closeAndGetFileSize();

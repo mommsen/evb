@@ -15,7 +15,7 @@ evb::bu::StreamHandler::StreamHandler
   index_(0),
   currentFileStatistics_(new FileStatistics(0,"")),
   fileStatisticsFIFO_(bu,"fileStatisticsFIFO_"+streamFileName.substr(streamFileName.rfind("/")+1)),
-  streamBufferSizeGB_(30)
+  streamBufferSizeGB_(1)
 {
   fileStatisticsFIFO_.resize(configuration_->fileStatisticsFIFOCapacity);
   streamBuffer_ = static_cast<unsigned char*>( malloc(streamBufferSizeGB_*1000*1000*1000) );
@@ -85,15 +85,12 @@ void evb::bu::StreamHandler::copyDataIntoBuffer(void* loc, size_t length)
 
   if ( length > remaining )
   {
-    memcpy(writePtr_,loc,remaining);
-    memcpy(streamBuffer_,static_cast<unsigned char*>(loc)+remaining,length-remaining);
-    writePtr_ = streamBuffer_ + length - remaining;
+    fileHandler_->writeChunk(streamBuffer_,writePtr_-streamBuffer_);
+    writePtr_ = streamBuffer_;
   }
-  else
-  {
-    memcpy(writePtr_,loc,length);
-    writePtr_ += length;
-  }
+
+  memcpy(writePtr_,loc,length);
+  writePtr_ += length;
 }
 
 
@@ -124,6 +121,9 @@ void evb::bu::StreamHandler::closeFile()
 
 void evb::bu::StreamHandler::do_closeFile()
 {
+  fileHandler_->writeChunk(streamBuffer_,writePtr_-streamBuffer_);
+  writePtr_ = streamBuffer_;
+
   currentFileStatistics_->fileSize =
     fileHandler_->closeAndGetFileSize();
 

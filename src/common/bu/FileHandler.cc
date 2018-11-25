@@ -62,6 +62,21 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
 }
 
 
+void evb::bu::FileHandler::writeChunk(const void* loc, const size_t len)
+{
+  const size_t bytesWritten = write(fileDescriptor_,loc,len);
+
+  if ( bytesWritten != len )
+  {
+    std::ostringstream msg;
+    msg << "Failed to completely write data chunk into " << rawFileName_;
+    XCEPT_RAISE(exception::DiskWriting, msg.str());
+  }
+
+  fileSize_ += bytesWritten;
+}
+
+
 uint64_t evb::bu::FileHandler::closeAndGetFileSize()
 {
   std::string error = "Failed to close the output file " + rawFileName_;
