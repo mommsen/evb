@@ -40,10 +40,12 @@ class xdaqThread(threading.Thread):
         if useNuma:
             if 'ru-' in hostname:
                 numaCtl = ['/usr/bin/numactl','--cpunodebind=1','--membind=1']
-            elif 'bu-' in hostname:
-                numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
             elif 'dvrubu-' in hostname:
                 numaCtl = ['/usr/bin/numactl','--cpunodebind=0','--membind=0']
+            elif 'd3vrubu-' in hostname:
+                numaCtl = ['/usr/bin/numactl','--cpunodebind=1','--membind=1']
+            elif 'bu-' in hostname:
+                numaCtl = ['/usr/bin/numactl','--physcpubind=10,12,14,26,28,30','--membind=1']
 
         if self.dummyXdaq:
             # launch dummyXdaq.py (during development)

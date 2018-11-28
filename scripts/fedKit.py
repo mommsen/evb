@@ -12,9 +12,10 @@ import XDAQprocess
 
 def usage():
     print """
-fedKit.py [--config <configfile>] [--reconfigure] [--dummyFerol]
+fedKit.py [--config <configfile>] [--nbEvents <count>] [--reconfigure] [--dummyFerol]
           -h --help:         print this message and exit
           -c --config:       path to a config file (default ./fedKit.cfg)
+          -n --nbEvents:     kill the processes after reaching the specified number of events
           -r --reconfigure:  ask for all configuration options (default takes them from configfile if it exists)
           -d --dummyFerol:   use a software emulator of the FEROL (default uses the real h/w FEROL)
     """
@@ -35,9 +36,10 @@ def main(argv):
     configfile = "fedKit.cfg"
     reconfigure = False;
     useDummyFerol = False;
+    haltAfterNbEvents = 0;
 
     try:
-        opts,args = getopt.getopt(argv,"c:rd",["config=","reconfigure","dummyFerol"])
+        opts,args = getopt.getopt(argv,"c:n:rd",["config=","nbEvents=","reconfigure","dummyFerol"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -47,6 +49,8 @@ def main(argv):
             sys.exit()
         elif opt in ("-c", "--config"):
             configfile = arg
+        elif opt in ("-n", "--nbEvents"):
+            haltAfterNbEvents = int(arg)
         elif opt in ("-r", "--reconfigure"):
             reconfigure = True
         elif opt in ("-d", "--dummyFerol"):
@@ -77,44 +81,52 @@ def main(argv):
     url=fedKitConfig.xdaqProcesses[-1].getURL()
     print("Running. Point your browser to http://"+url)
 
-    ans = "m"
-    while ans.lower() != 'q':
+    if haltAfterNbEvents:
+        nbEvents = 0
+        while nbEvents < haltAfterNbEvents:
+            nbEvents = int( fedKitConfig.xdaqProcesses[-1].getParam("eventCount","unsignedLong","evb::EVM",0) )
 
-        if ans.lower() == 'm':
-            print("""
+        nbEvents = int( fedKitConfig.xdaqProcesses[-1].getParam("eventCount","unsignedLong","evb::EVM",0) )
+        print("Terminating after building "+str(nbEvents)+" events")
+
+    else:
+        ans = "m"
+        while ans.lower() != 'q':
+
+            if ans.lower() == 'm':
+                print("""
 m   display this Menu
 f#  dump the next # FED fragments incl DAQ headers (default 1)
 e#  dump the next # Events with FED data only (default 1)
 q   stop the run and Quit
-            """)
+                """)
 
-        if ans and ans.lower()[0] == 'f':
-            try:
-                count = int(ans[1:])
-            except (ValueError,NameError,TypeError):
-                count = 1
-            print("Dumping "+str(count)+" FED fragments to /tmp")
-            conn = httplib.HTTPConnection(url)
-            urn = fedKitConfig.xdaqProcesses[-1].getURN("evb::EVM",0)
-            urn += "/writeNextFragmentsToFile?count="+str(count)
-            conn.request("GET",urn)
+            if ans and ans.lower()[0] == 'f':
+                try:
+                    count = int(ans[1:])
+                except (ValueError,NameError,TypeError):
+                    count = 1
+                print("Dumping "+str(count)+" FED fragments to /tmp")
+                conn = httplib.HTTPConnection(url)
+                urn = fedKitConfig.xdaqProcesses[-1].getURN("evb::EVM",0)
+                urn += "/writeNextFragmentsToFile?count="+str(count)
+                conn.request("GET",urn)
 
-        if ans and ans.lower()[0] == 'e':
-            try:
-                count = int(ans[1:])
-            except (ValueError,NameError,TypeError):
-                count = 1
-            print("Dumping "+str(count)+" events to /tmp")
-            conn = httplib.HTTPConnection(url)
-            urn = fedKitConfig.xdaqProcesses[-1].getURN("evb::BU",0)
-            urn += "/writeNextEventsToFile?count="+str(count)
-            conn.request("GET",urn)
+            if ans and ans.lower()[0] == 'e':
+                try:
+                    count = int(ans[1:])
+                except (ValueError,NameError,TypeError):
+                    count = 1
+                print("Dumping "+str(count)+" events to /tmp")
+                conn = httplib.HTTPConnection(url)
+                urn = fedKitConfig.xdaqProcesses[-1].getURN("evb::BU",0)
+                urn += "/writeNextEventsToFile?count="+str(count)
+                conn.request("GET",urn)
 
-        ans = raw_input("=> ")
+            ans = raw_input("=> ")
 
-
-    for xdaq in fedKitConfig.xdaqProcesses:
-        xdaq.stop()
+        for xdaq in fedKitConfig.xdaqProcesses:
+            xdaq.stop()
 
 
 if __name__ == "__main__":

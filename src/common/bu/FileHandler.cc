@@ -8,7 +8,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <omp.h>
 
 #include "evb/Exception.h"
 #include "evb/DataLocations.h"
@@ -22,7 +21,7 @@ evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
   rawFileName_(rawFileName),
   fileDescriptor_(0),
   fileSize_(0),
-  maxFileSize_(100*1*1000000)
+  maxFileSize_(100*1000*1000)
 {
   if ( boost::filesystem::exists(rawFileName_) )
   {
@@ -63,7 +62,7 @@ evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
 
-  fileMap_ = static_cast<unsigned char*>( mmap(0, maxFileSize_, PROT_WRITE, MAP_SHARED|MAP_NORESERVE, fileDescriptor_, 0) );
+  fileMap_ = static_cast<unsigned char*>( mmap(0, maxFileSize_, PROT_WRITE, MAP_SHARED|MAP_NORESERVE|MAP_LOCKED, fileDescriptor_, 0) );
   if (fileMap_ == MAP_FAILED)
   {
     std::ostringstream oss;
@@ -71,8 +70,7 @@ evb::bu::FileHandler::FileHandler(const std::string& rawFileName) :
       << ": " << strerror(errno);
     XCEPT_RAISE(exception::DiskWriting, oss.str());
   }
-
-  omp_set_num_threads(1);
+  //mlock(fileMap_,maxFileSize_);
 }
 
 
@@ -89,21 +87,11 @@ void evb::bu::FileHandler::writeEvent(const EventPtr& event)
   fileSize_ += sizeof(EventInfo);
 
   const DataLocations& locs = event->getDataLocations();
-  void* filePos[100];
-  void* loc[100];
-  uint32_t len[100];
-  uint16_t count = 0;
   for (DataLocations::const_iterator it = locs.begin(); it != locs.end(); ++it)
   {
-    filePos[count] = fileMap_+fileSize_;
-    loc[count] = it->iov_base;
-    len[count] = it->iov_len;
+    memcpy(fileMap_+fileSize_, it->iov_base, it->iov_len);
     fileSize_ += it->iov_len;
-    ++count;
   }
-  #pragma omp parallel for
-  for (uint16_t i = 0; i < count; i++)
-    memcpy(filePos[i], loc[i], len[i]);
 }
 
 

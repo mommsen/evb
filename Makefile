@@ -172,7 +172,7 @@ TestLibraryDirs = \
         $(XOAP_LIB_PREFIX) \
 	/opt/dip/lib64
 
-UserCCFlags = -O3 -funroll-loops -fopenmp -Werror -Wno-error=deprecated-declarations
+UserCCFlags = -O3 -funroll-loops -Werror -Wno-error=deprecated-declarations #-std=c++11 -Wno-error=array-bounds
 #UserCCFlags += -DEVB_DEBUG_CORRUPT_EVENT
 UserDynamicLinkFlags = -fopenmp
 
