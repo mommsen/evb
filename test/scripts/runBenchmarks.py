@@ -21,6 +21,8 @@ class RunBenchmarks(TestRunner):
     def addOptions(self,parser):
         TestRunner.addOptions(self,parser)
         TestRunner.addScanOptions(self,parser)
+        parser.add_argument("--foldedEVM",action='store_true',help="run a BU on the EVM node [default: %(default)s]")
+        parser.add_argument("--canonicalEVM",action='store_true',help="emulate 7 additional FEDs on EVM [default: %(default)s]")
         parser.add_argument("--nRUs",default=1,type=int,help="number of RUs, excl. EVM [default: %(default)s]")
         parser.add_argument("--nBUs",default=1,type=int,help="number of BUs [default: %(default)s]")
         parser.add_argument("--nRUBUs",default=0,type=int,help="number of RUBUs, excl. EVM [default: %(default)s]")
@@ -94,39 +96,38 @@ class RunBenchmarks(TestRunner):
         to get numa information based on the output of numactl --hardware"""
         resetInstanceNumbers()
 
-        config = Configuration(self._symbolMap,self.args['numa'])
-        # EVM
-        config.add( RU(self._symbolMap,[
+        evmConfig = [
             ('inputSource','string','Local'),
-            ('fedSourceIds','unsignedInt',(0,)),
-            ('blockSize','unsignedInt','0x4000'),
             ('allocateBlockSize','unsignedInt','0x20000'),
             ('maxAllocateTime','unsignedInt','250'),
-            ('numberOfResponders','unsignedInt','2'),
             ('socketBufferFIFOCapacity','unsignedInt','1024'),
             ('grantFIFOCapacity','unsignedInt','16384'),
             ('fragmentFIFOCapacity','unsignedInt','256'),
             ('fragmentRequestFIFOCapacity','unsignedInt','80')
-            ]) )
-        # RUs with 8 FEDs each
-        for ru in range(self.args['nRUs']):
-            config.add( RU(self._symbolMap,[
-                ('inputSource','string','Local'),
-                ('fedSourceIds','unsignedInt',range(8*ru+1,8*ru+9)),
-                ('blockSize','unsignedInt','0x3fff0'),
-                ('numberOfResponders','unsignedInt','6'),
-                ('socketBufferFIFOCapacity','unsignedInt','1024'),
-                ('grantFIFOCapacity','unsignedInt','16384'),
-                ('fragmentFIFOCapacity','unsignedInt','256'),
-                ('fragmentRequestFIFOCapacity','unsignedInt','6000')
-                ]) )
-        # BUs
+            ]
+        if self.args['canonicalEVM']:
+            evmConfig.append( ('fedSourceIds','unsignedInt',range(1000,1008)) )
+            evmConfig.append( ('blockSize','unsignedInt','0x3fff0') )
+            evmConfig.append( ('numberOfResponders','unsignedInt','6') )
+        else:
+            evmConfig.append( ('fedSourceIds','unsignedInt',(1000,)) )
+            evmConfig.append( ('blockSize','unsignedInt','0x4000') )
+            evmConfig.append( ('numberOfResponders','unsignedInt','2') )
+        ruConfig = [
+            ('inputSource','string','Local'),
+            ('blockSize','unsignedInt','0x3fff0'),
+            ('numberOfResponders','unsignedInt','6'),
+            ('socketBufferFIFOCapacity','unsignedInt','1024'),
+            ('grantFIFOCapacity','unsignedInt','16384'),
+            ('fragmentFIFOCapacity','unsignedInt','256'),
+            ('fragmentRequestFIFOCapacity','unsignedInt','6000')
+            ]
         buConfig = [
             ('lumiSectionTimeout','unsignedInt','0'),
             ('maxEvtsUnderConstruction','unsignedInt','320'),
             ('eventsPerRequest','unsignedInt','8'),
             ('superFragmentFIFOCapacity','unsignedInt','12800'),
-            ('numberOfBuilders','unsignedInt','8')
+            ('numberOfBuilders','unsignedInt','5')
             ]
         if self.args['outputDisk']:
             buConfig.append( ('dropEventData','boolean','false') )
@@ -137,23 +138,29 @@ class RunBenchmarks(TestRunner):
             buConfig.append( ('maxEventsPerFile','unsignedInt','100') )
         else:
             buConfig.append( ('dropEventData','boolean','true') )
+
+        config = Configuration(self._symbolMap,self.args['numa'])
+        # EVM
+        if self.args['foldedEVM']:
+            config.add( RUBU(self._symbolMap,evmConfig,buConfig) )
+        else:
+            config.add( RU(self._symbolMap,evmConfig) )
+        # RUs with 8 FEDs each
+        for ru in range(self.args['nRUs']):
+            config.add( RU(self._symbolMap,
+                               ruConfig +
+                               [('fedSourceIds','unsignedInt',range(8*ru,8*ru+8)),]
+                               ) )
+        # BUs
         for bu in range(self.args['nBUs']):
             config.add( BU(self._symbolMap,buConfig) )
         # RUBUs with 8 FEDs each
         for rubu in range(self.args['nRUBUs']):
             config.add( RUBU(self._symbolMap,
-                [ # RU config
-                ('inputSource','string','Local'),
-                ('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108)), #avoid softFED
-                ('blockSize','unsignedInt','0x3fff0'),
-                ('numberOfResponders','unsignedInt','6'),
-                ('socketBufferFIFOCapacity','unsignedInt','1024'),
-                ('grantFIFOCapacity','unsignedInt','16384'),
-                ('fragmentFIFOCapacity','unsignedInt','256'),
-                ('fragmentRequestFIFOCapacity','unsignedInt','6000')
-                ],
-                buConfig
-                ) )
+                                 ruConfig +
+                                 [('fedSourceIds','unsignedInt',range(8*rubu+1100,8*rubu+1108)),] #avoid softFED
+                                 , buConfig
+                                 ) )
         return config
 
 

@@ -1,3 +1,4 @@
+import copy
 import getopt
 import glob
 import json
@@ -147,7 +148,7 @@ class TestCase:
         results = [self._xmlrpcPool.apply_async(stopXDAQ, args=(c,)) for c in self._config.contexts.values()]
         for r in results:
             print(r.get(timeout=30))
-        
+
         logging.info("done stopping all XDAQs")
 
 
@@ -673,8 +674,9 @@ class TestCase:
 
     def getDataPoint(self):
         """
-        retrieves super fragment size and event rate from the EVM
-        and RU applications
+        retrieves super fragment size from the EVM and RUs,
+        the event size from the BUs,
+        and event rate from all EvB applications
         """
         sizes = self.getAppParam("superFragmentSize","unsignedInt","EVM")
         sizes.update( self.getAppParam("superFragmentSize","unsignedInt","RU") )
@@ -687,15 +689,11 @@ class TestCase:
 
     def getThroughputMB(self,dataPoint):
         """
-        calculates the throughput in MByte/sec by summing over the superfragment
-        sizes at all RUs and multiplying by the total event rate
+        calculates the throughput in MByte/sec of the EvB by using the average of the
+        rate measurements taken from the EVM and the event size from the first BU
         """
-        try:
-            size = sum(list(x['sizes']['RU0'] for x in dataPoint))/float(len(dataPoint))
-            rate = sum(list(x['rates']['RU0'] for x in dataPoint))/float(len(dataPoint))
-        except KeyError:
-            size = sum(list(x['sizes']['RU1'] for x in dataPoint))/float(len(dataPoint))
-            rate = sum(list(x['rates']['RU1'] for x in dataPoint))/float(len(dataPoint))
+        rate = sum(list(x['rates']['EVM0'] for x in dataPoint))/float(len(dataPoint))
+        size = sum(list(x['sizes']['BU0'] for x in dataPoint))/float(len(dataPoint))
         return int(size*rate/1000000)
 
 
@@ -736,7 +734,12 @@ class TestCase:
                                                 messengers.setParam("Event_Length_Stdev_bytes_FED"+str(stream),"unsignedInt",str(fedSizeRMS),**application)
                                     #messengers.setParam('InputPorts','Array',ports,**application)
         except KeyError:
-            for application in self._config.applications['RU']+self._config.applications['EVM']:
+            allApplications = copy.deepcopy( self._config.applications['EVM'] )
+            try:
+                allApplications += self._config.applications['RU']
+            except KeyError:
+                pass
+            for application in allApplications:
                 for app in self._config.contexts[(application['soapHostname'],application['soapPort'])].applications:
                     if app.params['instance'] == application['instance'] and app.params['class'] in ('evb::EVM','evb::RU'):
                         for prop in app.properties:
@@ -784,7 +787,7 @@ class TestCase:
                     self._origStdout.write("%dMB/s "%(self.getThroughputMB(dataPoints)))
                     self._origStdout.flush()
                 else:
-                    print("%3.2f:%dMB/s" % (fragSize,self.getThroughputMB(dataPoints)))
+                    print("%dB:%dMB/s" % (fragSize,self.getThroughputMB(dataPoints)))
                 if args['long']:
                     time.sleep(60)
                 return dataPoints

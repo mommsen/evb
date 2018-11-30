@@ -354,17 +354,21 @@ class BU(Context):
 class RUBU(RU):
 
     def __init__(self,symbolMap,ruProperties=[],buProperties=[]):
-        Context.__init__(self,'RUBU',symbolMap.getHostInfo('RU'+str(RU.instance)))
+        if RU.instance == 0:
+            role = 'EVM'
+        else:
+            role = 'RUBU'
+        Context.__init__(self,role,symbolMap.getHostInfo('RU'+str(RU.instance)))
         self.addPeerTransport()
         self.addRuApplication(ruProperties)
-        RU.instance += 1
         self.addBuApplication(buProperties)
+        RU.instance += 1
 
 
     def addBuApplication(self,properties):
-        app = Application.Application('evb::BU',RU.instance-1,properties)
-        app.params['tid'] = str(199+RU.instance)
-        app.params['id'] = str(199+RU.instance)
+        app = Application.Application('evb::BU',RU.instance,properties)
+        app.params['tid'] = str(200+RU.instance)
+        app.params['id'] = str(200+RU.instance)
         app.params['network'] = 'evb'
         self.applications.append(app)
 
