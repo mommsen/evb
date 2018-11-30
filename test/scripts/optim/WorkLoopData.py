@@ -8,15 +8,15 @@ def getWorkLoops(xdaqHostPort):
     # @param xdaqHostPort is a tuple (host, port)
     # where the mapping of work loop names to
     # lightweight process id can be retrieved
-    # 
-    # queries the remote host and 
+    #
+    # queries the remote host and
     # returns a mapping of worker loop names to pids
     # (dict with worker thread name to dict with a key 'pid')
 
     import urllib2, json
     fin = urllib2.urlopen("http://%s:%d/urn:xdaq-application:service=hyperdaq/workLoopList" % (xdaqHostPort[0], xdaqHostPort[1]))
     txt = fin.read()
-    
+
     fin.close()
 
     return json.loads(txt)
@@ -33,19 +33,19 @@ def getFedIdsFromWorkLoopNames(workLoopNames):
         for pattern in [
             'evb::RU_\d+/parseSocketBuffers_(\d+)/waiting$',
             'evb::RU_\d+/generating_(\d+)/waiting$',
-            ]: 
+            ]:
 
             mo = re.match(pattern, name)
             if mo:
                 fedids.add(int(mo.group(1)))
                 break
-    
+
     return sorted(fedids)
-    
+
 #----------------------------------------------------------------------
 
 def canonicalizeWorkLoopNames(workLoopNames):
-    # returns a mapping of original workloop name 
+    # returns a mapping of original workloop name
     # to a canonical workloop name (removing RU and BU numbers,
     # replace FED ids etc.).
     #
@@ -62,7 +62,7 @@ def canonicalizeWorkLoopNames(workLoopNames):
             # matching groups in parentheses in the regex patterns
             # below will be removed
 
-            # close to 100% CPU usage threads        
+            # close to 100% CPU usage threads
             'pt::ibv::completionworkloopr(-\d+)/polling', # found on BU and RU and EVM
             'pt::ibv::completionworkloops/polling',       # found on BU and RU
             'tcpla-psp/(\S+:)\d+/polling',                # found on RU; remove host name but keep the port number
@@ -81,9 +81,11 @@ def canonicalizeWorkLoopNames(workLoopNames):
 
             'evb::BU(_\d+)/requestFragments/waiting',        # found on BU
             'evb::BU(_\d+)/lumiAccounting/waiting',          # found on BU
+            'evb::BU(_\d+)/fileMover/waiting',               # found on BU
+            'evb::BU(_\d+)/resourceMonitor/waiting',         # found on BU
 
             # this thread appears when generating on the RU
-            # and should be seen as a replacement 
+            # and should be seen as a replacement
             # for the parseSocketBuffers threads
             "evb::RU(_\d+)/generating_(\d+)/waiting",
 
@@ -92,6 +94,9 @@ def canonicalizeWorkLoopNames(workLoopNames):
             "evb::EVM(_\d+)/generating_(\d+)/waiting",
             "evb::EVM(_\d+)/buPoster/waiting",
             "evb::EVM(_\d+)/processRequests/waiting",
+
+            # Monitoring
+            "evb::(\S+)/monitoring/waiting"
         ):
 
             pattern = pattern + "$"
@@ -122,7 +127,7 @@ def canonicalizeWorkLoopNames(workLoopNames):
                     prevEnd = mo.end(index)
 
                 newName += wln[prevEnd:]
-                
+
                 # make sure newName has not been produced before
                 assert not newName in mappedNames, "mapped name %s found more than once" % newName
                 mappedNames.add(newName)
@@ -139,11 +144,11 @@ def canonicalizeWorkLoopNames(workLoopNames):
 #----------------------------------------------------------------------
 
 class WorkLoopData:
-    # contains information about the workloops of a single 
+    # contains information about the workloops of a single
     # XDAQ process on a given host
 
     #----------------------------------------
-    
+
     def __init__(self, appType, soapHost, soapPort, launcherPort):
         # @param appType is 'RU', 'BU' or 'RUBU'
         # @param launcherPort is the port where to contact
@@ -200,11 +205,11 @@ class WorkLoopData:
             assert self.wlnToCanonical == canonicalizeWorkLoopNames(self.workerList.keys())
 
         makeUnusedWorkLoops = lambda: sorted(
-            [ wln 
+            [ wln
               for wln in self.workerList.keys()
-              if not wln in self.wlnToCanonical.keys()              
+              if not wln in self.wlnToCanonical.keys()
               ])
-        
+
         if isFirst:
             self.unusedWorkLoops = makeUnusedWorkLoops()
         else:
@@ -223,7 +228,7 @@ class WorkLoopData:
         self.workLoopToPid = {}
 
         for wln, cwln in self.wlnToCanonical.items():
-            
+
             self.workLoopToPid[cwln] = self.workerList[wln]['SYS_gettid']
 
             import logging

@@ -119,13 +119,16 @@ class Configuration():
 
         # maps from (soap host, soap port) to the dict describing a RU
         hostPortToRU = {}
+        result = []
 
-        for application in self.applications['RU']:
-            key = (application['soapHostname'], application['soapPort'])
-            hostPortToRU[key] = application
+        try:
+            for application in self.applications['RU']:
+                key = (application['soapHostname'], application['soapPort'])
+                hostPortToRU[key] = application
+        except KeyError:
+            return result
 
         # now find BUs which share the same context (soap host and port)
-        result = []
         for application in self.applications['BU']:
             key = (application['soapHostname'], application['soapPort'])
             if key in hostPortToRU:

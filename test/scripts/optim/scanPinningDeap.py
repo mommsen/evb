@@ -73,7 +73,7 @@ if __name__ == "__main__":
     #----------
 
     #----------
-    # launch the event builder 
+    # launch the event builder
     # so that we can read the list of workloops and
     # decide which ones to tune
     #----------
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     #----------
     # find RUs, BUs and RUBUs
-    # 
+    #
     # we group the workloops with equivalent names together for the same type of host (RU, BU)
     # note that some workloops have the same name on RUs and BUs but should be tuned
     # differently unless they are on RUBUs where they are shared between the RU and BU application
@@ -104,7 +104,10 @@ if __name__ == "__main__":
     # currently we support RU+BU and RUBU setups but no mixing between RU,BU and RUBUs
     #----------
     rubus = config.getRUBUs()
-    rus = config.applications['RU']
+    try:
+        rus = config.applications['RU']
+    except KeyError:
+        rus = []
     bus = config.applications['BU']
 
     evms = config.applications['EVM']
@@ -141,7 +144,7 @@ if __name__ == "__main__":
     time.sleep(1)
     logging.info("starting scan")
 
-    # run optimization 
+    # run optimization
     from DeapRunner import DeapRunner
     runner = DeapRunner(cpuList, goalFunction,
                         resultFname = os.path.join(options.outputDir, "evb-pinning-deap-{timestamp}.csv").format(timestamp = timeStamp),
@@ -157,6 +160,3 @@ if __name__ == "__main__":
         # this also catches KeyboardInterrupt (CTRL-C)
         evbRunner.stopEVB()
         evbRunnerThread.join()
-        
-
-
