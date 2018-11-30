@@ -8,13 +8,12 @@ dataNetwork = ".d3vrbs1v0.cms"
 hosts = [
 #    "d3vrubu-c2e33-08-01", # EVM
 
+    "d3vrubu-c2e34-18-01",
     "d3vrubu-c2e34-06-01",
     "d3vrubu-c2e34-08-01",
-    "d3vrubu-c2e34-10-01",
     "d3vrubu-c2e34-12-01",
     "d3vrubu-c2e34-14-01",
     "d3vrubu-c2e34-16-01",
-    "d3vrubu-c2e34-18-01",
     "d3vrubu-c2e34-20-01",
     "d3vrubu-c2e34-27-01",
     "d3vrubu-c2e34-29-01",
@@ -24,6 +23,7 @@ hosts = [
     "d3vrubu-c2e34-37-01",
     "d3vrubu-c2e34-39-01",
     "d3vrubu-c2e34-41-01",
+    "d3vrubu-c2e34-10-01",
 
     "d3vrubu-c2e33-06-01",
 ]
