@@ -693,7 +693,10 @@ class TestCase:
         rate measurements taken from the EVM and the event size from the first BU
         """
         rate = sum(list(x['rates']['EVM0'] for x in dataPoint))/float(len(dataPoint))
-        size = sum(list(x['sizes']['BU0'] for x in dataPoint))/float(len(dataPoint))
+        try:
+            size = sum(list(x['sizes']['BU0'] for x in dataPoint))/float(len(dataPoint))
+        except KeyError:
+            size = sum(list(x['sizes']['BU1'] for x in dataPoint))/float(len(dataPoint))
         return int(size*rate/1000000)
 
 
