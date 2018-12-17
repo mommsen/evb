@@ -43,7 +43,7 @@ class Context:
 
     def addPeerTransport(self):
         try:
-            if 'rbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname'] or 'ebs1v0' in self.hostinfo['i2oHostname']:
+            if 'd3v' in self.hostinfo['i2oHostname'] or 'rbs1v0' in self.hostinfo['i2oHostname'] or 'ebs0v0' in self.hostinfo['i2oHostname'] or 'ebs1v0' in self.hostinfo['i2oHostname']:
                 app = self.getPtIbvApplication()
             else:
                 app = self.getPtUtcpApplication()
@@ -73,7 +73,12 @@ class Context:
 
     def getPtIbvApplication(self):
         if 'd3vrubu-c2e3' in self.hostinfo['i2oHostname']:
-            interface='mlx5_0'
+            if 'd3vfus1v0' in self.hostinfo['i2oHostname']:
+                interface='mlx5_1'
+            elif 'd3vfbs1v0' in self.hostinfo['i2oHostname']:
+                interface='mlx5_2'
+            else:
+                interface='mlx5_0'
         elif 'dvrubu-c2f33-1' in self.hostinfo['i2oHostname']:
             interface='mlx4_1'
         else:
