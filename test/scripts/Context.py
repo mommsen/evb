@@ -381,31 +381,31 @@ class RUBU(RU):
     def getPolicyElements(self):
         numaInfo = self.getNumaInfo()
         policyElements = [
+            {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/dummySuperFragment/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][3],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][3],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_0/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_1/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ibvCPU']][5],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
             {'affinity':numaInfo[numaInfo['ibvCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][11],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][14],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ibvCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:fifo/PeerTransport/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloops(.*)/polling','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][1],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][2],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][3],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/resourceMonitor/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:fifo/PeerTransport/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][10],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_2/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][11],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_3/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][12],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ibvCPU']][13],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Responder_5/waiting','type':'thread'},
+            {'cpunodes':numaInfo[numaInfo['ibvCPU']][15],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::BU(.+)/monitoring/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][0],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_0/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][5],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_1/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_2/waiting','type':'thread'},
             {'affinity':numaInfo[numaInfo['ethCPU']][5],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_3/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][6],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][7],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][8],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_6/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][9],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_7/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][11],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][12],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::completionworkloopr(.*)/polling','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][13],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/resourceMonitor/waiting','type':'thread'},
-            {'affinity':numaInfo[numaInfo['ethCPU']][15],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/lumiAccounting/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][8],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_4/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][9],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_5/waiting','type':'thread'},
+            {'cpunodes':numaInfo[numaInfo['ethCPU']][10],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::[EVM,RU](.+)/monitoring/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][11],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_7/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][12],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/buPoster/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][13],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/Builder_6/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][14],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/fileMover/waiting','type':'thread'},
+            {'affinity':numaInfo[numaInfo['ethCPU']][15],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/requestFragments/waiting','type':'thread'},
             {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::acceptor(.*)/waiting','type':'thread'},
             {'cpunodes':numaInfo['ethCPU'],'memnode':numaInfo['ethCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:pt::ibv::eventworkloop/polling','type':'thread'},
             {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:superFragmentFIFO(.+)','type':'alloc'},
@@ -421,7 +421,7 @@ class RUBU(RU):
             {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:pt-blit-inputpipe-rlist(.*)','type':'alloc'},
             {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:socketBufferFIFO(.*)','type':'alloc'},
             {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:grantFIFO(.*)','type':'alloc'},
-            {'mempolicy':'onnode','node':numaInfo['ethCPU'],'package':'numa','pattern':'urn:fifo-PeerTransport:alloc','type':'alloc'}
+            {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:fifo-PeerTransport:alloc','type':'alloc'}
             ]
 
         try:
@@ -435,13 +435,11 @@ class RUBU(RU):
             pass
 
         if RU.instance == 0: #EVM
-            socketThreads = (1,8,9,15)
             policyElements.extend([
-                {'affinity':numaInfo[numaInfo['ibvCPU']][4],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/processRequests/waiting','type':'thread'},
+                {'affinity':numaInfo[numaInfo['ibvCPU']][14],'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/processRequests/waiting','type':'thread'},
                 {'mempolicy':'onnode','node':numaInfo['ibvCPU'],'package':'numa','pattern':'urn:readoutMsgFIFO(.+)','type':'alloc'}
                 ])
-        else: #RU
-            socketThreads = (1,4,8,9,15)
+        socketThreads = (0,1,8,9,14)
         policyElements.extend([
             {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in socketThreads]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/parseSocketBuffers_(.*)/waiting','type':'thread'},
             {'affinity':','.join([numaInfo[numaInfo['ibvCPU']][i] for i in socketThreads]),'memnode':numaInfo['ibvCPU'],'mempolicy':'onnode','package':'numa','pattern':'urn:toolbox-task-workloop:evb::(.+)/generating_(.*)/waiting','type':'thread'},
